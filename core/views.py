@@ -4,6 +4,10 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
+from django.utils import timezone 
+from datetime import date as datetime_date 
+from django.db.models import Count 
+
 from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog
 from .serializers import (
     DepartmentSerializer, UserSerializer, UserProfileSerializer, 
@@ -22,6 +26,56 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     serializer_class = DepartmentSerializer
     # permission_classes = [permissions.IsAuthenticated] # Old permission
     permission_classes = [IsSuperUserForWriteOrAuthenticatedReadOnly] # Apply RBAC permission
+
+    @action(detail=True, methods=['get'], url_path='status-summary')
+    def status_summary(self, request, pk=None):
+        department = self.get_object()
+        target_date_str = request.query_params.get('date', None)
+
+        if target_date_str:
+            try:
+                target_date = datetime_date.fromisoformat(target_date_str)
+            except ValueError:
+                return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            target_date = timezone.localdate()
+
+        # Get all task instances for this department due on the target_date
+        # TaskInstance -> CleaningItem -> Department
+        tasks_for_day = TaskInstance.objects.filter(
+            cleaning_item__department=department,
+            due_date=target_date
+        )
+
+        status_counts = tasks_for_day.values('status').annotate(count=Count('status'))
+        
+        summary = {
+            'department_id': department.id,
+            'department_name': department.name,
+            'summary_date': target_date.isoformat(),
+            'total_tasks': tasks_for_day.count(),
+            'pending': 0,
+            'in_progress': 0,
+            'completed': 0,
+            'missed': 0
+        }
+
+        for s_count in status_counts:
+            if s_count['status'] == 'Pending':
+                summary['pending'] = s_count['count']
+            elif s_count['status'] == 'In Progress':
+                summary['in_progress'] = s_count['count']
+            elif s_count['status'] == 'Completed':
+                summary['completed'] = s_count['count']
+            elif s_count['status'] == 'Missed':
+                summary['missed'] = s_count['count']
+        
+        if summary['total_tasks'] > 0:
+            summary['completion_percentage'] = round((summary['completed'] / summary['total_tasks']) * 100, 2)
+        else:
+            summary['completion_percentage'] = 0 # Or 100 if no tasks means all done, depends on definition
+
+        return Response(summary)
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
