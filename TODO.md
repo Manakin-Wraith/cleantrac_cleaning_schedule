@@ -52,12 +52,13 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
     - [x] Define permissions for 'manager' vs 'staff' roles (e.g., managers can create/assign tasks, staff can view/complete) (Covered by custom permission classes)
     - [x] Implement custom DRF permission classes or override ViewSet methods (Custom permission classes created in core/permissions.py)
   - [x] Implement permission enforcement based on user role and department (overlaps with above) (Covered by custom permissions)
-  - **[ ] Task Generation Logic**
-  - [ ] Develop scheduled process (e.g., cron job, scheduled task) to create daily/weekly task instances
-  - [ ] Ensure task generation is per-department based on department-specific items and schedules
+  - **[x] Task Generation Logic** (Initial management command `generate_tasks` created)
+    - [x] Develop scheduled process (e.g., cron job, scheduled task) to create daily/weekly task instances (Manual command `generate_tasks.py` created; scheduling is an infra step)
+    - [x] Ensure task generation is per-department based on department-specific items and schedules (Command iterates per department and its items)
+    - [x] Handle different frequencies (Daily, Weekly, Monthly, As Needed) ('As Needed' excluded, others handled)
 - **[ ] Status Calculation Logic**
-  - [ ] Implement backend logic to determine task status (Pending, Complete, Overdue)
-  - [ ] Ensure status calculation operates within the context of a specific department
+  - [x] Implement backend logic to determine task status (Pending, Complete, Overdue) (TaskInstance.status field; `update_task_statuses.py` command handles marking 'Missed' for overdue)
+  - [x] Ensure status calculation operates within the context of a specific department (DepartmentViewSet `/status-summary/` action provides daily task counts and completion % per department)
 
 ---
 
