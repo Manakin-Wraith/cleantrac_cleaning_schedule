@@ -46,13 +46,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 # Serializer for the /api/users/me/ endpoint
 class CurrentUserSerializer(serializers.ModelSerializer):
-    # Nests the UserProfile details. 'userprofile' is the default related_name
+    # Nests the UserProfile details. 'profile' is the related_name
     # from UserProfile.user (OneToOneField) back to User.
-    userprofile = UserProfileSerializer(read_only=True)
+    profile = UserProfileSerializer(read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'userprofile']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'profile']
 
 
 class CleaningItemSerializer(serializers.ModelSerializer):

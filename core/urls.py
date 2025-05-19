@@ -21,6 +21,6 @@ router.register(r'completionlogs', CompletionLogViewSet, basename='completionlog
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [
-    path('', include(router.urls)),
-    path('users/me/', CurrentUserView.as_view(), name='current-user'),
+    path('users/me/', CurrentUserView.as_view(), name='current-user'), # Specific path first
+    path('', include(router.urls)),                                    # Router paths second
 ]

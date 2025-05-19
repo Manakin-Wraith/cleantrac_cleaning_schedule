@@ -237,5 +237,8 @@ class CurrentUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        serializer = CurrentUserSerializer(request.user)
+        serializer = CurrentUserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
+
+
+# Management Commands related views (if any in future)

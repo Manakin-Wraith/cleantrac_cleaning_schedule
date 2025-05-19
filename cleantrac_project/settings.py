@@ -39,11 +39,13 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework.authtoken",  # Add this for token authentication
+    "corsheaders",  # For CORS
     "core.apps.CoreConfig",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # CORS middleware - place it high, especially before CommonMiddleware
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -126,15 +128,38 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Login Redirect URL
-LOGIN_REDIRECT_URL = '/api/' # Redirect to API root after login
+LOGIN_REDIRECT_URL = '/api/'  # Redirect to API root after login
 
 # Django REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication', # For browsable API and Django Admin
+        'rest_framework.authentication.SessionAuthentication',  # For browsable API and Django Admin
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated', # Default to requiring authentication
+        'rest_framework.permissions.IsAuthenticated',  # Default to requiring authentication
     )
 }
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',  # Your Vite frontend origin
+    'http://127.0.0.1:5173',  # Also common for local dev
+]
+
+# Optional: If you want to allow all origins (less secure, use for quick testing only)
+# CORS_ALLOW_ALL_ORIGINS = True
+
+# Optional: Allow credentials (cookies, authorization headers) to be sent with requests
+CORS_ALLOW_CREDENTIALS = True
+
+# Optional: If you need to allow specific headers beyond the defaults
+# CORS_ALLOW_HEADERS = list(default_headers) + [
+#     'my-custom-header',
+# ]
+
+# Optional: If you need to allow specific methods beyond the defaults (GET, POST, HEAD, OPTIONS)
+# CORS_ALLOW_METHODS = list(default_methods) + [
+#     'PUT',
+#     'DELETE',
+# ]
