@@ -103,14 +103,14 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] UI: Task List Table (Status Icon, Item Name, Frequency, Responsible Staff, Supervisor, Due Date/Day, Actions) (Task details display correctly, including item names and assignees)
     - [ ] Actions: Implement 'Edit Task Assignment' functionality
     - [ ] Actions: Implement 'Mark Task Complete' (manager override) functionality
-    - [ ] Actions: Implement 'View Task Details' (modal)
+    - [x] Actions: Implement 'View Task Details' (modal) (Basic modal implemented, displays key task info)
   - [x] Feature: Task Management (Viewing, Filtering, Status Tracking, Assignment) (Core data loading and assignment via modal working)
   - [x] Feature: Scheduling (Viewing generated tasks)
   - [x] Function: `Retrieve Tasks` API call (department-scoped, with filters) (Task loading by department and selected date working)
   - [ ] Function: `Apply Filters` (client-side)
   - [x] Function: `Select Date/Range` (Date picker implemented and triggers data refresh)
   - [ ] Function: `Sort Table`
-  - [ ] Function: `Open Task Detail Modal` (see Shared Components)
+  - [x] Function: `Open Task Detail Modal` (see Shared Components) (Implemented)
   - [x] Modal: "Create New Task" modal opens.
   - [x] Modal: "Select Cleaning Item" dropdown populates correctly.
   - [x] Modal: "Assign To (Optional)" staff dropdown populates correctly.
@@ -177,9 +177,9 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [ ] Function: `Retrieve Tasks` API call (department-scoped, read-only for staff)
   - [ ] Function: `Select Date/Period`
   - [ ] Function: `Display Tasks`
-- **[ ] 5. Task Detail Modal (Shared - Manager & Staff Use)**
-  - [ ] UI: Modal Container and Header (e.g., "Task Details - [Item Name] ([Dept])")
-  - [ ] UI: Display fields (Item Name, Frequency, Equipment, Chemical, Method, Responsible Staff, Supervisor, Status)
+- **[x] 5. Task Detail Modal (Shared - Manager & Staff Use)**
+  - [x] UI: Modal Container and Header (e.g., "Task Details - [Item Name] ([Dept])") (Basic modal implemented)
+  - [x] UI: Display fields (Item Name, Frequency, Equipment, Chemical, Method, Responsible Staff, Supervisor, Status) (Displays key task info)
   - [ ] UI: Completion Log Section
   - [ ] UI: Action Buttons ("Mark Complete" for staff, "Close")
   - [ ] Feature: Task Management (Viewing details, Staff marking complete)

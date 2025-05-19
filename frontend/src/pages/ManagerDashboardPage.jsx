@@ -2,8 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
     Container, Typography, Box, Grid, Paper, CircularProgress, Button, Modal,
     TextField, Select, MenuItem, FormControl, InputLabel, List, ListItem, ListItemText,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert, Chip
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert, Chip, IconButton, Tooltip
 } from '@mui/material';
+import { AddCircleOutline, Visibility as VisibilityIcon } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -12,6 +13,7 @@ import { getTaskInstances, createTaskInstance } from '../services/taskService';
 import { getCleaningItems } from '../services/cleaningItemService';
 import { getUsers } from '../services/userService';
 import { useSnackbar } from 'notistack';
+import TaskDetailModal from '../components/modals/TaskDetailModal'; // Import TaskDetailModal
 
 const getTodayDateString = (date = new Date()) => {
     const year = date.getFullYear();
@@ -56,6 +58,10 @@ function ManagerDashboardPage() {
         due_date: getTodayDateString(selectedDate), // Initialize with selectedDate
         status: 'pending',
     });
+
+    // State for detail modal
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedTaskForDetail, setSelectedTaskForDetail] = useState(null);
 
     const fetchManagerData = useCallback(async (currentUser, dateToFetch) => {
         if (!currentUser || !currentUser.profile || !currentUser.profile.department_id) {
@@ -196,6 +202,16 @@ function ManagerDashboardPage() {
         }
     };
 
+    const handleOpenDetailModal = (task) => {
+        setSelectedTaskForDetail(task);
+        setIsDetailModalOpen(true);
+    };
+
+    const handleCloseDetailModal = () => {
+        setIsDetailModalOpen(false);
+        setSelectedTaskForDetail(null);
+    };
+
     if (loadingUser) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -277,6 +293,11 @@ function ManagerDashboardPage() {
                                             <TableCell>{task.assigned_to_username || 'Unassigned'}</TableCell>
                                             <TableCell>{task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString() : 'N/A'}</TableCell>
                                             <TableCell align="center">
+                                                <Tooltip title="View Details">
+                                                    <IconButton onClick={() => handleOpenDetailModal(task)} size="small">
+                                                        <VisibilityIcon />
+                                                    </IconButton>
+                                                </Tooltip>
                                                 <Button size="small" variant="outlined" sx={{ mr: 1 }} onClick={() => console.log('Edit task:', task.id)}>
                                                     Edit
                                                 </Button>
@@ -376,6 +397,12 @@ function ManagerDashboardPage() {
                 </Box>
             </Modal>
 
+            <TaskDetailModal 
+                open={isDetailModalOpen}
+                onClose={handleCloseDetailModal}
+                task={selectedTaskForDetail}
+                cleaningItems={cleaningItems} // Pass all cleaning items for potential lookup
+            />
         </Container>
     );
 }
