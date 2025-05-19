@@ -16,23 +16,35 @@ class UserSerializer(serializers.ModelSerializer):
         # you might need to handle writable nested serializers or provide separate endpoints for User.
         # For read-only, this is fine.
 
+# UserProfileSerializer MUST be defined before serializers that use it, like UserWithProfileSerializer
 class UserProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True) # Nest User details, read-only for simplicity initially
-    department_id = serializers.PrimaryKeyRelatedField(
+    
+    # This field is for setting the department when creating/updating a UserProfile directly via its own endpoint.
+    # It won't be part of the output when UserProfileSerializer is used as read_only (e.g. nested in UserWithProfileSerializer or CurrentUserSerializer).
+    department_for_write = serializers.PrimaryKeyRelatedField(
         queryset=Department.objects.all(), 
-        source='department', 
+        source='department',  # This field on the UserProfile model
         write_only=True, 
-        allow_null=True
+        allow_null=True,
+        required=False # Make it optional for PATCH updates on UserProfile itself
     )
+    
+    # This field is for reading the department ID. It will be included in read_only contexts.
+    department_id = serializers.IntegerField(source='department.id', read_only=True, allow_null=True)
     department_name = serializers.CharField(source='department.name', read_only=True, allow_null=True)
 
     class Meta:
         model = UserProfile
-        fields = ['id', 'user', 'department_id', 'department_name', 'role']
+        fields = [
+            'id', 'user', 
+            'department_id',  # This will be the read-only integer ID from department.id
+            'department_name', 
+            'role',
+            'department_for_write' # This field is for write operations on UserProfile endpoint
+        ]
         # 'user' field here refers to the nested UserSerializer output for reads.
-        # For writes (e.g., creating a UserProfile), the 'user' instance is typically set in the view.
-        # 'department_id' is used for writing the department relationship.
-        # 'department_name' is for reading the department's name.
+        # 'department_for_write' is used for writing the department relationship if UserProfile is updated directly.
 
     def to_representation(self, instance):
         """Modify representation to show department name directly."""
@@ -43,6 +55,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
         # If UserProfile is created alongside User, that's a different flow (e.g. User registration endpoint).
         return representation
 
+# Serializer for listing Users with their profile information (e.g., for /api/users/)
+class UserWithProfileSerializer(serializers.ModelSerializer):
+    profile = UserProfileSerializer(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'profile']
 
 # Serializer for the /api/users/me/ endpoint
 class CurrentUserSerializer(serializers.ModelSerializer):
@@ -53,7 +72,6 @@ class CurrentUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'first_name', 'last_name', 'email', 'profile']
-
 
 class CleaningItemSerializer(serializers.ModelSerializer):
     department_id = serializers.PrimaryKeyRelatedField(

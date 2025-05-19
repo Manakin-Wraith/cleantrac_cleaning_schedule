@@ -12,7 +12,7 @@ from .models import Department, UserProfile, CleaningItem, TaskInstance, Complet
 from .serializers import (
     DepartmentSerializer, UserSerializer, UserProfileSerializer, 
     CleaningItemSerializer, TaskInstanceSerializer, CompletionLogSerializer,
-    CurrentUserSerializer
+    CurrentUserSerializer, UserWithProfileSerializer
 )
 from .permissions import (
     IsManagerForWriteOrAuthenticatedReadOnly, IsSuperUser, 
@@ -78,7 +78,7 @@ class DepartmentViewSet(viewsets.ModelViewSet):
         return Response(summary)
 
 class UserViewSet(viewsets.ModelViewSet):
-    serializer_class = UserSerializer
+    serializer_class = UserWithProfileSerializer
     # permission_classes = [permissions.IsAuthenticated] # Old permission
     permission_classes = [UserAndProfileManagementPermissions] # Apply RBAC permission
 

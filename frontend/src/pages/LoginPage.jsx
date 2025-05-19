@@ -27,7 +27,20 @@ function LoginPage() {
             const userData = await getCurrentUser();
             enqueueSnackbar(`Login successful! Welcome ${userData.username}. Role: ${userData.profile.role}, Department: ${userData.profile.department_name}`, { variant: 'success' });
             console.log('User details:', userData);
-            navigate('/dashboard'); 
+
+            // Role-based redirection
+            const userRole = userData.profile?.role;
+            if (userRole === 'manager') {
+                navigate('/manager-dashboard');
+            } else if (userRole === 'staff') {
+                navigate('/staff-tasks');
+            } else {
+                console.warn('Unknown user role:', userRole, 'Defaulting to login.');
+                // Potentially navigate to an error page or show a specific toast
+                enqueueSnackbar('Login successful, but role is undefined. Please contact admin.', { variant: 'warning' });
+                navigate('/login'); // Or a generic landing page if you prefer not to re-route to login
+            }
+
             setLoading(false);
         } catch (err) {
             setLoading(false);

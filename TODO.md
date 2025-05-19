@@ -28,7 +28,7 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Implement Token-based Authentication (e.g., JWT or DRF TokenAuthentication) for frontend API access (DRF TokenAuthentication setup complete)
   - [x] Implement session management (Primarily for browsable API and Django Admin) (Default Django/DRF behavior)
   - [x] Implement role verification (Integrated into custom DRF permission classes)
-  - [x] Implement department identification for user upon login (Handled by `/api/users/me/` endpoint providing user, profile, role, and department)
+  - [x] Implement department identification for user upon login (Handled by `/api/users/me/` endpoint providing user, profile, role, and department_id)
 - **[ ] User Management System**
   - [ ] API: CRUD operations for users (Admin/Manager only)
   - [ ] UI: User listing and editing interface (Admin/Manager only)
@@ -71,7 +71,7 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Feature: User Authentication
   - [x] Function: `Log In` API call (client-side)
   - [x] Function: `Display Error Message` (client-side)
-  - [x] Function: `Redirect on Success` (to department-specific view or department selection) _Basic to /dashboard done_
+  - [x] Function: `Redirect on Success` (to department-specific view or department selection) _Basic to /manager-dashboard done_
 - **[ ] 2. Overall Application Layout (Shared Structure - also see Staff section)**
   - [ ] UI: Fixed Header Bar (App Name/Logo, User Name & Role, Current Active Department, Logout Button)
   - [ ] UI: Fixed/Collapsible Sidebar Navigation
@@ -85,6 +85,7 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [ ] Function: `Switch Active Department` (if implemented)
 - **[ ] 3. Manager Dashboard Page**
   - [ ] UI: Page Heading (e.g., "[Department Name] Dashboard")
+  - [~] Data: Foundation for displaying department tasks, cleaning items, and staff users is implemented.
   - [ ] UI: Dashboard widgets/cards layout
   - [ ] UI Component: Overall Completion Widget (Percentage, Progress Bar/Donut Chart, Counts)
   - [ ] UI Component: Overdue Tasks Widget (Count, Compact List, Link to full list)
@@ -92,24 +93,27 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [ ] UI Component: Quick Actions/Links Widget (Optional)
   - [ ] Feature: Monitoring (department-scoped)
   - [ ] Feature: Reporting (Summary, department-scoped)
-  - [ ] Function: `Retrieve Dashboard Summary Data` API call (department-scoped)
+  - [x] Function: `Retrieve Dashboard Summary Data` API call (department-scoped) (Core calls for tasks, items, users in place)
   - [ ] Function: `Display Charts`
   - [ ] Function: `Display Lists`
 - **[ ] 4. Daily Schedule Page (Manager View)**
   - [ ] UI: Page Heading (e.g., "[Department Name] Daily Schedule")
-  - [ ] UI: Controls Bar (Date Picker, Day/Week Toggle, "+ Add New Cleaning Item" Button)
+  - [~] UI: Controls Bar (Date Picker, Day/Week Toggle, "+ Add New Cleaning Item" Button) (Create Task button & modal functional)
   - [ ] UI: Filter Panel (Staff, Status, Search by Item Name, Apply/Clear Buttons)
-  - [ ] UI: Task List Table (Status Icon, Item Name, Frequency, Responsible Staff, Supervisor, Due Date/Day, Actions)
-  - [ ] Feature: Task Management (Viewing, Filtering, Status Tracking, Assignment)
-  - [ ] Feature: Scheduling (Viewing generated tasks)
-  - [ ] Function: `Retrieve Tasks` API call (department-scoped, with filters)
+  - [~] UI: Task List Table (Status Icon, Item Name, Frequency, Responsible Staff, Supervisor, Due Date/Day, Actions) (Expected to populate)
+  - [x] Feature: Task Management (Viewing, Filtering, Status Tracking, Assignment) (Core data loading and assignment via modal working)
+  - [x] Feature: Scheduling (Viewing generated tasks)
+  - [x] Function: `Retrieve Tasks` API call (department-scoped, with filters) (Task loading by department working)
   - [ ] Function: `Apply Filters` (client-side)
   - [ ] Function: `Select Date/Range`
   - [ ] Function: `Sort Table`
   - [ ] Function: `Open Task Detail Modal` (see Shared Components)
+  - [x] Modal: "Create New Task" modal opens.
+  - [x] Modal: "Select Cleaning Item" dropdown populates correctly.
+  - [x] Modal: "Assign To (Optional)" staff dropdown populates correctly.
+  - [x] Modal: Task creation API call and UI update upon success.
   - [ ] Function: `Mark Task Complete` API call (manager override)
   - [ ] Function: `Edit Task Assignment` API call
-  - [ ] Function: `Open Item Form Modal` (for department-specific items, see below)
 - **[ ] 5. Item Management Page (Manager View)**
   - [ ] UI: Page Heading (e.g., "[Department Name] Item Management")
   - [ ] UI: "+ Add New Master Item" Button
