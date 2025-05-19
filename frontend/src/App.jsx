@@ -1,24 +1,19 @@
 import React from 'react';
-import LoginPage from './pages/LoginPage.jsx';
-import { CssBaseline, Box } from '@mui/material';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import PageLayout from './components/PageLayout';
 
 function App() {
   return (
-    <>
-      <CssBaseline />
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh', 
-          // backgroundColor: '#f0f2f5', 
-        }}
-      >
-        <LoginPage />
-      </Box>
-    </>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<PageLayout><LoginPage /></PageLayout>} />
+        <Route path="/dashboard" element={<PageLayout><DashboardPage /></PageLayout>} />
+        <Route path="/" element={<Navigate replace to="/login" />} />
+        {/* Add other routes here, wrapping their elements with PageLayout if they need this centering */}
+      </Routes>
+    </Router>
   );
 }
 

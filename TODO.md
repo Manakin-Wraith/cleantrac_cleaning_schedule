@@ -23,20 +23,20 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
 
 ## I. Application Core Elements (Shared & Underlying)
 
-- **[ ] Authentication System** (Session auth for browsable API is default, Token auth added)
+- **[x] Authentication System** (Session auth for browsable API is default, Token auth added)
   - [x] Implement user login logic (username/password) (Covered by DRF api-auth for now, JWT/Token to be added) (DRF Token Auth now added)
   - [x] Implement Token-based Authentication (e.g., JWT or DRF TokenAuthentication) for frontend API access (DRF TokenAuthentication setup complete)
   - [x] Implement session management (Primarily for browsable API and Django Admin) (Default Django/DRF behavior)
   - [x] Implement role verification (Integrated into custom DRF permission classes)
   - [x] Implement department identification for user upon login (Handled by `/api/users/me/` endpoint providing user, profile, role, and department)
 - **[ ] User Management System**
-  - [x] Database schema for Users (name, role, hashed credentials, department_id(s)) (covered by User & UserProfile models)
-  - [x] Automate UserProfile creation upon User creation (via signals)
-  - [ ] Functions for creating, reading, updating, deleting users
-  - [ ] Logic for associating users with one or more departments
+  - [ ] API: CRUD operations for users (Admin/Manager only)
+  - [ ] UI: User listing and editing interface (Admin/Manager only)
+- **[ ] UI/UX Enhancements**
+  - [x] Implement Toast Notifications (e.g., for login success/failure) using notistack
+  - [x] Standardize page layout and centering (e.g., PageLayout component)
 - **[ ] Department Management System**
-  - [x] Database schema for Departments (id, name, e.g., Butchery, HMR, Bakery) (covered by Department model)
-  - [ ] Functions for managing departments (CRUD operations)
+  - [ ] API: CRUD operations for departments (Admin/Manager only)
 - **[ ] Database Setup**
   - [x] Define schema for all tables (Users, Departments, Items, Task Instances, Completion Logs)
   - [x] Ensure `department_id` foreign keys are in relevant tables (Items, Task Instances, Completion Logs, potentially Users if primary department)
@@ -64,14 +64,14 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
 
 ## II. Manager/Overview Component/Pages
 
-- **[ ] 1. Login Page (Shared - also see Staff section)**
-  - [ ] UI: Design and implement login form (Username/Email, Password, Remember Me, Forgot Password?)
+- **[x] 1. Login Page (Shared - also see Staff section)**
+  - [x] UI: Design and implement login form (Username/Email, Password, Remember Me, Forgot Password?)_Basic implemented_
   - [ ] UI: Application Logo/Name display
-  - [ ] UI: Error message display area
-  - [ ] Feature: User Authentication
-  - [ ] Function: `Log In` API call (client-side)
-  - [ ] Function: `Display Error Message` (client-side)
-  - [ ] Function: `Redirect on Success` (to department-specific view or department selection)
+  - [x] UI: Error message display area _Basic implemented_
+  - [x] Feature: User Authentication
+  - [x] Function: `Log In` API call (client-side)
+  - [x] Function: `Display Error Message` (client-side)
+  - [x] Function: `Redirect on Success` (to department-specific view or department selection) _Basic to /dashboard done_
 - **[ ] 2. Overall Application Layout (Shared Structure - also see Staff section)**
   - [ ] UI: Fixed Header Bar (App Name/Logo, User Name & Role, Current Active Department, Logout Button)
   - [ ] UI: Fixed/Collapsible Sidebar Navigation
@@ -207,5 +207,14 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [ ] Choose hosting environment
   - [ ] Set up CI/CD pipeline
   - [ ] Database migration strategy
+
+---
+
+## V. Project-Wide / Refactoring / Developer Experience (DX)
+
+- [ ] Review and refactor code for clarity, performance, and maintainability at major milestones.
+- [x] Create reusable PageLayout component for consistent page structure
+- [ ] Set up frontend testing environment (e.g., Jest, React Testing Library).
+- [ ] Set up backend testing environment (e.g., PyTest).
 
 Use this checklist to track progress. You can add more granular sub-tasks as needed.
