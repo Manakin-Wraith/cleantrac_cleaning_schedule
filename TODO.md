@@ -98,14 +98,17 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [ ] Function: `Display Lists`
 - **[ ] 4. Daily Schedule Page (Manager View)**
   - [ ] UI: Page Heading (e.g., "[Department Name] Daily Schedule")
-  - [~] UI: Controls Bar (Date Picker, Day/Week Toggle, "+ Add New Cleaning Item" Button) (Create Task button & modal functional)
+  - [x] UI: Controls Bar (Date Picker, Day/Week Toggle, "+ Add New Cleaning Item" Button) (Create Task button & modal functional, Date Picker implemented)
   - [ ] UI: Filter Panel (Staff, Status, Search by Item Name, Apply/Clear Buttons)
-  - [~] UI: Task List Table (Status Icon, Item Name, Frequency, Responsible Staff, Supervisor, Due Date/Day, Actions) (Expected to populate)
+  - [x] UI: Task List Table (Status Icon, Item Name, Frequency, Responsible Staff, Supervisor, Due Date/Day, Actions) (Task details display correctly, including item names and assignees)
+    - [ ] Actions: Implement 'Edit Task Assignment' functionality
+    - [ ] Actions: Implement 'Mark Task Complete' (manager override) functionality
+    - [ ] Actions: Implement 'View Task Details' (modal)
   - [x] Feature: Task Management (Viewing, Filtering, Status Tracking, Assignment) (Core data loading and assignment via modal working)
   - [x] Feature: Scheduling (Viewing generated tasks)
-  - [x] Function: `Retrieve Tasks` API call (department-scoped, with filters) (Task loading by department working)
+  - [x] Function: `Retrieve Tasks` API call (department-scoped, with filters) (Task loading by department and selected date working)
   - [ ] Function: `Apply Filters` (client-side)
-  - [ ] Function: `Select Date/Range`
+  - [x] Function: `Select Date/Range` (Date picker implemented and triggers data refresh)
   - [ ] Function: `Sort Table`
   - [ ] Function: `Open Task Detail Modal` (see Shared Components)
   - [x] Modal: "Create New Task" modal opens.

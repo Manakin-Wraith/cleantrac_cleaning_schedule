@@ -4,6 +4,9 @@ import {
     TextField, Select, MenuItem, FormControl, InputLabel, List, ListItem, ListItemText,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert, Chip
 } from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { getCurrentUser } from '../services/authService';
 import { getTaskInstances, createTaskInstance } from '../services/taskService';
 import { getCleaningItems } from '../services/cleaningItemService';
@@ -35,6 +38,9 @@ function ManagerDashboardPage() {
     const [error, setError] = useState('');
     const { enqueueSnackbar } = useSnackbar();
 
+    // Selected date for filtering tasks
+    const [selectedDate, setSelectedDate] = useState(new Date());
+
     // Data for task management
     const [departmentTasks, setDepartmentTasks] = useState([]);
     const [cleaningItems, setCleaningItems] = useState([]);
@@ -47,11 +53,11 @@ function ManagerDashboardPage() {
     const [newTask, setNewTask] = useState({
         cleaning_item_id: '',
         assigned_to_id: '',
-        due_date: getTodayDateString(),
+        due_date: getTodayDateString(selectedDate), // Initialize with selectedDate
         status: 'pending',
     });
 
-    const fetchManagerData = useCallback(async (currentUser) => {
+    const fetchManagerData = useCallback(async (currentUser, dateToFetch) => {
         if (!currentUser || !currentUser.profile || !currentUser.profile.department_id) {
             setDataError('User profile or department information is missing.');
             setLoadingData(false);
@@ -61,18 +67,24 @@ function ManagerDashboardPage() {
             setLoadingData(true);
             setDataError('');
             
-            const tasksParams = { cleaning_item__department: currentUser.profile.department_id }; 
-            const tasks = await getTaskInstances(tasksParams);
-            setDepartmentTasks(tasks);
+            const formattedDate = getTodayDateString(dateToFetch);
+            const tasksParams = { 
+                cleaning_item__department: currentUser.profile.department_id,
+                due_date: formattedDate // Filter tasks by the selected due_date
+            }; 
 
-            // Cleaning items are already filtered by manager's department by the backend
-            const items = await getCleaningItems(); 
-            setCleaningItems(items);
+            // Fetch tasks, cleaning items, and users concurrently
+            const [tasksResponse, itemsResponse, usersResponse] = await Promise.all([
+                getTaskInstances(tasksParams),
+                getCleaningItems(), // Assumes this is already filtered by department if needed, or fetches all for manager
+                getUsers() // Assumes this fetches users for the manager's context or all relevant users
+            ]);
 
-            // Users are filtered by manager's department by the backend
-            // We might want to add { role: 'staff' } if API supports it and it's needed.
-            const usersResponse = await getUsers(); // getUsers() call itself
-            setStaffUsers(usersResponse.filter(u => u.profile?.role === 'staff')); // Further filter on client for 'staff'
+            // Update states after all data is fetched
+            setCleaningItems(itemsResponse);
+            const filteredStaff = usersResponse.filter(u => u.profile?.role === 'staff');
+            setStaffUsers(filteredStaff);
+            setDepartmentTasks(tasksResponse); // Set tasks last or after dependent data is set
 
         } catch (err) {
             console.error("Failed to load manager dashboard data:", err);
@@ -106,28 +118,53 @@ function ManagerDashboardPage() {
 
     // Effect to fetch manager-specific data once the user is loaded or changes
     useEffect(() => {
-        console.log("Effect for fetchManagerData triggered. User object:", user);
-        if (user && user.profile && user.profile.department_id) {
-            console.log("User has department ID, calling fetchManagerData. Department ID:", user.profile.department_id);
-            fetchManagerData(user); 
+        if (user && user.profile && user.profile.department_id && selectedDate) {
+            fetchManagerData(user, selectedDate); 
         } else {
-            console.log("Condition not met for fetchManagerData. User:", user);
         }
         // This effect depends on 'user' (the loaded user state) and 'fetchManagerData' (the memoized function).
         // It runs when 'user' changes to a valid state, or if fetchManagerData's definition were to change.
-    }, [user, fetchManagerData]);
+    }, [user, fetchManagerData, selectedDate]);
 
+    const getItemName = useCallback((itemId) => {
+        const item = cleaningItems.find(ci => ci.id === itemId);
+        return item ? item.name : 'Unknown Item';
+    }, [cleaningItems]);
 
-    const handleOpenCreateTaskModal = () => setOpenCreateTaskModal(true);
-    const handleCloseCreateTaskModal = () => {
-        setOpenCreateTaskModal(false);
-        // Reset form
+    const getStaffName = useCallback((staffId) => {
+        if (!staffId) return 'Unassigned';
+        const staff = staffUsers.find(su => su.id === staffId);
+        return staff ? `${staff.first_name} ${staff.last_name}`.trim() || staff.username : 'Unknown User';
+    }, [staffUsers]);
+
+    const getStatusColor = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'pending': return 'warning';
+            case 'in progress': return 'info';
+            case 'completed': return 'success';
+            case 'missed': return 'error';
+            default: return 'default';
+        }
+    };
+
+    const handleOpenCreateTaskModal = () => {
         setNewTask({
             cleaning_item_id: '',
             assigned_to_id: '',
-            due_date: getTodayDateString(),
+            due_date: getTodayDateString(selectedDate), // Default to current page selectedDate
             status: 'pending',
         });
+        setOpenCreateTaskModal(true);
+    }
+    const handleCloseCreateTaskModal = () => {
+        setOpenCreateTaskModal(false);
+        // Reset form - no need to reset here if handleOpen does it.
+        // setNewTask({
+        //     cleaning_item_id: '',
+        //     assigned_to_id: '',
+        //     due_date: getTodayDateString(selectedDate),
+        //     status: 'pending',
+        // });
     };
 
     const handleNewTaskChange = (event) => {
@@ -151,8 +188,8 @@ function ManagerDashboardPage() {
             await createTaskInstance(taskPayload);
             enqueueSnackbar('Task created successfully!', { variant: 'success' });
             handleCloseCreateTaskModal();
-            // Refresh tasks list
-            if(user) fetchManagerData(user);
+            // Refresh tasks list for the currently selected date
+            if(user) fetchManagerData(user, selectedDate);
         } catch (err) {
             console.error("Failed to create task:", err);
             enqueueSnackbar(err.message || 'Failed to create task.', { variant: 'error' });
@@ -180,35 +217,6 @@ function ManagerDashboardPage() {
 
     const departmentName = user?.profile?.department_name || 'Your';
 
-    // Original Dashboard Widgets (can be kept or moved to a different tab/section)
-    const originalWidgets = (
-        <Grid container spacing={3} sx={{ mb: 4}}>
-            <Grid item xs={12} md={6} lg={4}>
-                <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 240 }}>
-                    <Typography component="h2" variant="h6" color="primary" gutterBottom>Today's Completion</Typography>
-                    <Typography component="p" variant="h4">--%</Typography>
-                    <Typography color="text.secondary" sx={{ flexGrow: 1 }}>-- / -- Tasks</Typography>
-                    <Typography color="text.secondary">(Placeholder for Progress Bar/Donut)</Typography>
-                </Paper>
-            </Grid>
-            <Grid item xs={12} md={6} lg={4}>
-                <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 240 }}>
-                    <Typography component="h2" variant="h6" color="primary" gutterBottom>Overdue Tasks</Typography>
-                    <Typography component="p" variant="h4">--</Typography>
-                    <Typography color="text.secondary" sx={{ flexGrow: 1 }}>(Placeholder for compact list)</Typography>
-                    <Typography color="text.secondary">Link: View All Overdue</Typography>
-                </Paper>
-            </Grid>
-            <Grid item xs={12} md={6} lg={4}>
-                <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: 240 }}>
-                    <Typography component="h2" variant="h6" color="primary" gutterBottom>Completion By Staff (Today)</Typography>
-                    <Typography color="text.secondary" sx={{ flexGrow: 1 }}>(Placeholder for Bar Chart)</Typography>
-                </Paper>
-            </Grid>
-             {/* Quick Actions Widget can be removed or re-purposed for task management actions */}
-        </Grid>
-    );
-
     return (
         <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
             <Typography component="h1" variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 1 }}>
@@ -218,53 +226,72 @@ function ManagerDashboardPage() {
                 Task Management
             </Typography>
 
-            {/* Original Widgets - uncomment if you want them displayed alongside task management */}
-            {/* {originalWidgets} */}
-
-            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+            <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
+                {departmentName} Department Tasks for {selectedDate.toLocaleDateString()}
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                    <DatePicker
+                        label="Select Date"
+                        value={selectedDate}
+                        onChange={(newValue) => {
+                            setSelectedDate(newValue || new Date());
+                        }}
+                        renderInput={(params) => <TextField {...params} sx={{ width: 'auto' }} />}
+                    />
+                </LocalizationProvider>
                 <Button variant="contained" onClick={handleOpenCreateTaskModal}>
                     Create New Task
                 </Button>
             </Box>
 
-            {dataError && <Alert severity="warning" sx={{ mb: 2 }}>{dataError}</Alert>}
-
-            <Paper sx={{ p: 2, mb: 3 }}>
-                <Typography variant="h6" gutterBottom>Department Tasks</Typography>
-                {loadingData ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}><CircularProgress /></Box>
-                ) : departmentTasks.length > 0 ? (
-                    <TableContainer component={Paper} sx={{ maxHeight: 440 }}>
-                        <Table stickyHeader aria-label="department tasks table">
+            {loadingData && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
+                    <CircularProgress />
+                </Box>
+            )}
+            {dataError && <Alert severity="error" sx={{ my: 2 }}>{dataError}</Alert>}
+            {!loadingData && !dataError && (
+                departmentTasks.length === 0 ? (
+                    <Typography sx={{ my: 2 }}>No tasks found for your department on the selected date.</Typography>
+                ) : (
+                    <TableContainer component={Paper} sx={{ mt: 2 }}>
+                        <Table aria-label="department tasks table">
                             <TableHead>
                                 <TableRow>
+                                    <TableCell>Status</TableCell>
                                     <TableCell>Item Name</TableCell>
                                     <TableCell>Assigned To</TableCell>
                                     <TableCell>Due Date</TableCell>
-                                    <TableCell>Status</TableCell>
-                                    {/* Add Actions cell later for edit/delete */}
+                                    <TableCell align="center">Actions</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {departmentTasks.map((task) => (
-                                    <TableRow key={task.id}>
-                                        <TableCell>{task.cleaning_item_name}</TableCell>
-                                        <TableCell>{task.assigned_to_username || 'Unassigned'}</TableCell>
-                                        <TableCell>{task.due_date}</TableCell>
-                                        <TableCell>
-                                            <Chip label={task.status} color={task.status === 'pending' ? 'warning' : task.status === 'completed' ? 'success' : task.status === 'overdue' ? 'error' : 'default'} size="small" />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {departmentTasks.map((task, index) => {
+                                    return (
+                                        <TableRow key={task.id}>
+                                            <TableCell>
+                                                <Chip label={task.status || 'N/A'} color={getStatusColor(task.status)} size="small" />
+                                            </TableCell>
+                                            <TableCell>{task.cleaning_item_name || 'Unknown Item'}</TableCell>
+                                            <TableCell>{task.assigned_to_username || 'Unassigned'}</TableCell>
+                                            <TableCell>{task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString() : 'N/A'}</TableCell>
+                                            <TableCell align="center">
+                                                <Button size="small" variant="outlined" sx={{ mr: 1 }} onClick={() => console.log('Edit task:', task.id)}>
+                                                    Edit
+                                                </Button>
+                                                <Button size="small" variant="outlined" color="success" onClick={() => console.log('Complete task:', task.id)}>
+                                                    Complete
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     </TableContainer>
-                ) : (
-                    <Typography sx={{mt: 2, textAlign: 'center', color: 'text.secondary'}}>
-                        No tasks found for this department or matching current filters.
-                    </Typography>
-                )}
-            </Paper>
+                )
+            )}
 
             <Modal
                 open={openCreateTaskModal}
@@ -348,9 +375,6 @@ function ManagerDashboardPage() {
                     </Box>
                 </Box>
             </Modal>
-
-             {/* The original summary widgets are now commented out above. */}
-             {/* They can be reintegrated, perhaps in a separate tab or section if desired. */}
 
         </Container>
     );
