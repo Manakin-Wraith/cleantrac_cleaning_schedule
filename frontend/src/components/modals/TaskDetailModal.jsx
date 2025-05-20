@@ -13,6 +13,13 @@ import {
 import { formatDate } from '../../utils/dateUtils'; // Assuming you have a date formatter
 
 const TaskDetailModal = ({ open, onClose, task, cleaningItems, getStaffName }) => {
+    // Log the task's time properties as soon as the component receives props
+    if (task) {
+        console.log('[TaskDetailModal] Received task:', task.id, 'Start Time:', task.start_time, 'End Time:', task.end_time, 'Raw Task Object:', task);
+    } else {
+        console.log('[TaskDetailModal] Received null task prop.');
+    }
+
     if (!task) {
         return null;
     }
@@ -25,6 +32,37 @@ const TaskDetailModal = ({ open, onClose, task, cleaningItems, getStaffName }) =
             ? cleaningItems.find(item => item.id === task.cleaning_item)
             : null);
 
+    // Helper function to create a Date object for time display
+    // Assumes timeStr is "HH:MM:SS" and dateStr is an ISO string or can be used to get a date part.
+    const createDisplayTime = (dateStr, timeStr) => {
+        if (!timeStr) return null;
+        let baseDate = new Date().toISOString().split('T')[0]; // Default to today's date part
+        if (dateStr) {
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                baseDate = d.toISOString().split('T')[0];
+            }
+        }
+        const dateTime = new Date(`${baseDate}T${timeStr}`);
+        return isNaN(dateTime.getTime()) ? null : dateTime;
+    };
+
+    const formatTime = (dateObj) => {
+        return dateObj ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+    };
+
+    const startDateObj = createDisplayTime(task.due_date, task.start_time);
+    const endDateObj = createDisplayTime(task.due_date, task.end_time);
+
+    let timeSlotText = 'Time not set';
+    if (startDateObj) {
+        timeSlotText = formatTime(startDateObj);
+        if (endDateObj) {
+            timeSlotText += ` - ${formatTime(endDateObj)}`;
+        }
+    } else if (task.start_time) { // If start_time was present but resulted in invalid date
+        timeSlotText = 'Invalid time format';
+    }
 
     const getStatusChipColor = (status) => {
         switch (status) {
@@ -62,6 +100,14 @@ const TaskDetailModal = ({ open, onClose, task, cleaningItems, getStaffName }) =
                         <Typography variant="body1">{task.due_date ? formatDate(task.due_date) : 'N/A'}</Typography>
                     </Grid>
                     
+                    {/* Add Timeslot display */}
+                    <Grid item xs={12} sm={6}>
+                        <Typography variant="subtitle2" gutterBottom>Time Slot:</Typography>
+                        <Typography variant="body1">
+                            {timeSlotText}
+                        </Typography>
+                    </Grid>
+
                     {cleaningItemDetail && (
                         <>
                             <Grid item xs={12} sm={6}>

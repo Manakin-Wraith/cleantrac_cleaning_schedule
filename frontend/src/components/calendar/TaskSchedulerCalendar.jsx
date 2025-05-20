@@ -17,7 +17,7 @@ const getStatusColorForCalendar = (status) => {
     }
 };
 
-const TaskSchedulerCalendar = ({ tasks, staffUsers, selectedDate, onEventDrop, onEventClick }) => {
+const TaskSchedulerCalendar = ({ tasks, staffUsers, selectedDate, onEventDrop, onEventClick, eventResize }) => {
     const calendarRef = useRef(null); // Ref to access FullCalendar methods
 
     const calendarEvents = tasks.map(task => {
@@ -74,6 +74,7 @@ const TaskSchedulerCalendar = ({ tasks, staffUsers, selectedDate, onEventDrop, o
                 resources={calendarResources} // Resources are still needed for when switching to resource views
                 resourceAreaHeaderContent="Staff"
                 eventDrop={onEventDrop} 
+                eventResize={eventResize} 
                 eventClick={(clickInfo) => { 
                     const calendarApi = calendarRef.current?.getApi();
                     if (!calendarApi) return;

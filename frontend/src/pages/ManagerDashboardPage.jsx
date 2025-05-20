@@ -258,6 +258,7 @@ function ManagerDashboardPage() {
     };
 
     const handleOpenDetailModal = (task) => {
+        console.log('Opening detail modal for task:', task.id, 'Start Time:', task.start_time, 'End Time:', task.end_time);
         setSelectedTaskForDetail(task);
         setIsDetailModalOpen(true);
     };
@@ -304,61 +305,131 @@ function ManagerDashboardPage() {
         const changeDescription = [];
 
         const newDueDate = getTodayDateString(event.start); // YYYY-MM-DD format from event.start
-        const oldDueDate = getTodayDateString(oldEvent.start); // YYYY-MM-DD format from oldEvent.start
+        const oldDueDate = oldEvent ? getTodayDateString(oldEvent.start) : null; // YYYY-MM-DD format from oldEvent.start
 
-        if (newDueDate !== oldDueDate) {
+        if (newDueDate && oldDueDate && newDueDate !== oldDueDate) {
             updatedFields.due_date = newDueDate;
             changeDescription.push(`date to ${newDueDate}`);
         }
 
         // Handle assignee change (resource change)
         const newResourceId = event.getResources()?.[0]?.id; // New staff ID from resource
-        const oldResourceId = oldEvent.getResources()?.[0]?.id; // Old staff ID from resource
+        const oldResourceId = oldEvent ? oldEvent.getResources()?.[0]?.id : null; // Old staff ID from resource
 
         if (newResourceId !== oldResourceId) {
             updatedFields.assigned_to_id = newResourceId ? parseInt(newResourceId, 10) : null;
-            const newAssigneeName = newResourceId ? staffUsers.find(s => s.id.toString() === newResourceId)?.username : 'Unassigned';
+            const newAssigneeName = newResourceId ? staffUsers.find(s => s.profile?.id.toString() === newResourceId)?.username : 'Unassigned'; // Ensure using profile.id
             changeDescription.push(`assignee to ${newAssigneeName}`);
         }
 
         // Handle start_time and end_time based on view type
         if (view.type.includes('TimeGrid')) { // e.g., resourceTimeGridDay, resourceTimeGridWeek
             updatedFields.start_time = formatTime(event.start);
-            // FullCalendar's event.end might be null if it's a timed event without a specific end (e.g., dragged to a slot)
-            // Or it might be the end of the slot. Backend should handle end_time if it's duration based or similar.
-            // For now, if event.end is significantly different from event.start, use it.
-            // If event.allDay became false (dragged from all-day to timed slot), this implies times are now relevant.
-            if (event.end && event.end.getTime() !== event.start.getTime()) { // Check if end time is distinct
+            
+            const oldStartTime = oldEvent ? formatTime(oldEvent.start) : null;
+
+            if (event.end) { // If FullCalendar provides an end time
                 updatedFields.end_time = formatTime(event.end);
             } else {
-                // If no explicit end_time, or it's same as start, consider it null or derive based on a default duration later.
-                updatedFields.end_time = null; // Or calculate a default end_time, e.g., start_time + 1 hour
+                // If event.end is null, it means it's an event with a start time but no explicit end
+                updatedFields.end_time = null; 
             }
-            if (changeDescription.length === 0 && updatedFields.start_time !== formatTime(oldEvent.start)) {
-                 changeDescription.push(`time to ${updatedFields.start_time}`);
+
+            if (updatedFields.start_time !== oldStartTime) {
+                 changeDescription.push(`start time to ${updatedFields.start_time}`);
+            }
+            const oldEndTime = (oldEvent && oldEvent.end) ? formatTime(oldEvent.end) : null;
+            if (updatedFields.end_time !== oldEndTime && updatedFields.end_time !== null) { 
+                changeDescription.push(`end time to ${updatedFields.end_time}`);
+            } else if (updatedFields.end_time === null && oldEndTime !== null) {
+                changeDescription.push('end time removed');
             }
         } else { // For DayGrid views (e.g., dayGridMonth)
             updatedFields.start_time = null;
             updatedFields.end_time = null;
-            // If it was a timed event dragged to an all-day slot, this implicitly makes it all-day.
         }
 
         if (Object.keys(updatedFields).length === 0) {
-            console.log('No change detected in date, assignee, or time.');
-            // Optionally call revert() if you want to visually snap back, but FullCalendar often does this if no change.
+            console.log('No change detected in date, assignee, or time during drop.');
             return; 
         }
 
+        console.log(`Attempting to update task ${taskId} with:`, updatedFields, "Description:", changeDescription.join(', '));
+
         try {
-            console.log(`Updating task ${taskId} with fields:`, updatedFields);
             await updateTaskInstance(taskId, updatedFields);
-            enqueueSnackbar(`Task '${event.title}' updated: ${changeDescription.join(', ')}.`, { variant: 'success' });
-            fetchManagerData(user, selectedDate); // Refetch all data to ensure consistency
+            enqueueSnackbar(`Task ${event.title || taskId} updated: ${changeDescription.join(', ')}`, { variant: 'success' });
+            fetchManagerData(user, selectedDate); // Re-fetch data to reflect updates
         } catch (error) {
-            console.error('Failed to update task via drag-and-drop:', error);
-            enqueueSnackbar('Failed to update task. ' + (error.response?.data?.detail || error.message), { variant: 'error' });
-            revert(); // Revert the event to its original position on failure
-            // fetchManagerData(currentUser, selectedDate); // Already called in finally or here to revert UI state
+            console.error('Failed to update task on drop:', error);
+            enqueueSnackbar(`Failed to update task ${event.title || taskId}: ${error.message || 'Unknown error'}`, { variant: 'error' });
+            revert(); 
+        }
+    };
+
+    const handleEventResize = async (info) => {
+        const { event, oldEvent, revert, view } = info;
+        const taskId = event.id;
+        let updatedFields = {};
+        const changeDescription = [];
+        
+        const newDueDate = getTodayDateString(event.start);
+        // Check if due_date actually changed (e.g. resized across midnight)
+        const oldDueDate = oldEvent ? getTodayDateString(oldEvent.start) : null;
+        if (newDueDate !== oldDueDate) {
+            updatedFields.due_date = newDueDate;
+            changeDescription.push(`date to ${newDueDate}`);
+        }
+
+        if (view.type.includes('TimeGrid')) {
+            const newStartTime = formatTime(event.start);
+            const oldStartTime = oldEvent ? formatTime(oldEvent.start) : null;
+            if (newStartTime !== oldStartTime) {
+                updatedFields.start_time = newStartTime;
+                changeDescription.push(`start time to ${newStartTime}`);
+            }
+
+            if (event.end) {
+                const newEndTime = formatTime(event.end);
+                const oldEndTime = (oldEvent && oldEvent.end) ? formatTime(oldEvent.end) : null;
+                if (newEndTime !== oldEndTime) {
+                    updatedFields.end_time = newEndTime;
+                    changeDescription.push(`end time to ${newEndTime}`);
+                }
+            } else { // Should generally not happen for a resize, but handle defensively
+                const oldEndTime = (oldEvent && oldEvent.end) ? formatTime(oldEvent.end) : null;
+                if (oldEndTime !== null) { // Only update if it was previously set
+                    updatedFields.end_time = null;
+                    changeDescription.push('end time removed');
+                }
+            }
+        } else { // Resizing in all-day view usually means changing the number of days, not specific times
+            const newEndDate = event.end ? getTodayDateString(new Date(event.end.getTime() - 1)) : newDueDate; // FC end is exclusive for all-day
+            const oldEndDate = oldEvent && oldEvent.end ? getTodayDateString(new Date(oldEvent.end.getTime() - 1)) : oldDueDate;
+            if (newEndDate !== oldEndDate) {
+                // This scenario (multi-day all-day events) might need more specific handling for 'due_date' vs 'end_date'
+                // For now, we primarily focus on TimeGrid views for start/end times.
+                // If your tasks can span multiple all-days, you might need an 'end_date' field.
+                changeDescription.push(`all-day event duration changed to end on ${newEndDate}`);
+                if (!updatedFields.due_date) updatedFields.due_date = newDueDate; // Ensure due_date (start of event) is set
+            }
+        }
+
+        if (Object.keys(updatedFields).length === 0) {
+            console.log('No significant change detected in resize.');
+            return;
+        }
+
+        console.log(`Attempting to update task ${taskId} (resize) with:`, updatedFields, "Description:", changeDescription.join(', '));
+
+        try {
+            await updateTaskInstance(taskId, updatedFields);
+            enqueueSnackbar(`Task ${event.title || taskId} duration updated: ${changeDescription.join(', ')}`, { variant: 'success' });
+            fetchManagerData(user, selectedDate); // Re-fetch data to reflect updates
+        } catch (error) {
+            console.error('Failed to update task on resize:', error);
+            enqueueSnackbar(`Failed to update task ${event.title || taskId} duration: ${error.message || 'Unknown error'}`, { variant: 'error' });
+            revert();
         }
     };
 
@@ -501,6 +572,7 @@ function ManagerDashboardPage() {
                     tasks={departmentTasks}
                     staffUsers={staffUsers}
                     selectedDate={selectedDate} // Pass the selectedDate from ManagerDashboardPage
+                    eventResize={handleEventResize} // Pass the new handler
                     onEventDrop={handleEventDrop} // Pass the handler
                     // onEventClick={handleEventClick} // To be implemented in Phase 3
                 />

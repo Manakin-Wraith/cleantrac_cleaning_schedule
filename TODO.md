@@ -100,8 +100,12 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [ ] UI: Page Heading (e.g., "[Department Name] Daily Schedule")
   - [x] UI: Controls Bar (Date Picker, Day/Week Toggle, "+ Add New Cleaning Item" Button) (Create Task button & modal functional, Date Picker implemented)
   - [ ] UI: Filter Panel (Staff, Status, Search by Item Name, Apply/Clear Buttons)
-  - [x] UI: Task List Table (Status Icon, Item Name, Frequency, Responsible Staff, Supervisor, Due Date/Day, Actions) (Task details display correctly, including item names and assignees)
+  - [x] UI: Task List Table (Status Icon, Item Name, Frequency, Responsible Staff, Supervisor, Due Date/Day, Actions) (Task details display correctly, including item names, assignees, start/end times)
+  - [x] UI: **Calendar View** (FullCalendar integrated, displays tasks by staff and time, supports drag & drop for rescheduling/reassigning, and resizing for duration)
+    - [x] Calendar: Persist `start_time`, `end_time`, `due_date`, and `assignee` changes from drag & drop and resize operations to the backend.
     - [x] Actions: Implement 'Edit Task Assignment' functionality (Modal created, API connected, assignment, notes, layout, and info display complete)
+        - [x] Modal: "Edit Task Assignment" modal (Layout and informational display improvements complete, dropdown sizing fixed)
+        - [x] Modal: Non-editable item name and assignee. Editable due date, start time, end time, and notes.
     - [x] Actions: Implement "Mark Task Complete" (manager override) functionality
         - [x] API: Add `markTaskAsComplete` function in `taskService.js`.
         - [x] UI: Hook up "Complete" button in task table to call the service.
@@ -183,7 +187,7 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [ ] Function: `Display Tasks`
 - **[x] 5. Task Detail Modal (Shared - Manager & Staff Use)**
   - [x] UI: Modal Container and Header (e.g., "Task Details - [Item Name] ([Dept])") (Basic modal implemented)
-  - [x] UI: Display fields (Item Name, Frequency, Equipment, Chemical, Method, Responsible Staff, Supervisor, Status) (Displays key task info)
+  - [x] UI: Display fields (Item Name, Frequency, Equipment, Chemical, Method, Responsible Staff, Supervisor, Status, Due Date, Start Time, End Time) (Displays key task info, including formatted times)
   - [ ] UI: Completion Log Section
   - [ ] UI: Action Buttons ("Mark Complete" for staff, "Close")
   - [ ] Feature: Task Management (Viewing details, Staff marking complete)
