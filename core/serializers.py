@@ -92,27 +92,92 @@ class TaskInstanceSerializer(serializers.ModelSerializer):
     cleaning_item_id = serializers.PrimaryKeyRelatedField(
         queryset=CleaningItem.objects.all(), 
         source='cleaning_item', 
-        write_only=True
+        # write_only=True # Keep for read if needed, or make separate read/write serializers
     )
     cleaning_item_name = serializers.CharField(source='cleaning_item.name', read_only=True)
+    
     assigned_to_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), 
+        queryset=UserProfile.objects.all(), # Corrected: Query UserProfile
         source='assigned_to', 
         write_only=True, 
         allow_null=True, 
-        required=False # Allow unassigned tasks
+        required=False
     )
-    assigned_to_username = serializers.CharField(source='assigned_to.username', read_only=True, allow_null=True)
-    department_name = serializers.CharField(source='department.name', read_only=True) # From @property
+    # Display assigned_to user's username and profile ID for clarity in reads
+    assigned_to_details = serializers.SerializerMethodField(read_only=True)
+
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department', # Direct FK to Department
+        # write_only=True # Keep for read if needed
+    )
+    department_name = serializers.CharField(source='department.name', read_only=True)
 
     class Meta:
         model = TaskInstance
         fields = [
-            'id', 'cleaning_item_id', 'cleaning_item_name', 'department_name',
-            'assigned_to_id', 'assigned_to_username', 'due_date', 'status',
+            'id', 'cleaning_item_id', 'cleaning_item_name', 
+            'department_id', 'department_name',
+            'assigned_to_id', 'assigned_to_details', 
+            'due_date', 'start_time', 'end_time', # Added start_time and end_time
+            'status', 'notes',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['department_name'] # Department is derived from CleaningItem
+        # Remove read_only_fields for department if it's directly settable via department_id
+        # read_only_fields = ['created_at', 'updated_at'] # Default for auto_now fields
+
+    def get_assigned_to_details(self, obj):
+        if obj.assigned_to: # obj.assigned_to is a UserProfile instance
+            user = obj.assigned_to.user
+            full_name = ''
+            if hasattr(user, 'get_full_name') and callable(user.get_full_name):
+                full_name = user.get_full_name().strip()
+            
+            if not full_name:
+                name_parts = []
+                if user.first_name:
+                    name_parts.append(user.first_name)
+                if user.last_name:
+                    name_parts.append(user.last_name)
+                full_name = " ".join(name_parts).strip()
+
+            if not full_name:
+                full_name = user.username # Fallback to username if no names
+
+            return {
+                'id': obj.assigned_to.id,
+                'username': user.username, 
+                'first_name': user.first_name, # Keep for potential direct use elsewhere
+                'last_name': user.last_name,   # Keep for potential direct use elsewhere
+                'full_name': full_name,        # Add a reliable full_name
+                'department_id': obj.assigned_to.department.id if obj.assigned_to.department else None
+            }
+        return None
+
+    def validate_start_end_time(self, data):
+        """Check that end_time is after start_time if both are provided."""
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+
+        if start_time and end_time and end_time < start_time:
+            raise serializers.ValidationError("End time must be after start time.")
+        return data
+
+    def validate(self, data):
+        # Call custom validation for start/end times
+        data = self.validate_start_end_time(data)
+        
+        # Ensure assigned_to user belongs to the task's department if department is set
+        # and assigned_to is also set.
+        department = data.get('department') or (self.instance and self.instance.department)
+        assigned_to = data.get('assigned_to') or (self.instance and self.instance.assigned_to)
+
+        if department and assigned_to:
+            if assigned_to.department != department:
+                raise serializers.ValidationError(
+                    f"Assigned staff '{assigned_to.user.username}' does not belong to the department '{department.name}'."
+                )
+        return data
 
 class CompletionLogSerializer(serializers.ModelSerializer):
     task_instance_id = serializers.PrimaryKeyRelatedField(

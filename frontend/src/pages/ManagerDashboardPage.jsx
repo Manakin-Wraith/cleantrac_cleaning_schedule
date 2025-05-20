@@ -2,9 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
     Container, Typography, Box, Grid, Paper, CircularProgress, Button, Modal,
     TextField, Select, MenuItem, FormControl, InputLabel, List, ListItem, ListItemText,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert, Chip, IconButton, Tooltip
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert, Chip, IconButton, Tooltip,
+    Tabs, Tab // Added Tabs and Tab
 } from '@mui/material';
-import { AddCircleOutline, Visibility as VisibilityIcon, Edit as EditIcon } from '@mui/icons-material';
+import {
+    AddCircleOutline, Visibility as VisibilityIcon, Edit as EditIcon
+} from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -15,12 +18,22 @@ import { getUsers } from '../services/userService';
 import { useSnackbar } from 'notistack';
 import TaskDetailModal from '../components/modals/TaskDetailModal'; 
 import EditTaskAssignmentModal from '../components/modals/EditTaskAssignmentModal'; // Import EditTaskAssignmentModal
+import TaskSchedulerCalendar from '../components/calendar/TaskSchedulerCalendar'; // Import TaskSchedulerCalendar
 
 const getTodayDateString = (date = new Date()) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+};
+
+// Helper to format Date object to HH:MM:SS string
+const formatTime = (date) => {
+    if (!date) return null;
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
 };
 
 const style = {
@@ -58,6 +71,10 @@ function ManagerDashboardPage() {
         assigned_to_id: '',
         due_date: getTodayDateString(selectedDate), // Initialize with selectedDate
         status: 'pending',
+        department_id: '', // Added: will be set from user profile
+        start_time: null, // Added for future use in modal
+        end_time: null,   // Added for future use in modal
+        notes: '',        // Added for future use in modal
     });
 
     // State for detail modal
@@ -67,6 +84,9 @@ function ManagerDashboardPage() {
     // State for edit modal
     const [isEditModalOpen, setIsEditModalOpen] = useState(false); 
     const [selectedTaskForEdit, setSelectedTaskForEdit] = useState(null); 
+
+    // State for view toggle (list vs scheduler)
+    const [currentView, setCurrentView] = useState('list'); // 'list' or 'scheduler'
 
     const fetchManagerData = useCallback(async (currentUser, dateToFetch) => {
         if (!currentUser || !currentUser.profile || !currentUser.profile.department_id) {
@@ -79,21 +99,27 @@ function ManagerDashboardPage() {
             setDataError('');
             
             const formattedDate = getTodayDateString(dateToFetch);
+            // For the calendar, we want all tasks for the department, not just a specific due_date.
+            // The calendar will handle displaying them based on their due_dates.
+            // The list view might still use a date filter, but this fetch is for the general data pool.
             const tasksParams = { 
-                cleaning_item__department: currentUser.profile.department_id,
-                due_date: formattedDate // Filter tasks by the selected due_date
+                // department: currentUser.profile.department_id, // Backend view now filters by user's department if manager
+                // No specific date filter here for fetching all tasks for the calendar range
             }; 
 
             // Fetch tasks, cleaning items, and users concurrently
             const [tasksResponse, itemsResponse, usersResponse] = await Promise.all([
-                getTaskInstances(tasksParams),
-                getCleaningItems(), // Assumes this is already filtered by department if needed, or fetches all for manager
-                getUsers() // Assumes this fetches users for the manager's context or all relevant users
+                getTaskInstances(tasksParams), // Pass modified or empty params
+                getCleaningItems(), 
+                getUsers()
             ]);
+
+            console.log('Fetched tasks for calendar/dashboard:', tasksResponse); // DEBUG: Log fetched tasks
 
             // Update states after all data is fetched
             setCleaningItems(itemsResponse);
             const filteredStaff = usersResponse.filter(u => u.profile?.role === 'staff');
+            console.log('Filtered staff users (for resources):', JSON.stringify(filteredStaff, null, 2));
             setStaffUsers(filteredStaff);
             setDepartmentTasks(tasksResponse); // Set tasks last or after dependent data is set
 
@@ -142,10 +168,17 @@ function ManagerDashboardPage() {
         return item ? item.name : 'Unknown Item';
     }, [cleaningItems]);
 
-    const getStaffName = useCallback((staffId) => {
-        if (!staffId) return 'Unassigned';
-        const staff = staffUsers.find(su => su.id === staffId);
-        return staff ? `${staff.first_name} ${staff.last_name}`.trim() || staff.username : 'Unknown User';
+    // staffId is expected to be UserProfile.id, as obtained from task.assigned_to_details.id
+    const getStaffName = useCallback((staffProfileId) => {
+        console.log('[getStaffName] Received staffProfileId:', staffProfileId, 'Type:', typeof staffProfileId);
+        if (!staffProfileId) {
+            console.log('[getStaffName] staffProfileId is null/undefined, returning Unassigned');
+            return 'Unassigned';
+        }
+        // staffUsers is an array of User objects. Each User object has a `profile` (UserProfile).
+        const staffUserObject = staffUsers.find(su => su.profile?.id === staffProfileId); 
+        console.log('[getStaffName] Found staffUserObject:', staffUserObject);
+        return staffUserObject ? `${staffUserObject.first_name} ${staffUserObject.last_name}`.trim() || staffUserObject.username : 'Unknown User';
     }, [staffUsers]);
 
     const getStatusColor = (status) => {
@@ -164,6 +197,10 @@ function ManagerDashboardPage() {
             assigned_to_id: '',
             due_date: getTodayDateString(selectedDate), // Default to current page selectedDate
             status: 'pending',
+            department_id: user?.profile?.department_id || '', // Set department from current user's profile
+            start_time: null,
+            end_time: null,
+            notes: '',
         });
         setOpenCreateTaskModal(true);
     }
@@ -185,15 +222,28 @@ function ManagerDashboardPage() {
 
     const handleCreateTaskSubmit = async (event) => {
         event.preventDefault();
-        if (!newTask.cleaning_item_id || !newTask.due_date || !newTask.status) {
-            enqueueSnackbar('Cleaning item, due date, and status are required.', { variant: 'warning' });
+        // Ensure department_id is set, especially if not relying solely on backend perform_create
+        const taskPayload = { 
+            ...newTask,
+            department_id: newTask.department_id || user?.profile?.department_id, // Ensure department_id is included
+        };
+
+        if (!taskPayload.cleaning_item_id || !taskPayload.due_date || !taskPayload.status || !taskPayload.department_id) {
+            enqueueSnackbar('Cleaning item, due date, status, and department are required.', { variant: 'warning' });
             return;
         }
+
         // assigned_to_id is optional
-        const taskPayload = { ...newTask };
+        // const taskPayload = { ...newTask }; // Original line
         if (!taskPayload.assigned_to_id) {
-            delete taskPayload.assigned_to_id; // Send as null or undefined if not set, backend handles it
+            delete taskPayload.assigned_to_id; // Remove if null/empty to avoid sending empty string if backend expects null or omission
         }
+
+        // Remove null start_time/end_time if backend expects omission or has defaults
+        if (taskPayload.start_time === null) delete taskPayload.start_time;
+        if (taskPayload.end_time === null) delete taskPayload.end_time;
+
+        console.log('Submitting new task with payload:', taskPayload); // DEBUG: Log payload
 
         try {
             await createTaskInstance(taskPayload);
@@ -243,6 +293,75 @@ function ManagerDashboardPage() {
         }
     };
 
+    const handleViewChange = (event, newValue) => {
+        setCurrentView(newValue);
+    };
+
+    const handleEventDrop = async (info) => {
+        const { event, oldEvent, revert, view } = info;
+        const taskId = event.id;
+        let updatedFields = {};
+        const changeDescription = [];
+
+        const newDueDate = getTodayDateString(event.start); // YYYY-MM-DD format from event.start
+        const oldDueDate = getTodayDateString(oldEvent.start); // YYYY-MM-DD format from oldEvent.start
+
+        if (newDueDate !== oldDueDate) {
+            updatedFields.due_date = newDueDate;
+            changeDescription.push(`date to ${newDueDate}`);
+        }
+
+        // Handle assignee change (resource change)
+        const newResourceId = event.getResources()?.[0]?.id; // New staff ID from resource
+        const oldResourceId = oldEvent.getResources()?.[0]?.id; // Old staff ID from resource
+
+        if (newResourceId !== oldResourceId) {
+            updatedFields.assigned_to_id = newResourceId ? parseInt(newResourceId, 10) : null;
+            const newAssigneeName = newResourceId ? staffUsers.find(s => s.id.toString() === newResourceId)?.username : 'Unassigned';
+            changeDescription.push(`assignee to ${newAssigneeName}`);
+        }
+
+        // Handle start_time and end_time based on view type
+        if (view.type.includes('TimeGrid')) { // e.g., resourceTimeGridDay, resourceTimeGridWeek
+            updatedFields.start_time = formatTime(event.start);
+            // FullCalendar's event.end might be null if it's a timed event without a specific end (e.g., dragged to a slot)
+            // Or it might be the end of the slot. Backend should handle end_time if it's duration based or similar.
+            // For now, if event.end is significantly different from event.start, use it.
+            // If event.allDay became false (dragged from all-day to timed slot), this implies times are now relevant.
+            if (event.end && event.end.getTime() !== event.start.getTime()) { // Check if end time is distinct
+                updatedFields.end_time = formatTime(event.end);
+            } else {
+                // If no explicit end_time, or it's same as start, consider it null or derive based on a default duration later.
+                updatedFields.end_time = null; // Or calculate a default end_time, e.g., start_time + 1 hour
+            }
+            if (changeDescription.length === 0 && updatedFields.start_time !== formatTime(oldEvent.start)) {
+                 changeDescription.push(`time to ${updatedFields.start_time}`);
+            }
+        } else { // For DayGrid views (e.g., dayGridMonth)
+            updatedFields.start_time = null;
+            updatedFields.end_time = null;
+            // If it was a timed event dragged to an all-day slot, this implicitly makes it all-day.
+        }
+
+        if (Object.keys(updatedFields).length === 0) {
+            console.log('No change detected in date, assignee, or time.');
+            // Optionally call revert() if you want to visually snap back, but FullCalendar often does this if no change.
+            return; 
+        }
+
+        try {
+            console.log(`Updating task ${taskId} with fields:`, updatedFields);
+            await updateTaskInstance(taskId, updatedFields);
+            enqueueSnackbar(`Task '${event.title}' updated: ${changeDescription.join(', ')}.`, { variant: 'success' });
+            fetchManagerData(user, selectedDate); // Refetch all data to ensure consistency
+        } catch (error) {
+            console.error('Failed to update task via drag-and-drop:', error);
+            enqueueSnackbar('Failed to update task. ' + (error.response?.data?.detail || error.message), { variant: 'error' });
+            revert(); // Revert the event to its original position on failure
+            // fetchManagerData(currentUser, selectedDate); // Already called in finally or here to revert UI state
+        }
+    };
+
     if (loadingUser) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -276,81 +395,115 @@ function ManagerDashboardPage() {
             <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
                 {departmentName} Department Tasks for {selectedDate.toLocaleDateString()}
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                    <DatePicker
-                        label="Select Date"
-                        value={selectedDate}
-                        onChange={(newValue) => {
-                            setSelectedDate(newValue || new Date());
-                        }}
-                        renderInput={(params) => <TextField {...params} sx={{ width: 'auto' }} />}
-                    />
-                </LocalizationProvider>
-                <Button variant="contained" onClick={handleOpenCreateTaskModal}>
-                    Create New Task
-                </Button>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                <Tabs value={currentView} onChange={handleViewChange} aria-label="dashboard view tabs">
+                    <Tab label="Task List" value="list" />
+                    <Tab label="Scheduler" value="scheduler" />
+                </Tabs>
             </Box>
 
-            {loadingData && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
-                    <CircularProgress />
-                </Box>
-            )}
-            {dataError && <Alert severity="error" sx={{ my: 2 }}>{dataError}</Alert>}
-            {!loadingData && !dataError && (
-                departmentTasks.length === 0 ? (
-                    <Typography sx={{ my: 2 }}>No tasks found for your department on the selected date.</Typography>
-                ) : (
-                    <TableContainer component={Paper} sx={{ mt: 2 }}>
-                        <Table aria-label="department tasks table">
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>Status</TableCell>
-                                    <TableCell>Item Name</TableCell>
-                                    <TableCell>Assigned To</TableCell>
-                                    <TableCell>Due Date</TableCell>
-                                    <TableCell align="center">Actions</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {departmentTasks.map((task, index) => {
-                                    return (
-                                        <TableRow key={task.id}>
-                                            <TableCell>
-                                                <Chip label={task.status || 'N/A'} color={getStatusColor(task.status)} size="small" />
-                                            </TableCell>
-                                            <TableCell>{task.cleaning_item_name || 'Unknown Item'}</TableCell>
-                                            <TableCell>{task.assigned_to_username || 'Unassigned'}</TableCell>
-                                            <TableCell>{task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString() : 'N/A'}</TableCell>
-                                            <TableCell align="center">
-                                                <Tooltip title="View Details">
-                                                    <IconButton onClick={() => handleOpenDetailModal(task)} size="small">
-                                                        <VisibilityIcon />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title="Edit Assignment/Notes">
-                                                    <IconButton onClick={() => handleOpenEditModal(task)} size="small">
-                                                        <EditIcon />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Button 
-                                                    size="small" 
-                                                    variant="outlined" 
-                                                    sx={{ mr: 1 }} 
-                                                    onClick={() => handleMarkComplete(task.id)} 
-                                                    disabled={task.status === 'completed'} // Disable if already completed
-                                                >
-                                                    Complete
-                                                </Button>
-                                            </TableCell>
+            {currentView === 'list' && (
+                <Grid container spacing={3}>
+                    {/* Date Picker and Create Task Button */}
+                    <Grid xs={12} md={8} lg={9}>
+                        <LocalizationProvider dateAdapter={AdapterDateFns}>
+                            <DatePicker
+                                label="Select Date"
+                                value={selectedDate}
+                                onChange={(newValue) => {
+                                    setSelectedDate(newValue || new Date());
+                                }}
+                                slots={{ textField: TextField }}
+                                slotProps={{
+                                    textField: {
+                                        sx: { width: 'auto', mr: 2 },
+                                    },
+                                }}
+                                enableAccessibleFieldDOMStructure={false} // Add this prop
+                            />
+                        </LocalizationProvider>
+                        <Button variant="contained" onClick={handleOpenCreateTaskModal}>
+                            Create New Task
+                        </Button>
+                    </Grid>
+
+                    {loadingData && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
+                            <CircularProgress />
+                        </Box>
+                    )}
+                    {dataError && <Alert severity="error" sx={{ my: 2 }}>{dataError}</Alert>}
+                    {!loadingData && !dataError && (
+                        departmentTasks.length === 0 ? (
+                            <Typography sx={{ my: 2 }}>No tasks found for your department on the selected date.</Typography>
+                        ) : (
+                            <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                <Table aria-label="department tasks table">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Status</TableCell>
+                                            <TableCell>Item Name</TableCell>
+                                            <TableCell>Assigned To</TableCell>
+                                            <TableCell>Due Date</TableCell>
+                                            <TableCell align="center">Actions</TableCell>
                                         </TableRow>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
-                )
+                                    </TableHead>
+                                    <TableBody>
+                                        {departmentTasks.map((task, index) => {
+                                            return (
+                                                <TableRow key={task.id}>
+                                                    <TableCell>
+                                                        <Chip label={task.status || 'N/A'} color={getStatusColor(task.status)} size="small" />
+                                                    </TableCell>
+                                                    <TableCell>{task.cleaning_item_name || 'Unknown Item'}</TableCell>
+                                                    <TableCell>
+                                                        {(() => {
+                                                            const staffId = task.assigned_to_details?.id ?? null;
+                                                            console.log(`[Task List Render] Attempting to call getStaffName for task ${task.id} with staffId: ${staffId}, Type: ${typeof staffId}`);
+                                                            return getStaffName(staffId);
+                                                        })()}
+                                                    </TableCell>
+                                                    <TableCell>{task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString() : 'N/A'}</TableCell>
+                                                    <TableCell align="center">
+                                                        <Tooltip title="View Details">
+                                                            <IconButton onClick={() => handleOpenDetailModal(task)} size="small">
+                                                                <VisibilityIcon />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                        <Tooltip title="Edit Assignment/Notes">
+                                                            <IconButton onClick={() => handleOpenEditModal(task)} size="small">
+                                                                <EditIcon />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                        <Button 
+                                                            size="small" 
+                                                            variant="outlined" 
+                                                            sx={{ mr: 1 }} 
+                                                            onClick={() => handleMarkComplete(task.id)} 
+                                                            disabled={task.status === 'completed'} // Disable if already completed
+                                                        >
+                                                            Complete
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        )
+                    )}
+                </Grid>
+            )}
+
+            {currentView === 'scheduler' && (
+                <TaskSchedulerCalendar 
+                    tasks={departmentTasks}
+                    staffUsers={staffUsers}
+                    selectedDate={selectedDate} // Pass the selectedDate from ManagerDashboardPage
+                    onEventDrop={handleEventDrop} // Pass the handler
+                    // onEventClick={handleEventClick} // To be implemented in Phase 3
+                />
             )}
 
             <Modal
@@ -437,10 +590,12 @@ function ManagerDashboardPage() {
             </Modal>
 
             <TaskDetailModal 
-                open={isDetailModalOpen}
+                open={!!selectedTaskForDetail} // Controls modal visibility
                 onClose={handleCloseDetailModal}
                 task={selectedTaskForDetail}
                 cleaningItems={cleaningItems} // Pass all cleaning items for potential lookup
+                staffUsers={staffUsers} // Pass staffUsers
+                getStaffName={getStaffName} // Pass the getStaffName function
             />
             <EditTaskAssignmentModal
                 open={isEditModalOpen}

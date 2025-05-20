@@ -42,37 +42,40 @@ class CleaningItem(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} ({self.department.name})"
+        return f"{self.name} ({self.department.name}) - {self.get_frequency_display()}"
 
 class TaskInstance(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
         ('completed', 'Completed'),
-        ('overdue', 'Overdue'),
-        ('missed', 'Missed'), # Added for tasks not done by due date
+        ('missed', 'Missed'), 
+        ('requires_attention', 'Requires Attention'),
     ]
+
     cleaning_item = models.ForeignKey(CleaningItem, on_delete=models.CASCADE, related_name='task_instances')
-    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
-    # The department for a TaskInstance should ideally be derived from cleaning_item.department to ensure consistency.
-    # department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='department_tasks') 
+    assigned_to = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
+    # Make department nullable temporarily for migration, ensure application logic sets it.
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='department_tasks', null=True, blank=True) 
+    
     due_date = models.DateField()
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
-    # supervisor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='supervised_tasks', limit_choices_to={'profile__role': 'manager'})
+    start_time = models.TimeField(null=True, blank=True) # For specific start time on the due_date
+    end_time = models.TimeField(null=True, blank=True)   # For specific end time on the due_date
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    @property
-    def department(self):
-        return self.cleaning_item.department
+    notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.cleaning_item.name} - {self.due_date} - {self.get_status_display()}"
+        time_str = f" at {self.start_time.strftime('%H:%M')}" if self.start_time else ""
+        assignee_str = f" to {self.assigned_to.user.username}" if self.assigned_to else " (Unassigned)"
+        return f"{self.cleaning_item.name} on {self.due_date}{time_str} - {self.get_status_display()}{assignee_str}"
 
-    def save(self, *args, **kwargs):
-        # Basic overdue logic, can be enhanced with a scheduled task
-        if self.status == 'pending' and self.due_date < timezone.now().date():
-            self.status = 'overdue'
-        super().save(*args, **kwargs)
+    class Meta:
+        ordering = ['due_date', 'start_time']
+        verbose_name = "Task Instance"
+        verbose_name_plural = "Task Instances"
 
 class CompletionLog(models.Model):
     task_instance = models.ForeignKey(TaskInstance, on_delete=models.CASCADE, related_name='completion_logs')

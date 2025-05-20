@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { formatDate } from '../../utils/dateUtils'; // Assuming you have a date formatter
 
-const TaskDetailModal = ({ open, onClose, task, cleaningItems }) => {
+const TaskDetailModal = ({ open, onClose, task, cleaningItems, getStaffName }) => {
     if (!task) {
         return null;
     }
@@ -47,7 +47,11 @@ const TaskDetailModal = ({ open, onClose, task, cleaningItems }) => {
                     </Grid>
                     <Grid item xs={12} sm={6}>
                         <Typography variant="subtitle2" gutterBottom>Assigned To:</Typography>
-                        <Typography variant="body1">{task.assigned_to_username || 'Unassigned'}</Typography>
+                        <Typography variant="body1">
+                            {task.assigned_to_details?.id && getStaffName 
+                                ? getStaffName(task.assigned_to_details.id) 
+                                : 'Unassigned'}
+                        </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
                         <Typography variant="subtitle2" gutterBottom>Status:</Typography>

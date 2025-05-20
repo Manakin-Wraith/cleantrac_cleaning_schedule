@@ -195,12 +195,32 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
             return TaskInstance.objects.all()
         try:
             user_profile = user.profile
-            if user_profile.department:
-                # Filter TaskInstances whose related CleaningItem belongs to the user's department
-                return TaskInstance.objects.filter(cleaning_item__department=user_profile.department)
+            if user_profile.role == 'manager' and user_profile.department:
+                # Managers see tasks directly associated with their department
+                return TaskInstance.objects.filter(department=user_profile.department)
+            elif user_profile.role == 'staff':
+                # Staff see tasks assigned to them within their department
+                if user_profile.department:
+                    return TaskInstance.objects.filter(assigned_to=user_profile, department=user_profile.department)
+                else:
+                    # Staff without a department (should ideally not happen for active staff)
+                    return TaskInstance.objects.filter(assigned_to=user_profile) # Or none()
         except UserProfile.DoesNotExist:
-            pass
-        return TaskInstance.objects.none()
+            pass # Fall through to return empty queryset
+        return TaskInstance.objects.none() # Default to empty if no applicable conditions met
+
+    def perform_create(self, serializer):
+        # If a manager is creating a task, automatically set the task's department to the manager's department
+        user_profile = self.request.user.profile
+        if user_profile.role == 'manager' and user_profile.department:
+            serializer.save(department=user_profile.department)
+        else:
+            # Handle cases where creator is not a manager or has no department, if applicable
+            # This might raise an error or require department to be explicitly passed if not a manager
+            # For now, assume serializer might get department from request data or it's optional
+            # Or, ensure 'department' is a required field in the serializer if not auto-set.
+            # The serializer currently has 'department_id' as a writable field.
+            serializer.save()
 
 class CompletionLogViewSet(viewsets.ModelViewSet):
     # queryset = CompletionLog.objects.all() # We'll override get_queryset
