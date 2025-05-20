@@ -4,16 +4,17 @@ import {
     TextField, Select, MenuItem, FormControl, InputLabel, List, ListItem, ListItemText,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert, Chip, IconButton, Tooltip
 } from '@mui/material';
-import { AddCircleOutline, Visibility as VisibilityIcon } from '@mui/icons-material';
+import { AddCircleOutline, Visibility as VisibilityIcon, Edit as EditIcon } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { getCurrentUser } from '../services/authService';
-import { getTaskInstances, createTaskInstance } from '../services/taskService';
+import { getTaskInstances, createTaskInstance, updateTaskInstance, markTaskAsComplete } from '../services/taskService';
 import { getCleaningItems } from '../services/cleaningItemService';
 import { getUsers } from '../services/userService';
 import { useSnackbar } from 'notistack';
-import TaskDetailModal from '../components/modals/TaskDetailModal'; // Import TaskDetailModal
+import TaskDetailModal from '../components/modals/TaskDetailModal'; 
+import EditTaskAssignmentModal from '../components/modals/EditTaskAssignmentModal'; // Import EditTaskAssignmentModal
 
 const getTodayDateString = (date = new Date()) => {
     const year = date.getFullYear();
@@ -62,6 +63,10 @@ function ManagerDashboardPage() {
     // State for detail modal
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedTaskForDetail, setSelectedTaskForDetail] = useState(null);
+
+    // State for edit modal
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false); 
+    const [selectedTaskForEdit, setSelectedTaskForEdit] = useState(null); 
 
     const fetchManagerData = useCallback(async (currentUser, dateToFetch) => {
         if (!currentUser || !currentUser.profile || !currentUser.profile.department_id) {
@@ -212,6 +217,32 @@ function ManagerDashboardPage() {
         setSelectedTaskForDetail(null);
     };
 
+    const handleOpenEditModal = (task) => {
+        setSelectedTaskForEdit(task);
+        setIsEditModalOpen(true);
+    };
+
+    const handleCloseEditModal = () => {
+        setIsEditModalOpen(false);
+        setSelectedTaskForEdit(null);
+        // Data refresh will be handled by the modal's onTaskUpdated callback
+    };
+
+    const handleTaskUpdated = () => {
+        fetchManagerData(user, selectedDate); // Re-fetch data to reflect updates
+    };
+
+    const handleMarkComplete = async (taskId) => {
+        try {
+            await markTaskAsComplete(taskId);
+            enqueueSnackbar('Task marked as complete!', { variant: 'success' });
+            fetchManagerData(user, selectedDate); // Refresh the task list
+        } catch (error) {
+            console.error('Failed to mark task as complete:', error);
+            enqueueSnackbar(error.message || 'Failed to mark task as complete. Please try again.', { variant: 'error' });
+        }
+    };
+
     if (loadingUser) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
@@ -298,10 +329,18 @@ function ManagerDashboardPage() {
                                                         <VisibilityIcon />
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Button size="small" variant="outlined" sx={{ mr: 1 }} onClick={() => console.log('Edit task:', task.id)}>
-                                                    Edit
-                                                </Button>
-                                                <Button size="small" variant="outlined" color="success" onClick={() => console.log('Complete task:', task.id)}>
+                                                <Tooltip title="Edit Assignment/Notes">
+                                                    <IconButton onClick={() => handleOpenEditModal(task)} size="small">
+                                                        <EditIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Button 
+                                                    size="small" 
+                                                    variant="outlined" 
+                                                    sx={{ mr: 1 }} 
+                                                    onClick={() => handleMarkComplete(task.id)} 
+                                                    disabled={task.status === 'completed'} // Disable if already completed
+                                                >
                                                     Complete
                                                 </Button>
                                             </TableCell>
@@ -402,6 +441,14 @@ function ManagerDashboardPage() {
                 onClose={handleCloseDetailModal}
                 task={selectedTaskForDetail}
                 cleaningItems={cleaningItems} // Pass all cleaning items for potential lookup
+            />
+            <EditTaskAssignmentModal
+                open={isEditModalOpen}
+                onClose={handleCloseEditModal}
+                task={selectedTaskForEdit}
+                staffUsers={staffUsers}
+                cleaningItems={cleaningItems} // Pass cleaningItems
+                onTaskUpdated={handleTaskUpdated} // Pass callback to refresh data
             />
         </Container>
     );

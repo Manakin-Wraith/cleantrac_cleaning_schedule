@@ -40,20 +40,90 @@ export const createTaskInstance = async (taskData) => {
         const response = await api.post('/taskinstances/', taskData);
         return response.data;
     } catch (error) {
-        console.error('Error creating task instance:', error);
-        if (error.response) {
-            // Log more details if available, e.g., validation errors
-            console.error('Error details:', error.response.data);
-            const messages = Object.values(error.response.data).flat().join(' ');
-            throw new Error(messages || `Server error: ${error.response.status}`);
-        } else if (error.request) {
-            throw new Error('Network error: No response received from server.');
-        } else {
-            throw new Error(error.message || 'Error creating task.');
-        }
+        console.error('Error creating task instance:', error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to create task instance.');
     }
 };
 
+/**
+ * Updates an existing task instance.
+ * 
+ * @param {number} taskId - ID of the task instance to update.
+ * @param {object} taskData - Data to update in the task instance.
+ * Example: { assigned_to: 3, status: 'in_progress' }
+ * @returns {Promise<object>} A promise that resolves to the updated task object.
+ */
+export const updateTaskInstance = async (taskId, taskData) => {
+    try {
+        // Ensure assigned_to is explicitly null if it's an empty string or undefined
+        // The backend might expect an integer or null for the foreign key.
+        const payload = {
+            ...taskData,
+            assigned_to: taskData.assigned_to || null,
+        };
+        const response = await api.patch(`/taskinstances/${taskId}/`, payload);
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating task ${taskId}:`, error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to update task.');
+    }
+};
+
+/**
+ * Marks a task as complete.
+ * 
+ * @param {number} taskId - ID of the task instance to mark as complete.
+ * @returns {Promise<object>} A promise that resolves to the updated task object.
+ */
+export const markTaskAsComplete = async (taskId) => {
+    try {
+        const response = await api.patch(`/taskinstances/${taskId}/`, { status: 'completed' });
+        return response.data;
+    } catch (error) {
+        console.error(`Error marking task ${taskId} as complete:`, error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to mark task as complete.');
+    }
+};
+
+// Function to get all task instances (potentially filtered)
+export const fetchTaskInstances = async (filters = {}) => {
+    try {
+        const response = await api.get('/taskinstances/', { params: filters });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching task instances:', error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to fetch task instances.');
+    }
+};
+
+// Function to fetch task instances by department and optionally by date
+export const fetchDepartmentTaskInstances = async (departmentId, date = null) => {
+    let url = `/taskinstances/?department_id=${departmentId}`;
+    if (date) {
+        url += `&due_date=${date}`;
+    }
+    try {
+        const response = await api.get(url);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching tasks for department ${departmentId}:`, error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to fetch tasks for department.');
+    }
+}; 
+
+
+// In taskService.js
+export const fetchCleaningItemsByDepartment = async (departmentId) => {
+    try {
+        const response = await api.get(`/cleaningitems/?department_id=${departmentId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching cleaning items by department:', error.response?.data || error.message);
+        throw error.response?.data || new Error('Failed to fetch cleaning items.');
+    }
+};
+
+
+
 // Future functions for tasks can be added here, e.g.:
-// export const updateTaskStatus = async (taskId, statusUpdate) => { ... };
 // export const getTaskInstanceById = async (taskId) => { ... };

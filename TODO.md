@@ -101,8 +101,12 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] UI: Controls Bar (Date Picker, Day/Week Toggle, "+ Add New Cleaning Item" Button) (Create Task button & modal functional, Date Picker implemented)
   - [ ] UI: Filter Panel (Staff, Status, Search by Item Name, Apply/Clear Buttons)
   - [x] UI: Task List Table (Status Icon, Item Name, Frequency, Responsible Staff, Supervisor, Due Date/Day, Actions) (Task details display correctly, including item names and assignees)
-    - [ ] Actions: Implement 'Edit Task Assignment' functionality
-    - [ ] Actions: Implement 'Mark Task Complete' (manager override) functionality
+    - [x] Actions: Implement 'Edit Task Assignment' functionality (Modal created, API connected, assignment, notes, layout, and info display complete)
+    - [x] Actions: Implement "Mark Task Complete" (manager override) functionality
+        - [x] API: Add `markTaskAsComplete` function in `taskService.js`.
+        - [x] UI: Hook up "Complete" button in task table to call the service.
+        - [x] UI: Refresh task list or update task status locally.
+        - [x] UI: Provide user feedback (e.g., snackbar notification).
     - [x] Actions: Implement 'View Task Details' (modal) (Basic modal implemented, displays key task info)
   - [x] Feature: Task Management (Viewing, Filtering, Status Tracking, Assignment) (Core data loading and assignment via modal working)
   - [x] Feature: Scheduling (Viewing generated tasks)
@@ -115,8 +119,8 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Modal: "Select Cleaning Item" dropdown populates correctly.
   - [x] Modal: "Assign To (Optional)" staff dropdown populates correctly.
   - [x] Modal: Task creation API call and UI update upon success.
-  - [ ] Function: `Mark Task Complete` API call (manager override)
-  - [ ] Function: `Edit Task Assignment` API call
+  - [x] Function: `Edit Task Assignment` API call (Implemented in taskService.js)
+  - [x] Modal: "Edit Task Assignment" modal (Layout and informational display improvements complete, dropdown sizing fixed)
 - **[ ] 5. Item Management Page (Manager View)**
   - [ ] UI: Page Heading (e.g., "[Department Name] Item Management")
   - [ ] UI: "+ Add New Master Item" Button
