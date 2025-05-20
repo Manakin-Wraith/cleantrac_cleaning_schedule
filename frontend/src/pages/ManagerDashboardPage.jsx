@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
     Container, Typography, Box, Grid, Paper, CircularProgress, Button, Modal,
     TextField, Select, MenuItem, FormControl, InputLabel, List, ListItem, ListItemText,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert, Chip, IconButton, Tooltip,
-    Tabs, Tab // Added Tabs and Tab
+    Tabs, Tab 
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles'; 
 import {
     AddCircleOutline, Visibility as VisibilityIcon, Edit as EditIcon
 } from '@mui/icons-material';
@@ -17,8 +18,9 @@ import { getCleaningItems } from '../services/cleaningItemService';
 import { getUsers } from '../services/userService';
 import { useSnackbar } from 'notistack';
 import TaskDetailModal from '../components/modals/TaskDetailModal'; 
-import EditTaskAssignmentModal from '../components/modals/EditTaskAssignmentModal'; // Import EditTaskAssignmentModal
-import TaskSchedulerCalendar from '../components/calendar/TaskSchedulerCalendar'; // Import TaskSchedulerCalendar
+import EditTaskAssignmentModal from '../components/modals/EditTaskAssignmentModal'; 
+import TaskSchedulerCalendar from '../components/calendar/TaskSchedulerCalendar'; 
+import { Draggable } from '@fullcalendar/interaction'; 
 
 const getTodayDateString = (date = new Date()) => {
     const year = date.getFullYear();
@@ -53,6 +55,7 @@ function ManagerDashboardPage() {
     const [loadingUser, setLoadingUser] = useState(true);
     const [error, setError] = useState('');
     const { enqueueSnackbar } = useSnackbar();
+    const theme = useTheme(); 
 
     // Selected date for filtering tasks
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -63,30 +66,33 @@ function ManagerDashboardPage() {
     const [staffUsers, setStaffUsers] = useState([]);
     const [loadingData, setLoadingData] = useState(false);
     const [dataError, setDataError] = useState('');
+    const [calendarResources, setCalendarResources] = useState([]); 
 
     // Modal and form state for creating tasks
-    const [openCreateTaskModal, setOpenCreateTaskModal] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [newTask, setNewTask] = useState({
         cleaning_item_id: '',
         assigned_to_id: '',
-        due_date: getTodayDateString(selectedDate), // Initialize with selectedDate
+        due_date: getTodayDateString(selectedDate), 
         status: 'pending',
-        department_id: '', // Added: will be set from user profile
-        start_time: null, // Added for future use in modal
-        end_time: null,   // Added for future use in modal
-        notes: '',        // Added for future use in modal
+        department_id: '', 
+        start_time: null, 
+        end_time: null,   
+        notes: '',        
     });
 
     // State for detail modal
-    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedTaskForDetail, setSelectedTaskForDetail] = useState(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     // State for edit modal
     const [isEditModalOpen, setIsEditModalOpen] = useState(false); 
     const [selectedTaskForEdit, setSelectedTaskForEdit] = useState(null); 
 
     // State for view toggle (list vs scheduler)
-    const [currentView, setCurrentView] = useState('list'); // 'list' or 'scheduler'
+    const [currentView, setCurrentView] = useState('scheduler'); 
+
+    const externalEventsRef = useRef(null); 
 
     const fetchManagerData = useCallback(async (currentUser, dateToFetch) => {
         if (!currentUser || !currentUser.profile || !currentUser.profile.department_id) {
@@ -99,29 +105,27 @@ function ManagerDashboardPage() {
             setDataError('');
             
             const formattedDate = getTodayDateString(dateToFetch);
-            // For the calendar, we want all tasks for the department, not just a specific due_date.
-            // The calendar will handle displaying them based on their due_dates.
-            // The list view might still use a date filter, but this fetch is for the general data pool.
             const tasksParams = { 
-                // department: currentUser.profile.department_id, // Backend view now filters by user's department if manager
-                // No specific date filter here for fetching all tasks for the calendar range
+                due_date: formattedDate // Filter tasks by the selected date
             }; 
 
-            // Fetch tasks, cleaning items, and users concurrently
             const [tasksResponse, itemsResponse, usersResponse] = await Promise.all([
-                getTaskInstances(tasksParams), // Pass modified or empty params
+                getTaskInstances(tasksParams), 
                 getCleaningItems(), 
                 getUsers()
             ]);
 
-            console.log('Fetched tasks for calendar/dashboard:', tasksResponse); // DEBUG: Log fetched tasks
+            console.log('Fetched tasks for calendar/dashboard:', tasksResponse); 
+            if (tasksResponse && tasksResponse.length > 0) {
+                console.log('Inspecting first fetched task raw structure:', JSON.stringify(tasksResponse[0], null, 2));
+            }
 
-            // Update states after all data is fetched
-            setCleaningItems(itemsResponse);
             const filteredStaff = usersResponse.filter(u => u.profile?.role === 'staff');
             console.log('Filtered staff users (for resources):', JSON.stringify(filteredStaff, null, 2));
             setStaffUsers(filteredStaff);
-            setDepartmentTasks(tasksResponse); // Set tasks last or after dependent data is set
+            setDepartmentTasks(tasksResponse); 
+            console.log('[ManagerDashboardPage] departmentTasks set in fetchManagerData:', JSON.stringify(tasksResponse, null, 2)); 
+            setCleaningItems(itemsResponse); 
 
         } catch (err) {
             console.error("Failed to load manager dashboard data:", err);
@@ -130,7 +134,7 @@ function ManagerDashboardPage() {
         } finally {
             setLoadingData(false);
         }
-    }, [enqueueSnackbar]); // fetchManagerData depends only on enqueueSnackbar, as 'currentUser' is an argument.
+    }, [enqueueSnackbar]); 
 
     // Effect to load the current user ONCE on component mount
     useEffect(() => {
@@ -140,42 +144,92 @@ function ManagerDashboardPage() {
                 setError('');
                 const currentUserData = await getCurrentUser();
                 setUser(currentUserData);
-                // setLoadingUser(false); // Set loadingUser false after user is set
             } catch (err) {
                 console.error("Failed to fetch user data:", err);
                 setError('Failed to load user data. Please try refreshing.');
                 enqueueSnackbar('Failed to load user data.', { variant: 'error' });
-                // setUser(null); // Ensure user is null on error
+                setUser(null); // Ensure user is null on error
             } finally {
                 setLoadingUser(false); // Ensure loading is always set to false
             }
         };
         loadCurrentUser();
-    }, []); // Dependencies for loading current user. Changed to [] to run once.
+    }, [enqueueSnackbar]); // Added enqueueSnackbar as it's used in catch
 
-    // Effect to fetch manager-specific data once the user is loaded or changes
+    // Effect to fetch manager-specific data once the user is loaded or selectedDate changes
     useEffect(() => {
-        if (user && user.profile && user.profile.department_id && selectedDate) {
-            fetchManagerData(user, selectedDate); 
-        } else {
+        if (user && user.profile && user.profile.department_id) {
+            fetchManagerData(user, selectedDate);
+        } else if (!loadingUser && !user) {
+            // If user loading is finished and there's no user, set an error or clear data
+            setDataError('User not found. Cannot load department data.');
+            setDepartmentTasks([]);
+            setCleaningItems([]);
+            setStaffUsers([]);
         }
-        // This effect depends on 'user' (the loaded user state) and 'fetchManagerData' (the memoized function).
-        // It runs when 'user' changes to a valid state, or if fetchManagerData's definition were to change.
-    }, [user, fetchManagerData, selectedDate]);
+        // This effect depends on 'user', 'selectedDate', and 'fetchManagerData'.
+    }, [user, selectedDate, fetchManagerData, loadingUser]);
+
+    // Effect to transform staffUsers to calendar resources format
+    useEffect(() => {
+        if (staffUsers && staffUsers.length > 0) {
+            const resources = staffUsers.map(staff => ({
+                id: staff.profile.id.toString(), // Ensure ID is a string for FullCalendar
+                title: staff.first_name || staff.username
+            }));
+            setCalendarResources(resources);
+            console.log('Calendar resources:', JSON.stringify(resources, null, 2));
+        } else {
+            setCalendarResources([]); // Clear resources if no staff users
+        }
+    }, [staffUsers]);
+
+    // Effect to initialize draggable cleaning items
+    useEffect(() => {
+        let draggable = null;
+        if (externalEventsRef.current && cleaningItems.length > 0 && currentView === 'scheduler') {
+            draggable = new Draggable(externalEventsRef.current, {
+                itemSelector: '.draggable-cleaning-item',
+                eventData: function(eventEl) {
+                    const eventDataString = eventEl.getAttribute('data-event');
+                    if (eventDataString) {
+                        try {
+                            const parsedData = JSON.parse(eventDataString);
+                            return {
+                                title: parsedData.title,
+                                duration: parsedData.duration || '01:00', 
+                                extendedProps: { 
+                                    cleaning_item_id: parsedData.cleaning_item_id,
+                                    isExternal: true 
+                                },
+                            };
+                        } catch (e) {
+                            console.error("Failed to parse event data from draggable item:", e);
+                            return {};
+                        }
+                    }
+                    return {}; 
+                }
+            });
+        }
+        return () => {
+            if (draggable) {
+                draggable.destroy();
+            }
+        };
+    }, [cleaningItems, currentView]);
 
     const getItemName = useCallback((itemId) => {
         const item = cleaningItems.find(ci => ci.id === itemId);
         return item ? item.name : 'Unknown Item';
     }, [cleaningItems]);
 
-    // staffId is expected to be UserProfile.id, as obtained from task.assigned_to_details.id
     const getStaffName = useCallback((staffProfileId) => {
         console.log('[getStaffName] Received staffProfileId:', staffProfileId, 'Type:', typeof staffProfileId);
         if (!staffProfileId) {
             console.log('[getStaffName] staffProfileId is null/undefined, returning Unassigned');
             return 'Unassigned';
         }
-        // staffUsers is an array of User objects. Each User object has a `profile` (UserProfile).
         const staffUserObject = staffUsers.find(su => su.profile?.id === staffProfileId); 
         console.log('[getStaffName] Found staffUserObject:', staffUserObject);
         return staffUserObject ? `${staffUserObject.first_name} ${staffUserObject.last_name}`.trim() || staffUserObject.username : 'Unknown User';
@@ -195,25 +249,19 @@ function ManagerDashboardPage() {
         setNewTask({
             cleaning_item_id: '',
             assigned_to_id: '',
-            due_date: getTodayDateString(selectedDate), // Default to current page selectedDate
+            due_date: getTodayDateString(selectedDate), 
             status: 'pending',
-            department_id: user?.profile?.department_id || '', // Set department from current user's profile
+            department_id: user?.profile?.department_id || '', 
             start_time: null,
             end_time: null,
             notes: '',
         });
-        setOpenCreateTaskModal(true);
+        setIsCreateModalOpen(true);
     }
+
     const handleCloseCreateTaskModal = () => {
-        setOpenCreateTaskModal(false);
-        // Reset form - no need to reset here if handleOpen does it.
-        // setNewTask({
-        //     cleaning_item_id: '',
-        //     assigned_to_id: '',
-        //     due_date: getTodayDateString(selectedDate),
-        //     status: 'pending',
-        // });
-    };
+        setIsCreateModalOpen(false);
+    }
 
     const handleNewTaskChange = (event) => {
         const { name, value } = event.target;
@@ -222,10 +270,9 @@ function ManagerDashboardPage() {
 
     const handleCreateTaskSubmit = async (event) => {
         event.preventDefault();
-        // Ensure department_id is set, especially if not relying solely on backend perform_create
         const taskPayload = { 
             ...newTask,
-            department_id: newTask.department_id || user?.profile?.department_id, // Ensure department_id is included
+            department_id: newTask.department_id || user?.profile?.department_id, 
         };
 
         if (!taskPayload.cleaning_item_id || !taskPayload.due_date || !taskPayload.status || !taskPayload.department_id) {
@@ -233,23 +280,19 @@ function ManagerDashboardPage() {
             return;
         }
 
-        // assigned_to_id is optional
-        // const taskPayload = { ...newTask }; // Original line
         if (!taskPayload.assigned_to_id) {
-            delete taskPayload.assigned_to_id; // Remove if null/empty to avoid sending empty string if backend expects null or omission
+            delete taskPayload.assigned_to_id; 
         }
 
-        // Remove null start_time/end_time if backend expects omission or has defaults
         if (taskPayload.start_time === null) delete taskPayload.start_time;
         if (taskPayload.end_time === null) delete taskPayload.end_time;
 
-        console.log('Submitting new task with payload:', taskPayload); // DEBUG: Log payload
+        console.log('Submitting new task with payload:', taskPayload); 
 
         try {
             await createTaskInstance(taskPayload);
             enqueueSnackbar('Task created successfully!', { variant: 'success' });
             handleCloseCreateTaskModal();
-            // Refresh tasks list for the currently selected date
             if(user) fetchManagerData(user, selectedDate);
         } catch (err) {
             console.error("Failed to create task:", err);
@@ -258,14 +301,16 @@ function ManagerDashboardPage() {
     };
 
     const handleOpenDetailModal = (task) => {
-        console.log('Opening detail modal for task:', task.id, 'Start Time:', task.start_time, 'End Time:', task.end_time);
-        setSelectedTaskForDetail(task);
-        setIsDetailModalOpen(true);
-    };
-
-    const handleCloseDetailModal = () => {
-        setIsDetailModalOpen(false);
-        setSelectedTaskForDetail(null);
+        console.log('[ManagerDashboardPage] handleOpenDetailModal called with task:', JSON.stringify(task, null, 2));
+        if (task && Object.keys(task).length > 0) {
+            setSelectedTaskForDetail(task);
+            setIsDetailModalOpen(true);
+            console.log('[ManagerDashboardPage] TaskDetailModal will open. selectedTaskForDetail set, isDetailModalOpen set to true.');
+        } else {
+            console.warn('[ManagerDashboardPage] handleOpenDetailModal: Attempted to open with null, undefined, or empty task. Modal will not open or will be forced closed.');
+            setSelectedTaskForDetail(null); // Ensure it's explicitly null
+            setIsDetailModalOpen(false); // Ensure modal isn't told to open or stays open
+        }
     };
 
     const handleOpenEditModal = (task) => {
@@ -273,21 +318,28 @@ function ManagerDashboardPage() {
         setIsEditModalOpen(true);
     };
 
+    const handleCloseDetailModal = () => {
+        console.log('[ManagerDashboardPage] handleCloseDetailModal called.');
+        setIsDetailModalOpen(false);
+        // It's good practice to clear the selected task when the modal is explicitly closed.
+        setSelectedTaskForDetail(null);
+        console.log('[ManagerDashboardPage] TaskDetailModal closed. isDetailModalOpen set to false, selectedTaskForDetail set to null.');
+    };
+
     const handleCloseEditModal = () => {
         setIsEditModalOpen(false);
         setSelectedTaskForEdit(null);
-        // Data refresh will be handled by the modal's onTaskUpdated callback
     };
 
     const handleTaskUpdated = () => {
-        fetchManagerData(user, selectedDate); // Re-fetch data to reflect updates
+        fetchManagerData(user, selectedDate); 
     };
 
     const handleMarkComplete = async (taskId) => {
         try {
             await markTaskAsComplete(taskId);
             enqueueSnackbar('Task marked as complete!', { variant: 'success' });
-            fetchManagerData(user, selectedDate); // Refresh the task list
+            fetchManagerData(user, selectedDate); 
         } catch (error) {
             console.error('Failed to mark task as complete:', error);
             enqueueSnackbar(error.message || 'Failed to mark task as complete. Please try again.', { variant: 'error' });
@@ -303,54 +355,57 @@ function ManagerDashboardPage() {
         const taskId = event.id;
         let updatedFields = {};
         const changeDescription = [];
-
-        const newDueDate = getTodayDateString(event.start); // YYYY-MM-DD format from event.start
-        const oldDueDate = oldEvent ? getTodayDateString(oldEvent.start) : null; // YYYY-MM-DD format from oldEvent.start
+        
+        const newDueDate = getTodayDateString(event.start); 
+        const oldDueDate = oldEvent ? getTodayDateString(oldEvent.start) : null; 
 
         if (newDueDate && oldDueDate && newDueDate !== oldDueDate) {
             updatedFields.due_date = newDueDate;
             changeDescription.push(`date to ${newDueDate}`);
         }
 
-        // Handle assignee change (resource change)
-        const newResourceId = event.getResources()?.[0]?.id; // New staff ID from resource
-        const oldResourceId = oldEvent ? oldEvent.getResources()?.[0]?.id : null; // Old staff ID from resource
+        const newResourceId = event.getResources()?.[0]?.id; 
+        const oldResourceId = oldEvent ? oldEvent.getResources()?.[0]?.id : null; 
 
         if (newResourceId !== oldResourceId) {
             updatedFields.assigned_to_id = newResourceId ? parseInt(newResourceId, 10) : null;
-            const newAssigneeName = newResourceId ? staffUsers.find(s => s.profile?.id.toString() === newResourceId)?.username : 'Unassigned'; // Ensure using profile.id
+            const newAssigneeName = newResourceId ? staffUsers.find(s => s.profile?.id.toString() === newResourceId)?.username : 'Unassigned'; 
             changeDescription.push(`assignee to ${newAssigneeName}`);
         }
 
-        // Handle start_time and end_time based on view type
-        if (view.type.includes('TimeGrid')) { // e.g., resourceTimeGridDay, resourceTimeGridWeek
-            updatedFields.start_time = formatTime(event.start);
-            
+        if (view.type.includes('TimeGrid')) { 
+            const newStartTime = formatTime(event.start);
             const oldStartTime = oldEvent ? formatTime(oldEvent.start) : null;
-
-            if (event.end) { // If FullCalendar provides an end time
-                updatedFields.end_time = formatTime(event.end);
-            } else {
-                // If event.end is null, it means it's an event with a start time but no explicit end
-                updatedFields.end_time = null; 
+            if (newStartTime !== oldStartTime) {
+                updatedFields.start_time = newStartTime;
+                changeDescription.push(`start time to ${newStartTime}`);
             }
 
-            if (updatedFields.start_time !== oldStartTime) {
-                 changeDescription.push(`start time to ${updatedFields.start_time}`);
+            if (event.end) { 
+                const newEndTime = formatTime(event.end);
+                const oldEndTime = (oldEvent && oldEvent.end) ? formatTime(oldEvent.end) : null;
+                if (newEndTime !== oldEndTime) {
+                    updatedFields.end_time = newEndTime;
+                    changeDescription.push(`end time to ${newEndTime}`);
+                }
+            } else { 
+                const oldEndTime = (oldEvent && oldEvent.end) ? formatTime(oldEvent.end) : null;
+                if (oldEndTime !== null) { 
+                    updatedFields.end_time = null;
+                    changeDescription.push('end time removed');
+                }
             }
-            const oldEndTime = (oldEvent && oldEvent.end) ? formatTime(oldEvent.end) : null;
-            if (updatedFields.end_time !== oldEndTime && updatedFields.end_time !== null) { 
-                changeDescription.push(`end time to ${updatedFields.end_time}`);
-            } else if (updatedFields.end_time === null && oldEndTime !== null) {
-                changeDescription.push('end time removed');
+        } else { 
+            const newEndDate = event.end ? getTodayDateString(new Date(event.end.getTime() - 1)) : newDueDate; 
+            const oldEndDate = oldEvent && oldEvent.end ? getTodayDateString(new Date(oldEvent.end.getTime() - 1)) : oldDueDate;
+            if (newEndDate !== oldEndDate) {
+                changeDescription.push(`all-day event duration changed to end on ${newEndDate}`);
+                if (!updatedFields.due_date) updatedFields.due_date = newDueDate; 
             }
-        } else { // For DayGrid views (e.g., dayGridMonth)
-            updatedFields.start_time = null;
-            updatedFields.end_time = null;
         }
 
         if (Object.keys(updatedFields).length === 0) {
-            console.log('No change detected in date, assignee, or time during drop.');
+            console.log('No significant change detected in date, assignee, or time during drop.');
             return; 
         }
 
@@ -359,7 +414,7 @@ function ManagerDashboardPage() {
         try {
             await updateTaskInstance(taskId, updatedFields);
             enqueueSnackbar(`Task ${event.title || taskId} updated: ${changeDescription.join(', ')}`, { variant: 'success' });
-            fetchManagerData(user, selectedDate); // Re-fetch data to reflect updates
+            fetchManagerData(user, selectedDate); 
         } catch (error) {
             console.error('Failed to update task on drop:', error);
             enqueueSnackbar(`Failed to update task ${event.title || taskId}: ${error.message || 'Unknown error'}`, { variant: 'error' });
@@ -373,15 +428,15 @@ function ManagerDashboardPage() {
         let updatedFields = {};
         const changeDescription = [];
         
-        const newDueDate = getTodayDateString(event.start);
-        // Check if due_date actually changed (e.g. resized across midnight)
-        const oldDueDate = oldEvent ? getTodayDateString(oldEvent.start) : null;
+        const newDueDate = getTodayDateString(event.start); 
+        const oldDueDate = oldEvent ? getTodayDateString(oldEvent.start) : null; 
+
         if (newDueDate !== oldDueDate) {
             updatedFields.due_date = newDueDate;
             changeDescription.push(`date to ${newDueDate}`);
         }
 
-        if (view.type.includes('TimeGrid')) {
+        if (view.type.includes('TimeGrid')) { 
             const newStartTime = formatTime(event.start);
             const oldStartTime = oldEvent ? formatTime(oldEvent.start) : null;
             if (newStartTime !== oldStartTime) {
@@ -389,29 +444,26 @@ function ManagerDashboardPage() {
                 changeDescription.push(`start time to ${newStartTime}`);
             }
 
-            if (event.end) {
+            if (event.end) { 
                 const newEndTime = formatTime(event.end);
                 const oldEndTime = (oldEvent && oldEvent.end) ? formatTime(oldEvent.end) : null;
                 if (newEndTime !== oldEndTime) {
                     updatedFields.end_time = newEndTime;
                     changeDescription.push(`end time to ${newEndTime}`);
                 }
-            } else { // Should generally not happen for a resize, but handle defensively
+            } else { 
                 const oldEndTime = (oldEvent && oldEvent.end) ? formatTime(oldEvent.end) : null;
-                if (oldEndTime !== null) { // Only update if it was previously set
+                if (oldEndTime !== null) { 
                     updatedFields.end_time = null;
                     changeDescription.push('end time removed');
                 }
             }
-        } else { // Resizing in all-day view usually means changing the number of days, not specific times
-            const newEndDate = event.end ? getTodayDateString(new Date(event.end.getTime() - 1)) : newDueDate; // FC end is exclusive for all-day
+        } else { 
+            const newEndDate = event.end ? getTodayDateString(new Date(event.end.getTime() - 1)) : newDueDate; 
             const oldEndDate = oldEvent && oldEvent.end ? getTodayDateString(new Date(oldEvent.end.getTime() - 1)) : oldDueDate;
             if (newEndDate !== oldEndDate) {
-                // This scenario (multi-day all-day events) might need more specific handling for 'due_date' vs 'end_date'
-                // For now, we primarily focus on TimeGrid views for start/end times.
-                // If your tasks can span multiple all-days, you might need an 'end_date' field.
                 changeDescription.push(`all-day event duration changed to end on ${newEndDate}`);
-                if (!updatedFields.due_date) updatedFields.due_date = newDueDate; // Ensure due_date (start of event) is set
+                if (!updatedFields.due_date) updatedFields.due_date = newDueDate; 
             }
         }
 
@@ -425,12 +477,115 @@ function ManagerDashboardPage() {
         try {
             await updateTaskInstance(taskId, updatedFields);
             enqueueSnackbar(`Task ${event.title || taskId} duration updated: ${changeDescription.join(', ')}`, { variant: 'success' });
-            fetchManagerData(user, selectedDate); // Re-fetch data to reflect updates
+            fetchManagerData(user, selectedDate); 
         } catch (error) {
             console.error('Failed to update task on resize:', error);
             enqueueSnackbar(`Failed to update task ${event.title || taskId} duration: ${error.message || 'Unknown error'}`, { variant: 'error' });
             revert();
         }
+    };
+
+    const handleEventClickCalendar = (clickInfo) => {
+        const clickedEvent = clickInfo.event;
+        console.log('Calendar event clicked:', clickedEvent, 'ID:', clickedEvent.id);
+
+        // Prevent opening detail modal for external events (placeholders from drag-and-drop)
+        if (clickedEvent.extendedProps && clickedEvent.extendedProps.isExternal) {
+            console.log('Clicked event is an external placeholder. Detail modal will not open.');
+            // Optionally, you could open the create modal if the item is a draggable one not yet saved.
+            // For now, just preventing detail modal for these seems appropriate as create modal opens on drop.
+            return;
+        }
+
+        // Attempt to find the full task object from the departmentTasks state
+        // Assuming event.id from FullCalendar matches task.id from your backend/state
+        const task = departmentTasks.find(t => String(t.id) === String(clickedEvent.id));
+
+        if (task) {
+            console.log('Found matching task in departmentTasks, opening detail modal for:', task);
+            handleOpenDetailModal(task);
+        } else {
+            console.warn(`Task with ID ${clickedEvent.id} not found in departmentTasks. Detail modal will not open. Clicked event details:`, clickedEvent);
+            // Fallback or error message if needed
+            // For instance, if it's an event that should have a task but doesn't, it might indicate a sync issue.
+            // Sometimes, extendedProps might contain enough data for a minimal display, but it's better to use the full task object.
+            // const taskData = clickedEvent.extendedProps;
+            // handleOpenDetailModal(taskData); // This was the old behavior, prone to issues
+        }
+    };
+
+    const handleEventReceive = (dropInfo) => {
+        console.log('External event received (raw dropInfo):', dropInfo); 
+        const newCalendarEvent = dropInfo.event; // This is the event instance created by FullCalendar
+
+        console.log('New Calendar Event object (dropInfo.event):', newCalendarEvent);
+        if (newCalendarEvent && newCalendarEvent.extendedProps) {
+            console.log('Extended props from newCalendarEvent (dropInfo.event.extendedProps):', newCalendarEvent.extendedProps);
+        }
+        // Log original dragged element's properties if available for debugging
+        if (dropInfo.draggedEl && dropInfo.draggedEl.fcSeg && dropInfo.draggedEl.fcSeg.eventRange && dropInfo.draggedEl.fcSeg.eventRange.def) {
+            console.log('Original external event definition (from draggedEl):', dropInfo.draggedEl.fcSeg.eventRange.def);
+        }
+
+        const droppedDate = newCalendarEvent ? newCalendarEvent.start : null; // Date/time where the event was dropped
+        const calendarResources = newCalendarEvent ? newCalendarEvent.getResources() : []; // Array of resource objects
+        const primaryResource = calendarResources && calendarResources.length > 0 ? calendarResources[0] : null;
+
+        console.log('Dropped Date from newCalendarEvent.start:', droppedDate, '(type:', typeof droppedDate, ', isDate:', droppedDate instanceof Date, ')');
+        console.log('Primary Resource from newCalendarEvent.getResources():', primaryResource ? `ID: ${primaryResource.id}, Title: ${primaryResource.title}` : primaryResource);
+
+        const cleaningItemId = newCalendarEvent && newCalendarEvent.extendedProps ? newCalendarEvent.extendedProps.cleaning_item_id : '';
+        const assigneeId = primaryResource ? primaryResource.id : ''; 
+        
+        const dueDateStr = getTodayDateString(droppedDate); 
+        const startTimeStr = formatTime(droppedDate);       
+
+        let endTimeStr = null;
+        if (newCalendarEvent && newCalendarEvent.end) { 
+            endTimeStr = formatTime(newCalendarEvent.end);
+        } else if (newCalendarEvent && newCalendarEvent.extendedProps && newCalendarEvent.extendedProps.duration) { 
+            if (droppedDate && startTimeStr) { 
+                 const startDateObj = new Date(`${dueDateStr}T${startTimeStr}`);
+                 if (typeof newCalendarEvent.extendedProps.duration === 'string') {
+                    const parts = newCalendarEvent.extendedProps.duration.split(':');
+                    if (parts.length >= 2) {
+                        const hours = parseInt(parts[0], 10);
+                        const minutes = parseInt(parts[1], 10);
+                        if (!isNaN(hours) && !isNaN(minutes)) {
+                            const durationMs = (hours * 60 + minutes) * 60000;
+                            const endDateObj = new Date(startDateObj.getTime() + durationMs);
+                            endTimeStr = formatTime(endDateObj);
+                        } else {
+                             console.warn('Could not parse duration from extendedProps:', newCalendarEvent.extendedProps.duration);
+                        }
+                    } else {
+                        console.warn('Duration format in extendedProps is not HH:MM:', newCalendarEvent.extendedProps.duration);
+                    }
+                 } else {
+                    console.warn('extendedProps.duration is not a string:', newCalendarEvent.extendedProps.duration);
+                 }
+            } else {
+                console.warn('Cannot calculate end time because droppedDate or startTimeStr is invalid.');
+            }
+        }
+        
+        console.log(`Preparing to open CreateNewTaskModal with: cleaning_item_id=${cleaningItemId}, assigned_to_id=${assigneeId}, due_date=${dueDateStr}, start_time=${startTimeStr}, end_time=${endTimeStr}`);
+        console.log(`Actual values being set to newTask: cleaning_item_id=${cleaningItemId}, assigned_to_id=${assigneeId}, due_date=${dueDateStr}, start_time=${startTimeStr}, end_time=${endTimeStr}`);
+
+        setNewTask(prev => ({
+            ...prev,
+            cleaning_item_id: cleaningItemId,
+            assigned_to_id: assigneeId,
+            due_date: dueDateStr,
+            start_time: startTimeStr,
+            end_time: endTimeStr,
+            status: 'pending',
+            department_id: user?.profile?.department_id || '', // Ensure department_id is set
+            notes: '', // Re-added notes initialization
+        }));
+
+        setIsCreateModalOpen(true);
+        newCalendarEvent.remove(); 
     };
 
     if (loadingUser) {
@@ -444,7 +599,7 @@ function ManagerDashboardPage() {
     if (error) {
         return (
             <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-                 <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+                <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
                 <Typography variant="h6" color="text.secondary" align="center">
                     Could not load dashboard. Please try again later.
                 </Typography>
@@ -455,229 +610,213 @@ function ManagerDashboardPage() {
     const departmentName = user?.profile?.department_name || 'Your';
 
     return (
-        <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            <Typography component="h1" variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 1 }}>
-                {departmentName} Dashboard
-            </Typography>
-            <Typography component="h2" variant="h5" gutterBottom sx={{ textAlign: 'center', mb: 4 }}>
-                Task Management
-            </Typography>
+        <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+                <Typography component="h1" variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 1 }}>
+                    {departmentName} Dashboard
+                </Typography>
+                <Typography component="h2" variant="h5" gutterBottom sx={{ textAlign: 'center', mb: 4 }}>
+                    Task Management
+                </Typography>
 
-            <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
-                {departmentName} Department Tasks for {selectedDate.toLocaleDateString()}
-            </Typography>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-                <Tabs value={currentView} onChange={handleViewChange} aria-label="dashboard view tabs">
-                    <Tab label="Task List" value="list" />
-                    <Tab label="Scheduler" value="scheduler" />
-                </Tabs>
-            </Box>
-
-            {currentView === 'list' && (
-                <Grid container spacing={3}>
-                    {/* Date Picker and Create Task Button */}
-                    <Grid xs={12} md={8} lg={9}>
-                        <LocalizationProvider dateAdapter={AdapterDateFns}>
-                            <DatePicker
-                                label="Select Date"
-                                value={selectedDate}
-                                onChange={(newValue) => {
-                                    setSelectedDate(newValue || new Date());
-                                }}
-                                slots={{ textField: TextField }}
-                                slotProps={{
-                                    textField: {
-                                        sx: { width: 'auto', mr: 2 },
-                                    },
-                                }}
-                                enableAccessibleFieldDOMStructure={false} // Add this prop
-                            />
-                        </LocalizationProvider>
-                        <Button variant="contained" onClick={handleOpenCreateTaskModal}>
-                            Create New Task
-                        </Button>
-                    </Grid>
-
-                    {loadingData && (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
-                            <CircularProgress />
-                        </Box>
-                    )}
-                    {dataError && <Alert severity="error" sx={{ my: 2 }}>{dataError}</Alert>}
-                    {!loadingData && !dataError && (
-                        departmentTasks.length === 0 ? (
-                            <Typography sx={{ my: 2 }}>No tasks found for your department on the selected date.</Typography>
-                        ) : (
-                            <TableContainer component={Paper} sx={{ mt: 2 }}>
-                                <Table aria-label="department tasks table">
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>Status</TableCell>
-                                            <TableCell>Item Name</TableCell>
-                                            <TableCell>Assigned To</TableCell>
-                                            <TableCell>Due Date</TableCell>
-                                            <TableCell align="center">Actions</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {departmentTasks.map((task, index) => {
-                                            return (
-                                                <TableRow key={task.id}>
-                                                    <TableCell>
-                                                        <Chip label={task.status || 'N/A'} color={getStatusColor(task.status)} size="small" />
-                                                    </TableCell>
-                                                    <TableCell>{task.cleaning_item_name || 'Unknown Item'}</TableCell>
-                                                    <TableCell>
-                                                        {(() => {
-                                                            const staffId = task.assigned_to_details?.id ?? null;
-                                                            console.log(`[Task List Render] Attempting to call getStaffName for task ${task.id} with staffId: ${staffId}, Type: ${typeof staffId}`);
-                                                            return getStaffName(staffId);
-                                                        })()}
-                                                    </TableCell>
-                                                    <TableCell>{task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString() : 'N/A'}</TableCell>
-                                                    <TableCell align="center">
-                                                        <Tooltip title="View Details">
-                                                            <IconButton onClick={() => handleOpenDetailModal(task)} size="small">
-                                                                <VisibilityIcon />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title="Edit Assignment/Notes">
-                                                            <IconButton onClick={() => handleOpenEditModal(task)} size="small">
-                                                                <EditIcon />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Button 
-                                                            size="small" 
-                                                            variant="outlined" 
-                                                            sx={{ mr: 1 }} 
-                                                            onClick={() => handleMarkComplete(task.id)} 
-                                                            disabled={task.status === 'completed'} // Disable if already completed
-                                                        >
-                                                            Complete
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        )
-                    )}
-                </Grid>
-            )}
-
-            {currentView === 'scheduler' && (
-                <TaskSchedulerCalendar 
-                    tasks={departmentTasks}
-                    staffUsers={staffUsers}
-                    selectedDate={selectedDate} // Pass the selectedDate from ManagerDashboardPage
-                    eventResize={handleEventResize} // Pass the new handler
-                    onEventDrop={handleEventDrop} // Pass the handler
-                    // onEventClick={handleEventClick} // To be implemented in Phase 3
-                />
-            )}
-
-            <Modal
-                open={openCreateTaskModal}
-                onClose={handleCloseCreateTaskModal}
-                aria-labelledby="create-task-modal-title"
-                aria-describedby="create-task-modal-description"
-            >
-                <Box sx={style} component="form" onSubmit={handleCreateTaskSubmit} noValidate>
-                    <Typography id="create-task-modal-title" variant="h6" component="h2" gutterBottom>
-                        Create New Task
-                    </Typography>
-                    
-                    <FormControl fullWidth margin="normal" required>
-                        <InputLabel id="cleaning-item-label">Cleaning Item</InputLabel>
-                        <Select
-                            labelId="cleaning-item-label"
-                            id="cleaning_item_id"
-                            name="cleaning_item_id"
-                            value={newTask.cleaning_item_id}
-                            label="Cleaning Item"
-                            onChange={handleNewTaskChange}
-                        >
-                            {cleaningItems.map(item => (
-                                <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <FormControl fullWidth margin="normal">
-                        <InputLabel id="assigned-to-label">Assign To (Optional)</InputLabel>
-                        <Select
-                            labelId="assigned-to-label"
-                            id="assigned_to_id"
-                            name="assigned_to_id"
-                            value={newTask.assigned_to_id}
-                            label="Assign To (Optional)"
-                            onChange={handleNewTaskChange}
-                        >
-                            <MenuItem value=""><em>Unassigned</em></MenuItem>
-                            {staffUsers.map(staff => (
-                                <MenuItem key={staff.id} value={staff.id}>{staff.username} ({staff.first_name} {staff.last_name})</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <TextField
-                        margin="normal"
-                        required
-                        fullWidth
-                        id="due_date"
-                        label="Due Date"
-                        name="due_date"
-                        type="date"
-                        value={newTask.due_date}
-                        onChange={handleNewTaskChange}
-                        InputLabelProps={{
-                            shrink: true,
-                        }}
-                    />
-
-                    <FormControl fullWidth margin="normal" required>
-                        <InputLabel id="status-label">Status</InputLabel>
-                        <Select
-                            labelId="status-label"
-                            id="status"
-                            name="status"
-                            value={newTask.status}
-                            label="Status"
-                            onChange={handleNewTaskChange}
-                        >
-                            <MenuItem value="pending">Pending</MenuItem>
-                            <MenuItem value="overdue">Overdue</MenuItem> 
-                            {/* Managers might not set to completed directly, but it's an option */}
-                            {/* <MenuItem value="completed">Completed</MenuItem> */}
-                        </Select>
-                    </FormControl>
-
-                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                        <Button onClick={handleCloseCreateTaskModal} sx={{ mr: 1 }}>Cancel</Button>
-                        <Button type="submit" variant="contained">Create Task</Button>
-                    </Box>
+                <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
+                    {departmentName} Department Tasks for {selectedDate.toLocaleDateString()}
+                </Typography>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                    <Tabs value={currentView} onChange={handleViewChange} aria-label="dashboard view tabs">
+                        <Tab label="Task List" value="list" />
+                        <Tab label="Scheduler" value="scheduler" />
+                    </Tabs>
                 </Box>
-            </Modal>
 
-            <TaskDetailModal 
-                open={!!selectedTaskForDetail} // Controls modal visibility
-                onClose={handleCloseDetailModal}
-                task={selectedTaskForDetail}
-                cleaningItems={cleaningItems} // Pass all cleaning items for potential lookup
-                staffUsers={staffUsers} // Pass staffUsers
-                getStaffName={getStaffName} // Pass the getStaffName function
-            />
-            <EditTaskAssignmentModal
-                open={isEditModalOpen}
-                onClose={handleCloseEditModal}
-                task={selectedTaskForEdit}
-                staffUsers={staffUsers}
-                cleaningItems={cleaningItems} // Pass cleaningItems
-                onTaskUpdated={handleTaskUpdated} // Pass callback to refresh data
-            />
-        </Container>
+                {currentView === 'scheduler' && (
+                    <>
+                        {cleaningItems.length > 0 && (
+                            <Paper elevation={3} sx={{ mb: 2 }}>
+                                <Box id="external-events" ref={externalEventsRef} sx={{ p: 2, border: '1px dashed grey', maxHeight: '200px', overflowY: 'auto', userSelect: 'none' }}>
+                                    <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                                        Available Tasks (Drag to Schedule)
+                                    </Typography>
+                                    <Grid container spacing={1}>
+                                        {cleaningItems.map(item => (
+                                            <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
+                                                <Box
+                                                    className="draggable-cleaning-item"
+                                                    sx={{
+                                                        p: 1,
+                                                        backgroundColor: theme.palette.info.light, 
+                                                        color: theme.palette.info.contrastText,
+                                                        borderRadius: 1,
+                                                        cursor: 'grab',
+                                                        textAlign: 'center',
+                                                        fontSize: '0.875rem',
+                                                        '&:hover': {
+                                                            backgroundColor: theme.palette.info.main,
+                                                        }
+                                                    }}
+                                                    data-event={JSON.stringify({
+                                                        title: item.name,
+                                                        cleaning_item_id: item.id,
+                                                        duration: item.default_duration || "01:00" 
+                                                    })}
+                                                >
+                                                    {item.name}
+                                                </Box>
+                                            </Grid>
+                                        ))}
+                                    </Grid>
+                                </Box>
+                            </Paper>
+                        )}
+                        <Paper elevation={3} sx={{ p: 2 }}>
+                            <TaskSchedulerCalendar 
+                                events={departmentTasks.map(task => {
+                                    const eventObject = {
+                                        id: task.id.toString(),
+                                        title: getItemName(task.cleaning_item_id) || task.cleaning_item_name, // Fallback to task.cleaning_item_name
+                                        start: task.start_time ? `${task.due_date}T${task.start_time}` : task.due_date, 
+                                        end: task.end_time ? `${task.due_date}T${task.end_time}` : null,
+                                        allDay: !task.start_time,
+                                        resourceId: task.assigned_to_details ? task.assigned_to_details.id.toString() : undefined, 
+                                        extendedProps: {
+                                            ...task,
+                                            itemName: getItemName(task.cleaning_item_id) || task.cleaning_item_name, // Fallback
+                                            staffName: task.assigned_to_details ? getStaffName(task.assigned_to_details.id) : 'Unassigned',
+                                            status: task.status,
+                                            departmentId: task.department_id, // Ensure this uses the correct field, e.g., task.department_id
+                                            notes: task.notes,
+                                        },
+                                        className: `task-status-${task.status?.toLowerCase()}`,
+                                        borderColor: theme.palette[getStatusColor(task.status)]?.dark || theme.palette.grey[500],
+                                        backgroundColor: theme.palette[getStatusColor(task.status)]?.main || theme.palette.grey[300],
+                                        textColor: theme.palette[getStatusColor(task.status)]?.contrastText || theme.palette.text.primary,
+                                    };
+                                    if (departmentTasks.length > 0 && task === departmentTasks[0]) { // Log only for the first task to avoid clutter
+                                        console.log('[ManagerDashboardPage] Inspecting first task from departmentTasks during calendar event mapping:', JSON.stringify(task, null, 2));
+                                        console.log('[ManagerDashboardPage] Inspecting first event object created for calendar:', JSON.stringify(eventObject, null, 2));
+                                    }
+                                    return eventObject;
+                                })}
+                                onEventClick={handleEventClickCalendar}
+                                onEventDrop={handleEventDrop}
+                                onEventResize={handleEventResize} 
+                                currentDate={selectedDate} 
+                                onDateChange={(newDate) => setSelectedDate(newDate)} 
+                                resources={calendarResources} 
+                                onEventReceive={handleEventReceive} 
+                            />
+                        </Paper>
+                    </>
+                )}
+
+                {currentView === 'list' && (
+                    <Paper elevation={3} sx={{ p: 2 }}>
+                        {/* TODO: Implement or integrate your TaskList component here */}
+                        <Typography variant="h6">Task List View</Typography>
+                        <Typography>This is where the detailed task list will be displayed.</Typography>
+                        {/* Example: <TaskList tasks={departmentTasks} onEditTask={handleOpenEditModal} onDeleteTask={handleDeleteTask} /> */}
+                    </Paper>
+                )}
+
+                <Modal
+                    open={isCreateModalOpen}
+                    onClose={handleCloseCreateTaskModal}
+                    aria-labelledby="create-task-modal-title"
+                    aria-describedby="create-task-modal-description"
+                >
+                    <Box sx={style} component="form" onSubmit={handleCreateTaskSubmit} noValidate>
+                        <Typography id="create-task-modal-title" variant="h6" component="h2" gutterBottom>
+                            Create New Task
+                        </Typography>
+                        
+                        <FormControl fullWidth margin="normal" required>
+                            <InputLabel id="cleaning-item-label">Cleaning Item</InputLabel>
+                            <Select
+                                labelId="cleaning-item-label"
+                                id="cleaning_item_id"
+                                name="cleaning_item_id"
+                                value={newTask.cleaning_item_id}
+                                label="Cleaning Item"
+                                onChange={handleNewTaskChange}
+                            >
+                                {cleaningItems.map(item => (
+                                    <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <FormControl fullWidth margin="normal">
+                            <InputLabel id="assigned-to-label">Assign To (Optional)</InputLabel>
+                            <Select
+                                labelId="assigned-to-label"
+                                id="assigned_to_id"
+                                name="assigned_to_id"
+                                value={newTask.assigned_to_id}
+                                label="Assign To (Optional)"
+                                onChange={handleNewTaskChange}
+                            >
+                                <MenuItem value=""><em>Unassigned</em></MenuItem>
+                                {staffUsers.map(staff => (
+                                    <MenuItem key={staff.id} value={staff.id}>{staff.username} ({staff.first_name} {staff.last_name})</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <TextField
+                            margin="normal"
+                            required
+                            fullWidth
+                            id="due_date"
+                            label="Due Date"
+                            name="due_date"
+                            type="date"
+                            value={newTask.due_date}
+                            onChange={handleNewTaskChange}
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                        />
+
+                        <FormControl fullWidth margin="normal" required>
+                            <InputLabel id="status-label">Status</InputLabel>
+                            <Select
+                                labelId="status-label"
+                                id="status"
+                                name="status"
+                                value={newTask.status}
+                                label="Status"
+                                onChange={handleNewTaskChange}
+                            >
+                                <MenuItem value="pending">Pending</MenuItem>
+                                <MenuItem value="overdue">Overdue</MenuItem> 
+                            </Select>
+                        </FormControl>
+
+                        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button onClick={handleCloseCreateTaskModal} sx={{ mr: 1 }}>Cancel</Button>
+                            <Button type="submit" variant="contained">Create Task</Button>
+                        </Box>
+                    </Box>
+                </Modal>
+
+                <TaskDetailModal 
+                    open={isDetailModalOpen} 
+                    onClose={handleCloseDetailModal}
+                    task={selectedTaskForDetail}
+                    cleaningItems={cleaningItems} 
+                    staffUsers={staffUsers} 
+                    getStaffName={getStaffName} 
+                />
+                <EditTaskAssignmentModal
+                    open={isEditModalOpen}
+                    onClose={handleCloseEditModal}
+                    task={selectedTaskForEdit}
+                    staffUsers={staffUsers}
+                    cleaningItems={cleaningItems} 
+                    onTaskUpdated={handleTaskUpdated} 
+                />
+            </Container>
+        </LocalizationProvider>
     );
 }
 

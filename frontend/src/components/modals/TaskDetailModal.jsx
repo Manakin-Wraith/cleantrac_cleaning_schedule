@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -13,11 +13,31 @@ import {
 import { formatDate } from '../../utils/dateUtils'; // Assuming you have a date formatter
 
 const TaskDetailModal = ({ open, onClose, task, cleaningItems, getStaffName }) => {
+    useEffect(() => {
+        if (open) { // Only log if the modal is open
+            if (task && Object.keys(task).length > 0) {
+                console.log('[TaskDetailModal] useEffect triggered. Received task prop:', JSON.stringify(task, null, 2));
+            } else if (task === null) {
+                console.log('[TaskDetailModal] Received null task prop.');
+            } else if (task === undefined) {
+                console.log('[TaskDetailModal] Received undefined task prop.');
+            } else if (typeof task === 'object' && Object.keys(task).length === 0) {
+                console.log('[TaskDetailModal] Received empty task object.');
+            } else {
+                console.log('[TaskDetailModal] Received task prop with unexpected state:', task);
+            }
+        }
+    }, [task, open]); // Add 'open' to dependency array
+
     // Log the task's time properties as soon as the component receives props
     if (task) {
         console.log('[TaskDetailModal] Received task:', task.id, 'Start Time:', task.start_time, 'End Time:', task.end_time, 'Raw Task Object:', task);
-    } else {
-        console.log('[TaskDetailModal] Received null task prop.');
+    } else if (open) { // Only log this path if task is null AND modal is open
+        console.log('[TaskDetailModal] Received null task prop (render path check).');
+    }
+
+    if (!task && open) { // If modal is open but task is truly null/undefined, show loading or error
+        console.warn("[TaskDetailModal] Render: Task prop is null or undefined but modal is open.");
     }
 
     if (!task) {

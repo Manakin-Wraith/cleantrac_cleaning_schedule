@@ -103,6 +103,17 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] UI: Task List Table (Status Icon, Item Name, Frequency, Responsible Staff, Supervisor, Due Date/Day, Actions) (Task details display correctly, including item names, assignees, start/end times)
   - [x] UI: **Calendar View** (FullCalendar integrated, displays tasks by staff and time, supports drag & drop for rescheduling/reassigning, and resizing for duration)
     - [x] Calendar: Persist `start_time`, `end_time`, `due_date`, and `assignee` changes from drag & drop and resize operations to the backend.
+    - [ ] **Calendar UI/UX Enhancements (Manager Scheduler View):**
+        - [ ] Implement FullCalendar **Resource View** (e.g., `resourceTimeGridWeek`, `resourceTimeGridDay`) to display staff as distinct columns/lanes, replacing the current horizontal staff name list.
+        - [ ] Ensure tasks correctly map to `resourceId` for display in staff lanes.
+        - [ ] Improve task "chip" (event) rendering: display status (e.g., color-coding), start/end times, and enhance clarity.
+        - [ ] Evaluate and implement responsive behavior for calendar views on smaller screens (e.g., switching to `resourceTimelineDay` or `listWeek`).
+  - [ ] **UI: Collapsible Sidebar (MUI Drawer) for Enhanced Controls:**
+      - [ ] Implement a collapsible sidebar.
+      - [ ] Add staff filtering controls to show/hide specific staff resources in the calendar.
+      - [ ] Consider moving "Create New Task" functionality to the sidebar.
+      - [ ] Add filters for task status (Pending, Completed etc.).
+      - [ ] Explore adding a section for "Unassigned Tasks".
     - [x] Actions: Implement 'Edit Task Assignment' functionality (Modal created, API connected, assignment, notes, layout, and info display complete)
         - [x] Modal: "Edit Task Assignment" modal (Layout and informational display improvements complete, dropdown sizing fixed)
         - [x] Modal: Non-editable item name and assignee. Editable due date, start time, end time, and notes.

@@ -3,75 +3,56 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
+import resourceTimelinePlugin from '@fullcalendar/resource-timeline'; // Added for timeline view
 import interactionPlugin from '@fullcalendar/interaction'; // for drag & drop, resizing
 import { Box } from '@mui/material';
 
-// Helper to get a consistent color based on task status
-const getStatusColorForCalendar = (status) => {
-    switch (status) {
-        case 'pending': return '#ffa726'; // Amber
-        case 'in_progress': return '#29b6f6'; // Light Blue
-        case 'completed': return '#66bb6a'; // Green
-        case 'missed': return '#ef5350'; // Red
-        default: return '#78909c'; // Blue Grey
-    }
-};
-
-const TaskSchedulerCalendar = ({ tasks, staffUsers, selectedDate, onEventDrop, onEventClick, eventResize }) => {
+const TaskSchedulerCalendar = ({ 
+    events,         // Pre-formatted events from ManagerDashboardPage
+    resources,      // Pre-formatted resources from ManagerDashboardPage
+    currentDate,    // Current date to display, controlled by parent
+    onDateChange,   // Callback to inform parent of date navigation
+    onEventDrop, 
+    onEventClick, 
+    eventResize,
+    onEventReceive // Added new prop for external event drops
+}) => {
     const calendarRef = useRef(null); // Ref to access FullCalendar methods
 
-    const calendarEvents = tasks.map(task => {
-        const event = {
-            id: task.id.toString(),
-            title: task.cleaning_item_name || 'Unnamed Task',
-            extendedProps: { ...task },
-            backgroundColor: getStatusColorForCalendar(task.status),
-            borderColor: getStatusColorForCalendar(task.status),
-            // Use assigned_to_details from the serializer for the resourceId
-            resourceId: task.assigned_to_details ? task.assigned_to_details.id.toString() : undefined,
-        };
-
-        if (task.start_time && task.due_date) { // Assuming start_time exists for timed events
-            event.start = `${task.due_date}T${task.start_time}`; 
-            if (task.end_time) {
-                event.end = `${task.due_date}T${task.end_time}`;
-            }
-            event.allDay = false;
-        } else {
-            event.start = task.due_date; // For all-day events, just the date
-            event.allDay = true;
+    const handleDatesSet = (dateInfo) => {
+        // dateInfo.view.currentStart, dateInfo.view.currentEnd, dateInfo.start, dateInfo.end, dateInfo.startStr, dateInfo.endStr, dateInfo.timeZone
+        // This is a good place to call onDateChange if you want to sync the parent's selectedDate
+        // with the calendar's current view's central date, or the start of the view.
+        // For simplicity, if onDateChange expects a single date (like for a DatePicker), 
+        // we might use the view's active start date or a calculated center.
+        // Let's assume onDateChange in ManagerDashboardPage expects a new primary date.
+        if (typeof onDateChange === 'function') {
+            // FullCalendar's current view might span a week or month. 
+            // For a day view, dateInfo.view.activeStart is good.
+            // For week/month, it's often the start of the interval.
+            // ManagerDashboardPage currently uses a single 'selectedDate'. 
+            // We can use the start of the current view as the new selectedDate.
+            onDateChange(dateInfo.view.activeStart);
         }
-        return event;
-    });
-
-    const calendarResources = staffUsers.map(staff => ({
-        // staff is a User object, staff.profile is the UserProfile object.
-        // event.resourceId is set to task.assigned_to_details.id, which is UserProfile.id.
-        // So, the resource ID here must also be UserProfile.id.
-        id: staff.profile ? staff.profile.id.toString() : staff.id.toString(), // Fallback to staff.id if no profile, though profile should exist for staff
-        title: `${staff.first_name || ''} ${staff.last_name || ''}`.trim() || staff.username || `Staff ${staff.profile ? staff.profile.id : staff.id}`,
-    }));
-
-    // Ensure initialDate is a Date object for FullCalendar
-    const initialCalendarDate = selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
+    };
 
     return (
         <Box sx={{ height: '75vh', position: 'relative' }}> 
             <FullCalendar
                 ref={calendarRef} // Assign ref
-                plugins={[dayGridPlugin, resourceTimeGridPlugin, timeGridPlugin, interactionPlugin]} // Ensure all needed plugins
+                plugins={[dayGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, timeGridPlugin, interactionPlugin]} // Added resourceTimelinePlugin
                 headerToolbar={{
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'dayGridMonth,resourceTimeGridWeek,resourceTimeGridDay' // Adjusted for new flow
+                    right: 'dayGridMonth,resourceTimelineWeek,resourceTimeGridDay' // Changed resourceTimeGridWeek to resourceTimelineWeek
                 }}
-                initialView="resourceTimeGridDay" // Default to resourceTimeGridDay view
-                initialDate={initialCalendarDate}
+                initialView="resourceTimelineWeek" // Changed default view to resourceTimelineWeek
+                initialDate={currentDate} // Use currentDate prop for the initial display
                 editable={true}      // To enable drag & drop
                 selectable={true}    // To enable clicking/selecting time slots
                 droppable={true}     // Allows dragging external events onto the calendar
-                events={calendarEvents}
-                resources={calendarResources} // Resources are still needed for when switching to resource views
+                events={events}      // Use the 'events' prop directly
+                resources={resources}  // Use the 'resources' prop directly
                 resourceAreaHeaderContent="Staff"
                 eventDrop={onEventDrop} 
                 eventResize={eventResize} 
@@ -87,11 +68,13 @@ const TaskSchedulerCalendar = ({ tasks, staffUsers, selectedDate, onEventDrop, o
                         console.log(`Switching to resourceTimeGridDay for date: ${clickInfo.event.start}`);
                         calendarApi.changeView('resourceTimeGridDay', clickInfo.event.start);
                     }
-                    // If you still want to propagate the click for other purposes (e.g., opening an edit modal):
-                    // if (typeof onEventClick === 'function') {
-                    //     onEventClick(clickInfo); 
-                    // }
+                    // Propagate the click if an onEventClick handler is provided (e.g., for opening modals)
+                    if (typeof onEventClick === 'function') {
+                         onEventClick(clickInfo);
+                    }
                 }}
+                eventReceive={onEventReceive} // Added eventReceive callback
+                datesSet={handleDatesSet} // Use datesSet to handle navigation and sync parent
                 height="100%"
                 schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
             />
