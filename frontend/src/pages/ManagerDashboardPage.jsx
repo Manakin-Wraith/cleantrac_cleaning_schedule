@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles'; 
 import {
-    AddCircleOutline, Visibility as VisibilityIcon, Edit as EditIcon
+    AddCircleOutline, Visibility as VisibilityIcon, Edit as EditIcon, CheckCircle
 } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -252,9 +252,9 @@ function ManagerDashboardPage() {
             due_date: getTodayDateString(selectedDate), 
             status: 'pending',
             department_id: user?.profile?.department_id || '', 
-            start_time: null,
-            end_time: null,
-            notes: '',
+            start_time: null, 
+            end_time: null,   
+            notes: '',        
         });
         setIsCreateModalOpen(true);
     }
@@ -710,11 +710,64 @@ function ManagerDashboardPage() {
                 )}
 
                 {currentView === 'list' && (
-                    <Paper elevation={3} sx={{ p: 2 }}>
-                        {/* TODO: Implement or integrate your TaskList component here */}
-                        <Typography variant="h6">Task List View</Typography>
-                        <Typography>This is where the detailed task list will be displayed.</Typography>
-                        {/* Example: <TaskList tasks={departmentTasks} onEditTask={handleOpenEditModal} onDeleteTask={handleDeleteTask} /> */}
+                    <Paper elevation={3} sx={{ p: 2, mt: 2 }}>
+                        <Typography variant="h6" gutterBottom component="div">
+                            Task List for {selectedDate ? new Date(selectedDate).toLocaleDateString() : 'Today'}
+                        </Typography>
+                        {loadingData && <CircularProgress />}
+                        {!loadingData && departmentTasks.length === 0 && (
+                            <Typography>No tasks scheduled for this day.</Typography>
+                        )}
+                        {!loadingData && departmentTasks.length > 0 && (
+                            <TableContainer>
+                                <Table stickyHeader aria-label="department tasks table">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Cleaning Item</TableCell>
+                                            <TableCell>Assigned To</TableCell>
+                                            <TableCell>Due Date</TableCell>
+                                            <TableCell>Start Time</TableCell>
+                                            <TableCell>End Time</TableCell>
+                                            <TableCell>Status</TableCell>
+                                            <TableCell align="center">Actions</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {departmentTasks.map((task) => (
+                                            <TableRow hover key={task.id}>
+                                                <TableCell>{task.cleaning_item_name || 'N/A'}</TableCell>
+                                                <TableCell>{task.assigned_to_details?.full_name || task.assigned_to_details?.username || 'Unassigned'}</TableCell>
+                                                <TableCell>{task.due_date}</TableCell>
+                                                <TableCell>{task.start_time ? formatTime(new Date(`1970-01-01T${task.start_time}`)) : 'N/A'}</TableCell>
+                                                <TableCell>{task.end_time ? formatTime(new Date(`1970-01-01T${task.end_time}`)) : 'N/A'}</TableCell>
+                                                <TableCell>
+                                                    <Chip label={task.status} size="small" color={task.status === 'pending' ? 'warning' : task.status === 'completed' ? 'success' : 'default'} />
+                                                </TableCell>
+                                                <TableCell align="center">
+                                                    <Tooltip title="View Details">
+                                                        <IconButton onClick={() => handleOpenDetailModal(task)} size="small">
+                                                            <VisibilityIcon />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title="Edit Task">
+                                                        <IconButton onClick={() => handleOpenEditModal(task)} size="small">
+                                                            <EditIcon />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    {task.status !== 'completed' && (
+                                                        <Tooltip title="Mark Complete">
+                                                            <IconButton onClick={() => handleMarkComplete(task.id)} size="small">
+                                                                <CheckCircle />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        )}
                     </Paper>
                 )}
 

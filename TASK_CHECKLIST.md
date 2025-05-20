@@ -51,13 +51,19 @@ Enable drag-and-drop functionality for scheduling tasks by allowing users to dra
     *   Status: Confirmed working.
 5.  [x] Investigate and fix `TaskDetailModal` receiving `null` or `undefined` task prop when an event is clicked.
     *   Status: Resolved. TaskDetailModal correctly receives task data when an event is clicked and the modal opens. Console logging within TaskDetailModal is now conditional on its `open` state, eliminating previous extraneous logs when the modal was closed and tabs were switched.
-6.  [ ] Ensure correct cleaning item and staff member names are displayed on calendar events instead of "Unknown Item" after creation/update.
+6.  [x] Ensure correct cleaning item and staff member names are displayed on calendar events instead of "Unknown Item" after creation/update.
+    *   Status: User confirms this is working correctly.
 7.  [x] Fix "Task List" tab displaying the calendar instead of the task list.
     *   Status: Conditional rendering for tabs is working. "Scheduler" tab shows calendar, "Task List" tab shows placeholder. Actual content for task list view pending USER implementation.
 8.  [x] Investigate and fix "No scheduled tasks displaying on calendar".
-    *   Status: Corrected `staffName` and `resourceId` mapping. Added `due_date` filter to `fetchManagerData`. Tasks display correctly when the correct date is selected/navigated to. `getStaffName` confirmed working.
-9.  [x] Investigate and fix `TaskDetailModal` receiving `null` or `undefined` task prop when an event is clicked.
-    *   Status: Resolved. TaskDetailModal correctly receives task data when an event is clicked and the modal opens. Console logging within TaskDetailModal is now conditional on its `open` state, eliminating previous extraneous logs when the modal was closed and tabs were switched.
+    *   Status: Resolved. Tasks are now fetched based on `selectedDate` and displayed correctly. Corrected `resourceId` and `staffName` mapping in `ManagerDashboardPage.jsx` for calendar event creation to use `staff.id` and `staff.username` respectively. Data fetching is now filtered by `due_date` ensuring only relevant tasks are shown.
+9.  [x] Fix `TaskDetailModal` console logging behavior.
+    *   Status: Resolved. Console logging within TaskDetailModal is now conditional on its `open` state.
+10. [x] Implement actual content for the "Task List" tab.
+    *   Status: Resolved. Replaced placeholder with a Material UI Table displaying tasks from `departmentTasks`. Includes columns for Cleaning Item, Assigned To, Due Date, Start/End Times, Status, and action buttons (View, Edit, Mark Complete) using existing handlers.
+
+### Drag & Drop and Task Creation/Update Flow
+1.  [x] Dragging an item to the calendar should pre-fill the 'Create New Task' modal with correct `cleaning_item_id`, `assigned_to_id`, and `due_date`.
 
 ## Code Implementation
 - **`ManagerDashboardPage.jsx`**
