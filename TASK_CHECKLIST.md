@@ -1,117 +1,88 @@
-# Task Checklist: Implementing Drag-and-Drop Scheduling
+# CleanTrack UI/UX Enhancement & Feature Completion Plan
 
-## Objective
-Enable drag-and-drop functionality for scheduling tasks by allowing users to drag cleaning items onto staff members in the `resourceTimelineWeek` view of the calendar.
+## I. Overall Application Layout & Core UI
 
-## Core Requirements
-- [x] Display a list of available "Cleaning Items" that can be dragged.
-- [x] Make these "Cleaning Items" draggable using FullCalendar's interaction plugin.
-- [x] Configure the calendar (`TaskSchedulerCalendar.jsx`) to receive these draggable items (`eventReceive` callback).
-- [x] Implement a handler (`handleEventReceive` in `ManagerDashboardPage.jsx`) for when a cleaning item is dropped onto the calendar.
-- [x] The handler should extract necessary information:
-    - [x] Cleaning Item ID
-    - [x] Staff Member ID (from the resource it was dropped on)
-    - [x] Date of drop
-    - [x] Time of drop (start time)
-    - [x] Calculate end time based on cleaning item's default duration.
-- [x] Pre-fill and open the "Create New Task" modal with the extracted information.
-- [x] Ensure the temporary event placed by FullCalendar on drop is removed, as the modal handles final task creation.
+- **[ ] Implement Fixed Header Bar**
+  - [ ] Component: `HeaderBar.jsx`
+  - [ ] Display: Application Name/Logo
+  - [ ] Display: User Name & Role (placeholder initially)
+  - [ ] Display: Current Active Department (placeholder/future)
+  - [ ] Functionality: Logout Button (placeholder initially)
+- **[ ] Implement Fixed/Collapsible Sidebar Navigation**
+  - [ ] Component: `Sidebar.jsx`
+  - [ ] Display: App Logo (small)
+  - [ ] Navigation Links (role-based, department-contextual - placeholders initially)
+    - [ ] Manager: Dashboard, Schedule/Calendar, Item Management, Reports (future)
+    - [ ] Staff: My Tasks
+- **[ ] Integrate Header & Sidebar into Main Application Layout**
+  - [ ] Create/Update main layout component (e.g., `App.jsx`, `MainLayout.jsx`)
+  - [ ] Ensure page content renders correctly within this layout.
 
-## UI/UX Considerations
-- [x] Clearly indicate draggable items.
-- [x] Provide visual feedback during drag and drop. (FullCalendar handles much of this)
-- [x] Ensure the "Create New Task" modal is intuitive with pre-filled data.
+## II. Manager Dashboard Enhancements
 
-## Testing
-- [ ] Verify that dragging a cleaning item onto a staff member on a specific date/time opens the "Create New Task" modal.
-- [ ] Confirm the modal is correctly pre-filled with:
-    - [ ] Correct Cleaning Item.
-    - [ ] Correct Assigned Staff Member.
-    - [ ] Correct Due Date.
-    - [ ] Correct Start Time.
-    - [ ] Correct End Time (calculated from default duration).
-- [ ] Test task creation via this drag-and-drop flow.
-- [ ] Verify the task appears correctly on the calendar for the assigned staff member and date/time after creation.
-- [ ] Test edge cases:
-    - [ ] Dropping on a day without a specific time slot (if applicable).
-    - [ ] Cleaning items with and without default durations.
-    - [ ] Cancelling the "Create New Task" modal (ensure no temporary event remains).
+- **[ ] Calendar - Resource View Implementation**
+  - [ ] Refactor `TaskSchedulerCalendar.jsx` to use a resource-aware view (e.g., `resourceTimeGridWeek`, `resourceTimeGridDay`).
+  - [ ] Ensure `ManagerDashboardPage.jsx` provides staff data as resources to the calendar.
+  - [ ] Verify tasks correctly map to `resourceId` for display in staff lanes.
+- **[ ] Calendar - Improved Task Event Rendering**
+  - [ ] Enhance visual styling of calendar events (task "chips").
+  - [ ] Clear status indicators (e.g., color-coding based on 'pending', 'pending_review', 'completed').
+  - [ ] Prominently display start/end times if appropriate.
+  - [ ] Ensure readability and clarity.
+- **[ ] Calendar - Drag & Drop Functionality (Verification & Refinement)**
+    - [ ] Verify that dragging a cleaning item onto a staff member on a specific date/time opens the "Create New Task" modal.
+    - [ ] Confirm the modal is correctly pre-filled with: Cleaning Item, Assigned Staff, Due Date, Start Time, End Time (calculated).
+    - [ ] Test task creation via this drag-and-drop flow.
+    - [ ] Verify the task appears correctly on the calendar after creation.
+    - [ ] Test edge cases (dropping on day without time slot, items with/without durations, cancelling modal).
+- **[ ] Calendar - General Issues & Refinements**
+    - [ ] Investigate and fix any remaining "Unknown Item" or incorrect name displays for tasks/staff on the calendar.
+        *   Sub-task: Verify `cleaning_item_id` is correctly populated in fetched tasks.
+        *   Sub-task: Verify `cleaning_item_id` and `assigned_to_id` in `departmentTasks` during calendar event mapping.
+        *   Sub-task: Verify `getItemName` and `getStaffName` function logic.
+    - [ ] Refine styling of draggable items from external list and drop zones on calendar if needed.
+- **[ ] Main Dashboard Page - Widget Implementation**
+  - [ ] Design UI for dashboard widgets (Overall Completion, Overdue Tasks, Completion by Staff).
+  - [ ] Develop/Adapt API endpoints for widget summary data (department-scoped).
+  - [ ] Implement frontend components for each widget:
+    - [ ] Widget: Overall Completion (Today/This Week) - Percentage, Progress Bar/Donut Chart, Counts.
+    - [ ] Widget: Overdue Tasks - Count, Compact List, Link to full list.
+    - [ ] Widget: Completion By Staff (Today) - Bar Chart.
+- **[ ] Manager Task List (Tab View - Enhancements & Testing)**
+    - [ ] Ensure 'Mark Complete' button is enabled and functional for 'pending_review' (and other appropriate) tasks.
+    - [ ] Verify manager can mark 'pending_review' tasks as 'completed' and UI updates correctly.
+    - [ ] Test overall manager task list interactions (view, edit, mark complete) with new 'pending_review' status.
 
-## Task Calendar Issues Checklist
+## III. Item Management (Manager View)
 
-1.  [x] Fix MUI `Select` component warning for `assigned_to_id` in `CreateNewTaskModal` when triggered by drag-and-drop.
-    *   Status: Addressed.
-2.  [x] Pre-populate "Create New Task" modal with assignee, date, and time on drag-and-drop.
-    *   Status: Confirmed working.
-3.  [ ] Investigate and fix "Unknown Item" display for tasks on the calendar.
-    *   Sub-task: Verify `cleaning_item_id` is correctly populated in fetched tasks (AWAITING LOGS: `Inspecting first fetched task raw structure...` from `fetchManagerData`).
-    *   Sub-task: Verify `cleaning_item_id` and `assigned_to_id` in `departmentTasks` (AWAITING LOGS: `Inspecting first task from departmentTasks during calendar event mapping...`).
-    *   Sub-task: Verify `getItemName` and `getStaffName` function logic and their usage in calendar event rendering.
-4.  [x] Ensure tasks retain the correct date after drag-and-drop actions and do not default to "today".
-    *   Status: Confirmed working.
-5.  [x] Investigate and fix `TaskDetailModal` receiving `null` or `undefined` task prop when an event is clicked.
-    *   Status: Resolved. TaskDetailModal correctly receives task data when an event is clicked and the modal opens. Console logging within TaskDetailModal is now conditional on its `open` state, eliminating previous extraneous logs when the modal was closed and tabs were switched.
-6.  [x] Ensure correct cleaning item and staff member names are displayed on calendar events instead of "Unknown Item" after creation/update.
-    *   Status: User confirms this is working correctly.
-7.  [x] Fix "Task List" tab displaying the calendar instead of the task list.
-    *   Status: Conditional rendering for tabs is working. "Scheduler" tab shows calendar, "Task List" tab shows placeholder. Actual content for task list view pending USER implementation.
-8.  [x] Investigate and fix "No scheduled tasks displaying on calendar".
-    *   Status: Resolved. Tasks are now fetched based on `selectedDate` and displayed correctly. Corrected `resourceId` and `staffName` mapping in `ManagerDashboardPage.jsx` for calendar event creation to use `staff.id` and `staff.username` respectively. Data fetching is now filtered by `due_date` ensuring only relevant tasks are shown.
-9.  [x] Fix `TaskDetailModal` console logging behavior.
-    *   Status: Resolved. Console logging within TaskDetailModal is now conditional on its `open` state.
-10. [x] Implement actual content for the "Task List" tab.
-    *   Status: Resolved. Replaced placeholder with a Material UI Table displaying tasks from `departmentTasks`. Includes columns for Cleaning Item, Assigned To, Due Date, Start/End Times, Status, and action buttons (View, Edit, Mark Complete) using existing handlers.
+- **[ ] Implement Item Management Page UI**
+  - [ ] Page Heading: "[Department Name] Item Management".
+  - [ ] Button: "+ Add New Master Item".
+  - [ ] Implement Master Item List Table:
+    - [ ] Columns: Item Name, Frequency, Equipment, Chemical, Method, Default Staff, Actions.
+    - [ ] Actions: "Edit" button, "Delete" button.
+- **[ ] Implement Item Form Modal (Add/Edit)**
+  - [ ] Modal Header: "Add New/Edit Cleaning Item to [Dept]".
+  - [ ] Form Fields: Item Name, Frequency, Equipment, Chemical, Method, Default Assigned Staff (department-specific).
+  - [ ] Buttons: "Save", "Cancel".
+  - [ ] Implement form validation.
+- **[ ] API Integration for Item CRUD**
+  - [ ] Function: `Retrieve Cleaning Items` (department-scoped).
+  - [ ] Function: `Save Cleaning Item` (POST/PUT/PATCH, department-associated).
+  - [ ] Function: `Delete Cleaning Item` (with confirmation).
 
-11. **Staff Task Page - Enhancements**: `RESOLVED (CASCADE - 2025-05-20)`
-    - [x] Display comprehensive task details: `cleaning_item.name`, `cleaning_item.equipment`, `cleaning_item.chemical`, `cleaning_item.method`, `status`, `notes`, `timeslot`.
-    - [x] Implement a "Mark as Complete" button for staff to update task status.
-    - [x] Ensure backend serializer (`TaskInstanceSerializer`) provides nested `cleaning_item` details.
-    - [x] Ensure `taskService.js` has appropriate functions for fetching and updating tasks (e.g., `markTaskAsComplete`).
-    - [x] Completed tasks should be visually distinct (e.g., strike-through, different background).
-    - [x] **UI/UX Refinements (Staff Task Cards):**
-        - [x] Improved visual hierarchy and information grouping.
-        - [x] Integrated icons for better scannability (Scheduled Date, Timeslot, Equipment, Chemicals, Method, Notes).
-        - [x] Implemented responsive grid layout (2-3 cards per row on desktop, stacks on mobile).
-        - [x] Ensured consistent card height within rows.
-        - [x] Applied distinct background accents for 'Completed' (grey) and 'Pending Review' (light blue) tasks.
+## IV. Staff Workflow & Other Pending Tasks
 
-### Drag & Drop and Task Creation/Update Flow
-1.  [x] Dragging an item to the calendar should pre-fill the 'Create New Task' modal with correct `cleaning_item_id`, `assigned_to_id`, and `due_date`.
+- **[ ] Staff Task Submission**
+    - [ ] Verify staff can submit tasks for review (status change to 'pending_review') and UI updates correctly on `StaffTasksPage.jsx`.
+- **[ ] Testing & Refinement**
+    - [ ] Conduct End-to-End Workflow Test for all core user stories (task creation, assignment, staff submission, manager review/completion).
 
-## Code Implementation
-- **`ManagerDashboardPage.jsx`**
-    - [x] Import `Draggable` from `@fullcalendar/interaction` and `useRef`.
-    - [x] Set up a ref for the external events container.
-    - [x] `useEffect` to initialize `Draggable` on the cleaning items list.
-    - [x] Render the draggable cleaning items list.
-    - [x] Implement `handleEventReceive` function.
-    - [x] Pass `handleEventReceive` to `TaskSchedulerCalendar`.
-- **`TaskSchedulerCalendar.jsx`**
-    - [x] Accept `onEventReceive` prop.
-    - [x] Pass `onEventReceive` to FullCalendar's `eventReceive` option.
+## V. Future Enhancements (From `docs/breakdown.md` & previous lists)
 
-## Follow-up / Future Enhancements
-- [ ] Consider a collapsible sidebar for cleaning items or other controls (as per USER's broader goals).
-- [ ] Refine styling of draggable items and drop zones.
-
-### 2. Frontend Adjustments (Staff Workflow)
-- **Staff Tasks Page (`StaffTasksPage.jsx`)**
-    - [x] Import `updateTaskInstance` from `taskService.js`.
-    - [x] Rename `handleMarkComplete` to `handleSubmitForReview`.
-    - [x] Modify `handleSubmitForReview` to call `updateTaskInstance(taskId, { status: 'pending_review' })`.
-    - [x] Update local task state to `'pending_review'` on success.
-    - [x] Change button text to "Submit for Review".
-    - [x] Add distinct chip color/style for `'pending_review'` status.
-    - [x] Ensure button is hidden for `'completed'` and `'pending_review'` tasks.
-    - [x] Update StaffTasksPage.jsx to set task status to 'pending_review'.
-    - [ ] Verify staff can submit tasks for review and UI updates correctly.
-
-### 3. Frontend Adjustments (Manager Workflow)
-- **Manager Dashboard (`ManagerDashboardPage.jsx` - Task List Tab)**
-    - [x] Display tasks in `'pending_review'` state distinctly (e.g., color, icon, chip style).
-    - [ ] Ensure 'Mark Complete' button is enabled and functional for `'pending_review'` (and other appropriate) tasks.
-    - [ ] Verify manager can mark `'pending_review'` tasks as `'completed'` and UI updates correctly.
-    - [ ] Test overall manager task list interactions (view, edit, mark complete) with new status.
-
-### 4. Testing & Refinement
-- **End-to-End Workflow Test**
+- [ ] Consider a collapsible sidebar for cleaning items or other controls on Manager Dashboard.
+- [ ] Reports Page (Manager View): Design, API, Implementation.
+- [ ] User Management System (Admin/Manager): API & UI.
+- [ ] Department Management System (Admin/Manager): API & UI.
+- [ ] Further UI/UX refinements based on user feedback.
+- [ ] Plan for Production Database (PostgreSQL setup).
