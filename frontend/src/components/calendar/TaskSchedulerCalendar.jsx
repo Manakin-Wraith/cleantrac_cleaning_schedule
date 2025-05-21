@@ -36,6 +36,17 @@ const TaskSchedulerCalendar = ({
         }
     };
 
+    // Custom event rendering function for eventContent
+    const renderEventContent = (eventInfo) => {
+        const isCompleted = eventInfo.event.extendedProps.status === 'completed';
+        return (
+            <>
+                <b style={isCompleted ? { textDecoration: 'line-through' } : {}}>{eventInfo.timeText}</b>
+                <i style={isCompleted ? { textDecoration: 'line-through', marginLeft: '4px' } : { marginLeft: '4px' }}>{eventInfo.event.title}</i>
+            </>
+        );
+    };
+
     return (
         <Box sx={{ height: '75vh', position: 'relative' }}> 
             <FullCalendar
@@ -75,6 +86,7 @@ const TaskSchedulerCalendar = ({
                 }}
                 eventReceive={onEventReceive} // Added eventReceive callback
                 datesSet={handleDatesSet} // Use datesSet to handle navigation and sync parent
+                eventContent={renderEventContent} // Added custom event rendering
                 height="100%"
                 schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
             />

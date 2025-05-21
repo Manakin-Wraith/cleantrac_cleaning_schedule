@@ -8,11 +8,16 @@ import {
     Typography,
     Grid,
     Box,
-    Chip
+    Chip,
+    IconButton,
+    Paper
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import { format, parseISO } from 'date-fns';
+import { useTheme } from '@mui/material/styles';
 import { formatDate } from '../../utils/dateUtils'; // Assuming you have a date formatter
 
-const TaskDetailModal = ({ open, onClose, task, cleaningItems, getStaffName }) => {
+const TaskDetailModal = ({ open, onClose, task, cleaningItems, getStaffName, resolvedCleaningItemName }) => {
     useEffect(() => {
         if (open) { // Only log if the modal is open
             if (task && Object.keys(task).length > 0) {
@@ -94,14 +99,45 @@ const TaskDetailModal = ({ open, onClose, task, cleaningItems, getStaffName }) =
         }
     };
 
+    const theme = useTheme();
+
+    // Helper to format date and time consistently
+    const formatDateTime = (dateString, timeString) => {
+        if (!dateString) return 'N/A';
+        let datePart = format(parseISO(dateString), 'PPP'); // e.g., May 20, 2025
+        if (timeString) {
+            // Assuming timeString is 'HH:MM:SS' or 'HH:MM'
+            const [hours, minutes] = timeString.split(':');
+            // Create a date object just to format time part, date itself is from dateString
+            const timeDate = new Date();
+            timeDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0);
+            return `${datePart} at ${format(timeDate, 'p')}`; // e.g., May 20, 2025 at 8:00 AM
+        }
+        return datePart; // Just date if no time
+    };
+
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-            <DialogTitle>Task Details - {task.cleaning_item_name || 'N/A'}</DialogTitle>
+            <DialogTitle id="task-detail-modal-title">
+                Task Details - {resolvedCleaningItemName || 'Details'}
+                <IconButton
+                    aria-label="close"
+                    onClick={onClose}
+                    sx={{
+                        position: 'absolute',
+                        right: theme.spacing(1),
+                        top: theme.spacing(1),
+                        color: (theme) => theme.palette.grey[500],
+                    }}
+                >
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
             <DialogContent dividers>
                 <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
-                        <Typography variant="subtitle2" gutterBottom>Item Name:</Typography>
-                        <Typography variant="body1">{task.cleaning_item_name || 'N/A'}</Typography>
+                        <Typography variant="subtitle2" gutterBottom>Cleaning Item:</Typography>
+                        <Typography variant="body1">{resolvedCleaningItemName || 'N/A'}</Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
                         <Typography variant="subtitle2" gutterBottom>Assigned To:</Typography>
@@ -113,11 +149,16 @@ const TaskDetailModal = ({ open, onClose, task, cleaningItems, getStaffName }) =
                     </Grid>
                     <Grid item xs={12} sm={6}>
                         <Typography variant="subtitle2" gutterBottom>Status:</Typography>
-                        <Chip label={task.status ? task.status.replace('_', ' ').toUpperCase() : 'N/A'} color={getStatusChipColor(task.status)} size="small" />
+                        <Chip 
+                            label={task.status ? task.status.replace(/_/g, ' ') : 'N/A'}
+                            color={getStatusChipColor(task.status)}
+                            size="small"
+                            sx={{ textTransform: 'capitalize' }}
+                        />
                     </Grid>
                     <Grid item xs={12} sm={6}>
                         <Typography variant="subtitle2" gutterBottom>Due Date:</Typography>
-                        <Typography variant="body1">{task.due_date ? formatDate(task.due_date) : 'N/A'}</Typography>
+                        <Typography variant="body1">{task.due_date ? format(parseISO(task.due_date), 'PPP') : 'N/A'}</Typography>
                     </Grid>
                     
                     {/* Add Timeslot display */}

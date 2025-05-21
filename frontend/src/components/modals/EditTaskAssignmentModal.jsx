@@ -19,7 +19,15 @@ import { useSnackbar } from 'notistack';
 import { updateTaskInstance } from '../../services/taskService';
 import { formatDate } from '../../utils/dateUtils'; // For displaying dates if needed
 
-const EditTaskAssignmentModal = ({ open, onClose, task, staffUsers, cleaningItems, onTaskUpdated }) => {
+const EditTaskAssignmentModal = ({ 
+    open, 
+    onClose, 
+    task, 
+    resolvedCleaningItemName, 
+    staffUsers, 
+    cleaningItems, 
+    onTaskUpdated 
+}) => {
     const { enqueueSnackbar } = useSnackbar();
     const [notes, setNotes] = useState('');
     const [currentStatus, setCurrentStatus] = useState('');
@@ -107,13 +115,15 @@ const EditTaskAssignmentModal = ({ open, onClose, task, staffUsers, cleaningItem
 
     return (
         <Dialog open={open} onClose={() => !isSaving && onClose()} maxWidth="sm" fullWidth>
-            <DialogTitle>Edit Task: {task.cleaning_item_name || 'Task'}</DialogTitle>
+            <DialogTitle>
+                Edit Task: {resolvedCleaningItemName || 'Item Details'}
+            </DialogTitle>
             <DialogContent dividers>
                 <Box sx={{ paddingTop: 1 }}>
                     <Grid container spacing={2.5}> 
                         <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2" gutterBottom>Item Name:</Typography>
-                            <Typography variant="body1" sx={{ minHeight: '24px' }}>{task.cleaning_item_name || 'N/A'}</Typography>
+                            <Typography variant="subtitle2" gutterBottom>Cleaning Item:</Typography>
+                            <Typography variant="body1" sx={{ minHeight: '24px' }}>{resolvedCleaningItemName || 'N/A'}</Typography>
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <Typography variant="subtitle2" gutterBottom>Assigned To:</Typography>

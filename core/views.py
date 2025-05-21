@@ -17,7 +17,7 @@ from .serializers import (
 from .permissions import (
     IsManagerForWriteOrAuthenticatedReadOnly, IsSuperUser, 
     CanLogCompletionAndManagerModify, IsSuperUserForWriteOrAuthenticatedReadOnly,
-    UserAndProfileManagementPermissions
+    UserAndProfileManagementPermissions, CanUpdateTaskStatus
 )
 # Create your views here.
 
@@ -187,7 +187,7 @@ class CleaningItemViewSet(viewsets.ModelViewSet):
 
 class TaskInstanceViewSet(viewsets.ModelViewSet):
     serializer_class = TaskInstanceSerializer
-    permission_classes = [IsManagerForWriteOrAuthenticatedReadOnly] # Apply RBAC permission
+    permission_classes = [CanUpdateTaskStatus] # Apply new status update permission
 
     def get_queryset(self):
         user = self.request.user

@@ -48,6 +48,7 @@ class TaskInstance(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('in_progress', 'In Progress'),
+        ('pending_review', 'Pending Review'),
         ('completed', 'Completed'),
         ('missed', 'Missed'), 
         ('requires_attention', 'Requires Attention'),

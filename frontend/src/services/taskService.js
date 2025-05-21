@@ -40,8 +40,29 @@ export const createTaskInstance = async (taskData) => {
         const response = await api.post('/taskinstances/', taskData);
         return response.data;
     } catch (error) {
-        console.error('Error creating task instance:', error.response?.data || error.message);
-        throw error.response?.data || new Error('Failed to create task instance.');
+        console.error(
+            "Error creating task instance:", 
+            error.response ? error.response.data : error.message,
+            error.response ? `Status: ${error.response.status}` : '',
+            error.config ? `Payload: ${JSON.stringify(error.config.data)}`: ''
+        );
+        // Construct a more informative error message
+        let errorMessage = "Failed to create task instance.";
+        if (error.response && error.response.data) {
+            const errorData = error.response.data;
+            // Try to extract common DRF error formats
+            if (typeof errorData === 'string') {
+                errorMessage = errorData;
+            } else if (typeof errorData === 'object') {
+                // Concatenate all error messages from DRF (e.g., field errors)
+                const messages = Object.entries(errorData).map(([key, value]) => {
+                    if (Array.isArray(value)) return `${key}: ${value.join(' ')}`;
+                    return `${key}: ${value}`;
+                });
+                if (messages.length > 0) errorMessage = messages.join('; ');
+            }
+        }
+        throw new Error(errorMessage);
     }
 };
 
@@ -57,10 +78,14 @@ export const updateTaskInstance = async (taskId, taskData) => {
     try {
         // Ensure assigned_to is explicitly null if it's an empty string or undefined
         // The backend might expect an integer or null for the foreign key.
-        const payload = {
-            ...taskData,
-            assigned_to: taskData.assigned_to || null,
-        };
+        const payload = { ...taskData };
+        if (taskData.hasOwnProperty('assigned_to')) {
+            payload.assigned_to = taskData.assigned_to || null;
+        }
+        // If 'assigned_to_id' is used in taskData (which is typical for FKs in forms),
+        // ensure it maps to 'assigned_to' or handle as needed by backend.
+        // For now, assuming taskData comes with 'assigned_to' if it's being changed.
+
         const response = await api.patch(`/taskinstances/${taskId}/`, payload);
         return response.data;
     } catch (error) {

@@ -62,6 +62,19 @@ Enable drag-and-drop functionality for scheduling tasks by allowing users to dra
 10. [x] Implement actual content for the "Task List" tab.
     *   Status: Resolved. Replaced placeholder with a Material UI Table displaying tasks from `departmentTasks`. Includes columns for Cleaning Item, Assigned To, Due Date, Start/End Times, Status, and action buttons (View, Edit, Mark Complete) using existing handlers.
 
+11. **Staff Task Page - Enhancements**: `RESOLVED (CASCADE - 2025-05-20)`
+    - [x] Display comprehensive task details: `cleaning_item.name`, `cleaning_item.equipment`, `cleaning_item.chemical`, `cleaning_item.method`, `status`, `notes`, `timeslot`.
+    - [x] Implement a "Mark as Complete" button for staff to update task status.
+    - [x] Ensure backend serializer (`TaskInstanceSerializer`) provides nested `cleaning_item` details.
+    - [x] Ensure `taskService.js` has appropriate functions for fetching and updating tasks (e.g., `markTaskAsComplete`).
+    - [x] Completed tasks should be visually distinct (e.g., strike-through, different background).
+    - [x] **UI/UX Refinements (Staff Task Cards):**
+        - [x] Improved visual hierarchy and information grouping.
+        - [x] Integrated icons for better scannability (Scheduled Date, Timeslot, Equipment, Chemicals, Method, Notes).
+        - [x] Implemented responsive grid layout (2-3 cards per row on desktop, stacks on mobile).
+        - [x] Ensured consistent card height within rows.
+        - [x] Applied distinct background accents for 'Completed' (grey) and 'Pending Review' (light blue) tasks.
+
 ### Drag & Drop and Task Creation/Update Flow
 1.  [x] Dragging an item to the calendar should pre-fill the 'Create New Task' modal with correct `cleaning_item_id`, `assigned_to_id`, and `due_date`.
 
@@ -80,3 +93,25 @@ Enable drag-and-drop functionality for scheduling tasks by allowing users to dra
 ## Follow-up / Future Enhancements
 - [ ] Consider a collapsible sidebar for cleaning items or other controls (as per USER's broader goals).
 - [ ] Refine styling of draggable items and drop zones.
+
+### 2. Frontend Adjustments (Staff Workflow)
+- **Staff Tasks Page (`StaffTasksPage.jsx`)**
+    - [x] Import `updateTaskInstance` from `taskService.js`.
+    - [x] Rename `handleMarkComplete` to `handleSubmitForReview`.
+    - [x] Modify `handleSubmitForReview` to call `updateTaskInstance(taskId, { status: 'pending_review' })`.
+    - [x] Update local task state to `'pending_review'` on success.
+    - [x] Change button text to "Submit for Review".
+    - [x] Add distinct chip color/style for `'pending_review'` status.
+    - [x] Ensure button is hidden for `'completed'` and `'pending_review'` tasks.
+    - [x] Update StaffTasksPage.jsx to set task status to 'pending_review'.
+    - [ ] Verify staff can submit tasks for review and UI updates correctly.
+
+### 3. Frontend Adjustments (Manager Workflow)
+- **Manager Dashboard (`ManagerDashboardPage.jsx` - Task List Tab)**
+    - [x] Display tasks in `'pending_review'` state distinctly (e.g., color, icon, chip style).
+    - [ ] Ensure 'Mark Complete' button is enabled and functional for `'pending_review'` (and other appropriate) tasks.
+    - [ ] Verify manager can mark `'pending_review'` tasks as `'completed'` and UI updates correctly.
+    - [ ] Test overall manager task list interactions (view, edit, mark complete) with new status.
+
+### 4. Testing & Refinement
+- **End-to-End Workflow Test**

@@ -181,6 +181,108 @@ class UserAndProfileManagementPermissions(BasePermission):
         
         return False # Default deny for any other unhandled method or condition
 
+class CanUpdateTaskStatus(BasePermission):
+    """
+    Custom permission to control task status updates based on user role and workflow.
+    - Staff can move tasks from 'pending' or 'in_progress' to 'pending_review'.
+    - Managers can move tasks from 'pending_review' to 'completed', and generally manage other statuses
+      within their department.
+    """
+    message = 'You do not have permission to set this task status.'
+
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj):
+        # obj is the TaskInstance
+        if not request.user.is_authenticated:
+            return False
+
+        # Allow read-only for any authenticated user (department filtering by queryset)
+        if request.method in SAFE_METHODS:
+            return True
+
+        # For write methods, specifically PATCH for status updates
+        if request.method == 'PATCH':
+            try:
+                user_profile = request.user.profile
+                user_role = user_profile.role
+                user_department = user_profile.department
+            except AttributeError:
+                self.message = 'User profile not found.'
+                return False # User has no profile
+
+            # Determine object's department
+            obj_department = obj.department # Assuming TaskInstance has direct department FK
+            if not obj_department:
+                # Fallback if TaskInstance.department is not set (should be avoided by application logic)
+                # or if linking via cleaning_item.department is preferred.
+                if hasattr(obj, 'cleaning_item') and obj.cleaning_item and hasattr(obj.cleaning_item, 'department'):
+                    obj_department = obj.cleaning_item.department
+                else:
+                    self.message = 'Task department could not be determined.'
+                    return False
+            
+            # Managers must belong to the same department as the task for any status change
+            if user_role == 'manager' and user_department != obj_department:
+                self.message = 'Managers can only update tasks within their own department.'
+                return False
+
+            # Staff must be assigned to the task or the task must be in their department
+            # (and they are the one making the change)
+            if user_role == 'staff':
+                if obj.assigned_to != user_profile and user_department != obj_department:
+                    self.message = 'Staff can only update tasks assigned to them or within their department.'
+                    return False
+
+            current_status = obj.status
+            new_status = request.data.get('status')
+
+            if not new_status: # If status is not part of the update, allow (e.g., updating notes)
+                return True 
+
+            if user_role == 'staff':
+                allowed_transitions_staff = {
+                    'pending': ['pending_review', 'in_progress'],
+                    'in_progress': ['pending_review'],
+                }
+                if current_status in allowed_transitions_staff and new_status in allowed_transitions_staff[current_status]:
+                    return True
+                else:
+                    self.message = f"Staff cannot change status from '{current_status}' to '{new_status}'. Allowed: 'pending'/'in_progress' -> 'pending_review'."
+                    return False
+            
+            elif user_role == 'manager':
+                # Managers have more flexibility but within their department (checked above)
+                allowed_transitions_manager = {
+                    'pending': ['in_progress', 'pending_review', 'completed', 'missed', 'requires_attention'],
+                    'in_progress': ['pending_review', 'completed', 'missed', 'requires_attention'],
+                    'pending_review': ['completed', 'in_progress', 'requires_attention'], # Can send back if needed
+                    'requires_attention': ['pending', 'in_progress'], # Can reset
+                    'missed': ['pending'] # Can reset
+                    # 'completed' status is final for this example unless reopened
+                }
+                if current_status in allowed_transitions_manager and new_status in allowed_transitions_manager[current_status]:
+                    return True
+                # Allow manager to complete from any non-completed state, if not explicitly listed above for safety
+                if new_status == 'completed' and current_status != 'completed': 
+                    return True
+                else:
+                    self.message = f"Manager action for status from '{current_status}' to '{new_status}' is not permitted by defined workflow or is redundant."
+                    return False
+            
+            return False # Default deny if no role matches or other condition unhandled
+        
+        # For other write methods like PUT or DELETE, if you want to restrict them based on status:
+        # if request.method == 'PUT': # Full update
+        #     # Potentially disallow PUT if task is completed, etc.
+        #     pass 
+        # if request.method == 'DELETE':
+        #     # Potentially disallow DELETE if task is completed, etc.
+        #     pass
+
+        return True # Allow other write methods if not PATCH, or further restrict if needed.
+
 class CanLogCompletionAndManagerModify(BasePermission):
     """
     Allows authenticated users to create (POST) CompletionLogs (with further checks often in perform_create).

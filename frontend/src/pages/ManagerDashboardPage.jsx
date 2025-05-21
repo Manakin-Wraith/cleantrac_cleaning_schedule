@@ -7,7 +7,8 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles'; 
 import {
-    AddCircleOutline, Visibility as VisibilityIcon, Edit as EditIcon, CheckCircle
+    AddCircleOutline, Visibility as VisibilityIcon, Edit as EditIcon, CheckCircle,
+    RateReview as RateReviewIcon 
 } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -69,7 +70,7 @@ function ManagerDashboardPage() {
     const [calendarResources, setCalendarResources] = useState([]); 
 
     // Modal and form state for creating tasks
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false); 
     const [newTask, setNewTask] = useState({
         cleaning_item_id: '',
         assigned_to_id: '',
@@ -82,17 +83,53 @@ function ManagerDashboardPage() {
     });
 
     // State for detail modal
-    const [selectedTaskForDetail, setSelectedTaskForDetail] = useState(null);
+    const [selectedTaskDetailData, setSelectedTaskDetailData] = useState({ task: null, resolvedItemName: '' });
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     // State for edit modal
     const [isEditModalOpen, setIsEditModalOpen] = useState(false); 
-    const [selectedTaskForEdit, setSelectedTaskForEdit] = useState(null); 
+    const [selectedTaskEditData, setSelectedTaskEditData] = useState({ task: null, resolvedItemName: '' });
 
     // State for view toggle (list vs scheduler)
     const [currentView, setCurrentView] = useState('scheduler'); 
 
     const externalEventsRef = useRef(null); 
+
+    // Function to determine row style based on task status
+    const getRowStyle = (taskStatus) => {
+        if (taskStatus === 'completed') {
+            return { backgroundColor: theme.palette.success.light + '33', opacity: 0.7 }; // Light green with opacity
+        }
+        if (taskStatus === 'pending_review') {
+            return { backgroundColor: theme.palette.info.light + '33' }; // Light blue/purple for pending review
+        }
+        if (taskStatus === 'missed') {
+            return { backgroundColor: theme.palette.error.light + '33', textDecoration: 'line-through' }; 
+        }
+        if (taskStatus === 'requires_attention') {
+            return { backgroundColor: theme.palette.warning.light + '33' }; 
+        }
+        return {}; // Default no style
+    };
+
+    // Helper function to get cleaning item name robustly
+    const getResolvedCleaningItemName = (task) => {
+        if (task.cleaning_item && typeof task.cleaning_item === 'object' && task.cleaning_item.name) {
+            return task.cleaning_item.name;
+        }
+        // Fallback: task.cleaning_item might be an ID, or task.cleaning_item_id might exist directly on the task
+        const itemIdToLookup = (typeof task.cleaning_item === 'number') 
+            ? task.cleaning_item 
+            : task.cleaning_item_id; // Assuming task.cleaning_item_id might exist if cleaning_item is not the ID itself
+        
+        if (itemIdToLookup) {
+            const foundItem = cleaningItems.find(ci => ci.id === itemIdToLookup);
+            if (foundItem && foundItem.name) {
+                return foundItem.name;
+            }
+        }
+        return null; // Return null if not found, let caller decide 'Unknown Item' or 'N/A'
+    };
 
     const fetchManagerData = useCallback(async (currentUser, dateToFetch) => {
         if (!currentUser || !currentUser.profile || !currentUser.profile.department_id) {
@@ -241,7 +278,68 @@ function ManagerDashboardPage() {
             case 'in progress': return 'info';
             case 'completed': return 'success';
             case 'missed': return 'error';
+            case 'pending_review': return 'info'; // Color for pending_review
             default: return 'default';
+        }
+    };
+
+    const handleNewTaskChange = (event) => {
+        const { name, value } = event.target;
+        let processedValue = value;
+
+        // Parse IDs to integers if a value is selected, otherwise keep as empty string for form state
+        if (name === 'cleaning_item_id' || name === 'assigned_to_id' || name === 'department_id') {
+            processedValue = value === '' ? '' : parseInt(value, 10);
+        } else if ((name === 'start_time' || name === 'end_time') && value === '') {
+            // Convert time values to null if empty for backend, otherwise keep as string for TimePicker
+            processedValue = null;
+        }
+
+        setNewTask(prev => ({ ...prev, [name]: processedValue }));
+    };
+
+    const handleCreateTaskSubmit = async (event) => {
+        event.preventDefault();
+
+        const currentDepartmentId = newTask.department_id || user?.profile?.department_id;
+
+        // Prepare the payload, renaming cleaning_item_id and ensuring IDs are correctly formatted
+        const payload = {
+            ...newTask,
+            cleaning_item_id_write: newTask.cleaning_item_id, // Rename
+            department_id: typeof currentDepartmentId === 'string' && currentDepartmentId !== '' ? parseInt(currentDepartmentId, 10) : currentDepartmentId,
+            assigned_to_id: newTask.assigned_to_id === '' || isNaN(newTask.assigned_to_id) ? null : newTask.assigned_to_id, // Convert '' or NaN to null
+        };
+        delete payload.cleaning_item_id; // Remove the original key after using its value for cleaning_item_id_write
+
+        // Validation for required fields
+        if (payload.cleaning_item_id_write === '' || payload.cleaning_item_id_write === null || isNaN(payload.cleaning_item_id_write)) {
+            enqueueSnackbar('Cleaning item is required.', { variant: 'warning' });
+            return;
+        }
+        if (payload.department_id === '' || payload.department_id === null || isNaN(payload.department_id)) {
+            enqueueSnackbar('Department is required.', { variant: 'warning' });
+            return;
+        }
+        if (!payload.due_date || !payload.status) {
+            enqueueSnackbar('Due date and status are required.', { variant: 'warning' });
+            return;
+        }
+        
+        // Remove time fields if they are null (already handled by processedValue in handleNewTaskChange)
+        if (payload.start_time === null) delete payload.start_time;
+        if (payload.end_time === null) delete payload.end_time;
+
+        console.log('Submitting new task with payload:', payload); 
+
+        try {
+            await createTaskInstance(payload);
+            enqueueSnackbar('Task created successfully!', { variant: 'success' });
+            handleCloseCreateTaskModal();
+            if(user) fetchManagerData(user, selectedDate); // Refresh data
+        } catch (err) {
+            console.error("Failed to create task:", err); 
+            enqueueSnackbar(err.message || 'Failed to create task. Check console for details.', { variant: 'error' });
         }
     };
 
@@ -263,58 +361,23 @@ function ManagerDashboardPage() {
         setIsCreateModalOpen(false);
     }
 
-    const handleNewTaskChange = (event) => {
-        const { name, value } = event.target;
-        setNewTask(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleCreateTaskSubmit = async (event) => {
-        event.preventDefault();
-        const taskPayload = { 
-            ...newTask,
-            department_id: newTask.department_id || user?.profile?.department_id, 
-        };
-
-        if (!taskPayload.cleaning_item_id || !taskPayload.due_date || !taskPayload.status || !taskPayload.department_id) {
-            enqueueSnackbar('Cleaning item, due date, status, and department are required.', { variant: 'warning' });
-            return;
-        }
-
-        if (!taskPayload.assigned_to_id) {
-            delete taskPayload.assigned_to_id; 
-        }
-
-        if (taskPayload.start_time === null) delete taskPayload.start_time;
-        if (taskPayload.end_time === null) delete taskPayload.end_time;
-
-        console.log('Submitting new task with payload:', taskPayload); 
-
-        try {
-            await createTaskInstance(taskPayload);
-            enqueueSnackbar('Task created successfully!', { variant: 'success' });
-            handleCloseCreateTaskModal();
-            if(user) fetchManagerData(user, selectedDate);
-        } catch (err) {
-            console.error("Failed to create task:", err);
-            enqueueSnackbar(err.message || 'Failed to create task.', { variant: 'error' });
-        }
-    };
-
     const handleOpenDetailModal = (task) => {
         console.log('[ManagerDashboardPage] handleOpenDetailModal called with task:', JSON.stringify(task, null, 2));
         if (task && Object.keys(task).length > 0) {
-            setSelectedTaskForDetail(task);
+            const resolvedName = getResolvedCleaningItemName(task);
+            setSelectedTaskDetailData({ task: task, resolvedItemName: resolvedName });
             setIsDetailModalOpen(true);
             console.log('[ManagerDashboardPage] TaskDetailModal will open. selectedTaskForDetail set, isDetailModalOpen set to true.');
         } else {
             console.warn('[ManagerDashboardPage] handleOpenDetailModal: Attempted to open with null, undefined, or empty task. Modal will not open or will be forced closed.');
-            setSelectedTaskForDetail(null); // Ensure it's explicitly null
+            setSelectedTaskDetailData({ task: null, resolvedItemName: '' }); // Ensure it's explicitly null
             setIsDetailModalOpen(false); // Ensure modal isn't told to open or stays open
         }
     };
 
     const handleOpenEditModal = (task) => {
-        setSelectedTaskForEdit(task);
+        const resolvedName = getResolvedCleaningItemName(task);
+        setSelectedTaskEditData({ task: task, resolvedItemName: resolvedName });
         setIsEditModalOpen(true);
     };
 
@@ -322,13 +385,13 @@ function ManagerDashboardPage() {
         console.log('[ManagerDashboardPage] handleCloseDetailModal called.');
         setIsDetailModalOpen(false);
         // It's good practice to clear the selected task when the modal is explicitly closed.
-        setSelectedTaskForDetail(null);
+        setSelectedTaskDetailData({ task: null, resolvedItemName: '' });
         console.log('[ManagerDashboardPage] TaskDetailModal closed. isDetailModalOpen set to false, selectedTaskForDetail set to null.');
     };
 
     const handleCloseEditModal = () => {
         setIsEditModalOpen(false);
-        setSelectedTaskForEdit(null);
+        setSelectedTaskEditData({ task: null, resolvedItemName: '' });
     };
 
     const handleTaskUpdated = () => {
@@ -671,31 +734,38 @@ function ManagerDashboardPage() {
                         <Paper elevation={3} sx={{ p: 2 }}>
                             <TaskSchedulerCalendar 
                                 events={departmentTasks.map(task => {
-                                    const eventObject = {
+                                    const resolvedItemName = getResolvedCleaningItemName(task);
+                                    const title = resolvedItemName || 'Unknown Item';
+
+                                    if (title === 'Unknown Item' && task.id) { // Log if name is missing
+                                        if (task.cleaning_item && typeof task.cleaning_item === 'object') {
+                                            console.warn(`[ManagerDashboardPage] Calendar Event (Task ID: ${task.id}): cleaning_item object found, but name is missing or falsy. Name resolved to: ${resolvedItemName}. cleaning_item content:`, JSON.stringify(task.cleaning_item));
+                                        } else if (task.cleaning_item) {
+                                            console.warn(`[ManagerDashboardPage] Calendar Event (Task ID: ${task.id}): cleaning_item is not an object or is unexpected. Name resolved to: ${resolvedItemName}. cleaning_item content:`, JSON.stringify(task.cleaning_item), `task.cleaning_item_id: ${task.cleaning_item_id}`);
+                                        } else {
+                                            console.warn(`[ManagerDashboardPage] Calendar Event (Task ID: ${task.id}): cleaning_item is null or undefined. Name resolved to: ${resolvedItemName}. task.cleaning_item_id: ${task.cleaning_item_id}`);
+                                        }
+                                    }
+                                    return {
                                         id: task.id.toString(),
-                                        title: getItemName(task.cleaning_item_id) || task.cleaning_item_name, // Fallback to task.cleaning_item_name
-                                        start: task.start_time ? `${task.due_date}T${task.start_time}` : task.due_date, 
-                                        end: task.end_time ? `${task.due_date}T${task.end_time}` : null,
+                                        title: title, 
+                                        start: task.due_date + (task.start_time ? `T${task.start_time}` : ''),
+                                        end: task.due_date + (task.end_time ? `T${task.end_time}` : ''),
                                         allDay: !task.start_time,
-                                        resourceId: task.assigned_to_details ? task.assigned_to_details.id.toString() : undefined, 
+                                        resourceId: task.assigned_to ? task.assigned_to.toString() : undefined, 
                                         extendedProps: {
                                             ...task,
-                                            itemName: getItemName(task.cleaning_item_id) || task.cleaning_item_name, // Fallback
-                                            staffName: task.assigned_to_details ? getStaffName(task.assigned_to_details.id) : 'Unassigned',
+                                            itemName: resolvedItemName || 'Unknown Item', 
+                                            staffName: task.assigned_to_details ? (staffUsers.find(su => su.profile.id === task.assigned_to)?.username || 'Unassigned') : 'Unassigned',
                                             status: task.status,
-                                            departmentId: task.department_id, // Ensure this uses the correct field, e.g., task.department_id
+                                            departmentId: task.department_id, 
                                             notes: task.notes,
                                         },
                                         className: `task-status-${task.status?.toLowerCase()}`,
                                         borderColor: theme.palette[getStatusColor(task.status)]?.dark || theme.palette.grey[500],
                                         backgroundColor: theme.palette[getStatusColor(task.status)]?.main || theme.palette.grey[300],
-                                        textColor: theme.palette[getStatusColor(task.status)]?.contrastText || theme.palette.text.primary,
+                                        textColor: theme.palette[getStatusColor(task.status)]?.contrastText || theme.palette.text.primary
                                     };
-                                    if (departmentTasks.length > 0 && task === departmentTasks[0]) { // Log only for the first task to avoid clutter
-                                        console.log('[ManagerDashboardPage] Inspecting first task from departmentTasks during calendar event mapping:', JSON.stringify(task, null, 2));
-                                        console.log('[ManagerDashboardPage] Inspecting first event object created for calendar:', JSON.stringify(eventObject, null, 2));
-                                    }
-                                    return eventObject;
                                 })}
                                 onEventClick={handleEventClickCalendar}
                                 onEventDrop={handleEventDrop}
@@ -734,33 +804,56 @@ function ManagerDashboardPage() {
                                     </TableHead>
                                     <TableBody>
                                         {departmentTasks.map((task) => (
-                                            <TableRow hover key={task.id}>
-                                                <TableCell>{task.cleaning_item_name || 'N/A'}</TableCell>
-                                                <TableCell>{task.assigned_to_details?.full_name || task.assigned_to_details?.username || 'Unassigned'}</TableCell>
-                                                <TableCell>{task.due_date}</TableCell>
-                                                <TableCell>{task.start_time ? formatTime(new Date(`1970-01-01T${task.start_time}`)) : 'N/A'}</TableCell>
-                                                <TableCell>{task.end_time ? formatTime(new Date(`1970-01-01T${task.end_time}`)) : 'N/A'}</TableCell>
+                                            <TableRow key={task.id} sx={getRowStyle(task.status)}>
+                                                <TableCell>{getResolvedCleaningItemName(task) || 'N/A'}</TableCell>
                                                 <TableCell>
-                                                    <Chip label={task.status} size="small" color={task.status === 'pending' ? 'warning' : task.status === 'completed' ? 'success' : 'default'} />
+                                                    {task.assigned_to_details 
+                                                        ? `${task.assigned_to_details.first_name || ''} ${task.assigned_to_details.last_name || ''}`.trim() || task.assigned_to_details.username 
+                                                        : 'Unassigned'}
                                                 </TableCell>
-                                                <TableCell align="center">
+                                                <TableCell>{task.due_date}</TableCell>
+                                                <TableCell>{task.start_time ? task.start_time.substring(0,5) : 'N/A'}</TableCell>
+                                                <TableCell>{task.end_time ? task.end_time.substring(0,5) : 'N/A'}</TableCell>
+                                                <TableCell>
+                                                    <Chip 
+                                                        label={task.status.replace('_', ' ')}
+                                                        color={
+                                                            task.status === 'pending' ? 'warning' :
+                                                            task.status === 'in_progress' ? 'secondary' :
+                                                            task.status === 'completed' ? 'success' :
+                                                            task.status === 'pending_review' ? 'info' : // Color for pending_review
+                                                            task.status === 'missed' ? 'error' :
+                                                            task.status === 'requires_attention' ? 'warning' : // Can be same as pending or different
+                                                            'default'
+                                                        }
+                                                        size="small"
+                                                        icon={task.status === 'pending_review' ? <RateReviewIcon fontSize="small" /> : null}
+                                                        sx={{ textTransform: 'capitalize' }}
+                                                    />
+                                                </TableCell>
+                                                <TableCell align="right">
                                                     <Tooltip title="View Details">
-                                                        <IconButton onClick={() => handleOpenDetailModal(task)} size="small">
+                                                        <IconButton size="small" onClick={() => handleOpenDetailModal(task)}>
                                                             <VisibilityIcon />
                                                         </IconButton>
                                                     </Tooltip>
                                                     <Tooltip title="Edit Task">
-                                                        <IconButton onClick={() => handleOpenEditModal(task)} size="small">
+                                                        <IconButton size="small" onClick={() => handleOpenEditModal(task)} disabled={task.status === 'completed'}>
                                                             <EditIcon />
                                                         </IconButton>
                                                     </Tooltip>
-                                                    {task.status !== 'completed' && (
-                                                        <Tooltip title="Mark Complete">
-                                                            <IconButton onClick={() => handleMarkComplete(task.id)} size="small">
+                                                    <Tooltip title="Mark Complete">
+                                                        <span> {/* Span for Tooltip when button is disabled */} 
+                                                            <IconButton 
+                                                                size="small" 
+                                                                onClick={() => handleMarkComplete(task.id)}
+                                                                disabled={task.status === 'completed'} // Disabled if already completed
+                                                                color={task.status === 'pending_review' ? "info" : "default"} // Highlight if pending review
+                                                            >
                                                                 <CheckCircle />
                                                             </IconButton>
-                                                        </Tooltip>
-                                                    )}
+                                                        </span>
+                                                    </Tooltip>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -855,7 +948,8 @@ function ManagerDashboardPage() {
                 <TaskDetailModal 
                     open={isDetailModalOpen} 
                     onClose={handleCloseDetailModal}
-                    task={selectedTaskForDetail}
+                    task={selectedTaskDetailData.task}
+                    resolvedCleaningItemName={selectedTaskDetailData.resolvedItemName}
                     cleaningItems={cleaningItems} 
                     staffUsers={staffUsers} 
                     getStaffName={getStaffName} 
@@ -863,7 +957,8 @@ function ManagerDashboardPage() {
                 <EditTaskAssignmentModal
                     open={isEditModalOpen}
                     onClose={handleCloseEditModal}
-                    task={selectedTaskForEdit}
+                    task={selectedTaskEditData.task}
+                    resolvedCleaningItemName={selectedTaskEditData.resolvedItemName}
                     staffUsers={staffUsers}
                     cleaningItems={cleaningItems} 
                     onTaskUpdated={handleTaskUpdated} 

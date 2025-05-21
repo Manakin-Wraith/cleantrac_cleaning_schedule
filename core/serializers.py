@@ -89,12 +89,15 @@ class CleaningItemSerializer(serializers.ModelSerializer):
         ]
 
 class TaskInstanceSerializer(serializers.ModelSerializer):
-    cleaning_item_id = serializers.PrimaryKeyRelatedField(
+    # For reading cleaning_item details
+    cleaning_item = CleaningItemSerializer(read_only=True)
+    # For writing/linking cleaning_item by ID
+    cleaning_item_id_write = serializers.PrimaryKeyRelatedField(
         queryset=CleaningItem.objects.all(), 
         source='cleaning_item', 
-        # write_only=True # Keep for read if needed, or make separate read/write serializers
+        write_only=True,
+        label='Cleaning Item ID' # Add label for clarity in browsable API forms
     )
-    cleaning_item_name = serializers.CharField(source='cleaning_item.name', read_only=True)
     
     assigned_to_id = serializers.PrimaryKeyRelatedField(
         queryset=UserProfile.objects.all(), # Corrected: Query UserProfile
@@ -116,7 +119,9 @@ class TaskInstanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskInstance
         fields = [
-            'id', 'cleaning_item_id', 'cleaning_item_name', 
+            'id', 
+            'cleaning_item', # Nested details for read
+            'cleaning_item_id_write', # ID for write
             'department_id', 'department_name',
             'assigned_to_id', 'assigned_to_details', 
             'due_date', 'start_time', 'end_time', # Added start_time and end_time

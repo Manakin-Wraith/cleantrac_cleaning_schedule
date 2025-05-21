@@ -178,9 +178,16 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
 - **[ ] 3. My Tasks Page (Staff View)**
   - [ ] UI: Page Heading (e.g., "My [Department Name] Tasks")
   - [ ] UI: Time Period Selector/Toggle (Today, This Week)
-  - [ ] UI: Task List (List or Simple Table: Status, Item Name, Due Date/Day, Actions)
+  - [x] UI: Task List (List or Simple Table: Status, Item Name, Due Date/Day, Actions) -> **Evolved to responsive Card Grid**
+      - [x] Implemented card-based UI for tasks.
+      - [x] Cards display: Cleaning Item Name, Equipment, Chemicals, Method, Scheduled Date, Timeslot, Notes, Status.
+      - [x] Icons integrated for key details (Date, Time, Equipment, etc.).
+      - [x] Responsive grid layout (e.g., 2-3 cards on desktop, 1 on mobile).
+      - [x] Consistent card height per row.
+      - [x] Distinct background colors for 'Completed' (grey) and 'Pending Review' (light blue/alpha-blended) tasks.
+      - [x] Title styling (strike-through, disabled color) for 'Completed' tasks.
   - [ ] UI: Empty state message ("No tasks assigned")
-  - [ ] Feature: Task Management (Viewing assigned tasks, Status Tracking)
+  - [x] Feature: Task Management (Viewing assigned tasks, Status Tracking) - *Basic viewing implemented*
   - [ ] Feature: Filtering (by time period)
   - [ ] Function: `Retrieve My Tasks` API call (for logged-in user, department-scoped)
   - [ ] Function: `Select Period`
