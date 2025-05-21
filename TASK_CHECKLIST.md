@@ -9,16 +9,17 @@
   - [x] Display: Current Active Department (dynamic, from AuthContext, if available)
   - [x] Functionality: Logout Button (functional, uses AuthContext)
   - [x] Foundational: Implemented `AuthContext` for global authentication state management.
-- **[ ] Implement Fixed/Collapsible Sidebar Navigation**
-  - [ ] Component: `Sidebar.jsx`
-  - [ ] Display: App Logo (small)
-  - [ ] Navigation Links (role-based, department-contextual - placeholders initially)
-    - [ ] Manager: Dashboard, Schedule/Calendar, Item Management, Reports (future)
-    - [ ] Staff: My Tasks
-- **[~] Integrate Header & Sidebar into Main Application Layout**
+- **[x] Implement Fixed/Collapsible Sidebar Navigation**
+  - [x] Component: `Sidebar.jsx`
+  - [x] Display: App Logo (`box_icon.png` - visible always, text name on mobile only)
+  - [x] Navigation Links (role-based, placeholders for now, includes Logout)
+    - [x] Manager: Dashboard, Schedule/Calendar, Item Management, Staff
+    - [x] Staff: My Tasks
+- **[x] Integrate Header & Sidebar into Main Application Layout**
   - [x] `HeaderBar` integrated into `PageLayout.jsx`.
-  - [ ] Create/Update main layout component (e.g., `App.jsx`, `MainLayout.jsx`) - *`PageLayout.jsx` serves this role for now.*
-  - [ ] Ensure page content renders correctly within this layout.
+  - [x] `Sidebar` integrated into `PageLayout.jsx`.
+  - [x] `PageLayout.jsx` updated to manage responsive sidebar behavior (mobile toggle, permanent on desktop).
+  - [x] Page content renders correctly within the new layout.
 
 ## II. Manager Dashboard Enhancements
 
