@@ -2,20 +2,21 @@
 
 ## I. Overall Application Layout & Core UI
 
-- **[ ] Implement Fixed Header Bar**
-  - [ ] Component: `HeaderBar.jsx`
-  - [ ] Display: Application Name/Logo
-  - [ ] Display: User Name & Role (placeholder initially)
-  - [ ] Display: Current Active Department (placeholder/future)
-  - [ ] Functionality: Logout Button (placeholder initially)
+- **[x] Implement Fixed Header Bar**
+  - [x] Component: `HeaderBar.jsx`
+  - [x] Display: Application Name/Logo (Basic "CleanTrack" text)
+  - [x] Display: User Name & Role (placeholder initially)
+  - [x] Display: Current Active Department (placeholder initially)
+  - [x] Functionality: Logout Button (placeholder initially)
 - **[ ] Implement Fixed/Collapsible Sidebar Navigation**
   - [ ] Component: `Sidebar.jsx`
   - [ ] Display: App Logo (small)
   - [ ] Navigation Links (role-based, department-contextual - placeholders initially)
     - [ ] Manager: Dashboard, Schedule/Calendar, Item Management, Reports (future)
     - [ ] Staff: My Tasks
-- **[ ] Integrate Header & Sidebar into Main Application Layout**
-  - [ ] Create/Update main layout component (e.g., `App.jsx`, `MainLayout.jsx`)
+- **[~] Integrate Header & Sidebar into Main Application Layout**
+  - [x] `HeaderBar` integrated into `PageLayout.jsx`.
+  - [ ] Create/Update main layout component (e.g., `App.jsx`, `MainLayout.jsx`) - *`PageLayout.jsx` serves this role for now.*
   - [ ] Ensure page content renders correctly within this layout.
 
 ## II. Manager Dashboard Enhancements
