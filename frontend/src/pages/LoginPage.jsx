@@ -9,7 +9,8 @@ import {
     Typography,
     CircularProgress,
 } from '@mui/material';
-import { loginUser, getCurrentUser } from '../services/authService'; 
+// import { loginUser, getCurrentUser } from '../services/authService'; // No longer directly used
+import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 function LoginPage() {
     const [username, setUsername] = useState('');
@@ -17,36 +18,44 @@ function LoginPage() {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate(); 
     const { enqueueSnackbar } = useSnackbar(); 
+    const { login } = useAuth(); // Get login function from AuthContext
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         setLoading(true);
         try {
-            const tokenData = await loginUser(username, password);
-            localStorage.setItem('authToken', tokenData.token); 
-            const userData = await getCurrentUser();
-            enqueueSnackbar(`Login successful! Welcome ${userData.username}. Role: ${userData.profile.role}, Department: ${userData.profile.department_name}`, { variant: 'success' });
-            console.log('User details:', userData);
+            // const tokenData = await loginUser(username, password);
+            // localStorage.setItem('authToken', tokenData.token); 
+            // const userData = await getCurrentUser();
+            const userData = await login(username, password); // Use context login
 
-            // Role-based redirection
-            const userRole = userData.profile?.role;
-            if (userRole === 'manager') {
-                navigate('/manager-dashboard');
-            } else if (userRole === 'staff') {
-                navigate('/staff-tasks');
+            if (userData) { // Ensure userData is returned before proceeding
+                enqueueSnackbar(`Login successful! Welcome ${userData.username}. Role: ${userData.profile.role}, Department: ${userData.profile.department_name}`, { variant: 'success' });
+                console.log('User details:', userData);
+
+                // Role-based redirection
+                const userRole = userData.profile?.role;
+                if (userRole === 'manager') {
+                    navigate('/manager-dashboard');
+                } else if (userRole === 'staff') {
+                    navigate('/staff-tasks');
+                } else {
+                    console.warn('Unknown user role:', userRole, 'Defaulting to login.');
+                    enqueueSnackbar('Login successful, but role is undefined. Please contact admin.', { variant: 'warning' });
+                    navigate('/login');
+                }
             } else {
-                console.warn('Unknown user role:', userRole, 'Defaulting to login.');
-                // Potentially navigate to an error page or show a specific toast
-                enqueueSnackbar('Login successful, but role is undefined. Please contact admin.', { variant: 'warning' });
-                navigate('/login'); // Or a generic landing page if you prefer not to re-route to login
+                // This case should ideally be handled by an error thrown from login context function
+                enqueueSnackbar('Login failed. Please try again.', { variant: 'error' });
             }
 
             setLoading(false);
         } catch (err) {
             setLoading(false);
             const errorMessage = err.response?.data?.non_field_errors?.[0] || 
-                               err.response?.data?.detail || 
-                               'Login failed. Please check your credentials or server status.';
+                                 err.response?.data?.detail || 
+                                 err.message || // Use err.message if response is not available
+                                 'Login failed. Please check your credentials or server status.';
             enqueueSnackbar(errorMessage, { variant: 'error' });
             console.error('Login error object:', err);
         }

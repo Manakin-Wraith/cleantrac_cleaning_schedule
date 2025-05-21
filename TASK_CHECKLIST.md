@@ -4,10 +4,11 @@
 
 - **[x] Implement Fixed Header Bar**
   - [x] Component: `HeaderBar.jsx`
-  - [x] Display: Application Name/Logo (Basic "CleanTrack" text)
-  - [x] Display: User Name & Role (placeholder initially)
-  - [x] Display: Current Active Department (placeholder initially)
-  - [x] Functionality: Logout Button (placeholder initially)
+  - [x] Display: Application Name/Logo (Basic "CleanTrack" text, links to user dashboard/login)
+  - [x] Display: User Name & Role (dynamic, from AuthContext)
+  - [x] Display: Current Active Department (dynamic, from AuthContext, if available)
+  - [x] Functionality: Logout Button (functional, uses AuthContext)
+  - [x] Foundational: Implemented `AuthContext` for global authentication state management.
 - **[ ] Implement Fixed/Collapsible Sidebar Navigation**
   - [ ] Component: `Sidebar.jsx`
   - [ ] Display: App Logo (small)

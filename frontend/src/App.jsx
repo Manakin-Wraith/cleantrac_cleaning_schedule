@@ -4,17 +4,20 @@ import LoginPage from './pages/LoginPage';
 import ManagerDashboardPage from './pages/ManagerDashboardPage';
 import StaffTasksPage from './pages/StaffTasksPage'; 
 import PageLayout from './components/PageLayout';
+import { AuthProvider } from './context/AuthContext'; 
 
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/login" element={<PageLayout><LoginPage /></PageLayout>} />
-        <Route path="/manager-dashboard" element={<PageLayout><ManagerDashboardPage /></PageLayout>} />
-        <Route path="/staff-tasks" element={<PageLayout><StaffTasksPage /></PageLayout>} /> 
-        <Route path="/" element={<Navigate replace to="/login" />} />
-        {/* Add other routes here, wrapping their elements with PageLayout if they need this centering */}
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<PageLayout><LoginPage /></PageLayout>} />
+          <Route path="/manager-dashboard" element={<PageLayout><ManagerDashboardPage /></PageLayout>} />
+          <Route path="/staff-tasks" element={<PageLayout><StaffTasksPage /></PageLayout>} /> 
+          <Route path="/" element={<Navigate replace to="/login" />} />
+          {/* Add other routes here, wrapping their elements with PageLayout if they need this centering */}
+        </Routes>
+      </AuthProvider>
     </Router>
   );
 }
