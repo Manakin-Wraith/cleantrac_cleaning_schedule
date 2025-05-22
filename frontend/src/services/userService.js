@@ -24,4 +24,26 @@ export const getUsers = async (params = {}) => {
     }
 };
 
+/**
+ * Fetches users, optionally filtered by department ID and other parameters.
+ * @param {string|number} departmentId - The ID of the department to filter users by.
+ * @param {object} params - Additional query parameters (e.g., { role: 'staff' }).
+ * @returns {Promise<Array<object>>} A promise that resolves to an array of user objects.
+ */
+export const getUsersByDepartment = async (departmentId, params = {}) => {
+    try {
+        const queryParams = new URLSearchParams({
+            department_id: departmentId,
+            ...params,
+        });
+        const response = await api.get(`/users/?${queryParams}`);
+        return response.data; // Assuming the API returns an array of users
+    } catch (error) {
+        console.error('Error fetching users by department:', error);
+        // You might want to throw the error or return a specific error structure
+        // For now, re-throwing to be caught by the caller (e.g., ItemFormModal)
+        throw error;
+    }
+};
+
 // Potentially add functions like getUserById, updateUser, etc. in the future

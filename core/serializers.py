@@ -80,12 +80,26 @@ class CleaningItemSerializer(serializers.ModelSerializer):
         write_only=True
     )
     department_name = serializers.CharField(source='department.name', read_only=True)
+    
+    # Add default_assigned_staff field
+    default_assigned_staff = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), # Query against the User model
+        many=True,                  # Expect a list of IDs
+        required=False,             # Make the field optional
+        allow_null=True,            # Allow null to be sent (or an empty list)
+        # source='default_assigned_staff' # Source is implied by field name
+    )
+    # For read operations, to show details of assigned staff (optional, can be complex)
+    # default_assigned_staff_details = UserSerializer(source='default_assigned_staff', many=True, read_only=True)
 
     class Meta:
         model = CleaningItem
         fields = [
             'id', 'name', 'department_id', 'department_name', 'frequency', 
-            'equipment', 'chemical', 'method', 'created_at', 'updated_at'
+            'equipment', 'chemical', 'method', 
+            'default_assigned_staff', # Add to fields list
+            # 'default_assigned_staff_details', # Add if you implement the read_only details serializer
+            'created_at', 'updated_at'
         ]
 
 class TaskInstanceSerializer(serializers.ModelSerializer):

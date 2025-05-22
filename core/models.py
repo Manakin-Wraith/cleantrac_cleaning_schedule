@@ -28,16 +28,23 @@ class CleaningItem(models.Model):
         ('weekly', 'Weekly'),
         ('monthly', 'Monthly'),
         ('adhoc', 'Ad-hoc'), # Added for flexibility
+        # Ensuring frontend options are covered if they differ
+        ('quarterly', 'Quarterly'),
+        ('annually', 'Annually'),
+        ('as_needed', 'As Needed'),
     ]
     name = models.CharField(max_length=200)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='cleaning_items')
-    frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES)
+    frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES) # Max length updated
     equipment = models.TextField(blank=True, null=True)
     chemical = models.TextField(blank=True, null=True)
     method = models.TextField()
-    # default_assigned_staff can be complex due to department constraints, consider handling in logic or a simplified approach for now.
-    # For simplicity, we might assign staff directly to TaskInstances.
-    # If needed: default_assigned_staff = models.ManyToManyField(User, blank=True, related_name='default_cleaning_assignments')
+    default_assigned_staff = models.ManyToManyField(
+        User, 
+        blank=True, 
+        related_name='default_cleaning_items',
+        help_text="Default staff typically assigned to this cleaning item."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

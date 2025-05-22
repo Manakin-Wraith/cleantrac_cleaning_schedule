@@ -87,20 +87,58 @@ class UserViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated:
             return User.objects.none()
 
+        # Check for specific query parameters for filtering staff by department
+        department_id = self.request.query_params.get('department_id')
+        role = self.request.query_params.get('role') # e.g., 'staff'
+
+        queryset = User.objects.all()
+
+        if department_id:
+            queryset = queryset.filter(profile__department_id=department_id)
+        
+        if role:
+            queryset = queryset.filter(profile__role=role)
+
+        # If department_id or role was provided, we assume the request is specific enough
+        # and the permission_classes will handle whether the requesting user *can* make this query.
+        # If no specific filters are provided via query params, then apply general visibility rules.
+        if department_id or role:
+            # At this point, queryset is filtered by department_id and/or role if they were provided.
+            # The UserAndProfileManagementPermissions should ensure that only authorized users (e.g., managers of that department or superusers)
+            # can actually get these results. For instance, a staff member from another department shouldn't be able to query for staff in department X.
+            # If current user is not superuser, and is a manager, they should only be able to query their own department staff.
+            if not user.is_superuser:
+                try:
+                    manager_profile = user.profile
+                    if manager_profile.role == 'manager':
+                        if department_id and int(department_id) != manager_profile.department_id:
+                            # Manager is trying to query staff outside their department
+                            return User.objects.none()
+                        # If department_id wasn't provided but role was, implicitly filter by manager's department for safety
+                        elif not department_id and manager_profile.department_id:
+                             queryset = queryset.filter(profile__department_id=manager_profile.department_id)
+                    else: # Staff user making a specific query
+                        # Staff can only query for themselves, even with params, unless further rules are added
+                        return User.objects.filter(pk=user.pk) 
+                except UserProfile.DoesNotExist:
+                    return User.objects.none()
+            return queryset.distinct() # Ensure distinct users if multiple filters are applied
+
+        # Fallback to original role-based visibility if no specific query params are used
         if user.is_superuser:
-            return User.objects.all()
+            return User.objects.all().distinct()
         
         try:
             user_profile = user.profile # Assumes related_name='profile'
             if user_profile.role == 'manager' and user_profile.department:
                 # Managers see users in their department
-                return User.objects.filter(profile__department=user_profile.department)
+                return User.objects.filter(profile__department=user_profile.department).distinct()
             else:
                 # Staff (or managers without a department) see only themselves
-                return User.objects.filter(pk=user.pk)
+                return User.objects.filter(pk=user.pk).distinct()
         except UserProfile.DoesNotExist:
-            # If no profile, default to seeing only self (applies to superuser if they lack a profile too, but they pass earlier)
-            return User.objects.filter(pk=user.pk)
+            # If no profile, default to seeing only self
+            return User.objects.filter(pk=user.pk).distinct()
 
     def perform_create(self, serializer):
         user = self.request.user

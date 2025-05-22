@@ -138,23 +138,24 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Modal: "Edit Task Assignment" modal (Layout and informational display improvements complete, dropdown sizing fixed, pre-fills and saves time and date correctly)
 - **[~] 5. Item Management Page (Manager View)**
   - [x] UI: Page Heading (e.g., "[Department Name] Item Management")
-  - [ ] UI: "+ Add New Master Item" Button (Button exists, modal/functionality pending)
-  - [x] UI: Master Item List Table (Item Name, Frequency, Equipment, Chemical, Method, Default Staff, Actions) - Basic table structure and data display implemented. Action buttons are placeholders.
-  - [~] Feature: Master Data Management (View, Add, Edit, Delete department-specific items) - Viewing implemented.
+  - [x] UI: "+ Add New Master Item" Button (Button exists and opens functional modal)
+  - [x] UI: Master Item List Table (Item Name, Frequency, Equipment, Chemical, Method, Actions) - Core table, data display, edit/delete icons implemented and functional.
+  - [x] Feature: Master Data Management (View, Add, Edit, Delete department-specific items) - Core CRUD functionality implemented via modal.
   - [x] Function: `Retrieve Cleaning Items` API call (department-scoped) - Implemented and working.
   - [ ] Function: `Sort Table`
-  - [ ] Function: `Open Item Form Modal (for Add)`
-  - [ ] Function: `Open Item Form Modal (for Edit)`
+  - [x] Function: `Open Item Form Modal (for Add)` - Implemented.
+  - [x] Function: `Open Item Form Modal (for Edit)` - Implemented.
   - [x] UI: Display fields (Item Name, Frequency, Equipment, Chemical, Method) - Implemented and working.
-- **[ ] 6. Item Form Modal (Primarily Manager Use)**
-  - [ ] UI: Modal Container and Header (e.g., "Add New Cleaning Item to [Dept]")
-  - [ ] UI: Form fields (Item Name, Frequency, Equipment, Chemical, Method, Default Assigned Staff from department)
-  - [ ] UI: Save, Cancel buttons
-  - [ ] UI: Form validation error display
-  - [ ] Feature: Master Data Management (Adding, Editing department-specific items)
-  - [ ] Function: `Save Cleaning Item` API call (POST/PUT/PATCH, associates with department)
-  - [ ] Function: `Cancel Form` (Close Modal)
-  - [ ] Function: `Validate Form Data`
+- **[x] 6. Item Form Modal (Primarily Manager Use)**
+  - [x] UI: Modal Container and Header (e.g., "Add New Cleaning Item to [Dept]") - Implemented.
+  - [x] UI: Form fields (Item Name, Frequency, Equipment, Chemical, Method, Default Assigned Staff) - Implemented with icons, sectioned layout, and enhanced UX for staff selection (deletable chips & checkboxes).
+  - [x] UI: Save, Cancel buttons - Implemented.
+  - [x] UI: Form validation error display - Basic validation and snackbar errors implemented.
+  - [x] Feature: Master Data Management (Adding, Editing department-specific items) - Core functionality implemented.
+  - [x] Function: `Save Cleaning Item` API call (POST/PUT/PATCH, associates with department) - Implemented.
+  - [x] Function: `Cancel Form` (Close Modal) - Implemented.
+  - [x] Function: `Validate Form Data` - Basic client-side validation implemented.
+  - [x] UI/UX: Enhanced with leading icons for fields, sectioned layout using Paper components, and improved visual hierarchy.
 - **[ ] 7. Reports Page (Manager View)**
   - [ ] UI: Page Heading (e.g., "[Department Name] Reports")
   - [ ] UI: Report Configuration Section (Report Type, Date Range, Optional Filters, Generate Button)
