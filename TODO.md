@@ -30,8 +30,9 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Implement role verification (Integrated into custom DRF permission classes)
   - [x] Implement department identification for user upon login (Handled by `/api/users/me/` endpoint providing user, profile, role, and department_id)
 - **[ ] User Management System**
-  - [ ] API: CRUD operations for users (Admin/Manager only)
-  - [ ] UI: User listing and editing interface (Admin/Manager only)
+  - [~] API: CRUD operations for users (Admin/Manager only) - Create & Delete implemented, Update (Edit) pending.
+  - [~] UI: User listing and editing interface (Admin/Manager only) - Listing functional, Add New User functional, Delete functional. **Next: Implement Edit User functionality.**
+    - [ ] Implement Edit User functionality
 - **[ ] UI/UX Enhancements**
   - [x] Implement Toast Notifications (e.g., for login success/failure) using notistack
   - [x] Standardize page layout and centering (e.g., PageLayout component)

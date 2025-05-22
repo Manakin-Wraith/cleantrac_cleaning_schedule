@@ -43,7 +43,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/manager-dashboard' },
     { text: 'Schedule', icon: <CalendarMonthIcon />, path: '/manager-schedule' },
     { text: 'Item Management', icon: <ListAltIcon />, path: '/manager-items' },
-    { text: 'Staff', icon: <PeopleIcon />, path: '/manager-staff' },
+    { text: 'Staff', icon: <PeopleIcon />, path: '/manager-users' },
   ];
 
   const staffLinks = [

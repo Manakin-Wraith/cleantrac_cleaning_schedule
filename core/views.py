@@ -141,25 +141,10 @@ class UserViewSet(viewsets.ModelViewSet):
             return User.objects.filter(pk=user.pk).distinct()
 
     def perform_create(self, serializer):
-        user = self.request.user
-        # If a manager creates a user, associate the new user's profile with the manager's department.
-        # More complex role assignment logic can be added with RBAC.
-        new_user = serializer.save()
-        try:
-            if user.is_authenticated and not user.is_superuser and user.profile.role == 'manager' and user.profile.department:
-                # Ensure the new user also gets a profile (signal should handle this)
-                # And assign new user's profile to the manager's department if it exists
-                if hasattr(new_user, 'profile'):
-                    new_user.profile.department = user.profile.department
-                    new_user.profile.save()
-                else:
-                    # This case implies the signal might not have run or profile is not yet created.
-                    # For robustness, one might create UserProfile here if it doesn't exist.
-                    UserProfile.objects.create(user=new_user, department=user.profile.department, role='staff') # Default to staff
-
-        except UserProfile.DoesNotExist:
-            # Manager creating user has no profile, this is an edge case. Default to no department for new user.
-            pass 
+        # The UserWithProfileSerializer.create() method now handles all the necessary logic
+        # for creating the User, UserProfile, setting the password, and assigning department/role.
+        # It has access to the request context via self.context['request'].
+        serializer.save()
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserProfileSerializer

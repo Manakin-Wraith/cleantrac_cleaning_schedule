@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog
+from rest_framework.validators import UniqueValidator
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -57,11 +58,109 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 # Serializer for listing Users with their profile information (e.g., for /api/users/)
 class UserWithProfileSerializer(serializers.ModelSerializer):
-    profile = UserProfileSerializer(read_only=True)
+    profile = UserProfileSerializer(read_only=True) # Keep this for reading existing profile info
+
+    # Fields for creating/updating User
+    password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'})
+    # email, first_name, last_name are already on User model and will be handled by default
+
+    # Used for validating uniqueness of email across all User instances
+    # This ensures that no two users can have the same email address.
+    email = serializers.EmailField(
+        validators=[UniqueValidator(queryset=User.objects.all())] # Corrected usage
+    )
+    # 'role' and 'department_id' are write-only fields that will be used to create/update the UserProfile.
+    # The 'source' attribute tells DRF where to conceptually map these fields from/to the profile.
+    role = serializers.ChoiceField(choices=UserProfile.ROLE_CHOICES, source='profile.role', write_only=True, required=False)
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(), 
+        source='profile.department',  # This tells DRF to use this for the 'department' field on the profile
+        write_only=True, 
+        allow_null=True, 
+        required=False
+    )
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'profile']
+        # Include 'password', 'role', 'department_id' for write operations.
+        # 'profile' is read-only and shows the nested structure.
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'profile', 
+                  'password', 'role', 'department_id']
+        extra_kwargs = {
+            'username': {'validators': []}, # Remove unique validator if updates might send existing username
+        }
+
+
+    def create(self, validated_data):
+        profile_data = validated_data.pop('profile', {})  # Pop the entire profile dict
+        password = validated_data.pop('password', None)
+
+        user = User.objects.create_user(**validated_data, password=password)
+        
+        # Now, handle the profile data
+        profile_role = profile_data.get('role')
+        profile_department_obj = profile_data.get('department') # This should be a Department instance
+
+        # Get the profile expected to be created by a signal
+        try:
+            user_profile = UserProfile.objects.get(user=user)
+        except UserProfile.DoesNotExist:
+            # Fallback: If signal didn't run or failed, create the profile.
+            # This helps ensure a profile always exists, but log this situation if it occurs.
+            # Consider logging a warning here if this block is hit often.
+            user_profile = UserProfile.objects.create(user=user)
+
+        # Update the profile with data from the serializer
+        if profile_role:
+            user_profile.role = profile_role
+        
+        requesting_user = self.context['request'].user
+        
+        # Set department on the profile
+        if profile_department_obj:
+            user_profile.department = profile_department_obj
+        elif not user_profile.department: # Only set manager's dept if profile doesn't have one yet
+            if requesting_user.is_authenticated and hasattr(requesting_user, 'profile') and not requesting_user.is_superuser:
+                if requesting_user.profile.role == 'manager' and requesting_user.profile.department:
+                    user_profile.department = requesting_user.profile.department
+        
+        user_profile.save() # Save the changes to the profile
+        
+        return user
+
+    def update(self, instance, validated_data):
+        # Extract profile-specific fields if they are part of validated_data
+        profile_role = validated_data.pop('role', None)
+        profile_department = validated_data.pop('department_id', None)
+        
+        password = validated_data.pop('password', None)
+        if password:
+            instance.set_password(password) # Hash password
+
+        # Update User fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Update UserProfile fields
+        profile_updated = False
+        if hasattr(instance, 'profile'):
+            if profile_role is not None:
+                instance.profile.role = profile_role
+                profile_updated = True
+            if profile_department is not None:
+                instance.profile.department = profile_department
+                profile_updated = True
+            if profile_updated:
+                instance.profile.save()
+        elif profile_role or profile_department: # Profile doesn't exist, but data for it was provided
+            # Edge case: User exists but profile somehow doesn't. Create it.
+            new_profile_data = {}
+            if profile_role: new_profile_data['role'] = profile_role
+            if profile_department: new_profile_data['department'] = profile_department
+            UserProfile.objects.create(user=instance, **new_profile_data)
+            
+        return instance
 
 # Serializer for the /api/users/me/ endpoint
 class CurrentUserSerializer(serializers.ModelSerializer):

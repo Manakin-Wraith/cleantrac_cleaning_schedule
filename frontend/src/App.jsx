@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import ManagerDashboardPage from './pages/ManagerDashboardPage';
 import StaffTasksPage from './pages/StaffTasksPage'; 
 import ItemManagementPage from './pages/ItemManagementPage';
+import UserManagementPage from './pages/UserManagementPage';
 import PageLayout from './components/PageLayout';
 import { AuthProvider } from './context/AuthContext'; 
 
@@ -15,6 +16,7 @@ function App() {
           <Route path="/login" element={<PageLayout><LoginPage /></PageLayout>} />
           <Route path="/manager-dashboard" element={<PageLayout><ManagerDashboardPage /></PageLayout>} />
           <Route path="/manager-items" element={<PageLayout><ItemManagementPage /></PageLayout>} />
+          <Route path="/manager-users" element={<PageLayout><UserManagementPage /></PageLayout>} />
           <Route path="/staff-tasks" element={<PageLayout><StaffTasksPage /></PageLayout>} /> 
           <Route path="/" element={<Navigate replace to="/login" />} />
           {/* Add other routes here, wrapping their elements with PageLayout if they need this centering */}

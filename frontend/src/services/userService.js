@@ -46,4 +46,52 @@ export const getUsersByDepartment = async (departmentId, params = {}) => {
     }
 };
 
-// Potentially add functions like getUserById, updateUser, etc. in the future
+/**
+ * Creates a new user.
+ * @param {object} userData - The user data. Expected fields:
+ *                            username, password, email, first_name (optional),
+ *                            last_name (optional), role, department_id (optional).
+ * @returns {Promise<object>} A promise that resolves to the created user object.
+ */
+export const createUser = async (userData) => {
+    try {
+        const response = await api.post('/users/', userData);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating user:', error.response?.data || error.message);
+        // Re-throw to be handled by the form/caller, potentially with detailed error messages
+        throw error; 
+    }
+};
+
+/**
+ * Updates an existing user.
+ * @param {string|number} userId - The ID of the user to update.
+ * @param {object} userData - The user data to update. Can include any of the fields
+ *                            allowed by the UserWithProfileSerializer (e.g., username, email,
+ *                            first_name, last_name, password (if changing), role, department_id).
+ * @returns {Promise<object>} A promise that resolves to the updated user object.
+ */
+export const updateUser = async (userId, userData) => {
+    try {
+        const response = await api.put(`/users/${userId}/`, userData);
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating user ${userId}:`, error.response?.data || error.message);
+        throw error;
+    }
+};
+
+/**
+ * Deletes a user.
+ * @param {string|number} userId - The ID of the user to delete.
+ * @returns {Promise<void>} A promise that resolves when the user is successfully deleted.
+ */
+export const deleteUser = async (userId) => {
+    try {
+        await api.delete(`/users/${userId}/`);
+    } catch (error) {
+        console.error(`Error deleting user ${userId}:`, error.response?.data || error.message);
+        throw error;
+    }
+};
