@@ -15,9 +15,12 @@ const TaskSchedulerCalendar = ({
     onEventDrop, 
     onEventClick, 
     eventResize,
-    onEventReceive // Added new prop for external event drops
+    onEventReceive, // Added new prop for external event drops
+    calendarRef     // Ref to access calendar API from parent
 }) => {
-    const calendarRef = useRef(null); // Ref to access FullCalendar methods
+    // Use ref from props if provided, otherwise create local ref
+    const localCalendarRef = useRef(null);
+    const effectiveRef = calendarRef || localCalendarRef;
 
     const handleDatesSet = (dateInfo) => {
         // dateInfo.view.currentStart, dateInfo.view.currentEnd, dateInfo.start, dateInfo.end, dateInfo.startStr, dateInfo.endStr, dateInfo.timeZone
@@ -50,14 +53,14 @@ const TaskSchedulerCalendar = ({
     return (
         <Box sx={{ height: '75vh', position: 'relative' }}> 
             <FullCalendar
-                ref={calendarRef} // Assign ref
-                plugins={[dayGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, timeGridPlugin, interactionPlugin]} // Added resourceTimelinePlugin
+                ref={effectiveRef} // Assign ref
+                plugins={[dayGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, timeGridPlugin, interactionPlugin]} 
                 headerToolbar={{
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'dayGridMonth,resourceTimelineWeek,resourceTimeGridDay' // Changed resourceTimeGridWeek to resourceTimelineWeek
+                    right: 'dayGridMonth,resourceTimelineWeek,resourceTimeGridDay' // Reverted to resourceTimelineWeek for 'week'
                 }}
-                initialView="resourceTimelineWeek" // Changed default view to resourceTimelineWeek
+                initialView="resourceTimelineWeek" // Reverted default view to resourceTimelineWeek
                 initialDate={currentDate} // Use currentDate prop for the initial display
                 editable={true}      // To enable drag & drop
                 selectable={true}    // To enable clicking/selecting time slots
@@ -68,7 +71,7 @@ const TaskSchedulerCalendar = ({
                 eventDrop={onEventDrop} 
                 eventResize={eventResize} 
                 eventClick={(clickInfo) => { 
-                    const calendarApi = calendarRef.current?.getApi();
+                    const calendarApi = effectiveRef.current?.getApi();
                     if (!calendarApi) return;
 
                     console.log('Event clicked:', clickInfo.event.title, 'on', clickInfo.event.start);

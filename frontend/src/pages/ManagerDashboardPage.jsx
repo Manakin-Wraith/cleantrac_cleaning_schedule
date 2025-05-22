@@ -61,8 +61,9 @@ function ManagerDashboardPage() {
     // Selected date for filtering tasks
     const [selectedDate, setSelectedDate] = useState(new Date());
 
-    // Data for task management
+    // State for tasks and cleaning items
     const [departmentTasks, setDepartmentTasks] = useState([]);
+    const [localTasks, setLocalTasks] = useState([]); // Store locally created/modified tasks
     const [cleaningItems, setCleaningItems] = useState([]);
     const [staffUsers, setStaffUsers] = useState([]);
     const [loadingData, setLoadingData] = useState(false);
@@ -94,6 +95,12 @@ function ManagerDashboardPage() {
     const [currentView, setCurrentView] = useState('scheduler'); 
 
     const externalEventsRef = useRef(null); 
+
+    // Reference to the calendar component
+    const calendarRef = useRef(null);
+    
+    // Track the current placeholder event ID
+    const [placeholderEventId, setPlaceholderEventId] = useState(null); 
 
     // Function to determine row style based on task status
     const getRowStyle = (taskStatus) => {
@@ -131,17 +138,32 @@ function ManagerDashboardPage() {
         return null; // Return null if not found, let caller decide 'Unknown Item' or 'N/A'
     };
 
-    const fetchManagerData = useCallback(async (currentUser, dateToFetch) => {
-        if (!currentUser || !currentUser.profile || !currentUser.profile.department_id) {
+    // Debug function to log all tasks with their times and resource IDs
+    const logAllTasksWithDetails = () => {
+        console.log('CURRENT TASKS IN STATE:', departmentTasks.map(task => ({
+            id: task.id,
+            title: getResolvedCleaningItemName(task) || 'Unknown',
+            date: task.due_date,
+            start_time: task.start_time,
+            end_time: task.end_time,
+            resourceId: task.assigned_to ? String(task.assigned_to) : undefined
+        })));
+    };
+
+    const fetchManagerData = useCallback(async (user, date, skipLoading = false) => {
+        // Only show loading indicator if not skipping (for background refreshes)
+        if (!skipLoading) {
+            setLoadingData(true);
+        }
+        if (!user || !user.profile || !user.profile.department_id) {
             setDataError('User profile or department information is missing.');
             setLoadingData(false);
             return;
         }
         try {
-            setLoadingData(true);
             setDataError('');
             
-            const formattedDate = getTodayDateString(dateToFetch);
+            const formattedDate = getTodayDateString(date);
             const tasksParams = { 
                 due_date: formattedDate // Filter tasks by the selected date
             }; 
@@ -160,7 +182,21 @@ function ManagerDashboardPage() {
             const filteredStaff = usersResponse.filter(u => u.profile?.role === 'staff');
             console.log('Filtered staff users (for resources):', JSON.stringify(filteredStaff, null, 2));
             setStaffUsers(filteredStaff);
-            setDepartmentTasks(tasksResponse); 
+
+            // Format staff for FullCalendar resources
+            const formattedResources = filteredStaff.map(staff => ({
+                id: String(staff.id), // Ensure ID is a string for FullCalendar
+                title: staff.username || `${staff.first_name || ''} ${staff.last_name || ''}`.trim() || 'Unknown Staff'
+            }));
+            setCalendarResources(formattedResources);
+            console.log('Formatted calendar resources:', JSON.stringify(formattedResources, null, 2));
+
+            // Combine server tasks with any local tasks we've created
+            const combinedTasks = [...tasksResponse, ...localTasks.filter(lt => 
+                // Only include local tasks that aren't already in the server response
+                !tasksResponse.some(st => st.id === lt.id)
+            )];
+            setDepartmentTasks(combinedTasks);
             console.log('[ManagerDashboardPage] departmentTasks set in fetchManagerData:', JSON.stringify(tasksResponse, null, 2)); 
             setCleaningItems(itemsResponse); 
 
@@ -206,20 +242,6 @@ function ManagerDashboardPage() {
         }
         // This effect depends on 'user', 'selectedDate', and 'fetchManagerData'.
     }, [user, selectedDate, fetchManagerData, loadingUser]);
-
-    // Effect to transform staffUsers to calendar resources format
-    useEffect(() => {
-        if (staffUsers && staffUsers.length > 0) {
-            const resources = staffUsers.map(staff => ({
-                id: staff.profile.id.toString(), // Ensure ID is a string for FullCalendar
-                title: staff.first_name || staff.username
-            }));
-            setCalendarResources(resources);
-            console.log('Calendar resources:', JSON.stringify(resources, null, 2));
-        } else {
-            setCalendarResources([]); // Clear resources if no staff users
-        }
-    }, [staffUsers]);
 
     // Effect to initialize draggable cleaning items
     useEffect(() => {
@@ -300,6 +322,10 @@ function ManagerDashboardPage() {
 
     const handleCreateTaskSubmit = async (event) => {
         event.preventDefault();
+        setIsSubmitting(true);
+        
+        // Keep the placeholder visible until we're done
+        // We'll handle this directly through the calendar API
 
         const currentDepartmentId = newTask.department_id || user?.profile?.department_id;
 
@@ -308,7 +334,9 @@ function ManagerDashboardPage() {
             ...newTask,
             cleaning_item_id_write: newTask.cleaning_item_id, // Rename
             department_id: typeof currentDepartmentId === 'string' && currentDepartmentId !== '' ? parseInt(currentDepartmentId, 10) : currentDepartmentId,
-            assigned_to_id: newTask.assigned_to_id === '' || isNaN(newTask.assigned_to_id) ? null : newTask.assigned_to_id, // Convert '' or NaN to null
+            assigned_to_id: newTask.assigned_to_id === '' || isNaN(newTask.assigned_to_id) ? null : newTask.assigned_to_id,
+            assigned_to: newTask.assigned_to_id === '' || isNaN(newTask.assigned_to_id) ? null : newTask.assigned_to_id,
+            // Convert '' or NaN to null
         };
         delete payload.cleaning_item_id; // Remove the original key after using its value for cleaning_item_id_write
 
@@ -333,13 +361,61 @@ function ManagerDashboardPage() {
         console.log('Submitting new task with payload:', payload); 
 
         try {
-            await createTaskInstance(payload);
+            // Create task on the server
+            const createdTask = await createTaskInstance(payload);
             enqueueSnackbar('Task created successfully!', { variant: 'success' });
-            handleCloseCreateTaskModal();
-            if(user) fetchManagerData(user, selectedDate); // Refresh data
+            
+            // IMPORTANT: Add the newly created task directly to departmentTasks
+            // This ensures immediate visibility without waiting for a fetch
+            if (createdTask && createdTask.id) {
+                // Get the cleaning item details
+                const cleaningItem = cleaningItems.find(item => 
+                    item.id === parseInt(payload.cleaning_item_id_write));
+                
+                // Create a complete task object with all required fields
+                const newTaskWithDetails = {
+                    ...createdTask,
+                    id: createdTask.id,
+                    cleaning_item_id: payload.cleaning_item_id_write,
+                    assigned_to: payload.assigned_to,
+                    due_date: payload.due_date,
+                    // CRITICAL: Always ensure time fields exist
+                    start_time: payload.start_time || '09:00:00',
+                    end_time: payload.end_time || '10:00:00',
+                    status: payload.status,
+                    department_id: payload.department_id,
+                    notes: payload.notes || '',
+                    cleaning_item: cleaningItem
+                };
+                
+                // Add to localTasks to ensure persistence across view changes
+                setLocalTasks(prev => [...prev, newTaskWithDetails]);
+                // Also add to departmentTasks for immediate display
+                setDepartmentTasks(prev => [...prev, newTaskWithDetails]);
+            }
+            
+            // Close modal and keep placeholder until refresh completes
+            setIsCreateModalOpen(false);
+            
+            // Don't remove placeholder yet - it will be replaced by the real task
+            
+            // IMPORTANT: Do NOT refresh data after creating a task
+            // This prevents any flickering or disappearing tasks
+            // We've already added the task to departmentTasks directly
+            
+            // Remove only the placeholder event if it exists
+            if (placeholderEventId && calendarRef.current?.getApi) {
+                const calendarApi = calendarRef.current.getApi();
+                const placeholderEvent = calendarApi.getEventById(placeholderEventId);
+                if (placeholderEvent) {
+                    placeholderEvent.remove();
+                }
+                setPlaceholderEventId(null);
+            }
         } catch (err) {
             console.error("Failed to create task:", err); 
             enqueueSnackbar(err.message || 'Failed to create task. Check console for details.', { variant: 'error' });
+            setIsSubmitting(false);
         }
     };
 
@@ -357,8 +433,20 @@ function ManagerDashboardPage() {
         setIsCreateModalOpen(true);
     }
 
+    // Track submission state to prevent clearing placeholders during submission
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const handleCloseCreateTaskModal = () => {
         setIsCreateModalOpen(false);
+        // Only remove placeholder when explicitly canceling
+        if (!isSubmitting && placeholderEventId && calendarRef.current?.getApi) {
+            const calendarApi = calendarRef.current.getApi();
+            const placeholderEvent = calendarApi.getEventById(placeholderEventId);
+            if (placeholderEvent) {
+                placeholderEvent.remove();
+            }
+            setPlaceholderEventId(null);
+        }
     }
 
     const handleOpenDetailModal = (task) => {
@@ -414,6 +502,8 @@ function ManagerDashboardPage() {
     };
 
     const handleEventDrop = async (info) => {
+        // Prevent the default revert behavior
+        info.preventDefault();
         const { event, oldEvent, revert, view } = info;
         const taskId = event.id;
         let updatedFields = {};
@@ -475,9 +565,36 @@ function ManagerDashboardPage() {
         console.log(`Attempting to update task ${taskId} with:`, updatedFields, "Description:", changeDescription.join(', '));
 
         try {
+            // Update the task on the server
             await updateTaskInstance(taskId, updatedFields);
             enqueueSnackbar(`Task ${event.title || taskId} updated: ${changeDescription.join(', ')}`, { variant: 'success' });
-            fetchManagerData(user, selectedDate); 
+            
+            // Update the task in our local state to maintain visibility
+            const updatedTask = departmentTasks.find(t => String(t.id) === String(taskId));
+            if (updatedTask) {
+                const newUpdatedTask = {
+                    ...updatedTask,
+                    ...updatedFields
+                };
+                
+                // Update in localTasks to ensure persistence
+                setLocalTasks(prev => {
+                    const exists = prev.some(t => String(t.id) === String(taskId));
+                    if (exists) {
+                        return prev.map(t => String(t.id) === String(taskId) ? newUpdatedTask : t);
+                    } else {
+                        return [...prev, newUpdatedTask];
+                    }
+                });
+                
+                // Update in departmentTasks for immediate display
+                setDepartmentTasks(prev => 
+                    prev.map(t => String(t.id) === String(taskId) ? newUpdatedTask : t)
+                );
+            }
+            
+            // Don't fetch from server to avoid flickering
+            // fetchManagerData(user, selectedDate);
         } catch (error) {
             console.error('Failed to update task on drop:', error);
             enqueueSnackbar(`Failed to update task ${event.title || taskId}: ${error.message || 'Unknown error'}`, { variant: 'error' });
@@ -486,6 +603,8 @@ function ManagerDashboardPage() {
     };
 
     const handleEventResize = async (info) => {
+        // Prevent the default revert behavior
+        info.preventDefault();
         const { event, oldEvent, revert, view } = info;
         const taskId = event.id;
         let updatedFields = {};
@@ -591,14 +710,15 @@ function ManagerDashboardPage() {
         }
 
         const droppedDate = newCalendarEvent ? newCalendarEvent.start : null; // Date/time where the event was dropped
-        const calendarResources = newCalendarEvent ? newCalendarEvent.getResources() : []; // Array of resource objects
-        const primaryResource = calendarResources && calendarResources.length > 0 ? calendarResources[0] : null;
+        // Determine target staff row where item was dropped
+        const primaryResource = dropInfo.resource ? dropInfo.resource : (newCalendarEvent ? newCalendarEvent.getResources()[0] : null);
 
         console.log('Dropped Date from newCalendarEvent.start:', droppedDate, '(type:', typeof droppedDate, ', isDate:', droppedDate instanceof Date, ')');
         console.log('Primary Resource from newCalendarEvent.getResources():', primaryResource ? `ID: ${primaryResource.id}, Title: ${primaryResource.title}` : primaryResource);
 
         const cleaningItemId = newCalendarEvent && newCalendarEvent.extendedProps ? newCalendarEvent.extendedProps.cleaning_item_id : '';
-        const assigneeId = primaryResource ? primaryResource.id : ''; 
+        // Always cast resource ID to string for calendar linkage
+        const assigneeIdStr = primaryResource ? String(primaryResource.id) : '';
         
         const dueDateStr = getTodayDateString(droppedDate); 
         const startTimeStr = formatTime(droppedDate);       
@@ -632,13 +752,14 @@ function ManagerDashboardPage() {
             }
         }
         
-        console.log(`Preparing to open CreateNewTaskModal with: cleaning_item_id=${cleaningItemId}, assigned_to_id=${assigneeId}, due_date=${dueDateStr}, start_time=${startTimeStr}, end_time=${endTimeStr}`);
-        console.log(`Actual values being set to newTask: cleaning_item_id=${cleaningItemId}, assigned_to_id=${assigneeId}, due_date=${dueDateStr}, start_time=${startTimeStr}, end_time=${endTimeStr}`);
+        console.log(`Preparing to open CreateNewTaskModal with: cleaning_item_id=${cleaningItemId}, assigned_to_id=${assigneeIdStr}, due_date=${dueDateStr}, start_time=${startTimeStr}, end_time=${endTimeStr}`);
+        console.log(`Actual values being set to newTask: cleaning_item_id=${cleaningItemId}, assigned_to_id=${assigneeIdStr}, due_date=${dueDateStr}, start_time=${startTimeStr}, end_time=${endTimeStr}`);
 
         setNewTask(prev => ({
             ...prev,
             cleaning_item_id: cleaningItemId,
-            assigned_to_id: assigneeId,
+            // Store numeric ID for backend but keep string for calendar
+            assigned_to_id: assigneeIdStr ? parseInt(assigneeIdStr, 10) : '',
             due_date: dueDateStr,
             start_time: startTimeStr,
             end_time: endTimeStr,
@@ -647,8 +768,25 @@ function ManagerDashboardPage() {
             notes: '', // Re-added notes initialization
         }));
 
+        // Create a placeholder event directly in the calendar
+        const tempId = `temp-${Date.now()}`;
+        if (calendarRef.current?.getApi) {
+            const calendarApi = calendarRef.current.getApi();
+            calendarApi.addEvent({
+                id: tempId,
+                title: newCalendarEvent.title,
+                start: newCalendarEvent.start,
+                end: newCalendarEvent.end || new Date(newCalendarEvent.start.getTime()+60*60*1000),
+                resourceId: assigneeIdStr || undefined,
+                allDay: false,
+                backgroundColor: '#9e9e9e',
+                borderColor: '#757575',
+                classNames: ['placeholder-event']
+            });
+            setPlaceholderEventId(tempId);
+        }
+
         setIsCreateModalOpen(true);
-        newCalendarEvent.remove(); 
     };
 
     if (loadingUser) {
@@ -733,39 +871,85 @@ function ManagerDashboardPage() {
                         )}
                         <Paper elevation={3} sx={{ p: 2 }}>
                             <TaskSchedulerCalendar 
-                                events={departmentTasks.map(task => {
-                                    const resolvedItemName = getResolvedCleaningItemName(task);
-                                    const title = resolvedItemName || 'Unknown Item';
+                                calendarRef={calendarRef}
+                                events={[...departmentTasks, ...localTasks].map(task => {
+                                        const resolvedItemName = getResolvedCleaningItemName(task);
+                                        const title = resolvedItemName || 'Unknown Item';
 
-                                    if (title === 'Unknown Item' && task.id) { // Log if name is missing
-                                        if (task.cleaning_item && typeof task.cleaning_item === 'object') {
-                                            console.warn(`[ManagerDashboardPage] Calendar Event (Task ID: ${task.id}): cleaning_item object found, but name is missing or falsy. Name resolved to: ${resolvedItemName}. cleaning_item content:`, JSON.stringify(task.cleaning_item));
-                                        } else if (task.cleaning_item) {
-                                            console.warn(`[ManagerDashboardPage] Calendar Event (Task ID: ${task.id}): cleaning_item is not an object or is unexpected. Name resolved to: ${resolvedItemName}. cleaning_item content:`, JSON.stringify(task.cleaning_item), `task.cleaning_item_id: ${task.cleaning_item_id}`);
-                                        } else {
-                                            console.warn(`[ManagerDashboardPage] Calendar Event (Task ID: ${task.id}): cleaning_item is null or undefined. Name resolved to: ${resolvedItemName}. task.cleaning_item_id: ${task.cleaning_item_id}`);
+                                        if (title === 'Unknown Item' && task.id) { // Log if name is missing
+                                            if (task.cleaning_item && typeof task.cleaning_item === 'object') {
+                                                console.warn(`[ManagerDashboardPage] Calendar Event (Task ID: ${task.id}): cleaning_item object found, but name is missing or falsy. Name resolved to: ${resolvedItemName}. cleaning_item content:`, JSON.stringify(task.cleaning_item));
+                                            } else if (task.cleaning_item) {
+                                                console.warn(`[ManagerDashboardPage] Calendar Event (Task ID: ${task.id}): cleaning_item is not an object or is unexpected. Name resolved to: ${resolvedItemName}. cleaning_item content:`, JSON.stringify(task.cleaning_item), `task.cleaning_item_id: ${task.cleaning_item_id}`);
+                                            } else {
+                                                console.warn(`[ManagerDashboardPage] Calendar Event (Task ID: ${task.id}): cleaning_item is null or undefined. Name resolved to: ${resolvedItemName}. task.cleaning_item_id: ${task.cleaning_item_id}`);
+
+                                            }
                                         }
-                                    }
-                                    return {
-                                        id: task.id.toString(),
-                                        title: title, 
-                                        start: task.due_date + (task.start_time ? `T${task.start_time}` : ''),
-                                        end: task.due_date + (task.end_time ? `T${task.end_time}` : ''),
-                                        allDay: !task.start_time,
-                                        resourceId: task.assigned_to ? task.assigned_to.toString() : undefined, 
-                                        extendedProps: {
-                                            ...task,
-                                            itemName: resolvedItemName || 'Unknown Item', 
-                                            staffName: task.assigned_to_details ? (staffUsers.find(su => su.profile.id === task.assigned_to)?.username || 'Unassigned') : 'Unassigned',
-                                            status: task.status,
-                                            departmentId: task.department_id, 
-                                            notes: task.notes,
-                                        },
-                                        className: `task-status-${task.status?.toLowerCase()}`,
-                                        borderColor: theme.palette[getStatusColor(task.status)]?.dark || theme.palette.grey[500],
-                                        backgroundColor: theme.palette[getStatusColor(task.status)]?.main || theme.palette.grey[300],
-                                        textColor: theme.palette[getStatusColor(task.status)]?.contrastText || theme.palette.text.primary
-                                    };
+
+                                        let eventStartStr = task.due_date;
+                                        let eventEndStr = task.due_date; 
+                                        const isOriginallyAllDay = !task.start_time;
+
+                                        // ALWAYS set time values for all events to ensure they show in week/day views
+                                        if (task.start_time) {
+                                            // Use the task's specified start time
+                                            eventStartStr += `T${task.start_time}`;
+                                            if (task.end_time) {
+                                                // Use the task's specified end time
+                                                eventEndStr += `T${task.end_time}`;
+                                            } else {
+                                                // Default to 1 hour duration if no end time
+                                                try {
+                                                    const [hours, minutes, seconds] = task.start_time.split(':').map(Number);
+                                                    const startDate = new Date(0);
+                                                    startDate.setUTCHours(hours, minutes, seconds || 0);
+                                                    startDate.setTime(startDate.getTime() + 60 * 60 * 1000); // Add 1 hour
+                                                    const endHours = String(startDate.getUTCHours()).padStart(2, '0');
+                                                    const endMinutes = String(startDate.getUTCMinutes()).padStart(2, '0');
+                                                    const endSecondsStr = seconds ? String(seconds).padStart(2,'0') : '00';
+                                                    eventEndStr += `T${endHours}:${endMinutes}:${endSecondsStr}`;
+                                                } catch (e) {
+                                                    console.error('Error parsing start_time to calculate default end_time:', task.start_time, e);
+                                                    eventEndStr = eventStartStr; // Fallback to start time if parsing fails
+                                                }
+                                            }
+                                        } else {
+                                            // ALWAYS assign a time slot for tasks without times
+                                            eventStartStr += 'T09:00:00'; // Default start: 9 AM
+                                            eventEndStr += 'T10:00:00';   // Default end: 10 AM (1 hour duration)
+                                        }
+
+                                        // Ensure end is not before start if calculations went awry
+                                        if (new Date(eventEndStr) < new Date(eventStartStr)) {
+                                            eventEndStr = eventStartStr; // Or adjust to be minimally after start
+                                        }
+
+                                        // Log task details for debugging
+                                        console.log(`Formatting task for calendar: ID=${task.id}, start=${eventStartStr}, end=${eventEndStr}, resource=${task.assigned_to ? String(task.assigned_to) : 'undefined'}`);
+                                        
+                                        return {
+                                            id: task.id.toString(),
+                                            title: title, 
+                                            start: eventStartStr,
+                                            end: eventEndStr,
+                                            // CRITICAL: Force all events to be timed events (not all-day)
+                                            // This is essential for visibility in resource views
+                                            allDay: false,
+                                            resourceId: task.assigned_to ? String(task.assigned_to) : undefined, 
+                                            extendedProps: {
+                                                ...task,
+                                                itemName: resolvedItemName || 'Unknown Item', 
+                                                staffName: task.assigned_to_details ? (staffUsers.find(su => su.profile.id === task.assigned_to)?.username || 'Unassigned') : 'Unassigned',
+                                                status: task.status,
+                                                departmentId: task.department_id, 
+                                                notes: task.notes,
+                                            },
+                                            className: `task-status-${task.status?.toLowerCase()}`,
+                                            borderColor: theme.palette[getStatusColor(task.status)]?.dark || theme.palette.grey[500],
+                                            backgroundColor: theme.palette[getStatusColor(task.status)]?.main || theme.palette.grey[300],
+                                            textColor: theme.palette[getStatusColor(task.status)]?.contrastText || theme.palette.text.primary
+                                        };
                                 })}
                                 onEventClick={handleEventClickCalendar}
                                 onEventDrop={handleEventDrop}
@@ -773,7 +957,7 @@ function ManagerDashboardPage() {
                                 currentDate={selectedDate} 
                                 onDateChange={(newDate) => setSelectedDate(newDate)} 
                                 resources={calendarResources} 
-                                onEventReceive={handleEventReceive} 
+                                onEventReceive={handleEventReceive}
                             />
                         </Paper>
                     </>
@@ -920,6 +1104,40 @@ function ManagerDashboardPage() {
                             onChange={handleNewTaskChange}
                             InputLabelProps={{
                                 shrink: true,
+                            }}
+                        />
+
+                        <TextField
+                            margin="normal"
+                            fullWidth
+                            id="start_time"
+                            label="Start Time (Optional)"
+                            name="start_time"
+                            type="time"
+                            value={newTask.start_time || ''} // Bind to newTask.start_time, default to empty string if null
+                            onChange={handleNewTaskChange}
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            inputProps={{
+                                step: 300, // 5 minute intervals
+                            }}
+                        />
+
+                        <TextField
+                            margin="normal"
+                            fullWidth
+                            id="end_time"
+                            label="End Time (Optional)"
+                            name="end_time"
+                            type="time"
+                            value={newTask.end_time || ''} // Bind to newTask.end_time, default to empty string if null
+                            onChange={handleNewTaskChange}
+                            InputLabelProps={{
+                                shrink: true,
+                            }}
+                            inputProps={{
+                                step: 300, // 5 minute intervals
                             }}
                         />
 

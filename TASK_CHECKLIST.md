@@ -23,10 +23,10 @@
 
 ## II. Manager Dashboard Enhancements
 
-- **[ ] Calendar - Resource View Implementation**
-  - [ ] Refactor `TaskSchedulerCalendar.jsx` to use a resource-aware view (e.g., `resourceTimeGridWeek`, `resourceTimeGridDay`).
-  - [ ] Ensure `ManagerDashboardPage.jsx` provides staff data as resources to the calendar.
-  - [ ] Verify tasks correctly map to `resourceId` for display in staff lanes.
+- **[x] Calendar - Resource View Implementation**
+  - [x] Refactor `TaskSchedulerCalendar.jsx` to use resource-aware views (`resourceTimelineWeek`, `resourceTimeGridDay`).
+  - [x] Ensure `ManagerDashboardPage.jsx` provides staff data as resources to the calendar.
+  - [x] Verify tasks correctly map to `resourceId` for display in staff lanes.
 - **[ ] Calendar - Improved Task Event Rendering**
   - [ ] Enhance visual styling of calendar events (task "chips").
   - [ ] Clear status indicators (e.g., color-coding based on 'pending', 'pending_review', 'completed').
