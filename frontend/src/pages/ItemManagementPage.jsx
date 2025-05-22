@@ -8,9 +8,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useSnackbar } from 'notistack';
 
-import { getCleaningItems, /* deleteCleaningItem */ } from '../services/itemService'; // Assuming itemService.js will exist
+import { getCleaningItems, deleteCleaningItem } from '../services/itemService'; 
 import { getCurrentUser } from '../services/authService';
-// import ItemFormModal from '../components/items/ItemFormModal'; // To be created
+import ItemFormModal from '../components/items/ItemFormModal'; 
 
 const ItemManagementPage = () => {
     const [items, setItems] = useState([]);
@@ -19,25 +19,28 @@ const ItemManagementPage = () => {
     const [error, setError] = useState('');
     const { enqueueSnackbar } = useSnackbar();
 
-    // const [isModalOpen, setIsModalOpen] = useState(false);
-    // const [editingItem, setEditingItem] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState(null);
 
     const fetchCurrentUserAndItems = useCallback(async () => {
         setLoading(true);
+        setError(''); 
         try {
             const currentUser = await getCurrentUser();
             setUser(currentUser);
             if (currentUser && currentUser.profile && currentUser.profile.department_id) {
                 const fetchedItems = await getCleaningItems({ department_id: currentUser.profile.department_id });
-                setItems(fetchedItems);
+                setItems(fetchedItems || []); 
             } else {
                 setError('User department information is missing. Cannot load items.');
                 setItems([]);
             }
         } catch (err) {
             console.error("Failed to load user or items:", err);
-            setError(err.message || 'Failed to load data.');
-            enqueueSnackbar(err.message || 'Failed to load data.', { variant: 'error' });
+            const errorMessage = err.response?.data?.detail || err.message || 'Failed to load data.';
+            setError(errorMessage);
+            enqueueSnackbar(errorMessage, { variant: 'error' });
+            setItems([]); 
         } finally {
             setLoading(false);
         }
@@ -47,34 +50,38 @@ const ItemManagementPage = () => {
         fetchCurrentUserAndItems();
     }, [fetchCurrentUserAndItems]);
 
-    // const handleOpenModal = (item = null) => {
-    //     setEditingItem(item);
-    //     setIsModalOpen(true);
-    // };
+    const handleOpenModal = (item = null) => {
+        setEditingItem(item);
+        setIsModalOpen(true);
+    };
 
-    // const handleCloseModal = () => {
-    //     setIsModalOpen(false);
-    //     setEditingItem(null);
-    // };
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingItem(null);
+    };
 
-    // const handleSaveItem = async () => {
-    //     fetchCurrentUserAndItems(); // Refresh list after save
-    // };
+    const handleSaveItem = async () => {
+        handleCloseModal(); 
+        enqueueSnackbar('Processing... please wait.', { variant: 'info' });
+        await fetchCurrentUserAndItems(); 
+        // Snackbar for success/failure is handled within ItemFormModal
+    };
 
-    // const handleDeleteItem = async (itemId) => {
-    //     if (window.confirm('Are you sure you want to delete this item?')) {
-    //         try {
-    //             // await deleteCleaningItem(itemId); // Assumes deleteCleaningItem service exists
-    //             enqueueSnackbar('Item deleted successfully', { variant: 'success' });
-    //             fetchCurrentUserAndItems(); // Refresh list
-    //         } catch (err) {
-    //             console.error('Failed to delete item:', err);
-    //             enqueueSnackbar(err.message || 'Failed to delete item.', { variant: 'error' });
-    //         }
-    //     }
-    // };
+    const handleDeleteItem = async (itemId) => {
+        if (window.confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+            try {
+                await deleteCleaningItem(itemId); 
+                enqueueSnackbar('Item deleted successfully', { variant: 'success' });
+                fetchCurrentUserAndItems(); 
+            } catch (err) {
+                console.error('Failed to delete item:', err);
+                const errorMessage = err.response?.data?.detail || err.message || 'Failed to delete item.';
+                enqueueSnackbar(errorMessage, { variant: 'error' });
+            }
+        }
+    };
 
-    if (loading) {
+    if (loading && !items.length) { 
         return (
             <Container component={Paper} sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
                 <CircularProgress />
@@ -91,15 +98,17 @@ const ItemManagementPage = () => {
                 <Button 
                     variant="contained" 
                     startIcon={<AddCircleOutlineIcon />} 
-                    // onClick={() => handleOpenModal()} 
+                    onClick={() => handleOpenModal()} 
                     sx={{backgroundColor: 'primary.main'}}
                 >
                     Add New Item
                 </Button>
             </Box>
 
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
+            {error && !items.length && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>} 
+            
+            {loading && items.length > 0 && <CircularProgress sx={{ display: 'block', margin: '20px auto'}}/>}
+            
             <TableContainer component={Paper} elevation={3}>
                 <Table sx={{ minWidth: 650 }} aria-label="cleaning items table">
                     <TableHead sx={{ backgroundColor: 'grey.200' }}>
@@ -114,12 +123,17 @@ const ItemManagementPage = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {items.length > 0 ? items.map((item) => (
+                        {!loading && items.length === 0 && !error && (
+                             <TableRow>
+                                <TableCell colSpan={6} align="center">No items found for this department. Click 'Add New Item' to create one.</TableCell>
+                            </TableRow>
+                        )}
+                        {items.map((item) => (
                             <TableRow key={item.id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                                 <TableCell component="th" scope="row">
                                     {item.name}
                                 </TableCell>
-                                <TableCell>{item.frequency || 'N/A'}</TableCell>
+                                <TableCell>{item.frequency ? item.frequency.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'}</TableCell>
                                 <TableCell>{item.equipment || 'N/A'}</TableCell>
                                 <TableCell>{item.chemical || 'N/A'}</TableCell>
                                 <TableCell>
@@ -132,26 +146,22 @@ const ItemManagementPage = () => {
                                 {/* <TableCell>{item.default_assigned_staff_details ? item.default_assigned_staff_details.map(s => s.username).join(', ') : 'N/A'}</TableCell> */}
                                 <TableCell>
                                     <Tooltip title="Edit Item">
-                                        <IconButton /* onClick={() => handleOpenModal(item)} */ color="primary" size="small">
+                                        <IconButton onClick={() => handleOpenModal(item)} color="primary" size="small">
                                             <EditIcon />
                                         </IconButton>
                                     </Tooltip>
                                     <Tooltip title="Delete Item">
-                                        <IconButton /* onClick={() => handleDeleteItem(item.id)} */ color="error" size="small">
+                                        <IconButton onClick={() => handleDeleteItem(item.id)} color="error" size="small">
                                             <DeleteIcon />
                                         </IconButton>
                                     </Tooltip>
                                 </TableCell>
                             </TableRow>
-                        )) : (
-                            <TableRow>
-                                <TableCell colSpan={6} align="center">No items found for this department.</TableCell>
-                            </TableRow>
-                        )}
+                        ))}
                     </TableBody>
                 </Table>
             </TableContainer>
-            {/* 
+            
             {isModalOpen && (
                 <ItemFormModal 
                     open={isModalOpen} 
@@ -161,7 +171,7 @@ const ItemManagementPage = () => {
                     departmentId={user?.profile?.department_id}
                 />
             )}
-            */}
+            
         </Container>
     );
 };
