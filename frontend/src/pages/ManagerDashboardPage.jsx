@@ -51,6 +51,8 @@ const style = {
     p: 4,
 };
 
+const UNASSIGNED_RESOURCE_ID = '___unassigned___';
+
 function ManagerDashboardPage() {
     const [user, setUser] = useState(null);
     const [loadingUser, setLoadingUser] = useState(true);
@@ -184,12 +186,13 @@ function ManagerDashboardPage() {
             setStaffUsers(filteredStaff);
 
             // Format staff for FullCalendar resources
-            const formattedResources = filteredStaff.map(staff => ({
-                id: String(staff.id), // Ensure ID is a string for FullCalendar
+            let formattedResources = filteredStaff.map(staff => ({
+                id: String(staff.profile.id), // Use profile.id for resource matching
                 title: staff.username || `${staff.first_name || ''} ${staff.last_name || ''}`.trim() || 'Unknown Staff'
             }));
+
             setCalendarResources(formattedResources);
-            console.log('Formatted calendar resources:', JSON.stringify(formattedResources, null, 2));
+            console.log('Formatted calendar resources (Unassigned column removed):', JSON.stringify(formattedResources, null, 2));
 
             // Combine server tasks with any local tasks we've created
             const combinedTasks = [...tasksResponse, ...localTasks.filter(lt => 
@@ -324,97 +327,74 @@ function ManagerDashboardPage() {
         event.preventDefault();
         setIsSubmitting(true);
         
-        // Keep the placeholder visible until we're done
-        // We'll handle this directly through the calendar API
-
         const currentDepartmentId = newTask.department_id || user?.profile?.department_id;
 
-        // Prepare the payload, renaming cleaning_item_id and ensuring IDs are correctly formatted
         const payload = {
             ...newTask,
-            cleaning_item_id_write: newTask.cleaning_item_id, // Rename
-            department_id: typeof currentDepartmentId === 'string' && currentDepartmentId !== '' ? parseInt(currentDepartmentId, 10) : currentDepartmentId,
-            assigned_to_id: newTask.assigned_to_id === '' || isNaN(newTask.assigned_to_id) ? null : newTask.assigned_to_id,
-            assigned_to: newTask.assigned_to_id === '' || isNaN(newTask.assigned_to_id) ? null : newTask.assigned_to_id,
-            // Convert '' or NaN to null
+            cleaning_item_id_write: newTask.cleaning_item_id, 
+            assigned_to_id: newTask.assigned_to_id || null, 
+            department_id: currentDepartmentId,
+            start_time: newTask.start_time || null, 
+            end_time: newTask.end_time || null,   
+            notes: newTask.notes || '',
         };
-        delete payload.cleaning_item_id; // Remove the original key after using its value for cleaning_item_id_write
-
-        // Validation for required fields
-        if (payload.cleaning_item_id_write === '' || payload.cleaning_item_id_write === null || isNaN(payload.cleaning_item_id_write)) {
-            enqueueSnackbar('Cleaning item is required.', { variant: 'warning' });
-            return;
-        }
-        if (payload.department_id === '' || payload.department_id === null || isNaN(payload.department_id)) {
-            enqueueSnackbar('Department is required.', { variant: 'warning' });
-            return;
-        }
-        if (!payload.due_date || !payload.status) {
-            enqueueSnackbar('Due date and status are required.', { variant: 'warning' });
-            return;
-        }
-        
-        // Remove time fields if they are null (already handled by processedValue in handleNewTaskChange)
-        if (payload.start_time === null) delete payload.start_time;
-        if (payload.end_time === null) delete payload.end_time;
-
-        console.log('Submitting new task with payload:', payload); 
+        delete payload.cleaning_item_id; 
+        delete payload.assigned_to; 
 
         try {
-            // Create task on the server
             const createdTask = await createTaskInstance(payload);
-            enqueueSnackbar('Task created successfully!', { variant: 'success' });
-            
-            // IMPORTANT: Add the newly created task directly to departmentTasks
-            // This ensures immediate visibility without waiting for a fetch
+
             if (createdTask && createdTask.id) {
-                // Get the cleaning item details
+                // 1. Remove placeholder event FIRST
+                if (placeholderEventId && calendarRef.current?.getApi) {
+                    const calendarApi = calendarRef.current.getApi();
+                    const placeholderEvent = calendarApi.getEventById(placeholderEventId);
+                    if (placeholderEvent) {
+                        placeholderEvent.remove();
+                        console.log(`Placeholder event ${placeholderEventId} removed successfully before state update.`);
+                    }
+                    setPlaceholderEventId(null); 
+                }
+                
                 const cleaningItem = cleaningItems.find(item => 
                     item.id === parseInt(payload.cleaning_item_id_write));
                 
-                // Create a complete task object with all required fields
                 const newTaskWithDetails = {
                     ...createdTask,
                     id: createdTask.id,
                     cleaning_item_id: payload.cleaning_item_id_write,
-                    assigned_to: payload.assigned_to,
+                    assigned_to: payload.assigned_to_id, // Use assigned_to_id from payload
                     due_date: payload.due_date,
-                    // CRITICAL: Always ensure time fields exist
                     start_time: payload.start_time || '09:00:00',
                     end_time: payload.end_time || '10:00:00',
                     status: payload.status,
                     department_id: payload.department_id,
                     notes: payload.notes || '',
-                    cleaning_item: cleaningItem
+                    cleaning_item: cleaningItem,
+                    // Ensure assigned_to_details is populated if possible, or handled by event formatting
+                    assigned_to_details: staffUsers.find(s => s.id === payload.assigned_to_id)
                 };
                 
-                // Add to localTasks to ensure persistence across view changes
+                // 2. Update React state
                 setLocalTasks(prev => [...prev, newTaskWithDetails]);
-                // Also add to departmentTasks for immediate display
                 setDepartmentTasks(prev => [...prev, newTaskWithDetails]);
-            }
-            
-            // Close modal and keep placeholder until refresh completes
-            setIsCreateModalOpen(false);
-            
-            // Don't remove placeholder yet - it will be replaced by the real task
-            
-            // IMPORTANT: Do NOT refresh data after creating a task
-            // This prevents any flickering or disappearing tasks
-            // We've already added the task to departmentTasks directly
-            
-            // Remove only the placeholder event if it exists
-            if (placeholderEventId && calendarRef.current?.getApi) {
-                const calendarApi = calendarRef.current.getApi();
-                const placeholderEvent = calendarApi.getEventById(placeholderEventId);
-                if (placeholderEvent) {
-                    placeholderEvent.remove();
-                }
-                setPlaceholderEventId(null);
+
+                // 3. Close modal
+                setIsCreateModalOpen(false);
+
+                // 4. Set submitting to false as the final step of success
+                setIsSubmitting(false); 
+            } else {
+                // Handle case where task creation API call succeeded but didn't return a valid task object
+                console.error("Task creation API call succeeded but returned invalid data or no ID.", createdTask);
+                enqueueSnackbar('Failed to create task: Invalid response from server.', { variant: 'error' });
+                // Do not close modal, do not remove placeholder (user can retry or cancel)
+                setIsSubmitting(false); // Allow modal to be closed or retried, triggering placeholder cleanup if canceled
             }
         } catch (err) {
             console.error("Failed to create task:", err); 
             enqueueSnackbar(err.message || 'Failed to create task. Check console for details.', { variant: 'error' });
+            // Modal remains open, placeholder remains. User can cancel (which cleans placeholder).
             setIsSubmitting(false);
         }
     };
@@ -925,22 +905,48 @@ function ManagerDashboardPage() {
                                             eventEndStr = eventStartStr; // Or adjust to be minimally after start
                                         }
 
-                                        // Log task details for debugging
-                                        console.log(`Formatting task for calendar: ID=${task.id}, start=${eventStartStr}, end=${eventEndStr}, resource=${task.assigned_to ? String(task.assigned_to) : 'undefined'}`);
+                                        // Determine resourceId for FullCalendar
+                                        let resourceIdForCalendar = UNASSIGNED_RESOURCE_ID;
+                                        let assignedStaffUsername = 'Unassigned';
+
+                                        if (task.assigned_to_details && typeof task.assigned_to_details.id === 'number') {
+                                            // Task has backend structure with User.id in assigned_to_details.id
+                                            const assignedUser = staffUsers.find(staff => staff.id === task.assigned_to_details.id);
+                                            if (assignedUser && assignedUser.profile && typeof assignedUser.profile.id === 'number') {
+                                                resourceIdForCalendar = String(assignedUser.profile.id);
+                                                assignedStaffUsername = assignedUser.username;
+                                            } else {
+                                                console.warn(`[CalendarMap] Task ID ${task.id}: User.id ${task.assigned_to_details.id} from backend found, but no matching staff user or profile.id in staffUsers list.`);
+                                            }
+                                        } else if (task.assigned_to !== null && task.assigned_to !== undefined) {
+                                            // Task might be local or have older structure where task.assigned_to is already profile.id
+                                            const staffMemberExists = staffUsers.find(s => String(s.profile.id) === String(task.assigned_to));
+                                            if (staffMemberExists) {
+                                                resourceIdForCalendar = String(task.assigned_to);
+                                                assignedStaffUsername = staffMemberExists.username;
+                                            } else {
+                                                console.warn(`[CalendarMap] Task ID ${task.id}: task.assigned_to=${task.assigned_to} present, but doesn't match any known profile.id.`);
+                                            }
+                                        }
+                                        
+                                        console.log(
+                                            `[CalendarMap] Formatting task ID=${task.id}: `,
+                                            `backend_user.id=${task.assigned_to_details?.id}, `,
+                                            `local_profile.id_in_task.assigned_to=${task.assigned_to}, `,
+                                            `==> resolved_profile.id_for_calendar=${resourceIdForCalendar}`
+                                        );
                                         
                                         return {
                                             id: task.id.toString(),
                                             title: title, 
                                             start: eventStartStr,
                                             end: eventEndStr,
-                                            // CRITICAL: Force all events to be timed events (not all-day)
-                                            // This is essential for visibility in resource views
-                                            allDay: false,
-                                            resourceId: task.assigned_to ? String(task.assigned_to) : undefined, 
+                                            allDay: false, // Crucial for resource views
+                                            resourceId: resourceIdForCalendar, 
                                             extendedProps: {
                                                 ...task,
                                                 itemName: resolvedItemName || 'Unknown Item', 
-                                                staffName: task.assigned_to_details ? (staffUsers.find(su => su.profile.id === task.assigned_to)?.username || 'Unassigned') : 'Unassigned',
+                                                staffName: assignedStaffUsername,
                                                 status: task.status,
                                                 departmentId: task.department_id, 
                                                 notes: task.notes,

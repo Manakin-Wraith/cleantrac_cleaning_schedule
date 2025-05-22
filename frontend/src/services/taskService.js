@@ -76,15 +76,24 @@ export const createTaskInstance = async (taskData) => {
  */
 export const updateTaskInstance = async (taskId, taskData) => {
     try {
-        // Ensure assigned_to is explicitly null if it's an empty string or undefined
-        // The backend might expect an integer or null for the foreign key.
+        // Ensure assigned_to_id is correctly mapped to assigned_to for the backend.
+        // The backend typically expects the foreign key field name (e.g., 'assigned_to') 
+        // with the ID as its value for updates.
         const payload = { ...taskData };
-        if (taskData.hasOwnProperty('assigned_to')) {
-            payload.assigned_to = taskData.assigned_to || null;
+
+        if (taskData.hasOwnProperty('assigned_to_id')) {
+            payload.assigned_to = taskData.assigned_to_id === '' || taskData.assigned_to_id === undefined 
+                ? null 
+                : parseInt(taskData.assigned_to_id, 10);
+            // Optionally, remove assigned_to_id from payload if backend doesn't expect it
+            // and you want to avoid sending redundant fields. However, sending it usually doesn't hurt.
+            // delete payload.assigned_to_id; 
+        } else if (taskData.hasOwnProperty('assigned_to')) {
+            // Keep existing behavior if 'assigned_to' is directly provided, though 'assigned_to_id' is preferred from frontend logic
+            payload.assigned_to = taskData.assigned_to === '' || taskData.assigned_to === undefined 
+                ? null 
+                : parseInt(taskData.assigned_to, 10);
         }
-        // If 'assigned_to_id' is used in taskData (which is typical for FKs in forms),
-        // ensure it maps to 'assigned_to' or handle as needed by backend.
-        // For now, assuming taskData comes with 'assigned_to' if it's being changed.
 
         const response = await api.patch(`/taskinstances/${taskId}/`, payload);
         return response.data;
