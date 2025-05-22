@@ -136,17 +136,16 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Modal: Task creation API call and UI update upon success.
   - [x] Function: `Edit Task Assignment` API call (Implemented in taskService.js)
   - [x] Modal: "Edit Task Assignment" modal (Layout and informational display improvements complete, dropdown sizing fixed, pre-fills and saves time and date correctly)
-- **[ ] 5. Item Management Page (Manager View)**
-  - [ ] UI: Page Heading (e.g., "[Department Name] Item Management")
-  - [ ] UI: "+ Add New Master Item" Button
-  - [ ] UI: Master Item List Table (Item Name, Frequency, Equipment, Chemical, Method, Default Staff, Actions)
-  - [ ] Feature: Master Data Management (View, Add, Edit, Delete department-specific items)
-  - [ ] Function: `Retrieve Cleaning Items` API call (department-scoped)
+- **[~] 5. Item Management Page (Manager View)**
+  - [x] UI: Page Heading (e.g., "[Department Name] Item Management")
+  - [ ] UI: "+ Add New Master Item" Button (Button exists, modal/functionality pending)
+  - [x] UI: Master Item List Table (Item Name, Frequency, Equipment, Chemical, Method, Default Staff, Actions) - Basic table structure and data display implemented. Action buttons are placeholders.
+  - [~] Feature: Master Data Management (View, Add, Edit, Delete department-specific items) - Viewing implemented.
+  - [x] Function: `Retrieve Cleaning Items` API call (department-scoped) - Implemented and working.
   - [ ] Function: `Sort Table`
   - [ ] Function: `Open Item Form Modal (for Add)`
   - [ ] Function: `Open Item Form Modal (for Edit)`
-  - [ ] Function: `Delete Cleaning Item` API call (with confirmation)
-  - [ ] Function: `Show Confirmation Modal` (for delete)
+  - [x] UI: Display fields (Item Name, Frequency, Equipment, Chemical, Method) - Implemented and working.
 - **[ ] 6. Item Form Modal (Primarily Manager Use)**
   - [ ] UI: Modal Container and Header (e.g., "Add New Cleaning Item to [Dept]")
   - [ ] UI: Form fields (Item Name, Frequency, Equipment, Chemical, Method, Default Assigned Staff from department)
