@@ -141,6 +141,8 @@ function UserFormModal({ open, onClose, onSave, user, currentUserRole }) {
     // Role selection can be limited too, e.g. manager can't create superuser.
     // Assuming current roles 'staff', 'manager' are fine. 'admin' role from serializer is actually superuser.
 
+    console.log('UserFormModal RENDER: isEditMode:', isEditMode, 'user prop:', user, 'formData:', formData);
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" TransitionProps={{ onExited: () => setFormData(initialFormData) }}>
             <DialogTitle>{isEditMode ? 'Edit User' : 'Add New User'}</DialogTitle>
@@ -158,6 +160,7 @@ function UserFormModal({ open, onClose, onSave, user, currentUserRole }) {
                                 required
                                 margin="dense"
                                 disabled={isEditMode}
+                                InputProps={{ readOnly: isEditMode }} // Added for debugging
                                 error={!!errors.username}
                                 helperText={errors.username}
                             />
@@ -256,14 +259,14 @@ function UserFormModal({ open, onClose, onSave, user, currentUserRole }) {
                     </Grid>
                 </DialogContent>
                 <DialogActions sx={{ p: '16px 24px' }}>
-                    <Button onClick={onClose} color="secondary" variant="outlined" disabled={isSaving}>Cancel</Button>
+                    <Button onClick={onClose} color="secondary" variant="outlined">Cancel</Button>
                     <Button 
                         type="submit" 
-                        color="primary" 
                         variant="contained" 
+                        color="primary" 
                         disabled={isSaving || loadingDepartments}
                     >
-                        {isSaving ? <CircularProgress size={24} color="inherit" /> : (isEditMode ? 'Save Changes' : 'Create User')}
+                        {isSaving ? <CircularProgress size={24} color="inherit" /> : (isEditMode ? 'Update User' : 'Create User')}
                     </Button>
                 </DialogActions>
             </form>
