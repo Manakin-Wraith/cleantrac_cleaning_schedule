@@ -241,37 +241,42 @@ function UserFormModal({ open, onClose, onSave, user, currentUserRole }) {
                                 <Select
                                     labelId="department-select-label"
                                     name="department_id"
-                                    value={formData.department_id || ''} // Ensure value is not null for Select
+                                    value={departments.some(dept => dept.id === formData.department_id) ? formData.department_id : ''}
                                     onChange={handleChange}
                                     label="Department"
-                                    disabled={departmentDisabled}
+                                    disabled={loadingDepartments || (formData.role === 'admin' && isEditMode) || (currentUserRole === 'manager' && isEditMode && user && user.profile && user.profile.role === 'manager')}
                                 >
-                                    <MenuItem value=""><em>None</em></MenuItem>
                                     {loadingDepartments ? (
-                                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}><CircularProgress size={20} /></Box>
-                                    ) : departments.map((dept) => (
-                                        <MenuItem key={dept.id} value={dept.id}>{dept.name}</MenuItem>
-                                    ))}
+                                        <MenuItem value="">
+                                            <CircularProgress size={20} />
+                                        </MenuItem>
+                                    ) : (
+                                        [
+                                            <MenuItem key="none" value="">
+                                                <em>None (Required for Staff/Manager)</em>
+                                            </MenuItem>,
+                                            departments.map((dept) => (
+                                                <MenuItem key={dept.id} value={dept.id}>
+                                                    {dept.name}
+                                                </MenuItem>
+                                            ))
+                                        ]
+                                    )}
                                 </Select>
                                 {errors.department_id && <Typography color="error" variant="caption">{errors.department_id}</Typography>}
                             </FormControl>
                         </Grid>
                     </Grid>
                 </DialogContent>
-                <DialogActions sx={{ p: '16px 24px' }}>
-                    <Button onClick={onClose} color="secondary" variant="outlined">Cancel</Button>
-                    <Button 
-                        type="submit" 
-                        variant="contained" 
-                        color="primary" 
-                        disabled={isSaving || loadingDepartments}
-                    >
-                        {isSaving ? <CircularProgress size={24} color="inherit" /> : (isEditMode ? 'Update User' : 'Create User')}
+                <DialogActions>
+                    <Button onClick={onClose}>Cancel</Button>
+                    <Button type="submit" variant="contained" color="primary" disabled={isSaving}>
+                        {isSaving ? <CircularProgress size={24} /> : (isEditMode ? 'Update User' : 'Add User')}
                     </Button>
                 </DialogActions>
             </form>
         </Dialog>
     );
-}
+};
 
 export default UserFormModal;

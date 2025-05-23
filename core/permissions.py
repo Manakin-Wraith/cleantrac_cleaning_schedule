@@ -98,6 +98,24 @@ class IsSuperUserForWriteOrAuthenticatedReadOnly(BasePermission):
             return True
         return request.user and request.user.is_superuser
 
+
+class IsSuperUserWriteOrManagerRead(BasePermission):
+    """
+    Allows write access only to superusers.
+    Allows read access to superusers and managers.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        if request.method in SAFE_METHODS:
+            # Allow read for superuser or manager
+            return request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'manager')
+        
+        # For unsafe methods (POST, PUT, DELETE), only superuser
+        return request.user.is_superuser
+
+
 class UserAndProfileManagementPermissions(BasePermission):
     """
     Custom permissions for User and UserProfile viewsets.

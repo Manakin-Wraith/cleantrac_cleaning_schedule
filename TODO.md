@@ -36,6 +36,7 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
 - **[ ] UI/UX Enhancements**
   - [x] Implement Toast Notifications (e.g., for login success/failure) using notistack
   - [x] Standardize page layout and centering (e.g., PageLayout component)
+  - [x] Resolve MUI Select out-of-range warning for department_id in UserFormModal
 - **[ ] Department Management System**
   - [ ] API: CRUD operations for departments (Admin/Manager only)
 - **[ ] Database Setup**
