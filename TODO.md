@@ -37,10 +37,19 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Implement Toast Notifications (e.g., for login success/failure) using notistack
   - [x] Standardize page layout and centering (e.g., PageLayout component)
   - [x] Resolve MUI Select out-of-range warning for department_id in UserFormModal
-- **[ ] Department Management System**
-  - [ ] API: CRUD operations for departments (Admin/Manager only)
+- **[~] Department Management System**
+  - [x] API: CRUD operations for departments (Superuser: CRUD, Manager: Read)
+  - [ ] Frontend: Implement Department Management UI
+    - [x] Service: Create `departmentService.js` with CRUD functions
+    - [x] Page: Create `DepartmentManagementPage.jsx` (initial structure)
+    - [x] Component: Create `DepartmentFormModal.jsx` for add/edit
+    - [~] Integration: Connect `DepartmentFormModal` to `DepartmentManagementPage.jsx` (implement handlers)
+    - [~] Auth: Integrate real user roles/permissions in `DepartmentManagementPage.jsx` (using AuthContext)
+    - [~] Routing: Add route for `/admin/departments` (using PrivateRoute)
+    - [x] Navigation: Add link to sidebar/menu for authorized users
 - **[ ] Database Setup**
   - [x] Define schema for all tables (Users, Departments, Items, Task Instances, Completion Logs)
+  - [ ] Populate initial data / seed data (optional, for development)
   - [x] Ensure `department_id` foreign keys are in relevant tables (Items, Task Instances, Completion Logs, potentially Users if primary department)
   - [x] Set up initial database structure (for built-in Django apps)
   - [x] Create and apply migrations for core models

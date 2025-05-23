@@ -17,7 +17,8 @@ from .serializers import (
 from .permissions import (
     IsManagerForWriteOrAuthenticatedReadOnly, IsSuperUser, 
     CanLogCompletionAndManagerModify, IsSuperUserForWriteOrAuthenticatedReadOnly,
-    UserAndProfileManagementPermissions, CanUpdateTaskStatus
+    UserAndProfileManagementPermissions, CanUpdateTaskStatus,
+    IsSuperUserWriteOrManagerRead
 )
 # Create your views here.
 
@@ -25,7 +26,7 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     queryset = Department.objects.all() # All authenticated users can list departments for now
     serializer_class = DepartmentSerializer
     # permission_classes = [permissions.IsAuthenticated] # Old permission
-    permission_classes = [IsSuperUserForWriteOrAuthenticatedReadOnly] # Apply RBAC permission
+    permission_classes = [IsSuperUserWriteOrManagerRead] # Apply RBAC permission
 
     @action(detail=True, methods=['get'], url_path='status-summary')
     def status_summary(self, request, pk=None):

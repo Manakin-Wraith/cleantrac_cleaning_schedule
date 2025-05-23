@@ -11,6 +11,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import LogoutIcon from '@mui/icons-material/Logout'; // Icon for Logout
+import BusinessIcon from '@mui/icons-material/Business'; // Icon for Departments
 
 export const drawerWidth = 240;
 
@@ -50,11 +51,27 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     { text: 'My Tasks', icon: <AssignmentIcon />, path: '/staff-tasks' },
   ];
 
-  let links = [];
-  if (currentUser?.profile?.role === 'manager') {
-    links = managerLinks;
+  let determinedLinks = [];
+  const departmentManagementLink = { 
+    text: 'Departments', 
+    icon: <BusinessIcon />,
+    path: '/admin/departments' 
+  };
+
+  if (currentUser?.is_superuser) {
+    // Superuser gets all manager links + department management
+    determinedLinks = [
+      ...managerLinks,
+      departmentManagementLink
+    ];
+  } else if (currentUser?.profile?.role === 'manager') {
+    // Manager gets their links + department management
+    determinedLinks = [
+      ...managerLinks,
+      departmentManagementLink
+    ];
   } else if (currentUser?.profile?.role === 'staff') {
-    links = staffLinks;
+    determinedLinks = staffLinks;
   }
 
   const handleLogoutClick = async () => {
@@ -88,7 +105,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
       
       <Divider />
       <List sx={{ pt: 0 /* Padding top handled by Toolbar's margin bottom or direct List padding */ }}>
-        {links.map((link) => (
+        {determinedLinks.map((link) => (
           <NavLink to={link.path} key={link.text} style={{ textDecoration: 'none', color: 'inherit' }} sx={commonStyles}>
             {({ isActive }) => (
               <ListItem disablePadding className={isActive ? 'active' : ''}>

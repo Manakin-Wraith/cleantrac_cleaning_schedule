@@ -7,6 +7,8 @@ import ItemManagementPage from './pages/ItemManagementPage';
 import UserManagementPage from './pages/UserManagementPage';
 import PageLayout from './components/PageLayout';
 import { AuthProvider } from './context/AuthContext'; 
+import PrivateRoute from './components/PrivateRoute';
+import DepartmentManagementPage from './pages/DepartmentManagementPage';
 
 function App() {
   return (
@@ -14,10 +16,23 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<PageLayout><LoginPage /></PageLayout>} />
-          <Route path="/manager-dashboard" element={<PageLayout><ManagerDashboardPage /></PageLayout>} />
-          <Route path="/manager-items" element={<PageLayout><ItemManagementPage /></PageLayout>} />
-          <Route path="/manager-users" element={<PageLayout><UserManagementPage /></PageLayout>} />
-          <Route path="/staff-tasks" element={<PageLayout><StaffTasksPage /></PageLayout>} /> 
+          
+          {/* Protected Routes */}
+          <Route element={<PrivateRoute allowedRoles={['manager', 'staff']} />}>
+            {/* Routes accessible to managers and staff, further refined by component-level checks if needed */}
+            <Route path="/manager-dashboard" element={<PageLayout><ManagerDashboardPage /></PageLayout>} />
+            <Route path="/staff-tasks" element={<PageLayout><StaffTasksPage /></PageLayout>} /> 
+          </Route>
+
+          <Route element={<PrivateRoute allowedRoles={['manager']} />}>
+            {/* Routes accessible primarily to managers (and superusers) */}
+            <Route path="/manager-items" element={<PageLayout><ItemManagementPage /></PageLayout>} />
+            <Route path="/manager-users" element={<PageLayout><UserManagementPage /></PageLayout>} />
+            {/* Department Management - accessible to superusers (full CRUD) and managers (read-only view) */}
+            {/* The PrivateRoute allows managers. The component itself handles if a manager can only read. */}
+            <Route path="/admin/departments" element={<PageLayout><DepartmentManagementPage /></PageLayout>} />
+          </Route>
+
           <Route path="/" element={<Navigate replace to="/login" />} />
           {/* Add other routes here, wrapping their elements with PageLayout if they need this centering */}
         </Routes>
