@@ -168,7 +168,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'profile']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser', 'is_staff', 'profile']
 
 class CleaningItemSerializer(serializers.ModelSerializer):
     department_id = serializers.PrimaryKeyRelatedField(

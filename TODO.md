@@ -37,16 +37,17 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Implement Toast Notifications (e.g., for login success/failure) using notistack
   - [x] Standardize page layout and centering (e.g., PageLayout component)
   - [x] Resolve MUI Select out-of-range warning for department_id in UserFormModal
-- **[~] Department Management System**
+- **[x] Department Management System**
   - [x] API: CRUD operations for departments (Superuser: CRUD, Manager: Read)
-  - [ ] Frontend: Implement Department Management UI
+  - [x] Frontend: Implement Department Management UI
     - [x] Service: Create `departmentService.js` with CRUD functions
     - [x] Page: Create `DepartmentManagementPage.jsx` (initial structure)
     - [x] Component: Create `DepartmentFormModal.jsx` for add/edit
-    - [~] Integration: Connect `DepartmentFormModal` to `DepartmentManagementPage.jsx` (implement handlers)
-    - [~] Auth: Integrate real user roles/permissions in `DepartmentManagementPage.jsx` (using AuthContext)
-    - [~] Routing: Add route for `/admin/departments` (using PrivateRoute)
+    - [x] Integration: Connect `DepartmentFormModal` to `DepartmentManagementPage.jsx` (implement handlers)
+    - [x] Auth: Integrate real user roles/permissions in `DepartmentManagementPage.jsx` (using AuthContext)
+    - [x] Routing: Add route for `/admin/departments` (using PrivateRoute)
     - [x] Navigation: Add link to sidebar/menu for authorized users
+    - [x] UI Enhancement: Implement Material-UI Dialog for delete confirmation in Department Management
 - **[ ] Database Setup**
   - [x] Define schema for all tables (Users, Departments, Items, Task Instances, Completion Logs)
   - [ ] Populate initial data / seed data (optional, for development)

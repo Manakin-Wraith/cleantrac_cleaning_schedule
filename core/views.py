@@ -23,10 +23,30 @@ from .permissions import (
 # Create your views here.
 
 class DepartmentViewSet(viewsets.ModelViewSet):
-    queryset = Department.objects.all() # All authenticated users can list departments for now
     serializer_class = DepartmentSerializer
-    # permission_classes = [permissions.IsAuthenticated] # Old permission
-    permission_classes = [IsSuperUserWriteOrManagerRead] # Apply RBAC permission
+    permission_classes = [IsSuperUserWriteOrManagerRead]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return Department.objects.none()
+
+        if user.is_superuser:
+            return Department.objects.all()
+        
+        # For managers, only show their own department
+        # The IsSuperUserWriteOrManagerRead permission already ensures only superusers or managers can list.
+        try:
+            if user.profile and user.profile.role == 'manager' and user.profile.department:
+                return Department.objects.filter(pk=user.profile.department.pk)
+        except UserProfile.DoesNotExist:
+            # If manager has no profile, or no department assigned, they see none by this logic.
+            # The permission class would likely deny them anyway if they don't meet its criteria.
+            return Department.objects.none()
+        
+        # Fallback for other authenticated users (e.g., staff) - should be empty due to permission class
+        # but as a safeguard or if permissions change:
+        return Department.objects.none() 
 
     @action(detail=True, methods=['get'], url_path='status-summary')
     def status_summary(self, request, pk=None):

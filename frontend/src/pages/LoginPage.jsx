@@ -34,19 +34,28 @@ function LoginPage() {
                 console.log('User details:', userData);
 
                 // Role-based redirection
-                const userRole = userData.profile?.role;
-                if (userRole === 'manager') {
-                    navigate('/manager-dashboard');
-                } else if (userRole === 'staff') {
-                    navigate('/staff-tasks');
+                if (userData.is_superuser) {
+                    // Superusers can be directed to a primary dashboard, e.g., manager's or a specific admin dashboard
+                    navigate('/manager-dashboard'); // Or '/admin/dashboard' if you create one
                 } else {
-                    console.warn('Unknown user role:', userRole, 'Defaulting to login.');
-                    enqueueSnackbar('Login successful, but role is undefined. Please contact admin.', { variant: 'warning' });
-                    navigate('/login');
+                    const userRole = userData.profile?.role;
+                    if (userRole === 'manager') {
+                        navigate('/manager-dashboard');
+                    } else if (userRole === 'staff') {
+                        navigate('/staff-tasks');
+                    } else {
+                        console.warn('Unknown user role:', userRole, 'Defaulting to login.');
+                        enqueueSnackbar('Login successful, but role is undefined or not recognized. Please contact admin.', { variant: 'warning' });
+                        // It might be better to log them out or send to a generic landing page if role is truly unknown
+                        // For now, keeping them on login might be confusing. Let's try navigating to a base path if no role.
+                        // However, if they are logged in, AuthContext will persist. This needs careful thought.
+                        // Perhaps navigate('/login') is okay if they can't proceed further anyway.
+                        navigate('/login'); 
+                    }
                 }
             } else {
                 // This case should ideally be handled by an error thrown from login context function
-                enqueueSnackbar('Login failed. Please try again.', { variant: 'error' });
+                enqueueSnackbar('Login failed. User data not returned.', { variant: 'error' });
             }
 
             setLoading(false);
