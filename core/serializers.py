@@ -1,6 +1,10 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog
+from .models import (
+    Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
+    AreaUnit, Thermometer, ThermometerVerificationRecord, 
+    ThermometerVerificationAssignment, TemperatureLog
+)
 from rest_framework.validators import UniqueValidator
 
 class DepartmentSerializer(serializers.ModelSerializer):
@@ -347,20 +351,14 @@ class PasswordResetRequestSerializer(serializers.Serializer):
             # Do not reveal if the user exists or not for security reasons
             # Instead, we'll act as if it's processing but won't send an SMS
             # The view will handle this gracefully.
-            pass # Or raise a generic error if you prefer to indicate failure earlier
+            pass
         return value
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
-    token = serializers.CharField(max_length=6) # Assuming 6-digit token
+    token = serializers.CharField(max_length=6)
     new_password = serializers.CharField(write_only=True, min_length=8, style={'input_type': 'password'})
-    # confirm_new_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
-
-    # def validate(self, data):
-    #     if data['new_password'] != data['confirm_new_password']:
-    #         raise serializers.ValidationError({"confirm_new_password": "Passwords do not match."})_ 
-    #     return data
-
+    
     def validate_token(self, value):
         if not value.isdigit() or len(value) != 6:
             raise serializers.ValidationError("Token must be a 6-digit number.")
@@ -374,4 +372,212 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     #         validate_password(value)
     #     except serializers.ValidationError as e:
     #         raise serializers.ValidationError(list(e.messages))
-    #     return value
+
+# Thermometer Verification System Serializers
+
+class AreaUnitSerializer(serializers.ModelSerializer):
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True
+    )
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    
+    class Meta:
+        model = AreaUnit
+        fields = [
+            'id', 'name', 'description', 'department_id', 'department_name',
+            'target_temperature_min', 'target_temperature_max',
+            'created_at', 'updated_at'
+        ]
+
+class ThermometerSerializer(serializers.ModelSerializer):
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True
+    )
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    is_verified = serializers.BooleanField(read_only=True)
+    days_until_expiry = serializers.IntegerField(read_only=True)
+    
+    class Meta:
+        model = Thermometer
+        fields = [
+            'id', 'serial_number', 'model_identifier', 'department_id', 'department_name',
+            'status', 'last_verification_date', 'verification_expiry_date',
+            'is_verified', 'days_until_expiry', 'created_at', 'updated_at'
+        ]
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['is_verified'] = instance.is_verified()
+        representation['days_until_expiry'] = instance.days_until_expiry()
+        return representation
+
+class ThermometerVerificationRecordSerializer(serializers.ModelSerializer):
+    thermometer_id = serializers.PrimaryKeyRelatedField(
+        queryset=Thermometer.objects.all(),
+        source='thermometer',
+        write_only=True
+    )
+    thermometer_serial = serializers.CharField(source='thermometer.serial_number', read_only=True)
+    thermometer_model = serializers.CharField(source='thermometer.model_identifier', read_only=True)
+    calibrated_by_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='calibrated_by',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    calibrated_by_username = serializers.CharField(source='calibrated_by.username', read_only=True, allow_null=True)
+    
+    class Meta:
+        model = ThermometerVerificationRecord
+        fields = [
+            'id', 'thermometer_id', 'thermometer_serial', 'thermometer_model',
+            'date_verified', 'calibrated_instrument_no', 'reading_after_verification',
+            'calibrated_by_id', 'calibrated_by_username', 'manager_signature',
+            'corrective_action', 'photo_evidence', 'created_at'
+        ]
+    
+    def create(self, validated_data):
+        # If calibrated_by is not provided, use the current user
+        if 'calibrated_by' not in validated_data or validated_data['calibrated_by'] is None:
+            validated_data['calibrated_by'] = self.context['request'].user
+        return super().create(validated_data)
+
+class ThermometerVerificationAssignmentSerializer(serializers.ModelSerializer):
+    staff_member_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='staff_member',
+        write_only=True
+    )
+    staff_member_username = serializers.CharField(source='staff_member.username', read_only=True)
+    staff_member_name = serializers.SerializerMethodField(read_only=True)
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True
+    )
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    assigned_by_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='assigned_by',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    assigned_by_username = serializers.CharField(source='assigned_by.username', read_only=True, allow_null=True)
+    
+    class Meta:
+        model = ThermometerVerificationAssignment
+        fields = [
+            'id', 'staff_member_id', 'staff_member_username', 'staff_member_name',
+            'department_id', 'department_name', 'assigned_date',
+            'assigned_by_id', 'assigned_by_username', 'is_active',
+            'notes', 'created_at', 'updated_at'
+        ]
+    
+    def get_staff_member_name(self, obj):
+        if obj.staff_member.first_name and obj.staff_member.last_name:
+            return f"{obj.staff_member.first_name} {obj.staff_member.last_name}"
+        return obj.staff_member.username
+    
+    def create(self, validated_data):
+        # If assigned_by is not provided, use the current user
+        if 'assigned_by' not in validated_data or validated_data['assigned_by'] is None:
+            validated_data['assigned_by'] = self.context['request'].user
+        return super().create(validated_data)
+
+class TemperatureLogSerializer(serializers.ModelSerializer):
+    area_unit_id = serializers.PrimaryKeyRelatedField(
+        queryset=AreaUnit.objects.all(),
+        source='area_unit',
+        write_only=True
+    )
+    area_unit_name = serializers.CharField(source='area_unit.name', read_only=True)
+    thermometer_used_id = serializers.PrimaryKeyRelatedField(
+        queryset=Thermometer.objects.all(),
+        source='thermometer_used',
+        write_only=True
+    )
+    thermometer_serial = serializers.CharField(source='thermometer_used.serial_number', read_only=True)
+    verification_record_id = serializers.PrimaryKeyRelatedField(
+        queryset=ThermometerVerificationRecord.objects.all(),
+        source='verification_record_at_time_of_log',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    logged_by_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='logged_by',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    logged_by_username = serializers.CharField(source='logged_by.username', read_only=True, allow_null=True)
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True
+    )
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    is_within_target_range = serializers.SerializerMethodField(read_only=True)
+    
+    class Meta:
+        model = TemperatureLog
+        fields = [
+            'id', 'area_unit_id', 'area_unit_name', 'log_datetime',
+            'temperature_reading', 'time_period', 'corrective_action', 'photo',
+            'logged_by_id', 'logged_by_username', 'thermometer_used_id', 'thermometer_serial',
+            'verification_record_id', 'department_id', 'department_name',
+            'is_within_target_range', 'created_at', 'updated_at'
+        ]
+    
+    def get_is_within_target_range(self, obj):
+        result = obj.is_within_target_range()
+        if result is None:
+            return None
+        return result
+    
+    def create(self, validated_data):
+        # If logged_by is not provided, use the current user
+        if 'logged_by' not in validated_data or validated_data['logged_by'] is None:
+            validated_data['logged_by'] = self.context['request'].user
+        
+        # If verification_record_at_time_of_log is not provided, get the most recent one for the thermometer
+        if 'verification_record_at_time_of_log' not in validated_data or validated_data['verification_record_at_time_of_log'] is None:
+            thermometer = validated_data.get('thermometer_used')
+            if thermometer and thermometer.is_verified():
+                latest_verification = ThermometerVerificationRecord.objects.filter(
+                    thermometer=thermometer
+                ).order_by('-date_verified').first()
+                if latest_verification:
+                    validated_data['verification_record_at_time_of_log'] = latest_verification
+        
+        return super().create(validated_data)
+    
+    def validate(self, data):
+        # Ensure the thermometer is verified
+        thermometer = data.get('thermometer_used')
+        if thermometer and not thermometer.is_verified():
+            raise serializers.ValidationError({
+                'thermometer_used_id': 'This thermometer is not verified or has expired verification.'
+            })
+        
+        # Ensure the area_unit and thermometer belong to the same department
+        area_unit = data.get('area_unit')
+        department = data.get('department')
+        if area_unit and area_unit.department != department:
+            raise serializers.ValidationError({
+                'area_unit_id': 'The area unit must belong to the specified department.'
+            })
+        
+        if thermometer and thermometer.department != department:
+            raise serializers.ValidationError({
+                'thermometer_used_id': 'The thermometer must belong to the specified department.'
+            })
+        
+        return data

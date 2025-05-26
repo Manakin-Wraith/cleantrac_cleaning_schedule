@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
+from django.utils import timezone
 
 class IsSuperUser(BasePermission):
     """Allows access only to superusers."""
@@ -308,21 +309,28 @@ class CanLogCompletionAndManagerModify(BasePermission):
     Allows only managers of the relevant department to update/delete (PUT, PATCH, DELETE).
     """
     def has_permission(self, request, view):
+        # Must be authenticated for any access
         if not request.user or not request.user.is_authenticated:
             return False
-
-        if request.method in SAFE_METHODS: # GET, HEAD, OPTIONS
-            return True # Department filtering is by get_queryset
         
-        if request.method == 'POST': # Staff or Manager can attempt to create
+        # Superusers can do anything
+        if request.user.is_superuser:
             return True
         
-        # For PUT, PATCH, DELETE, check if user is a manager at the view level
+        # For read methods, allow any authenticated user (get_queryset will filter)
+        if request.method in SAFE_METHODS:
+            return True
+        
+        # For POST (create), allow any authenticated user (perform_create will handle specifics)
+        if request.method == 'POST':
+            return True
+        
+        # For other write methods (PUT, PATCH, DELETE), check if user is a manager
         try:
             return request.user.profile.role == 'manager'
         except AttributeError:
             return False
-
+    
     def has_object_permission(self, request, view, obj):
         """
         Object-level permission.
@@ -330,28 +338,230 @@ class CanLogCompletionAndManagerModify(BasePermission):
         - Write (PUT, PATCH, DELETE) only for managers of the object's department.
         - POST is not handled by has_object_permission as object doesn't exist yet.
         """
-        if not request.user or not request.user.is_authenticated:
-            return False
-
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+        
+        # For read methods, allow any authenticated user (get_queryset will filter)
         if request.method in SAFE_METHODS:
             return True
-
-        # For PUT, PATCH, DELETE (write permissions on existing object)
-        # Ensure user is a manager and their department matches the object's department.
+        
+        # For write methods (PUT, PATCH, DELETE), check if user is a manager of the object's department
         try:
-            user_is_manager = request.user.profile.role == 'manager'
-            user_department = request.user.profile.department
-
-            if not user_is_manager or not user_department:
-                return False # Not a manager or no department assigned to manager
-
+            # Get the department from the object
             obj_department = None
-            # For CompletionLog, obj.task_instance.cleaning_item.department
-            if hasattr(obj, 'task_instance') and \
-               hasattr(obj.task_instance, 'cleaning_item') and \
-               hasattr(obj.task_instance.cleaning_item, 'department'):
+            if hasattr(obj, 'task_instance') and hasattr(obj.task_instance, 'cleaning_item') and hasattr(obj.task_instance.cleaning_item, 'department'):
                 obj_department = obj.task_instance.cleaning_item.department
             
-            return obj_department == user_department
+            # Check if the user is a manager of the object's department
+            user_is_manager = request.user.profile.role == 'manager'
+            user_department = request.user.profile.department
+            
+            return user_is_manager and user_department == obj_department
         except AttributeError:
             return False # User has no profile, or object structure is unexpected
+
+# Thermometer Verification System Permissions
+
+class IsThermometerVerificationStaff(BasePermission):
+    """
+    Permission to check if a user is assigned to thermometer verification duties.
+    This permission allows:
+    - Superusers: Full access
+    - Managers: Full access to their department's thermometers
+    - Staff: Read-only access to their department's thermometers, and write access if they are assigned to verification duties
+    """
+    message = "You are not authorized to perform thermometer verification duties."
+    
+    def has_permission(self, request, view):
+        # Must be authenticated for any access
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+        
+        # For read methods, allow any authenticated user (get_queryset will filter)
+        if request.method in SAFE_METHODS:
+            return True
+        
+        # For write methods, check if user is a manager or assigned verification staff
+        try:
+            # Managers can always perform verification
+            if request.user.profile.role == 'manager':
+                return True
+            
+            # Staff can only perform verification if they are assigned to it
+            if request.user.profile.role == 'staff':
+                # Check if the user is assigned to thermometer verification duties
+                from .models import ThermometerVerificationAssignment
+                is_assigned = ThermometerVerificationAssignment.objects.filter(
+                    staff_member=request.user,
+                    department=request.user.profile.department,
+                    is_active=True
+                ).exists()
+                return is_assigned
+            
+            return False
+        except AttributeError:
+            return False
+    
+    def has_object_permission(self, request, view, obj):
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+        
+        # For read methods, allow any authenticated user (get_queryset will filter)
+        if request.method in SAFE_METHODS:
+            return True
+        
+        # For write methods, check if user is a manager or assigned verification staff of the object's department
+        try:
+            # Get the department from the object
+            obj_department = None
+            if hasattr(obj, 'department'):
+                obj_department = obj.department
+            elif hasattr(obj, 'thermometer') and hasattr(obj.thermometer, 'department'):
+                obj_department = obj.thermometer.department
+            
+            # User's department
+            user_department = request.user.profile.department
+            
+            # Department check
+            if obj_department != user_department:
+                return False
+            
+            # Managers can always perform verification in their department
+            if request.user.profile.role == 'manager':
+                return True
+            
+            # Staff can only perform verification if they are assigned to it
+            if request.user.profile.role == 'staff':
+                # Check if the user is assigned to thermometer verification duties
+                from .models import ThermometerVerificationAssignment
+                is_assigned = ThermometerVerificationAssignment.objects.filter(
+                    staff_member=request.user,
+                    department=user_department,
+                    is_active=True
+                ).exists()
+                return is_assigned
+            
+            return False
+        except AttributeError:
+            return False
+
+class CanManageThermometerAssignments(BasePermission):
+    """
+    Permission to manage thermometer verification assignments.
+    This permission allows:
+    - Superusers: Full access
+    - Managers: Full access to their department's assignments
+    - Staff: Read-only access to their own assignments
+    """
+    message = "You are not authorized to manage thermometer verification assignments."
+    
+    def has_permission(self, request, view):
+        # Must be authenticated for any access
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+        
+        # For read methods, allow any authenticated user (get_queryset will filter)
+        if request.method in SAFE_METHODS:
+            return True
+        
+        # For write methods, check if user is a manager
+        try:
+            return request.user.profile.role == 'manager'
+        except AttributeError:
+            return False
+    
+    def has_object_permission(self, request, view, obj):
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+        
+        # For read methods, allow staff to see their own assignments and managers to see their department's
+        if request.method in SAFE_METHODS:
+            try:
+                # Staff can see their own assignments
+                if request.user.profile.role == 'staff':
+                    return obj.staff_member == request.user
+                
+                # Managers can see assignments in their department
+                if request.user.profile.role == 'manager':
+                    return obj.department == request.user.profile.department
+                
+                return False
+            except AttributeError:
+                return False
+        
+        # For write methods, check if user is a manager of the object's department
+        try:
+            # Managers can only manage assignments in their department
+            if request.user.profile.role == 'manager':
+                return obj.department == request.user.profile.department
+            
+            return False
+        except AttributeError:
+            return False
+
+class CanLogTemperatures(BasePermission):
+    """
+    Permission to log temperatures.
+    This permission allows:
+    - Superusers: Full access
+    - Managers: Full access to their department's temperature logs
+    - Staff: Can create and view logs for their department, but only if using a verified thermometer
+    """
+    message = "You must use a verified thermometer to log temperatures."
+    
+    def has_permission(self, request, view):
+        # Must be authenticated for any access
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+        
+        # For read methods, allow any authenticated user (get_queryset will filter)
+        if request.method in SAFE_METHODS:
+            return True
+        
+        # For POST (create), check if the thermometer is verified in the serializer
+        if request.method == 'POST':
+            return True
+        
+        # For other write methods, check if user is a manager
+        try:
+            return request.user.profile.role == 'manager'
+        except AttributeError:
+            return False
+    
+    def has_object_permission(self, request, view, obj):
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+        
+        # For read methods, allow any authenticated user (get_queryset will filter)
+        if request.method in SAFE_METHODS:
+            return True
+        
+        # For write methods, check if user is a manager of the object's department
+        try:
+            # Managers can only manage logs in their department
+            if request.user.profile.role == 'manager':
+                return obj.department == request.user.profile.department
+            
+            # Staff can only update/delete their own logs
+            if request.user.profile.role == 'staff':
+                return obj.logged_by == request.user and obj.department == request.user.profile.department
+            
+            return False
+        except AttributeError:
+            return False

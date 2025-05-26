@@ -1,13 +1,77 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
-from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog
+from .models import (
+    Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
+    AreaUnit, Thermometer, ThermometerVerificationRecord, 
+    ThermometerVerificationAssignment, TemperatureLog
+)
 
 # Basic registration
 admin.site.register(Department)
 admin.site.register(CleaningItem)
 admin.site.register(TaskInstance)
 admin.site.register(CompletionLog)
+
+# Thermometer Verification System Admin Registration
+
+class AreaUnitAdmin(admin.ModelAdmin):
+    list_display = ('name', 'department', 'target_temperature_min', 'target_temperature_max')
+    list_filter = ('department',)
+    search_fields = ('name', 'department__name')
+
+admin.site.register(AreaUnit, AreaUnitAdmin)
+
+class ThermometerAdmin(admin.ModelAdmin):
+    list_display = ('serial_number', 'model_identifier', 'department', 'status', 
+                   'last_verification_date', 'verification_expiry_date', 'is_verified')
+    list_filter = ('department', 'status')
+    search_fields = ('serial_number', 'model_identifier', 'department__name')
+    readonly_fields = ('is_verified', 'days_until_expiry')
+    
+    def is_verified(self, obj):
+        return obj.is_verified()
+    is_verified.boolean = True
+    is_verified.short_description = 'Currently Verified'
+
+admin.site.register(Thermometer, ThermometerAdmin)
+
+class ThermometerVerificationRecordAdmin(admin.ModelAdmin):
+    list_display = ('thermometer', 'date_verified', 'calibrated_instrument_no', 
+                   'reading_after_verification', 'calibrated_by')
+    list_filter = ('date_verified', 'thermometer__department')
+    search_fields = ('thermometer__serial_number', 'calibrated_instrument_no', 
+                    'calibrated_by__username')
+    date_hierarchy = 'date_verified'
+
+admin.site.register(ThermometerVerificationRecord, ThermometerVerificationRecordAdmin)
+
+class ThermometerVerificationAssignmentAdmin(admin.ModelAdmin):
+    list_display = ('staff_member', 'department', 'assigned_date', 'assigned_by', 'is_active')
+    list_filter = ('department', 'is_active', 'assigned_date')
+    search_fields = ('staff_member__username', 'staff_member__first_name', 
+                    'staff_member__last_name', 'department__name')
+    date_hierarchy = 'assigned_date'
+
+admin.site.register(ThermometerVerificationAssignment, ThermometerVerificationAssignmentAdmin)
+
+class TemperatureLogAdmin(admin.ModelAdmin):
+    list_display = ('area_unit', 'log_datetime', 'temperature_reading', 'time_period', 
+                   'logged_by', 'thermometer_used', 'is_within_target_range')
+    list_filter = ('time_period', 'area_unit__department', 'log_datetime')
+    search_fields = ('area_unit__name', 'logged_by__username', 'thermometer_used__serial_number')
+    date_hierarchy = 'log_datetime'
+    readonly_fields = ('is_within_target_range',)
+    
+    def is_within_target_range(self, obj):
+        result = obj.is_within_target_range()
+        if result is None:
+            return 'No target set'
+        return result
+    is_within_target_range.boolean = True
+    is_within_target_range.short_description = 'Within Target Range'
+
+admin.site.register(TemperatureLog, TemperatureLogAdmin)
 
 # Customized admin for UserProfile
 class UserProfileAdmin(admin.ModelAdmin):

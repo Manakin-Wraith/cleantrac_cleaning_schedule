@@ -9,7 +9,13 @@ from .views import (
     CompletionLogViewSet,
     CurrentUserView,
     PasswordResetRequestView,
-    PasswordResetConfirmView
+    PasswordResetConfirmView,
+    # Thermometer Verification System ViewSets
+    AreaUnitViewSet,
+    ThermometerViewSet,
+    ThermometerVerificationRecordViewSet,
+    ThermometerVerificationAssignmentViewSet,
+    TemperatureLogViewSet
 )
 
 # Create a router and register our viewsets with it.
@@ -20,6 +26,13 @@ router.register(r'profiles', UserProfileViewSet, basename='userprofile')
 router.register(r'cleaningitems', CleaningItemViewSet, basename='cleaningitem')
 router.register(r'taskinstances', TaskInstanceViewSet, basename='taskinstance')
 router.register(r'completionlogs', CompletionLogViewSet, basename='completionlog')
+
+# Register Thermometer Verification System ViewSets
+router.register(r'area-units', AreaUnitViewSet, basename='areaunit')
+router.register(r'thermometers', ThermometerViewSet, basename='thermometer')
+router.register(r'thermometer-verification-records', ThermometerVerificationRecordViewSet, basename='thermometerverificationrecord')
+router.register(r'thermometer-verification-assignments', ThermometerVerificationAssignmentViewSet, basename='thermometerverificationassignment')
+router.register(r'temperature-logs', TemperatureLogViewSet, basename='temperaturelog')
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [

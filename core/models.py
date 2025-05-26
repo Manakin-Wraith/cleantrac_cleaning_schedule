@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from datetime import timedelta
 
 # Create your models here.
 
@@ -117,6 +118,154 @@ class PasswordResetToken(models.Model):
 
     def __str__(self):
         return f"Password reset token for {self.user.username}"
+
+# Thermometer Verification System Models
+
+class AreaUnit(models.Model):
+    """Represents a specific area or unit where temperature is measured"""
+    name = models.CharField(max_length=200)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='area_units')
+    description = models.TextField(blank=True, null=True)
+    target_temperature_min = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    target_temperature_max = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.name} ({self.department.name})"
+
+class Thermometer(models.Model):
+    """Represents a physical thermometer used for temperature measurements"""
+    STATUS_CHOICES = [
+        ('verified', 'Verified'),
+        ('needs_verification', 'Needs Verification'),
+        ('out_of_service', 'Out of Service'),
+    ]
+    
+    serial_number = models.CharField(max_length=100, unique=True)
+    model_identifier = models.CharField(max_length=100)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='thermometers')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='needs_verification')
+    last_verification_date = models.DateField(null=True, blank=True)
+    verification_expiry_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.serial_number} ({self.model_identifier}) - {self.get_status_display()}"
+    
+    def is_verified(self):
+        """Check if thermometer is verified and not expired"""
+        if self.status != 'verified':
+            return False
+        if not self.verification_expiry_date:
+            return True
+        return self.verification_expiry_date >= timezone.now().date()
+    
+    def days_until_expiry(self):
+        """Return days until verification expires, or None if no expiry or already expired"""
+        if not self.verification_expiry_date or not self.is_verified():
+            return None
+        delta = self.verification_expiry_date - timezone.now().date()
+        return delta.days if delta.days > 0 else 0
+
+class ThermometerVerificationRecord(models.Model):
+    """Records each verification event for a thermometer"""
+    thermometer = models.ForeignKey(Thermometer, on_delete=models.CASCADE, related_name='verification_records')
+    date_verified = models.DateField()
+    calibrated_instrument_no = models.CharField(max_length=100)
+    reading_after_verification = models.DecimalField(max_digits=5, decimal_places=2)
+    calibrated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='thermometer_verifications')
+    manager_signature = models.TextField(null=True, blank=True)  # Base64 encoded signature
+    corrective_action = models.TextField(null=True, blank=True)
+    photo_evidence = models.ImageField(upload_to='thermometer_verifications/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Verification of {self.thermometer.serial_number} on {self.date_verified}"
+    
+    def save(self, *args, **kwargs):
+        """Update thermometer status on verification"""
+        super().save(*args, **kwargs)
+        
+        # Update the thermometer's verification status
+        self.thermometer.status = 'verified'
+        self.thermometer.last_verification_date = self.date_verified
+        
+        # Set expiry date (3 months from verification by default)
+        expiry_date = self.date_verified + timedelta(days=90)  # 3 months
+        self.thermometer.verification_expiry_date = expiry_date
+        
+        self.thermometer.save()
+
+class ThermometerVerificationAssignment(models.Model):
+    """Tracks which staff member is responsible for thermometer verification"""
+    staff_member = models.ForeignKey(User, on_delete=models.CASCADE, related_name='thermometer_verification_assignments')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='thermometer_verification_assignments')
+    assigned_date = models.DateField(default=timezone.now)
+    assigned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='thermometer_assignments_made')
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Thermometer Verification Assignment"
+        verbose_name_plural = "Thermometer Verification Assignments"
+    
+    def __str__(self):
+        return f"{self.staff_member.username} assigned to {self.department.name} thermometer verification"
+    
+    def save(self, *args, **kwargs):
+        """Ensure only one active assignment per department"""
+        if self.is_active:
+            # Deactivate any other active assignments for this department
+            ThermometerVerificationAssignment.objects.filter(
+                department=self.department,
+                is_active=True
+            ).exclude(id=self.id).update(is_active=False)
+        super().save(*args, **kwargs)
+
+class TemperatureLog(models.Model):
+    """Records temperature readings for specific areas/units"""
+    TIME_PERIOD_CHOICES = [
+        ('AM', 'Morning'),
+        ('PM', 'Afternoon'),
+    ]
+    
+    area_unit = models.ForeignKey(AreaUnit, on_delete=models.CASCADE, related_name='temperature_logs')
+    log_datetime = models.DateTimeField(default=timezone.now)
+    temperature_reading = models.DecimalField(max_digits=5, decimal_places=2)
+    time_period = models.CharField(max_length=2, choices=TIME_PERIOD_CHOICES)
+    corrective_action = models.TextField(null=True, blank=True)
+    photo = models.ImageField(upload_to='temperature_logs/', null=True, blank=True)
+    logged_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='temperature_logs')
+    thermometer_used = models.ForeignKey(Thermometer, on_delete=models.CASCADE, related_name='temperature_logs')
+    verification_record_at_time_of_log = models.ForeignKey(
+        ThermometerVerificationRecord, 
+        on_delete=models.SET_NULL, 
+        null=True,
+        related_name='temperature_logs'
+    )
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='temperature_logs')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Temperature Log"
+        verbose_name_plural = "Temperature Logs"
+        ordering = ['-log_datetime']
+    
+    def __str__(self):
+        return f"{self.area_unit.name} - {self.temperature_reading}°C on {self.log_datetime.strftime('%Y-%m-%d %H:%M')} ({self.time_period})"
+    
+    def is_within_target_range(self):
+        """Check if temperature is within target range for the area unit"""
+        if self.area_unit.target_temperature_min is None or self.area_unit.target_temperature_max is None:
+            return None  # Can't determine if targets aren't set
+        
+        return (self.area_unit.target_temperature_min <= self.temperature_reading <= 
+                self.area_unit.target_temperature_max)
 
 # To make UserProfile creation automatic when a User is created, we can use signals.
 # This is optional but good practice.

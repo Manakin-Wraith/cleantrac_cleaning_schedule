@@ -5,7 +5,8 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline'; // Added for timeline view
 import interactionPlugin from '@fullcalendar/interaction'; // for drag & drop, resizing
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material'; // Added Typography
+import { useTheme } from '@mui/material/styles'; // Added useTheme
 
 const TaskSchedulerCalendar = ({ 
     events,         // Pre-formatted events from ManagerDashboardPage
@@ -21,6 +22,7 @@ const TaskSchedulerCalendar = ({
     // Use ref from props if provided, otherwise create local ref
     const localCalendarRef = useRef(null);
     const effectiveRef = calendarRef || localCalendarRef;
+    const theme = useTheme(); // Get the theme object
 
     const handleDatesSet = (dateInfo) => {
         // dateInfo.view.currentStart, dateInfo.view.currentEnd, dateInfo.start, dateInfo.end, dateInfo.startStr, dateInfo.endStr, dateInfo.timeZone
@@ -41,12 +43,89 @@ const TaskSchedulerCalendar = ({
 
     // Custom event rendering function for eventContent
     const renderEventContent = (eventInfo) => {
-        const isCompleted = eventInfo.event.extendedProps.status === 'completed';
+        const { status, priority } = eventInfo.event.extendedProps;
+        const isCompleted = status === 'completed';
+
+        let backgroundColor = theme.palette.grey[200]; // Default background
+        let textColor = theme.palette.getContrastText(backgroundColor);
+        let borderColor = theme.palette.grey[400];
+
+        switch (status) {
+            case 'completed':
+                backgroundColor = theme.palette.success.light;
+                textColor = theme.palette.success.contrastText;
+                borderColor = theme.palette.success.main;
+                break;
+            case 'pending_review':
+                backgroundColor = theme.palette.warning.light;
+                textColor = theme.palette.warning.contrastText;
+                borderColor = theme.palette.warning.main;
+                break;
+            case 'pending':
+                backgroundColor = theme.palette.info.light;
+                textColor = theme.palette.info.contrastText;
+                borderColor = theme.palette.info.main;
+                break;
+            // Add more cases for other statuses like 'overdue' or 'in_progress'
+            // case 'overdue':
+            //     backgroundColor = theme.palette.error.light;
+            //     textColor = theme.palette.error.contrastText;
+            //     borderColor = theme.palette.error.main;
+            //     break;
+            default:
+                // Keep default grey for unknown statuses
+                break;
+        }
+
         return (
-            <>
-                <b style={isCompleted ? { textDecoration: 'line-through' } : {}}>{eventInfo.timeText}</b>
-                <i style={isCompleted ? { textDecoration: 'line-through', marginLeft: '4px' } : { marginLeft: '4px' }}>{eventInfo.event.title}</i>
-            </>
+            <Box
+                sx={{
+                    backgroundColor,
+                    color: textColor,
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    borderLeft: `4px solid ${borderColor}`,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    boxShadow: theme.shadows[1]
+                }}
+            >
+                <Typography 
+                    variant="body2" 
+                    sx={{ 
+                        fontWeight: 'bold', 
+                        textDecoration: isCompleted ? 'line-through' : 'none',
+                        fontSize: '0.75rem', // Smaller font for time
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                    }}
+                >
+                    {eventInfo.timeText}
+                </Typography>
+                <Typography 
+                    variant="caption" 
+                    sx={{ 
+                        textDecoration: isCompleted ? 'line-through' : 'none',
+                        fontSize: '0.8rem', // Slightly larger for title
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                    }}
+                >
+                    {eventInfo.event.title}
+                </Typography>
+                {priority && (
+                    <Typography variant="caption" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
+                        Priority: {priority}
+                    </Typography>
+                )}
+            </Box>
         );
     };
 

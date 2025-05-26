@@ -2,6 +2,46 @@
 
 This checklist is derived from `docs/breakdown.md` and outlines the development tasks for the CleanTrack application. Each item should be checked off as it's completed.
 
+## Next Steps Priority List
+
+1. **Complete User Management System**
+   - Implement Edit User functionality
+   - Resolve username field editability issue in UserFormModal
+
+2. **Implement Thermometer Verification System**
+   - Create data models (Thermometer, ThermometerVerificationRecord, TemperatureLog)
+   - Build Thermometer Verification Screen
+   - Implement Temperature Logging workflow with verified thermometer requirement
+   - Add dashboard indicators for thermometer status
+   - Integrate camera component for verification and logs
+   - Implement staff assignment system for thermometer verification responsibility
+
+3. **Enhance UI/UX**
+   - Modernize header and sidebar layout
+   - Implement nested navigation with grouping
+   - Add contextual sidebar that adapts to user's current section
+   - Improve mobile experience with bottom navigation
+   - Enhance visual design with subtle animations and depth
+   - Implement improved user profile section in header
+   - Add dark mode support
+
+4. **Improve Manager Dashboard**
+   - Implement dashboard widgets (Overall Completion, Overdue Tasks, Completion By Staff)
+   - Add charts and visual data representations
+   - Create quick actions widget
+   - Add thermometer status indicators
+
+5. **Enhance Calendar View**
+   - Implement FullCalendar Resource View
+   - Improve task event rendering
+   - Add collapsible sidebar for enhanced controls
+
+6. **Implement Reports Page**
+   - Create report configuration section
+   - Implement various report types
+   - Add export functionality
+   - Include thermometer verification reports
+
 ## 0. Initial Project Setup & Configuration
 
 - **[x] Define Technology Stack** (documented in `tech_stack.md`)
@@ -15,7 +55,7 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
 - **[x] Create Superuser Account**
 - **[x] Verify Development Server and Admin Access**
 - **[x] Configure Database for Development (SQLite initially)** (default Django setup)
-- **[ ] Plan for Production Database (PostgreSQL)** (documented in `tech_stack.md`, further setup pending)
+- **[x] Plan for Production Database (PostgreSQL)** (documented in `tech_stack.md`, further setup pending)
 - **[x] Set up Django REST framework** (installed, added to INSTALLED_APPS, basic URLs configured)
 - **[x] Create DRF Serializers for core models**
 - **[x] Create DRF ViewSets for core models**
@@ -38,6 +78,14 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Implement Toast Notifications (e.g., for login success/failure) using notistack
   - [x] Standardize page layout and centering (e.g., PageLayout component)
   - [x] Resolve MUI Select out-of-range warning for department_id in UserFormModal
+  - [ ] Modernize header and sidebar layout
+    - [ ] Implement nested navigation with grouping for better organization
+    - [ ] Create contextual sidebar that adapts to user's current section
+    - [ ] Improve mobile experience with bottom navigation
+    - [ ] Enhance visual design with subtle animations and depth
+    - [ ] Add improved user profile section in header
+    - [ ] Create more space-efficient header design
+    - [ ] Add dark mode support with theme toggle
 - **[x] Department Management System**
   - [x] API: CRUD operations for departments (Superuser: CRUD, Manager: Read)
   - [x] Frontend: Implement Department Management UI
@@ -56,6 +104,39 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Set up initial database structure (for built-in Django apps)
   - [x] Create and apply migrations for core models
   - [x] Register core models in Django Admin
+  - [ ] **Thermometer Verification System Models:**
+    - [ ] Create `Thermometer` model with fields:
+      - [ ] `serial_number` (CharField, unique)
+      - [ ] `model_identifier` (CharField)
+      - [ ] `status` (CharField, choices: 'Verified', 'Needs Verification', 'Out of Service')
+      - [ ] `last_verification_date` (DateField, nullable)
+      - [ ] `verification_expiry_date` (DateField, nullable)
+    - [ ] Create `ThermometerVerificationAssignment` model with fields:
+      - [ ] `staff_member` (ForeignKey to User)
+      - [ ] `department` (ForeignKey to Department)
+      - [ ] `assigned_date` (DateField)
+      - [ ] `assigned_by` (ForeignKey to User)
+      - [ ] `is_active` (BooleanField)
+      - [ ] `notes` (TextField, nullable)
+    - [ ] Create `ThermometerVerificationRecord` model with fields:
+      - [ ] `thermometer` (ForeignKey to `Thermometer`)
+      - [ ] `date_verified` (DateField)
+      - [ ] `calibrated_instrument_no` (CharField)
+      - [ ] `reading_after_verification` (DecimalField)
+      - [ ] `calibrated_by` (ForeignKey to User, or CharField)
+      - [ ] `manager_signature` (ImageField or TextField)
+      - [ ] `corrective_action` (TextField, nullable)
+      - [ ] `photo_evidence` (ImageField, nullable)
+    - [ ] Create `TemperatureLog` model with fields:
+      - [ ] `area_unit` (ForeignKey to `AreaUnit`)
+      - [ ] `log_datetime` (DateTimeField)
+      - [ ] `temperature_reading` (DecimalField)
+      - [ ] `time_period` (CharField, choices: 'AM', 'PM')
+      - [ ] `corrective_action` (TextField, nullable)
+      - [ ] `photo` (ImageField, nullable)
+      - [ ] `logged_by` (ForeignKey to User)
+      - [ ] `thermometer_used` (ForeignKey to `Thermometer`)
+      - [ ] `verification_record_at_time_of_log` (ForeignKey to `ThermometerVerificationRecord`)
 - **[ ] Backend API**
   - [x] Design API endpoints for all required functionalities (Initial CRUD covered by ViewSets)
   - **[x] Implement Department-Aware Data Filtering** (Implemented for major viewsets: CleaningItem, TaskInstance, CompletionLog, User, UserProfile)
@@ -75,7 +156,88 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
 
 ---
 
-## II. Manager/Overview Component/Pages
+## IV. Thermometer Verification System
+
+- **[ ] 1. Thermometer Management**
+  - [ ] UI: Page Heading (e.g., "Thermometer Management")
+  - [ ] UI: "+ Add New Thermometer" Button
+  - [ ] UI: Thermometer List Table
+    - [ ] Table Header: Columns for: Serial Number, Model Identifier, Status (with color coding), Last Verification Date, Verification Expiry Date, Actions
+    - [ ] Status Column: Visual indicators (Green=Verified, Amber=Verification Due Soon, Red=Needs Verification)
+    - [ ] Actions Column: "Verify", "Edit", "Delete" buttons
+  - [ ] UI: Thermometer Verification Staff Assignment Section
+    - [ ] Dropdown to select staff member responsible for thermometer verification
+    - [ ] Display of currently assigned staff member
+    - [ ] History of past assignments (optional)
+    - [ ] Effective date for assignment
+  - [ ] Feature: Thermometer Data Management
+  - [ ] Feature: Staff Assignment Management
+  - [ ] Function: `Retrieve Thermometers` API call
+  - [ ] Function: `Add Thermometer` API call
+  - [ ] Function: `Edit Thermometer` API call
+  - [ ] Function: `Delete Thermometer` API call
+  - [ ] Function: `Assign Verification Staff` API call
+  - [ ] Function: `Get Current Verification Staff` API call
+
+- **[ ] 2. Thermometer Verification Screen**
+  - [ ] UI: Page Heading ("Verify Thermometer")
+  - [ ] UI: Form fields
+    - [ ] Date field (with date picker)
+    - [ ] Calibrated Instrument No. field
+    - [ ] Thermometer Serial No. dropdown (showing only unverified thermometers)
+    - [ ] Thermometer Reading After Verification field
+    - [ ] Calibrated By field
+    - [ ] Manager Signature field (with drawing capability)
+    - [ ] Corrective Action field (optional)
+    - [ ] Photo Evidence upload (optional)
+  - [ ] UI: "Submit Verification" and "Cancel" buttons
+  - [ ] Feature: Thermometer Verification Process
+  - [ ] Function: `Submit Verification` API call
+  - [ ] Function: `Upload Photo` API call
+  - [ ] Function: `Save Signature` API call
+
+- **[ ] 3. Temperature Logging Workflow**
+  - [~] UI: Thermometer Selection Step
+    - [~] Modal dialog or initial section for selecting verified thermometer (Implemented, now uses centrally managed state from StaffTasksPage)
+    - [x] Ensure only verified thermometers are listed (Data now flows correctly from StaffTasksPage)
+    - [x] Refresh list of verified thermometers after a new verification (Achieved by lifting state and callback mechanism in StaffTasksPage)
+  - [ ] UI: Temperature Data Entry Step
+    - [ ] Form fields for: Area/Unit, Temperature Reading, Time Period (AM/PM), Corrective Action (optional), Photo (optional)
+  - [ ] UI: Error states and guidance for unverified thermometers
+    - [ ] Clear message when no verified thermometers are available
+    - [ ] Action button to navigate to verification screen
+  - [ ] Feature: Temperature Data Collection
+  - [ ] Feature: Thermometer Verification Enforcement
+  - [ ] Function: `Select Thermometer` API call
+  - [ ] Function: `Log Temperature` API call
+  - [ ] Function: `Upload Photo` API call
+  
+- **[ ] 4. Staff Tasks Page Integration**
+  - [ ] UI: Thermometer Verification Section for Assigned Staff
+    - [ ] Conditional rendering based on staff assignment status
+    - [ ] Prominent card/section showing verification responsibilities
+    - [ ] Quick access to verification form
+    - [ ] Status indicators for thermometers requiring verification
+  - [ ] UI: Notification Badge/Indicator
+    - [ ] Visual indicator when staff is assigned verification duty
+    - [ ] Counter showing number of thermometers needing verification
+  - [ ] Feature: Role-based UI adaptation
+  - [ ] Function: `Check Verification Assignment` API call
+  - [ ] Function: `Get Thermometers Needing Verification` API call
+
+- **[ ] 5. Dashboard Thermometer Indicators**
+  - [ ] UI: Prominent status indicators for thermometers
+    - [ ] "Available Verified Thermometers" count with green indicator
+    - [ ] "Thermometers Requiring Verification" count with red indicator and link
+  - [ ] UI: Conditional "Log Temperatures" button
+    - [ ] Disabled state with tooltip when no verified thermometers
+    - [ ] Active state when verified thermometers available
+  - [ ] Feature: At-a-glance thermometer status
+  - [ ] Function: `Retrieve Thermometer Status Summary` API call
+
+---
+
+## V. Manager/Overview Component/Pages
 
 - **[x] 1. Login Page (Shared - also see Staff section)**
   - [x] UI: Design and implement login form (Username/Email, Password, Remember Me, Forgot Password?) _Basic login implemented; Forgot Password flow now functional with console token simulation._
@@ -86,28 +248,52 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Function: `Display Error Message` (client-side)
   - [x] Function: `Redirect on Success` (to department-specific view or department selection) _Basic to /manager-dashboard done_
 - **[ ] 2. Overall Application Layout (Shared Structure - also see Staff section)**
-  - [ ] UI: Fixed Header Bar (App Name/Logo, User Name & Role, Current Active Department, Logout Button)
-  - [ ] UI: Fixed/Collapsible Sidebar Navigation
-  - [ ] UI: Department-specific navigation links
-  - [ ] Feature: Navigation system
-  - [ ] Feature: Role-based UI display
-  - [ ] Feature: User Session Management (client-side)
+  - [~] UI: Fixed Header Bar (App Name/Logo, User Name & Role, Current Active Department, Logout Button) - Basic implementation exists, needs enhancement
+  - [~] UI: Fixed/Collapsible Sidebar Navigation - Basic implementation exists, needs enhancement
+  - [~] UI: Department-specific navigation links - Basic implementation exists, needs enhancement
+  - [~] Feature: Navigation system - Basic implementation exists, needs enhancement
+  - [~] Feature: Role-based UI display - Basic implementation exists, needs enhancement
+  - [~] Feature: User Session Management (client-side) - Basic implementation exists, needs enhancement
   - [ ] Feature: Department-Contextual Interface
-  - [ ] Function: `Navigate To [View]` (within department context)
-  - [ ] Function: `Log Out` API call (client-side)
+  - [~] Function: `Navigate To [View]` (within department context) - Basic implementation exists, needs enhancement
+  - [x] Function: `Log Out` API call (client-side)
   - [ ] Function: `Switch Active Department` (if implemented)
+  - [ ] UI: Implement modern design improvements
+    - [ ] Add nested navigation with logical grouping
+    - [ ] Create contextual sidebar that adapts to current section
+    - [ ] Implement bottom navigation for mobile devices
+    - [ ] Add subtle animations and depth to navigation elements
+    - [ ] Create improved user profile section with avatar
+    - [ ] Implement space-efficient header with breadcrumbs
+    - [ ] Add dark mode toggle
 - **[ ] 3. Manager Dashboard Page**
-  - [ ] UI: Page Heading (e.g., "[Department Name] Dashboard")
+  - [~] UI: Page Heading (e.g., "[Department Name] Dashboard") - Basic implementation exists
   - [~] Data: Foundation for displaying department tasks, cleaning items, and staff users is implemented.
   - [ ] UI: Dashboard widgets/cards layout
+    - [ ] Implement responsive grid layout for dashboard widgets
+    - [ ] Add card containers with consistent styling
+    - [ ] Create visual hierarchy with typography and spacing
   - [ ] UI Component: Overall Completion Widget (Percentage, Progress Bar/Donut Chart, Counts)
+    - [ ] Implement circular progress or donut chart for completion percentage
+    - [ ] Add count display for completed vs. total tasks
+    - [ ] Include trend indicator (up/down from previous period)
   - [ ] UI Component: Overdue Tasks Widget (Count, Compact List, Link to full list)
+    - [ ] Create alert-styled card for overdue tasks
+    - [ ] Implement scrollable list of overdue items with key details
+    - [ ] Add "View All" link to filtered task list
   - [ ] UI Component: Completion By Staff Widget (Bar Chart)
+    - [ ] Implement horizontal bar chart showing completion rates by staff
+    - [ ] Add sorting options (alphabetical, completion rate)
+    - [ ] Include legend and tooltips for detailed information
   - [ ] UI Component: Quick Actions/Links Widget (Optional)
+    - [ ] Create card with prominent action buttons
+    - [ ] Add shortcuts to common tasks (add item, view schedule, etc.)
   - [ ] Feature: Monitoring (department-scoped)
   - [ ] Feature: Reporting (Summary, department-scoped)
   - [x] Function: `Retrieve Dashboard Summary Data` API call (department-scoped) (Core calls for tasks, items, users in place)
   - [ ] Function: `Display Charts`
+    - [ ] Integrate chart library (e.g., Chart.js, Recharts)
+    - [ ] Create reusable chart components
   - [ ] Function: `Display Lists`
 - **[ ] 4. Daily Schedule Page (Manager View)**
   - [ ] UI: Page Heading (e.g., "[Department Name] Daily Schedule")
@@ -118,15 +304,34 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
     - [x] Calendar: Persist `start_time`, `end_time`, `due_date`, and `assignee` changes from drag & drop and resize operations to the backend.
     - [ ] **Calendar UI/UX Enhancements (Manager Scheduler View):**
         - [ ] Implement FullCalendar **Resource View** (e.g., `resourceTimeGridWeek`, `resourceTimeGridDay`) to display staff as distinct columns/lanes, replacing the current horizontal staff name list.
+          - [ ] Configure resource grouping by department
+          - [ ] Add resource headers with staff information
+          - [ ] Implement resource filtering options
         - [ ] Ensure tasks correctly map to `resourceId` for display in staff lanes.
+          - [ ] Update task data structure to include resourceId
+          - [ ] Modify event rendering to use resourceId
         - [ ] Improve task "chip" (event) rendering: display status (e.g., color-coding), start/end times, and enhance clarity.
+          - [ ] Create custom event rendering component
+          - [ ] Add status indicators and icons
+          - [ ] Implement tooltips for additional information
         - [ ] Evaluate and implement responsive behavior for calendar views on smaller screens (e.g., switching to `resourceTimelineDay` or `listWeek`).
+          - [ ] Add breakpoint detection for view switching
+          - [ ] Create mobile-optimized list view
   - [ ] **UI: Collapsible Sidebar (MUI Drawer) for Enhanced Controls:**
       - [ ] Implement a collapsible sidebar.
+        - [ ] Create toggle mechanism for sidebar visibility
+        - [ ] Add smooth transitions for open/close actions
       - [ ] Add staff filtering controls to show/hide specific staff resources in the calendar.
+        - [ ] Implement checkbox list for staff selection
+        - [ ] Add "Select All/None" options
       - [ ] Consider moving "Create New Task" functionality to the sidebar.
+        - [ ] Create compact task creation form in sidebar
       - [ ] Add filters for task status (Pending, Completed etc.).
+        - [ ] Implement filter chips or toggle buttons
+        - [ ] Add visual indicators for active filters
       - [ ] Explore adding a section for "Unassigned Tasks".
+        - [ ] Create draggable unassigned task list
+        - [ ] Implement drag-and-drop to assign tasks
     - [x] Actions: Implement 'Edit Task Assignment' functionality (Modal created, API connected, assignment, notes, layout, and info display complete)
         - [x] Modal: "Edit Task Assignment" modal (Layout and informational display improvements complete, dropdown sizing fixed, pre-fills and saves time and date correctly)
         - [x] Modal: Non-editable item name and assignee. Editable due date, start time, end time, and notes.
@@ -172,15 +377,34 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
 - **[ ] 7. Reports Page (Manager View)**
   - [ ] UI: Page Heading (e.g., "[Department Name] Reports")
   - [ ] UI: Report Configuration Section (Report Type, Date Range, Optional Filters, Generate Button)
+    - [ ] Create report type selector with descriptions
+    - [ ] Implement date range picker with presets (Today, This Week, This Month, Custom)
+    - [ ] Add dynamic filters based on selected report type
+    - [ ] Create prominent Generate Report button
   - [ ] UI: Report Display Area (Title, Table/Charts)
+    - [ ] Implement loading state for report generation
+    - [ ] Create tabular data display with sorting and pagination
+    - [ ] Add chart visualization options for applicable reports
+    - [ ] Implement print-friendly layout
   - [ ] UI: Optional Export Button
+    - [ ] Add export options (CSV, PDF, Excel)
+    - [ ] Implement file download functionality
   - [ ] Feature: Reporting (department-scoped)
+    - [ ] Implement Daily Completion Summary report
+    - [ ] Create Overdue Tasks List report
+    - [ ] Develop Staff Completion Rates report
+    - [ ] Build Task Completion History report
   - [ ] Function: `Select Report Type`
   - [ ] Function: `Select Date Range`
   - [ ] Function: `Apply Filters`
   - [ ] Function: `Generate Report` API call (department-scoped)
+    - [ ] Create backend endpoints for each report type
+    - [ ] Implement data aggregation and calculation logic
   - [ ] Function: `Display Report Data`
+    - [ ] Create reusable components for different data visualizations
   - [ ] Function: `Export Report` (CSV, PDF)
+    - [ ] Implement client-side export for CSV
+    - [ ] Add server-side PDF generation
 
 ---
 
@@ -228,12 +452,21 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [ ] Function: `Close Modal`
 - **[ ] 6. My Profile Page (Optional - Staff View)**
   - [ ] UI: Page Heading ("My Profile")
-  - [ ] UI: User Information Display (Name, Role, Assigned Department(s))
-  - [ ] UI: Optional "Edit Profile" / "Change Password" links/buttons
+  - [ ] UI: User Information Section (Name, Role, Department, etc.)
+    - [ ] Add user avatar/profile picture support
+    - [ ] Create card-based layout for user information
+    - [ ] Display role and permissions information
+    - [ ] Show department assignment details
+  - [ ] UI: Optional Edit Profile / Change Password functionality
+    - [ ] Implement profile edit form with validation
+    - [ ] Create secure password change workflow
+    - [ ] Add profile preferences section (notifications, display options)
   - [ ] Feature: User Information Display
-  - [ ] Feature: Department Awareness
   - [ ] Function: `Retrieve User Profile` API call
   - [ ] Function: `Update User Profile` API call (if editing allowed)
+    - [ ] Create backend endpoint for profile updates
+    - [ ] Implement validation and error handling
+    - [ ] Add success notifications and feedback
 
 ---
 

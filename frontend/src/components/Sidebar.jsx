@@ -11,7 +11,8 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import LogoutIcon from '@mui/icons-material/Logout'; 
-import BusinessIcon from '@mui/icons-material/Business'; 
+import BusinessIcon from '@mui/icons-material/Business';
+import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat'; 
 
 export const drawerWidth = 240;
 const collapsedDrawerWidth = (theme) => theme.spacing(7); 
@@ -51,6 +52,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
     { text: 'Coming SOON!', icon: <CalendarMonthIcon />, path: '/manager-schedule' },
     { text: 'Item Management', icon: <ListAltIcon />, path: '/manager-items' },
     { text: 'Staff', icon: <PeopleIcon />, path: '/manager-users' },
+    { text: 'Thermometers', icon: <DeviceThermostatIcon />, path: '/manager-thermometers' },
   ];
 
   const staffLinks = [

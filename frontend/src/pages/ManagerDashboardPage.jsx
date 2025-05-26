@@ -10,6 +10,7 @@ import {
     AddCircleOutline, Visibility as VisibilityIcon, Edit as EditIcon, CheckCircle,
     RateReview as RateReviewIcon 
 } from '@mui/icons-material';
+// Thermometer components moved to dedicated page
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -800,7 +801,10 @@ function ManagerDashboardPage() {
                 <Typography component="h1" variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 1 }}>
                     {departmentName} Dashboard
                 </Typography>
-                <Typography component="h2" variant="h5" gutterBottom sx={{ textAlign: 'center', mb: 4 }}>
+                
+                {/* Thermometer components moved to dedicated page */}
+                
+                <Typography component="h2" variant="h5" gutterBottom sx={{ textAlign: 'center', mb: 4, mt: 4 }}>
                     Task Management
                 </Typography>
 

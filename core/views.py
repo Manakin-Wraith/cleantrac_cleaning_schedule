@@ -8,19 +8,23 @@ from django.utils import timezone
 from datetime import date as datetime_date 
 from django.db.models import Count 
 
-from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog, PasswordResetToken
+from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog, PasswordResetToken, \
+    AreaUnit, Thermometer, ThermometerVerificationRecord, ThermometerVerificationAssignment, TemperatureLog
 from .serializers import (
     DepartmentSerializer, UserSerializer, UserProfileSerializer, 
     CleaningItemSerializer, TaskInstanceSerializer, CompletionLogSerializer,
     CurrentUserSerializer, UserWithProfileSerializer,
-    PasswordResetRequestSerializer, PasswordResetConfirmSerializer
+    PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
+    AreaUnitSerializer, ThermometerSerializer, ThermometerVerificationRecordSerializer,
+    ThermometerVerificationAssignmentSerializer, TemperatureLogSerializer
 )
 from rest_framework.permissions import AllowAny # Corrected: AllowAny from DRF
 from .permissions import (
     IsManagerForWriteOrAuthenticatedReadOnly, IsSuperUser, 
     CanLogCompletionAndManagerModify, IsSuperUserForWriteOrAuthenticatedReadOnly,
     UserAndProfileManagementPermissions, CanUpdateTaskStatus,
-    IsSuperUserWriteOrManagerRead
+    IsSuperUserWriteOrManagerRead, IsThermometerVerificationStaff,
+    CanManageThermometerAssignments, CanLogTemperatures
 )
 from .sms_utils import send_sms # New import
 from django.contrib.auth.password_validation import validate_password # For password strength
@@ -426,5 +430,294 @@ class CurrentUserView(APIView):
         serializer = CurrentUserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
 
+
+# Thermometer Verification System Views
+
+class AreaUnitViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing area units where temperature measurements are taken.
+    Only managers can create, update, or delete area units in their department.
+    """
+    serializer_class = AreaUnitSerializer
+    permission_classes = [IsManagerForWriteOrAuthenticatedReadOnly]
+    
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return AreaUnit.objects.none()
+        
+        if user.is_superuser:
+            return AreaUnit.objects.all()
+        
+        # Filter by user's department
+        try:
+            if user.profile and user.profile.department:
+                return AreaUnit.objects.filter(department=user.profile.department)
+            return AreaUnit.objects.none()
+        except AttributeError:
+            return AreaUnit.objects.none()
+    
+    def perform_create(self, serializer):
+        # Ensure the area unit is created in the user's department
+        if not self.request.user.is_superuser and hasattr(self.request.user, 'profile') and self.request.user.profile.department:
+            serializer.save(department=self.request.user.profile.department)
+        else:
+            serializer.save()
+
+class ThermometerViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing thermometers.
+    Managers can create, update, or delete thermometers in their department.
+    Staff assigned to thermometer verification can update thermometer status.
+    """
+    serializer_class = ThermometerSerializer
+    permission_classes = [IsThermometerVerificationStaff]
+    
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return Thermometer.objects.none()
+        
+        if user.is_superuser:
+            return Thermometer.objects.all()
+        
+        # Filter by user's department
+        try:
+            if user.profile and user.profile.department:
+                return Thermometer.objects.filter(department=user.profile.department)
+            return Thermometer.objects.none()
+        except AttributeError:
+            return Thermometer.objects.none()
+    
+    def perform_create(self, serializer):
+        # Ensure the thermometer is created in the user's department
+        if not self.request.user.is_superuser and hasattr(self.request.user, 'profile') and self.request.user.profile.department:
+            serializer.save(department=self.request.user.profile.department)
+        else:
+            serializer.save()
+    
+    @action(detail=False, methods=['get'], url_path='verified')
+    def verified_thermometers(self, request):
+        """
+        Returns a list of verified thermometers for the user's department.
+        """
+        queryset = self.get_queryset().filter(status='verified')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='needs-verification')
+    def needs_verification(self, request):
+        """
+        Returns a list of thermometers that need verification for the user's department.
+        """
+        queryset = self.get_queryset().filter(status='needs_verification')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='verification-expiring-soon')
+    def verification_expiring_soon(self, request):
+        """
+        Returns a list of thermometers with verification expiring within 7 days.
+        """
+        today = timezone.now().date()
+        expiry_threshold = today + timezone.timedelta(days=7)
+        
+        queryset = self.get_queryset().filter(
+            status='verified',
+            verification_expiry_date__lte=expiry_threshold,
+            verification_expiry_date__gt=today
+        )
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+class ThermometerVerificationRecordViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing thermometer verification records.
+    Only staff assigned to thermometer verification or managers can create records.
+    """
+    serializer_class = ThermometerVerificationRecordSerializer
+    permission_classes = [IsThermometerVerificationStaff]
+    
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return ThermometerVerificationRecord.objects.none()
+        
+        if user.is_superuser:
+            return ThermometerVerificationRecord.objects.all()
+        
+        # Filter by user's department
+        try:
+            if user.profile and user.profile.department:
+                return ThermometerVerificationRecord.objects.filter(
+                    thermometer__department=user.profile.department
+                )
+            return ThermometerVerificationRecord.objects.none()
+        except AttributeError:
+            return ThermometerVerificationRecord.objects.none()
+    
+    def perform_create(self, serializer):
+        # Set the calibrated_by field to the current user if not provided
+        thermometer = serializer.validated_data.get('thermometer')
+        
+        # Update the thermometer status and verification dates
+        if thermometer:
+            thermometer.status = 'verified'
+            thermometer.last_verification_date = serializer.validated_data.get('date_verified')
+            # Set expiry date to 30 days after verification
+            thermometer.verification_expiry_date = serializer.validated_data.get('date_verified') + timezone.timedelta(days=30)
+            thermometer.save()
+        
+        serializer.save(calibrated_by=self.request.user)
+
+class ThermometerVerificationAssignmentViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing thermometer verification assignments.
+    Only managers can create, update, or delete assignments in their department.
+    Staff can view their own assignments.
+    """
+    serializer_class = ThermometerVerificationAssignmentSerializer
+    permission_classes = [CanManageThermometerAssignments]
+    
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return ThermometerVerificationAssignment.objects.none()
+        
+        if user.is_superuser:
+            return ThermometerVerificationAssignment.objects.all()
+        
+        # Filter by user's role and department
+        try:
+            if user.profile.role == 'manager' and user.profile.department:
+                # Managers can see all assignments in their department
+                return ThermometerVerificationAssignment.objects.filter(
+                    department=user.profile.department
+                )
+            elif user.profile.role == 'staff':
+                # Staff can only see their own assignments
+                return ThermometerVerificationAssignment.objects.filter(
+                    staff_member=user
+                )
+            return ThermometerVerificationAssignment.objects.none()
+        except AttributeError:
+            return ThermometerVerificationAssignment.objects.none()
+    
+    def perform_create(self, serializer):
+        # Set the assigned_by field to the current user if not provided
+        # Ensure the assignment is created in the user's department
+        if not self.request.user.is_superuser and hasattr(self.request.user, 'profile') and self.request.user.profile.department:
+            serializer.save(
+                assigned_by=self.request.user,
+                department=self.request.user.profile.department
+            )
+        else:
+            serializer.save(assigned_by=self.request.user)
+    
+    @action(detail=False, methods=['get'], url_path='current-assignment')
+    def current_assignment(self, request):
+        """
+        Returns the current active thermometer verification assignment for the user's department.
+        """
+        try:
+            if request.user.profile and request.user.profile.department:
+                assignment = ThermometerVerificationAssignment.objects.filter(
+                    department=request.user.profile.department,
+                    is_active=True
+                ).order_by('-assigned_date').first()
+                
+                if assignment:
+                    serializer = self.get_serializer(assignment)
+                    return Response(serializer.data)
+                else:
+                    return Response({"detail": "No active thermometer verification assignment found."}, status=status.HTTP_404_NOT_FOUND)
+            else:
+                return Response({"detail": "User has no department assigned."}, status=status.HTTP_400_BAD_REQUEST)
+        except AttributeError:
+            return Response({"detail": "User profile not found."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='my-assignment')
+    def my_assignment(self, request):
+        """
+        Returns the current active thermometer verification assignment for the requesting user.
+        """
+        try:
+            assignment = ThermometerVerificationAssignment.objects.filter(
+                staff_member=request.user,
+                is_active=True
+            ).order_by('-assigned_date').first()
+            
+            if assignment:
+                serializer = self.get_serializer(assignment)
+                return Response(serializer.data)
+            else:
+                return Response({"detail": "You are not currently assigned to thermometer verification duties."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class TemperatureLogViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing temperature logs.
+    Staff can create logs using verified thermometers.
+    Managers can view, update, or delete logs in their department.
+    """
+    serializer_class = TemperatureLogSerializer
+    permission_classes = [CanLogTemperatures]
+    
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return TemperatureLog.objects.none()
+        
+        if user.is_superuser:
+            return TemperatureLog.objects.all()
+        
+        # Filter by user's department
+        try:
+            if user.profile and user.profile.department:
+                return TemperatureLog.objects.filter(department=user.profile.department)
+            return TemperatureLog.objects.none()
+        except AttributeError:
+            return TemperatureLog.objects.none()
+    
+    def perform_create(self, serializer):
+        # Set the logged_by field to the current user if not provided
+        # Ensure the log is created in the user's department
+        if not self.request.user.is_superuser and hasattr(self.request.user, 'profile') and self.request.user.profile.department:
+            serializer.save(
+                logged_by=self.request.user,
+                department=self.request.user.profile.department
+            )
+        else:
+            serializer.save(logged_by=self.request.user)
+    
+    @action(detail=False, methods=['get'], url_path='area/(?P<area_unit_id>[^/.]+)')
+    def logs_by_area(self, request, area_unit_id=None):
+        """
+        Returns temperature logs for a specific area unit.
+        """
+        try:
+            area_unit = AreaUnit.objects.get(pk=area_unit_id)
+            # Check if user has access to this area unit
+            if not request.user.is_superuser and (not hasattr(request.user, 'profile') or 
+                                               not request.user.profile.department or 
+                                               request.user.profile.department != area_unit.department):
+                return Response({"detail": "You do not have permission to view logs for this area."}, status=status.HTTP_403_FORBIDDEN)
+            
+            queryset = self.get_queryset().filter(area_unit=area_unit)
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        except AreaUnit.DoesNotExist:
+            return Response({"detail": "Area unit not found."}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=False, methods=['get'], url_path='today')
+    def logs_today(self, request):
+        """
+        Returns temperature logs for the current day.
+        """
+        today = timezone.now().date()
+        queryset = self.get_queryset().filter(log_datetime__date=today)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 # Management Commands related views (if any in future)

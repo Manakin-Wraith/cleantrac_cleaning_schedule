@@ -8,8 +8,7 @@ import api from './api';
  */
 export const getDepartments = async () => {
     try {
-        // Assuming your API endpoint for departments is /api/departments/
-        // And it's registered in your Django urls.py and has a ViewSet.
+        // API endpoint for departments
         const response = await api.get('/departments/'); 
         return response.data;
     } catch (error) {

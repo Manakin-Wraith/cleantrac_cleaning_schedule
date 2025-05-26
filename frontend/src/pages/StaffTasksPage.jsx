@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Container, Typography, Box, CircularProgress, Paper, Grid, List, ListItem, ListItemText, Divider, Chip, Alert, Button, Card, CardContent, CardActions } from '@mui/material';
 import { getCurrentUser } from '../services/authService';
 import { getTaskInstances, updateTaskInstance } from '../services/taskService'; 
+import { getThermometersNeedingVerification, getVerifiedThermometers } from '../services/thermometerService'; 
 import { formatDate } from '../utils/dateUtils'; 
 import { useTheme, alpha } from '@mui/material/styles';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -11,6 +12,8 @@ import BuildIcon from '@mui/icons-material/Build'; // For Equipment
 import ScienceIcon from '@mui/icons-material/Science'; // For Chemicals
 import ListAltIcon from '@mui/icons-material/ListAlt'; // For Method
 import NotesIcon from '@mui/icons-material/Notes'; // For Notes
+import ThermometerVerificationSection from '../components/thermometers/ThermometerVerificationSection';
+import TemperatureLoggingSection from '../components/thermometers/TemperatureLoggingSection';
 
 const getTodayDateString = () => {
     const today = new Date();
@@ -25,9 +28,41 @@ function StaffTasksPage() {
     const [todaysTasks, setTodaysTasks] = useState([]);
     const [loadingUser, setLoadingUser] = useState(true);
     const [loadingTasks, setLoadingTasks] = useState(false); 
-    const [error, setError] = useState('');
+    const [error, setError] = useState(''); // General page error
     const [updatingTask, setUpdatingTask] = useState(null);
     const theme = useTheme();
+
+    // New state for thermometer data
+    const [thermometersNeedingVerification, setThermometersNeedingVerification] = useState([]);
+    const [verifiedThermometers, setVerifiedThermometers] = useState([]);
+    const [loadingThermometers, setLoadingThermometers] = useState(true);
+    const [thermometerError, setThermometerError] = useState('');
+
+    // Function to fetch both types of thermometer lists
+    const fetchThermometerData = useCallback(async () => {
+        if (!user || !user.id) return; // Ensure user context is available
+
+        setLoadingThermometers(true);
+        setThermometerError('');
+        try {
+            const [needingVerification, verified] = await Promise.all([
+                getThermometersNeedingVerification(),
+                getVerifiedThermometers(),
+            ]);
+            setThermometersNeedingVerification(needingVerification || []);
+            setVerifiedThermometers(verified || []);
+            console.log('Fetched thermometers needing verification:', needingVerification);
+            console.log('Fetched verified thermometers:', verified);
+        } catch (err) {
+            console.error("Failed to load thermometer data:", err);
+            setThermometerError(err.message || 'Failed to load thermometer data.');
+            // Set to empty arrays on error to prevent rendering issues with undefined
+            setThermometersNeedingVerification([]);
+            setVerifiedThermometers([]);
+        } finally {
+            setLoadingThermometers(false);
+        }
+    }, [user]); // Dependency on user ensures it runs when user is loaded
 
     useEffect(() => {
         const fetchUserDataAndTasks = async () => {
@@ -36,7 +71,7 @@ function StaffTasksPage() {
                 setError('');
                 const userData = await getCurrentUser();
                 setUser(userData);
-                setLoadingUser(false);
+                // setLoadingUser(false); // Moved user loading to finally block
 
                 if (userData && userData.id) {
                     setLoadingTasks(true);
@@ -44,22 +79,32 @@ function StaffTasksPage() {
                     const params = {
                         assigned_to: userData.id,
                         due_date: todayStr,
-                        // status: 'pending', // Optionally filter for only pending tasks initially
                     };
                     const tasks = await getTaskInstances(params);
-                    console.log('Fetched tasks for staff page:', tasks); // For debugging nested structure
-                    setTodaysTasks(tasks);
+                    console.log('Fetched tasks for staff page:', tasks);
+                    setTodaysTasks(tasks || []);
+                    
+                    // Fetch thermometer data after user is loaded
+                    // await fetchThermometerData(); // fetchThermometerData will be called in its own useEffect triggered by user change
                 }
             } catch (err) {
                 console.error("Failed to load page data:", err);
                 setError(err.message || 'Failed to load page data. Please try refreshing.');
+                setTodaysTasks([]); // Ensure tasks is an array on error
             } finally {
                 setLoadingUser(false); 
                 setLoadingTasks(false);
             }
         };
         fetchUserDataAndTasks();
-    }, []);
+    }, []); // Initial fetch for user and tasks
+
+    // useEffect to fetch thermometer data when user is loaded or fetchThermometerData function reference changes
+    useEffect(() => {
+        if (user && user.id) {
+            fetchThermometerData();
+        }
+    }, [user, fetchThermometerData]); // Re-run if user or the callback itself changes
 
     const handleSubmitForReview = async (taskId) => {
         setUpdatingTask(taskId);
@@ -108,6 +153,47 @@ function StaffTasksPage() {
             </Typography>
 
             {error && <Alert severity="warning" sx={{ mb: 2 }}>{error}</Alert>} 
+            {thermometerError && <Alert severity="error" sx={{ mb: 2 }}>{thermometerError}</Alert>}
+
+            {/* Thermometer Sections */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} md={6}>
+                    <Paper elevation={2} sx={{ p: 2 }}>
+                        <Typography variant="h6" gutterBottom>Thermometer Verification</Typography>
+                        {loadingUser || loadingThermometers ? (
+                            <CircularProgress />
+                        ) : user && user.id ? (
+                            <ThermometerVerificationSection 
+                                thermometers={thermometersNeedingVerification}
+                                onVerificationSuccess={fetchThermometerData} // Pass the callback here
+                                isLoading={loadingThermometers}
+                                // error={thermometerError} // Error is handled globally or could be more specific if needed
+                                departmentId={user.profile?.department} // Pass departmentId if needed by the component
+                            />
+                        ) : (
+                            <Typography>User data not available.</Typography>
+                        )}
+                    </Paper>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                    <Paper elevation={2} sx={{ p: 2 }}>
+                        <Typography variant="h6" gutterBottom>Temperature Logging</Typography>
+                        {loadingUser || loadingThermometers ? (
+                            <CircularProgress />
+                        ) : user && user.id ? (
+                            <TemperatureLoggingSection 
+                                verifiedThermometers={verifiedThermometers}
+                                isLoading={loadingThermometers}
+                                // error={thermometerError}
+                                departmentId={user.profile?.department} // Pass departmentId if needed
+                                staffId={user.id} // Pass staffId if needed for logging
+                            />
+                        ) : (
+                            <Typography>User data not available.</Typography>
+                        )}
+                    </Paper>
+                </Grid>
+            </Grid>
 
             {loadingTasks ? (
                 <CircularProgress sx={{ display: 'block', margin: 'auto', mt: 4 }} />

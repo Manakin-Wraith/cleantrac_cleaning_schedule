@@ -27,11 +27,12 @@
   - [x] Refactor `TaskSchedulerCalendar.jsx` to use resource-aware views (`resourceTimelineWeek`, `resourceTimeGridDay`).
   - [x] Ensure `ManagerDashboardPage.jsx` provides staff data as resources to the calendar.
   - [x] Verify tasks correctly map to `resourceId` for display in staff lanes.
-- **[ ] Calendar - Improved Task Event Rendering**
-  - [ ] Enhance visual styling of calendar events (task "chips").
-  - [ ] Clear status indicators (e.g., color-coding based on 'pending', 'pending_review', 'completed').
-  - [ ] Prominently display start/end times if appropriate.
-  - [ ] Ensure readability and clarity.
+- **[x] Calendar - Improved Task Event Rendering**
+  - [x] Enhance visual styling of calendar events (task "chips").
+  - [x] Test and Refine new event chip styling.
+  - [x] Clear status indicators (e.g., color-coding based on 'pending', 'pending_review', 'completed').
+  - [x] Prominently display start/end times if appropriate. (Current display is sufficient)
+  - [x] Ensure readability and clarity. (Achieved with new styling)
 - **[ ] Calendar - Drag & Drop Functionality (Verification & Refinement)**
     - [ ] Verify that dragging a cleaning item onto a staff member on a specific date/time opens the "Create New Task" modal.
     - [ ] Confirm the modal is correctly pre-filled with: Cleaning Item, Assigned Staff, Due Date, Start Time, End Time (calculated).
@@ -89,3 +90,17 @@
 - [ ] Department Management System (Admin/Manager): API & UI.
 - [ ] Further UI/UX refinements based on user feedback.
 - [ ] Plan for Production Database (PostgreSQL setup).
+
+## VI. Thermometer Verification System
+
+- **[x] `ThermometerStatusDashboard.jsx` - UI Fixes**
+  - [x] Resolve MUI Grid v2 prop warnings (remove `item` prop, apply responsive props directly).
+- **[x] `ThermometerAssignmentManager.jsx` - UI & Logic Fixes**
+  - [x] Resolve MUI `Select` component "out-of-range value `undefined`" warning for `staff_member_id`.
+  - [x] Ensure `department_id` is correctly included in assignment creation payload.
+  - [x] Ensure `assignment_date` is correctly formatted for API.
+- **[x] System Testing & Validation**
+  - [x] Test `ThermometerStatusDashboard` for correct display and no console warnings.
+  - [x] Test `ThermometerAssignmentManager` for assignment creation/update, ensuring no console warnings and correct data submission.
+  - [x] Verify overall functionality of thermometer verification assignment.
+- **[ ] Gather User Feedback** (Post-testing)

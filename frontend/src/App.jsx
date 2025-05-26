@@ -9,6 +9,7 @@ import PageLayout from './components/PageLayout';
 import { AuthProvider } from './context/AuthContext'; 
 import PrivateRoute from './components/PrivateRoute';
 import DepartmentManagementPage from './pages/DepartmentManagementPage';
+import ThermometerManagementPage from './pages/ThermometerManagementPage';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             {/* Routes accessible primarily to managers (and superusers) */}
             <Route path="/manager-items" element={<PageLayout><ItemManagementPage /></PageLayout>} />
             <Route path="/manager-users" element={<PageLayout><UserManagementPage /></PageLayout>} />
+            <Route path="/manager-thermometers" element={<PageLayout><ThermometerManagementPage /></PageLayout>} />
             {/* Department Management - accessible to superusers (full CRUD) and managers (read-only view) */}
             {/* The PrivateRoute allows managers. The component itself handles if a manager can only read. */}
             <Route path="/admin/departments" element={<PageLayout><DepartmentManagementPage /></PageLayout>} />
