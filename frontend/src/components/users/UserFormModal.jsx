@@ -13,7 +13,7 @@ const initialFormData = {
     password: '',
     first_name: '',
     last_name: '',
-    email: '',
+    phone_number: '', 
     role: '', 
     department_id: '',
 };
@@ -54,9 +54,9 @@ function UserFormModal({ open, onClose, onSave, user, currentUserRole }) {
                     password: '', 
                     first_name: user.first_name || '',
                     last_name: user.last_name || '',
-                    email: user.email || '',
+                    phone_number: user.profile?.phone_number || '', 
                     role: user.profile?.role || 'staff', // Default to staff if not set
-                    department_id: user.profile?.department || user.profile?.department_id || '',
+                    department_id: user.profile?.department_id || user.profile?.department || '', 
                 });
             } else {
                 setFormData({...initialFormData, role: 'staff'}); // Default new users to staff
@@ -77,8 +77,11 @@ function UserFormModal({ open, onClose, onSave, user, currentUserRole }) {
         if (!formData.username.trim()) newErrors.username = "Username is required.";
         if (!isEditMode && !formData.password) newErrors.password = "Password is required for new users.";
         if (formData.password && formData.password.length < 8) newErrors.password = "Password must be at least 8 characters long.";
-        if (!formData.email.trim()) newErrors.email = "Email is required.";
-        else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid.";
+        if (!formData.phone_number.trim()) {
+            newErrors.phone_number = "Phone number is required.";
+        } else if (!/^\+?[1-9]\d{1,14}$/.test(formData.phone_number)) { 
+            newErrors.phone_number = "Invalid phone number format (e.g., +1234567890).";
+        }
         if (!formData.role) newErrors.role = "Role is required.";
         // Department is not strictly required for superuser, but manager might need to assign one.
         // Backend handles department assignment for manager creating user in their own dept.
@@ -167,16 +170,16 @@ function UserFormModal({ open, onClose, onSave, user, currentUserRole }) {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <TextField
-                                name="email"
-                                label="Email"
-                                type="email"
-                                value={formData.email}
+                                name="phone_number" 
+                                label="Phone Number" 
+                                type="tel" 
+                                value={formData.phone_number} 
                                 onChange={handleChange}
                                 fullWidth
                                 required
                                 margin="dense"
-                                error={!!errors.email}
-                                helperText={errors.email}
+                                error={!!errors.phone_number} 
+                                helperText={errors.phone_number} 
                             />
                         </Grid>
                         <Grid item xs={12}>

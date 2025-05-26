@@ -106,7 +106,7 @@ function UserManagementPage() {
                             <TableRow>
                                 <TableCell sx={{ color: 'common.white', fontWeight: 'bold' }}>Username</TableCell>
                                 <TableCell sx={{ color: 'common.white', fontWeight: 'bold' }}>Full Name</TableCell>
-                                <TableCell sx={{ color: 'common.white', fontWeight: 'bold' }}>Email</TableCell>
+                                <TableCell sx={{ color: 'common.white', fontWeight: 'bold' }}>Phone Number</TableCell>
                                 <TableCell sx={{ color: 'common.white', fontWeight: 'bold' }}>Department</TableCell>
                                 <TableCell sx={{ color: 'common.white', fontWeight: 'bold' }}>Role</TableCell>
                                 <TableCell sx={{ color: 'common.white', fontWeight: 'bold', textAlign: 'center' }}>Actions</TableCell>
@@ -120,7 +120,7 @@ function UserManagementPage() {
                                 >
                                     <TableCell component="th" scope="row">{user.username}</TableCell>
                                     <TableCell>{`${user.first_name || ''} ${user.last_name || ''}`.trim() || '-'}</TableCell>
-                                    <TableCell>{user.email || '-'}</TableCell>
+                                    <TableCell>{user.profile?.phone_number || '-'}</TableCell>
                                     <TableCell>{user.profile?.department_name || 'N/A'}</TableCell>
                                     <TableCell>{user.profile?.role ? user.profile.role.charAt(0).toUpperCase() + user.profile.role.slice(1) : 'N/A'}</TableCell>
                                     <TableCell align="center">

@@ -16,6 +16,7 @@ class UserProfile(models.Model):
         ('staff', 'Staff'),
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='staff_members')
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
 
@@ -93,6 +94,29 @@ class CompletionLog(models.Model):
 
     def __str__(self):
         return f"Log for {self.task_instance} by {self.user.username if self.user else 'Unknown'} at {self.completed_at.strftime('%Y-%m-%d %H:%M')}"
+
+class PasswordResetToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_reset_tokens')
+    token = models.CharField(max_length=6, unique=True) # For a 6-digit code
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        if not self.id: # On creation
+            # Generate a 6-digit token
+            import uuid
+            self.token = str(uuid.uuid4().int)[:6] # Simple way to get 6 digits; ensure uniqueness in practice
+            # Set expiry time (e.g., 15 minutes from creation)
+            from datetime import timedelta
+            self.expires_at = timezone.now() + timedelta(minutes=15) 
+        super().save(*args, **kwargs)
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"Password reset token for {self.user.username}"
 
 # To make UserProfile creation automatic when a User is created, we can use signals.
 # This is optional but good practice.

@@ -1,20 +1,36 @@
 import React, { useState } from 'react';
-import { Box, CssBaseline, Toolbar } from '@mui/material';
+import { Box, CssBaseline, Toolbar, useTheme } from '@mui/material';
 import HeaderBar from './HeaderBar';
-import Sidebar, { drawerWidth } from './Sidebar'; // Import Sidebar and drawerWidth
+import Sidebar, { drawerWidth } from './Sidebar'; 
 
 const PageLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const theme = useTheme();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
+  const handleSidebarToggle = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  const currentDrawerWidth = isSidebarCollapsed ? theme.spacing(7) : `${drawerWidth}px`;
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}> 
       <CssBaseline />
-      <HeaderBar handleDrawerToggle={handleDrawerToggle} /> {/* Pass handler to HeaderBar */}
-      <Sidebar mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} />
+      <HeaderBar 
+        handleDrawerToggle={handleDrawerToggle} 
+        handleSidebarToggle={handleSidebarToggle} 
+        isSidebarCollapsed={isSidebarCollapsed} 
+      />
+      <Sidebar 
+        mobileOpen={mobileOpen} 
+        handleDrawerToggle={handleDrawerToggle} 
+        isCollapsed={isSidebarCollapsed} 
+      />
       
       <Box
         component="main"
@@ -22,13 +38,16 @@ const PageLayout = ({ children }) => {
           flexGrow: 1,
           py: 3,
           px: 2,
-          // mt: '64px', // Toolbar for spacing is better than fixed margin if AppBar height varies
-          width: { sm: `calc(100% - ${drawerWidth}px)` }, // Adjust width for permanent drawer on sm+ screens
-          // marginLeft: { sm: `${drawerWidth}px` }, // Alternative to width calc
+          width: { sm: `calc(100% - ${currentDrawerWidth})` }, 
+          marginLeft: { sm: currentDrawerWidth }, 
           backgroundColor: '#f0f2f5',
+          transition: theme.transitions.create(['width', 'margin'], { 
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
         }}
       >
-        <Toolbar /> {/* This Toolbar acts as a spacer for the fixed AppBar above it */}
+        <Toolbar /> 
         {children}
       </Box>
     </Box>

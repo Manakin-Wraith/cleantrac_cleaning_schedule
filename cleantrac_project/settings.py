@@ -11,10 +11,18 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load environment variables from frontend/.env
+FRONTEND_ENV_PATH = BASE_DIR / 'frontend' / '.env'
+if FRONTEND_ENV_PATH.exists():
+    load_dotenv(dotenv_path=FRONTEND_ENV_PATH)
+else:
+    print(f"WARNING: .env file not found at {FRONTEND_ENV_PATH}.")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -25,7 +33,12 @@ SECRET_KEY = "django-insecure-a4ektjq)l(q9t3+q!b1j0jt^to5$b7qmqu3_o4wg5_#r7i*xe*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '10.0.0.42',  # Replace with your Mac's actual local IP address
+    '0.0.0.0',    # Allows Django to be accessed from any network interface
+]
 
 
 # Application definition
@@ -41,6 +54,13 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",  # Add this for token authentication
     "corsheaders",  # For CORS
     "core.apps.CoreConfig",
+]
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",         # For local frontend development (same machine)
+    "http://127.0.0.1:5173",       # Also for local frontend development
+    "http://10.0.0.42:5173",       # For accessing frontend from other devices on the network
 ]
 
 MIDDLEWARE = [
@@ -140,12 +160,6 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',  # Default to requiring authentication
     )
 }
-
-# CORS Configuration
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',  # Your Vite frontend origin
-    'http://127.0.0.1:5173',  # Also common for local dev
-]
 
 # Optional: If you want to allow all origins (less secure, use for quick testing only)
 # CORS_ALLOW_ALL_ORIGINS = True

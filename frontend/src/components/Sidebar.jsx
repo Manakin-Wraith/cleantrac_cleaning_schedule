@@ -1,8 +1,8 @@
 import React from 'react';
-import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, Box, Divider, useTheme, useMediaQuery } from '@mui/material';
+import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, Box, Divider, useTheme, useMediaQuery, Tooltip } from '@mui/material';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import appLogo from '../assets/box_icon.png'; // Import the logo
+import appLogo from '../assets/box_icon.png'; 
 
 // Import icons
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -10,39 +10,45 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
-import LogoutIcon from '@mui/icons-material/Logout'; // Icon for Logout
-import BusinessIcon from '@mui/icons-material/Business'; // Icon for Departments
+import LogoutIcon from '@mui/icons-material/Logout'; 
+import BusinessIcon from '@mui/icons-material/Business'; 
 
 export const drawerWidth = 240;
+const collapsedDrawerWidth = (theme) => theme.spacing(7); 
 
-const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
+const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
   const { currentUser, logout } = useAuth();
   const theme = useTheme();
-  const isSmUp = useMediaQuery(theme.breakpoints.up('sm')); // Check if screen is sm or larger
+  const isSmUp = useMediaQuery(theme.breakpoints.up('sm')); 
   const navigate = useNavigate();
 
-  // Determine if the permanent drawer is effectively visible
-  // This is true on 'sm' and up screens when not in mobileOpen mode (which implies temporary drawer)
-  const isPermanentDrawerVisible = isSmUp;
+  const isPermanentDrawerEffectivelyOpen = isSmUp && !isCollapsed;
+  const isMobileDrawerOpen = mobileOpen; 
+  const showTooltip = isCollapsed && isSmUp && !mobileOpen;
 
-  const commonStyles = {
+  const commonStyles = (isActive) => ({
     textDecoration: 'none',
     color: 'inherit',
     display: 'block',
-    '&.active > .MuiListItemButton-root': {
-      backgroundColor: 'rgba(0, 0, 0, 0.08)',
-      '& .MuiListItemIcon-root, & .MuiListItemText-primary': {
-        color: theme.palette.primary.main,
+    '& .MuiListItemButton-root': {
+      borderLeft: isActive ? `3px solid ${theme.palette.primary.main}` : '3px solid transparent',
+      paddingLeft: isActive ? `calc(${theme.spacing(3)} - 3px)` : theme.spacing(3), 
+      '&:hover': {
+        backgroundColor: theme.palette.action.hover, 
       },
     },
-    '& .MuiListItemButton-root:hover': {
-        backgroundColor: 'rgba(0, 0, 0, 0.04)',
-    }
-  };
+    '& .MuiListItemIcon-root': {
+      color: isActive ? theme.palette.primary.main : theme.palette.text.secondary, 
+    },
+    '& .MuiListItemText-primary': {
+      color: isActive ? theme.palette.primary.main : theme.palette.text.primary,
+      fontWeight: isActive ? 'medium' : 'normal',
+    },
+  });
 
   const managerLinks = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/manager-dashboard' },
-    { text: 'Schedule', icon: <CalendarMonthIcon />, path: '/manager-schedule' },
+    { text: 'Coming SOON!', icon: <CalendarMonthIcon />, path: '/manager-schedule' },
     { text: 'Item Management', icon: <ListAltIcon />, path: '/manager-items' },
     { text: 'Staff', icon: <PeopleIcon />, path: '/manager-users' },
   ];
@@ -59,13 +65,11 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
   };
 
   if (currentUser?.is_superuser) {
-    // Superuser gets all manager links + department management
     determinedLinks = [
       ...managerLinks,
       departmentManagementLink
     ];
   } else if (currentUser?.profile?.role === 'manager') {
-    // Manager gets their links + department management
     determinedLinks = [
       ...managerLinks,
       departmentManagementLink
@@ -76,45 +80,43 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
 
   const handleLogoutClick = async () => {
     await logout();
-    // Navigation to /login is handled by AuthContext's logout method
   };
 
   const drawerContent = (
     <div>
-      {/* Sidebar Toolbar with Logo */}
       <Toolbar 
         sx={{
           display: 'flex', 
           alignItems: 'center', 
-          // Justify content differently based on whether text is shown
-          justifyContent: (!isPermanentDrawerVisible || mobileOpen) ? 'center' : 'flex-start',
+          justifyContent: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 'flex-start' : 'center',
           py: 1, 
           mt: 1, 
           mb: 0.5,
-          px: (!isPermanentDrawerVisible || mobileOpen) ? 2 : 2.5, // Add some padding for the standalone logo
+          px: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 2.5 : 2, 
         }}
       >
-        <img src={appLogo} alt="CleanTrack Logo" style={{ height: '32px', marginRight: (!isPermanentDrawerVisible || mobileOpen) ? '8px' : '0' }} /> 
-        {/* Conditionally render CleanTrack text */}
-        {(!isPermanentDrawerVisible || mobileOpen) && (
-          <Typography variant="h6" component="div" sx={{ color: theme.palette.primary.main }}>
+        <img src={appLogo} alt="CleanTrack Logo" style={{ height: '32px', marginRight: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? '8px' : '0' }} /> 
+        {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && (
+          <Typography variant="h6" component="div" sx={{ color: theme.palette.primary.main, whiteSpace: 'nowrap', overflow: 'hidden' }}>
             CleanTrac
           </Typography>
         )}
       </Toolbar>
       
       <Divider />
-      <List sx={{ pt: 0 /* Padding top handled by Toolbar's margin bottom or direct List padding */ }}>
+      <List sx={{ pt: 0 }}>
         {determinedLinks.map((link) => (
-          <NavLink to={link.path} key={link.text} style={{ textDecoration: 'none', color: 'inherit' }} sx={commonStyles}>
+          <NavLink to={link.path} key={link.text} style={{ textDecoration: 'none', color: 'inherit' }}>
             {({ isActive }) => (
-              <ListItem disablePadding className={isActive ? 'active' : ''}>
-                <ListItemButton>
-                  <ListItemIcon>
-                    {link.icon}
-                  </ListItemIcon>
-                  <ListItemText primary={link.text} />
-                </ListItemButton>
+              <ListItem disablePadding sx={commonStyles(isActive)}>
+                <Tooltip title={showTooltip ? link.text : ''} placement="right" arrow>
+                  <ListItemButton sx={{ justifyContent: showTooltip ? 'center' : 'flex-start', px: showTooltip ? theme.spacing(2.5) : `calc(${theme.spacing(3)} - 3px)` }}>
+                    <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center' }}>
+                      {link.icon}
+                    </ListItemIcon>
+                    {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={link.text} />}
+                  </ListItemButton>
+                </Tooltip>
               </ListItem>
             )}
           </NavLink>
@@ -122,13 +124,15 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
         {currentUser && (
           <>
             <Divider sx={{ my: 1 }} />
-            <ListItem disablePadding>
-              <ListItemButton onClick={handleLogoutClick} sx={{ ...commonStyles['& .MuiListItemButton-root:hover'] /* Apply hover direct */ }}>
-                <ListItemIcon>
-                  <LogoutIcon />
-                </ListItemIcon>
-                <ListItemText primary="Logout" />
-              </ListItemButton>
+            <ListItem disablePadding sx={commonStyles(false)}> 
+              <Tooltip title={showTooltip ? 'Logout' : ''} placement="right" arrow>
+                <ListItemButton onClick={handleLogoutClick} sx={{ justifyContent: showTooltip ? 'center' : 'flex-start', px: showTooltip ? theme.spacing(2.5) : `calc(${theme.spacing(3)} - 3px)` }}>
+                  <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center', color: theme.palette.text.secondary }}> 
+                    <LogoutIcon />
+                  </ListItemIcon>
+                  {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary="Logout" />}
+                </ListItemButton>
+              </Tooltip>
             </ListItem>
           </>
         )}
@@ -136,13 +140,15 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
     </div>
   );
 
+  const currentPermanentDrawerWidth = isCollapsed ? collapsedDrawerWidth(theme) : drawerWidth;
+
   return (
     <Box
       component="nav"
-      sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+      sx={{ width: { sm: currentPermanentDrawerWidth }, flexShrink: { sm: 0 }, transition: theme.transitions.create('width', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen }) }}
       aria-label="mailbox folders"
     >
-      <Drawer // Temporary Drawer for mobile
+      <Drawer 
         variant="temporary"
         open={mobileOpen}
         onClose={handleDrawerToggle} 
@@ -151,19 +157,28 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle }) => {
         }}
         sx={{
           display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth }, 
         }}
       >
-        {drawerContent}
+        {drawerContent} 
       </Drawer>
       
-      <Drawer // Permanent Drawer for larger screens
+      <Drawer 
         variant="permanent"
         sx={{
           display: { xs: 'none', sm: 'block' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, borderRight: '1px solid rgba(0, 0, 0, 0.12)' }, // Keep border
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box', 
+            width: currentPermanentDrawerWidth, 
+            borderRight: '1px solid rgba(0, 0, 0, 0.12)',
+            overflowX: 'hidden', 
+            transition: theme.transitions.create('width', { 
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.enteringScreen,
+            }),
+          },
         }}
-        open
+        open 
       >
         {drawerContent}
       </Drawer>

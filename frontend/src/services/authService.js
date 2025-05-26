@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8001/api'; // Adjust if your Django backend runs elsewhere
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api'; // Use env variable, fallback for safety
 
 // Function to log in a user and get the auth token
 export const loginUser = async (username, password) => {
@@ -70,4 +70,34 @@ export const checkAuthStatus = () => {
     }
     delete axios.defaults.headers.common['Authorization'];
     return false;
+};
+
+// Function to request a password reset code
+export const requestPasswordReset = async (username) => {
+    try {
+        // No token needed for this request
+        const response = await axios.post(`${API_BASE_URL}/auth/password-reset/request/`, {
+            username: username,
+        });
+        return response.data; // Expected: { message: "..." }
+    } catch (error) {
+        console.error('Request password reset API error:', error.response?.data || error.response || error.message);
+        throw error.response?.data || new Error(error.message || 'Failed to request password reset.');
+    }
+};
+
+// Function to confirm a password reset with a token and new password
+export const confirmPasswordReset = async (username, token, newPassword) => {
+    try {
+        // No token needed for this request
+        const response = await axios.post(`${API_BASE_URL}/auth/password-reset/confirm/`, {
+            username: username,
+            token: token,
+            new_password: newPassword,
+        });
+        return response.data; // Expected: { message: "Password has been reset successfully." }
+    } catch (error) {
+        console.error('Confirm password reset API error:', error.response?.data || error.response || error.message);
+        throw error.response?.data || new Error(error.message || 'Failed to confirm password reset.');
+    }
 };

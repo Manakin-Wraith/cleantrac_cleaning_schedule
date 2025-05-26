@@ -1,24 +1,32 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, CircularProgress, IconButton } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, CircularProgress, IconButton, useTheme } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu'; 
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'; 
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { drawerWidth } from './Sidebar'; 
+import { drawerWidth as expandedDrawerWidth } from './Sidebar'; 
 
-const HeaderBar = ({ handleDrawerToggle }) => { 
+const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed }) => { 
   const { currentUser, logout, isLoading } = useAuth();
+  const theme = useTheme(); 
 
   const handleLogout = async () => {
     await logout(); 
   };
+
+  const currentDrawerWidth = isSidebarCollapsed ? theme.spacing(7) : expandedDrawerWidth;
 
   return (
     <AppBar 
       position="fixed" 
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 1,
-        width: { sm: `calc(100% - ${drawerWidth}px)` },
-        ml: { sm: `${drawerWidth}px` },
+        width: { sm: `calc(100% - ${currentDrawerWidth}px)` }, 
+        ml: { sm: `${currentDrawerWidth}px` }, 
+        transition: theme.transitions.create(['width', 'margin'], { 
+          easing: theme.transitions.easing.sharp,
+          duration: theme.transitions.duration.enteringScreen,
+        }),
       }}
     >
       <Toolbar>
@@ -26,11 +34,22 @@ const HeaderBar = ({ handleDrawerToggle }) => {
           color="inherit"
           aria-label="open drawer"
           edge="start"
-          onClick={handleDrawerToggle}
+          onClick={handleDrawerToggle} 
           sx={{ mr: 2, display: { sm: 'none' } }} 
         >
           <MenuIcon />
         </IconButton>
+
+        <IconButton
+          color="inherit"
+          aria-label="toggle sidebar collapse"
+          edge="start"
+          onClick={handleSidebarToggle} 
+          sx={{ mr: 2, display: { xs: 'none', sm: 'block' } }} 
+        >
+          {isSidebarCollapsed ? <MenuIcon /> : <ChevronLeftIcon />}
+        </IconButton>
+
         <Typography variant="h6" noWrap component={RouterLink} to={currentUser ? (currentUser.profile?.role === 'manager' ? '/manager-dashboard' : '/staff-tasks') : '/login'} sx={{ flexGrow: 1, color: 'inherit', textDecoration: 'none' }}>
           CleanTrac
         </Typography>

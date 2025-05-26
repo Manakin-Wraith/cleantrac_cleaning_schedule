@@ -29,6 +29,7 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Implement session management (Primarily for browsable API and Django Admin) (Default Django/DRF behavior)
   - [x] Implement role verification (Integrated into custom DRF permission classes)
   - [x] Implement department identification for user upon login (Handled by `/api/users/me/` endpoint providing user, profile, role, and department_id)
+  - [x] Implement "Forgot Password" functionality (Token generation, console simulation for SMS, password update working end-to-end; Twilio removed; local network access configured)
 - **[ ] User Management System**
   - [~] API: CRUD operations for users (Admin/Manager only) - Create & Delete implemented, Update (Edit) pending.
   - [~] UI: User listing and editing interface (Admin/Manager only) - Listing functional, Add New User functional, Delete functional. **Next: Implement Edit User functionality.**
@@ -77,7 +78,7 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
 ## II. Manager/Overview Component/Pages
 
 - **[x] 1. Login Page (Shared - also see Staff section)**
-  - [x] UI: Design and implement login form (Username/Email, Password, Remember Me, Forgot Password?)_Basic implemented_
+  - [x] UI: Design and implement login form (Username/Email, Password, Remember Me, Forgot Password?) _Basic login implemented; Forgot Password flow now functional with console token simulation._
   - [ ] UI: Application Logo/Name display
   - [x] UI: Error message display area _Basic implemented_
   - [x] Feature: User Authentication

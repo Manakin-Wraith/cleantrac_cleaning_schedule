@@ -104,6 +104,14 @@ function ManagerDashboardPage() {
     // Track the current placeholder event ID
     const [placeholderEventId, setPlaceholderEventId] = useState(null); 
 
+    // Function to handle successful task update from EditTaskAssignmentModal
+    const handleTaskUpdated = () => {
+        console.log('Task updated via modal, refreshing data...');
+        fetchManagerData(user, selectedDate, true); // true to skip full loading indicator
+        // Optionally, close the edit modal if it's still open, though the modal might handle this itself
+        // handleCloseEditModal(); 
+    };
+
     // Function to determine row style based on task status
     const getRowStyle = (taskStatus) => {
         if (taskStatus === 'completed') {
@@ -462,10 +470,6 @@ function ManagerDashboardPage() {
         setSelectedTaskEditData({ task: null, resolvedItemName: '' });
     };
 
-    const handleTaskUpdated = () => {
-        fetchManagerData(user, selectedDate); 
-    };
-
     const handleMarkComplete = async (taskId) => {
         try {
             await markTaskAsComplete(taskId);
@@ -573,8 +577,8 @@ function ManagerDashboardPage() {
                 );
             }
             
-            // Don't fetch from server to avoid flickering
-            // fetchManagerData(user, selectedDate);
+            // Fetch from server to ensure data consistency, skip loading indicator
+            fetchManagerData(user, selectedDate, true); 
         } catch (error) {
             console.error('Failed to update task on drop:', error);
             enqueueSnackbar(`Failed to update task ${event.title || taskId}: ${error.message || 'Unknown error'}`, { variant: 'error' });

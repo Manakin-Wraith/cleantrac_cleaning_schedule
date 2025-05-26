@@ -8,18 +8,24 @@ from django.utils import timezone
 from datetime import date as datetime_date 
 from django.db.models import Count 
 
-from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog
+from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog, PasswordResetToken
 from .serializers import (
     DepartmentSerializer, UserSerializer, UserProfileSerializer, 
     CleaningItemSerializer, TaskInstanceSerializer, CompletionLogSerializer,
-    CurrentUserSerializer, UserWithProfileSerializer
+    CurrentUserSerializer, UserWithProfileSerializer,
+    PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 )
+from rest_framework.permissions import AllowAny # Corrected: AllowAny from DRF
 from .permissions import (
     IsManagerForWriteOrAuthenticatedReadOnly, IsSuperUser, 
     CanLogCompletionAndManagerModify, IsSuperUserForWriteOrAuthenticatedReadOnly,
     UserAndProfileManagementPermissions, CanUpdateTaskStatus,
     IsSuperUserWriteOrManagerRead
 )
+from .sms_utils import send_sms # New import
+from django.contrib.auth.password_validation import validate_password # For password strength
+from django.core.exceptions import ValidationError as DjangoValidationError # For password validation
+
 # Create your views here.
 
 class DepartmentViewSet(viewsets.ModelViewSet):
@@ -285,18 +291,134 @@ class CompletionLogViewSet(viewsets.ModelViewSet):
             pass
         return CompletionLog.objects.none()
 
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        Superusers can do anything.
+        Managers can create/read/update/delete logs for their department's tasks.
+        Staff can create/read logs for tasks they are assigned to or have completed.
+        Staff can update/delete logs they created.
+        """
+        if self.action in ['list', 'retrieve']:
+            # Allow broader read access, specific filtering done in get_queryset
+            permission_classes = [permissions.IsAuthenticated]
+        elif self.action == 'create':
+            permission_classes = [IsStaffUser] # Any staff can create a log
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            # More complex: IsOwnerOrManagerOrSuperUser (custom permission needed)
+            # For now, let's restrict to SuperUser or simplify
+            permission_classes = [IsSuperUser] # Simplified for now
+        else:
+            permission_classes = [IsSuperUser] # Default deny
+        return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return CompletionLog.objects.all().order_by('-completed_at')
+        elif hasattr(user, 'profile') and user.profile.role == UserProfile.ROLE_MANAGER:
+            # Managers see logs for tasks in their department
+            manager_department = user.profile.department
+            if manager_department:
+                return CompletionLog.objects.filter(task_instance__cleaning_item__department=manager_department).order_by('-completed_at')
+            return CompletionLog.objects.none() # Manager not assigned to a department
+        elif hasattr(user, 'profile') and user.profile.role == UserProfile.ROLE_STAFF:
+            # Staff see logs they created or for tasks they are assigned to
+            # This might require more complex Q objects if 'assigned to' is a direct field on TaskInstance
+            # For now, let's assume they can see logs they created.
+            return CompletionLog.objects.filter(user=user).order_by('-completed_at')
+        return CompletionLog.objects.none()
+
     def perform_create(self, serializer):
-        # Default the 'user' for the log to the request user if not provided
-        if 'user' not in serializer.validated_data or serializer.validated_data['user'] is None:
-            if self.request.user.is_authenticated:
-                serializer.save(user=self.request.user)
-            else:
-                # Handle cases where user is not authenticated, if logs can be anonymous (e.g. raise error or save with user=None)
-                serializer.save() # This might fail if user is required and not nullable
+        # Automatically set the user to the request.user if not provided
+        if 'user_id' not in serializer.validated_data or not serializer.validated_data.get('user'):
+            serializer.save(user=self.request.user)
         else:
             serializer.save()
 
-# View for /api/users/me/
+class PasswordResetRequestView(APIView):
+    permission_classes = [AllowAny] # Anyone can request a password reset
+
+    def post(self, request, *args, **kwargs):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            try:
+                user = User.objects.get(username=username)
+                if hasattr(user, 'profile') and user.profile.phone_number:
+                    # Invalidate old tokens for this user
+                    PasswordResetToken.objects.filter(user=user).delete()
+                    
+                    reset_token = PasswordResetToken.objects.create(user=user)
+                    
+                    message = f"Your password reset code for CleanTrac is: {reset_token.token}. This code expires in 15 minutes."
+                    sms_sent = send_sms(user.profile.phone_number, message)
+                    
+                    if sms_sent:
+                        return Response({"message": "If your account exists and has a registered phone number, a password reset code has been sent."}, status=status.HTTP_200_OK)
+                    else:
+                        # Log this failure, but still return a generic message to the user
+                        print(f"SMS sending failed for user {username} during password reset request.")
+                        return Response({"message": "If your account exists and has a registered phone number, a password reset code has been sent."}, status=status.HTTP_200_OK)
+                else:
+                    # User exists but no phone number, or no profile. Still return generic message.
+                    print(f"Password reset attempted for user {username} with no phone/profile.")
+                    return Response({"message": "If your account exists and has a registered phone number, a password reset code has been sent."}, status=status.HTTP_200_OK)
+            except User.DoesNotExist:
+                # User does not exist. Return a generic message to avoid revealing user existence.
+                print(f"Password reset attempted for non-existent user {username}.")
+                return Response({"message": "If your account exists and has a registered phone number, a password reset code has been sent."}, status=status.HTTP_200_OK)
+        
+        # If serializer is not valid, or any other unhandled case
+        # It's often better to return a generic message here too for security, 
+        # but for debugging, returning serializer.errors might be useful initially.
+        # For production, consider logging errors and returning a generic success-like message.
+        # print(f"Password reset request validation errors: {serializer.errors}")
+        return Response({"message": "If your account exists and has a registered phone number, a password reset code has been sent."}, status=status.HTTP_200_OK)
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) # Alternative for debugging
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny] # Anyone can attempt to confirm a password reset
+
+    def post(self, request, *args, **kwargs):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            token_str = serializer.validated_data['token']
+            new_password = serializer.validated_data['new_password']
+
+            try:
+                user = User.objects.get(username=username)
+                reset_token = PasswordResetToken.objects.get(user=user, token=token_str)
+
+                if reset_token.is_expired:
+                    return Response({"error": "Token has expired."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Validate new password strength (optional, but good practice)
+                try:
+                    validate_password(new_password, user=user)
+                except DjangoValidationError as e:
+                    return Response({"new_password": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
+                user.set_password(new_password)
+                user.save()
+                
+                # Invalidate the token after successful use
+                reset_token.delete()
+                
+                return Response({"message": "Password has been reset successfully."}, status=status.HTTP_200_OK)
+            
+            except User.DoesNotExist:
+                return Response({"error": "Invalid user or token."}, status=status.HTTP_400_BAD_REQUEST)
+            except PasswordResetToken.DoesNotExist:
+                return Response({"error": "Invalid user or token."}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e: # Catch any other potential errors
+                print(f"Error during password reset confirmation: {str(e)}")
+                return Response({"error": "An unexpected error occurred. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class CurrentUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

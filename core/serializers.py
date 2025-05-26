@@ -12,7 +12,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email']
+        fields = ['id', 'username', 'first_name', 'last_name']
         # If you want to allow updating these fields through UserProfileSerializer,
         # you might need to handle writable nested serializers or provide separate endpoints for User.
         # For read-only, this is fine.
@@ -39,6 +39,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = [
             'id', 'user', 
+            'phone_number', 
             'department_id',  # This will be the read-only integer ID from department.id
             'department_name', 
             'role',
@@ -62,9 +63,6 @@ class UserWithProfileSerializer(serializers.ModelSerializer):
 
     # Fields for creating/updating User
     password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'})
-    email = serializers.EmailField(
-        validators=[UniqueValidator(queryset=User.objects.all())]
-    )
     
     # These fields are intended for UserProfile but are part of this serializer's payload.
     # We will handle them manually in create/update methods.
@@ -77,11 +75,12 @@ class UserWithProfileSerializer(serializers.ModelSerializer):
         required=False
         # No 'source' here, this field name 'department_id' will be in validated_data
     )
+    phone_number = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=20)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'profile', 
-                  'password', 'role', 'department_id']
+        fields = ['id', 'username', 'first_name', 'last_name', 'profile', 
+                  'password', 'role', 'department_id', 'phone_number']
         extra_kwargs = {
             'username': {'validators': []}, 
         }
@@ -92,10 +91,13 @@ class UserWithProfileSerializer(serializers.ModelSerializer):
         profile_role_payload = validated_data.pop('role', None)
         # 'department_id' from validated_data is already a Department instance due to PrimaryKeyRelatedField
         profile_department_instance_payload = validated_data.pop('department_id', None) 
+        profile_phone_number_payload = validated_data.pop('phone_number', None)
         
         password = validated_data.pop('password', None)
 
-        # Remaining validated_data is for the User model
+        # Remaining validated_data is for the User model (username, first_name, last_name)
+        # Ensure email is not passed if it's still in validated_data from an old client or default
+        validated_data.pop('email', None) # Explicitly remove email before User creation
         user = User.objects.create_user(**validated_data, password=password)
         
         # Get or create the profile
@@ -114,6 +116,9 @@ class UserWithProfileSerializer(serializers.ModelSerializer):
                 if requesting_user.profile.role == 'manager' and requesting_user.profile.department:
                     user_profile.department = requesting_user.profile.department
         
+        if profile_phone_number_payload is not None: 
+            user_profile.phone_number = profile_phone_number_payload
+
         user_profile.save() 
         
         return user
@@ -125,13 +130,15 @@ class UserWithProfileSerializer(serializers.ModelSerializer):
         profile_role_payload = validated_data.pop('role', None)
         # 'department_id' from validated_data is a Department instance or None
         profile_department_instance_payload = validated_data.pop('department_id', None)
+        profile_phone_number_payload = validated_data.pop('phone_number', None)
         
         password = validated_data.pop('password', None)
         if password:
             instance.set_password(password)
 
         # Update User fields from the remaining validated_data
-        # (e.g., email, first_name, last_name)
+        # (e.g., first_name, last_name). Explicitly remove email.
+        validated_data.pop('email', None)
         for attr, value in validated_data.items():
             # Ensure we don't try to set the read-only 'profile' field or unknown attrs
             if attr != 'profile' and hasattr(instance, attr):
@@ -141,6 +148,7 @@ class UserWithProfileSerializer(serializers.ModelSerializer):
         # Now, handle the UserProfile instance
         user_profile = getattr(instance, 'profile', None)
         if not user_profile:
+            # This case should ideally be handled by a signal ensuring profile exists
             user_profile = UserProfile.objects.create(user=instance)
             # Consider logging a warning here.
 
@@ -153,6 +161,10 @@ class UserWithProfileSerializer(serializers.ModelSerializer):
         # Check if 'department_id' was in the original request data
         if 'department_id' in self.initial_data:
             user_profile.department = profile_department_instance_payload # Assigns Department instance or None
+            profile_needs_save = True
+
+        if 'phone_number' in self.initial_data: 
+            user_profile.phone_number = profile_phone_number_payload
             profile_needs_save = True
 
         if profile_needs_save:
@@ -168,7 +180,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser', 'is_staff', 'profile']
+        fields = ['id', 'username', 'first_name', 'last_name', 'is_superuser', 'is_staff', 'profile']
 
 class CleaningItemSerializer(serializers.ModelSerializer):
     department_id = serializers.PrimaryKeyRelatedField(
@@ -322,3 +334,44 @@ class CompletionLogSerializer(serializers.ModelSerializer):
         if obj.task_instance:
             return f"{obj.task_instance.cleaning_item.name} due {obj.task_instance.due_date}"
         return None
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+
+    def validate_username(self, value):
+        try:
+            user = User.objects.get(username=value)
+            if not hasattr(user, 'profile') or not user.profile.phone_number:
+                raise serializers.ValidationError("User does not have a phone number registered.")
+        except User.DoesNotExist:
+            # Do not reveal if the user exists or not for security reasons
+            # Instead, we'll act as if it's processing but won't send an SMS
+            # The view will handle this gracefully.
+            pass # Or raise a generic error if you prefer to indicate failure earlier
+        return value
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    token = serializers.CharField(max_length=6) # Assuming 6-digit token
+    new_password = serializers.CharField(write_only=True, min_length=8, style={'input_type': 'password'})
+    # confirm_new_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+
+    # def validate(self, data):
+    #     if data['new_password'] != data['confirm_new_password']:
+    #         raise serializers.ValidationError({"confirm_new_password": "Passwords do not match."})_ 
+    #     return data
+
+    def validate_token(self, value):
+        if not value.isdigit() or len(value) != 6:
+            raise serializers.ValidationError("Token must be a 6-digit number.")
+        return value
+
+    # You can add more complex password validation if needed using Django's password validators
+    # For example, in the view or by overriding validate_new_password
+    # from django.contrib.auth.password_validation import validate_password
+    # def validate_new_password(self, value):
+    #     try:
+    #         validate_password(value)
+    #     except serializers.ValidationError as e:
+    #         raise serializers.ValidationError(list(e.messages))
+    #     return value
