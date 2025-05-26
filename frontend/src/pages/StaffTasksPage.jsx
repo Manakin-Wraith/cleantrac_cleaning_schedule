@@ -3,6 +3,7 @@ import { Container, Typography, Box, CircularProgress, Paper, Grid, List, ListIt
 import { getCurrentUser } from '../services/authService';
 import { getTaskInstances, updateTaskInstance } from '../services/taskService'; 
 import { getThermometersNeedingVerification, getVerifiedThermometers } from '../services/thermometerService'; 
+import { getTemperatureLogs } from '../services/temperatureLogService'; 
 import { formatDate } from '../utils/dateUtils'; 
 import { useTheme, alpha } from '@mui/material/styles';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -38,6 +39,11 @@ function StaffTasksPage() {
     const [loadingThermometers, setLoadingThermometers] = useState(true);
     const [thermometerError, setThermometerError] = useState('');
 
+    // New state for today's temperature logs
+    const [todaysTemperatureLogs, setTodaysTemperatureLogs] = useState([]);
+    const [loadingTodaysLogs, setLoadingTodaysLogs] = useState(true);
+    const [todaysLogsError, setTodaysLogsError] = useState('');
+
     // Function to fetch both types of thermometer lists
     const fetchThermometerData = useCallback(async () => {
         if (!user || !user.id) return; // Ensure user context is available
@@ -63,6 +69,36 @@ function StaffTasksPage() {
             setLoadingThermometers(false);
         }
     }, [user]); // Dependency on user ensures it runs when user is loaded
+
+    // Function to fetch today's temperature logs
+    const fetchTodaysTemperatureLogs = useCallback(async () => {
+        if (!user || !user.profile?.department_id) { 
+            console.log('fetchTodaysTemperatureLogs: Pre-conditions not met. User:', user ? 'exists' : 'null', 'Profile:', user?.profile ? 'exists' : 'null/undefined', 'Department ID:', user?.profile?.department_id ? user.profile.department_id : 'null/undefined');
+            return;
+        }
+
+        console.log('fetchTodaysTemperatureLogs: Attempting to fetch logs for department ID:', user.profile.department_id);
+        setLoadingTodaysLogs(true); 
+        setTodaysLogsError('');
+        try {
+            const todayStr = getTodayDateString();
+            const params = {
+                department: user.profile.department_id, 
+                date: todayStr,
+            };
+            console.log('fetchTodaysTemperatureLogs: Params for getTemperatureLogs:', params);
+            const logs = await getTemperatureLogs(params);
+            setTodaysTemperatureLogs(logs || []);
+            console.log('Fetched today\'s temperature logs:', logs); 
+        } catch (err) {
+            console.error("Failed to load today's temperature logs (in StaffTasksPage catch):", err);
+            setTodaysLogsError(err.message || 'Failed to load today\'s temperature logs.');
+            setTodaysTemperatureLogs([]);
+        } finally {
+            console.log('fetchTodaysTemperatureLogs: Setting loadingTodaysLogs to false in finally block.');
+            setLoadingTodaysLogs(false);
+        }
+    }, [user]); // Dependency on user
 
     useEffect(() => {
         const fetchUserDataAndTasks = async () => {
@@ -102,9 +138,11 @@ function StaffTasksPage() {
     // useEffect to fetch thermometer data when user is loaded or fetchThermometerData function reference changes
     useEffect(() => {
         if (user && user.id) {
+            console.log('User object in useEffect for fetching logs & thermometers:', JSON.stringify(user, null, 2));
             fetchThermometerData();
+            fetchTodaysTemperatureLogs(); // Fetch logs when user is available
         }
-    }, [user, fetchThermometerData]); // Re-run if user or the callback itself changes
+    }, [user, fetchThermometerData, fetchTodaysTemperatureLogs]); // Re-run if user or the callbacks change
 
     const handleSubmitForReview = async (taskId) => {
         setUpdatingTask(taskId);
@@ -154,6 +192,7 @@ function StaffTasksPage() {
 
             {error && <Alert severity="warning" sx={{ mb: 2 }}>{error}</Alert>} 
             {thermometerError && <Alert severity="error" sx={{ mb: 2 }}>{thermometerError}</Alert>}
+            {todaysLogsError && <Alert severity="error" sx={{ mb: 2 }}>{todaysLogsError}</Alert>} 
 
             {/* Thermometer Sections */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -178,15 +217,17 @@ function StaffTasksPage() {
                 <Grid item xs={12} md={6}>
                     <Paper elevation={2} sx={{ p: 2 }}>
                         <Typography variant="h6" gutterBottom>Temperature Logging</Typography>
-                        {loadingUser || loadingThermometers ? (
+                        {loadingUser || loadingThermometers || loadingTodaysLogs ? (
                             <CircularProgress />
                         ) : user && user.id ? (
                             <TemperatureLoggingSection 
                                 verifiedThermometers={verifiedThermometers}
-                                isLoading={loadingThermometers}
-                                // error={thermometerError}
-                                departmentId={user.profile?.department} // Pass departmentId if needed
-                                staffId={user.id} // Pass staffId if needed for logging
+                                isLoading={loadingThermometers || loadingTodaysLogs} // Combine loading states
+                                // error={thermometerError || todaysLogsError} // Combine errors or handle separately in component
+                                departmentId={user.profile?.department}
+                                staffId={user.id}
+                                todaysTemperatureLogs={todaysTemperatureLogs} // Pass today's logs
+                                onLogSuccess={fetchTodaysTemperatureLogs} // Pass refresh function
                             />
                         ) : (
                             <Typography>User data not available.</Typography>

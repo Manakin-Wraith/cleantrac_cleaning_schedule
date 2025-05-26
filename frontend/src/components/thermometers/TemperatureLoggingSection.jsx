@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Typography, Box, Paper, Button, CircularProgress, Alert, 
   TextField, Grid, Card, CardContent, CardActions, Divider,
-  FormControl, InputLabel, MenuItem, Select, Stepper, Step, StepLabel
+  FormControl, InputLabel, MenuItem, Select, Stepper, Step, StepLabel,
+  List, ListItem, ListItemText, Chip
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
@@ -10,28 +11,32 @@ import WarningIcon from '@mui/icons-material/Warning';
 import { 
   getVerifiedThermometers, 
   getAreaUnits,
-  createTemperatureLog
 } from '../../services/thermometerService';
+import { createTemperatureLog } from '../../services/temperatureLogService';
 
 const TemperatureLoggingSection = ({ 
   verifiedThermometers, 
-  isLoading: isLoadingFromProps,
-  staffId, // Prop from StaffTasksPage
-  departmentId // Prop from StaffTasksPage
+  isLoading: isLoadingFromProps, 
+  staffId, 
+  departmentId,
+  todaysTemperatureLogs, 
+  onLogSuccess
 }) => {
   const [activeStep, setActiveStep] = useState(0);
-  const [componentLoading, setComponentLoading] = useState(true); // For areaUnits fetch
-  const [submitLoading, setSubmitLoading] = useState(false); // For log submission
+  const [componentLoading, setComponentLoading] = useState(true); 
+  const [submitLoading, setSubmitLoading] = useState(false); 
   const [error, setError] = useState('');
   const [areaUnits, setAreaUnits] = useState([]);
   const [selectedThermometer, setSelectedThermometer] = useState(null);
   const [selectedAreaUnit, setSelectedAreaUnit] = useState(null);
   const [formData, setFormData] = useState({
     temperature_reading: '',
-    time_period: 'AM',
+    time_period: 'AM', 
     corrective_action: ''
   });
   const theme = useTheme();
+
+  const [pendingPMAreaUnits, setPendingPMAreaUnits] = useState([]);
 
   const steps = ['Select Thermometer', 'Select Area', 'Log Temperature'];
 
@@ -40,21 +45,34 @@ const TemperatureLoggingSection = ({
       try {
         setComponentLoading(true);
         setError('');
-        // Get area units
         const areasData = await getAreaUnits();
         setAreaUnits(areasData || []);
       } catch (err) {
         console.error("Failed to load area units:", err);
         setError(err.message || 'Failed to load area units. Please try refreshing.');
-        setAreaUnits([]); // Ensure areaUnits is an array on error
+        setAreaUnits([]); 
       } finally {
         setComponentLoading(false);
       }
     };
 
     fetchAreaUnits();
-    // Verified thermometers are now passed as props, no need to fetch them here.
   }, []);
+
+  useEffect(() => {
+    if (areaUnits.length > 0 && todaysTemperatureLogs) {
+      const pendingUnits = areaUnits.filter(unit => {
+        const amLogExists = todaysTemperatureLogs.some(
+          log => log.area_unit === unit.id && log.time_period === 'AM'
+        );
+        const pmLogExists = todaysTemperatureLogs.some(
+          log => log.area_unit === unit.id && log.time_period === 'PM'
+        );
+        return amLogExists && !pmLogExists;
+      });
+      setPendingPMAreaUnits(pendingUnits);
+    }
+  }, [areaUnits, todaysTemperatureLogs]);
 
   const handleNext = () => {
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
@@ -94,7 +112,6 @@ const TemperatureLoggingSection = ({
     e.preventDefault();
     setError('');
     
-    // Validate form data
     if (!formData.temperature_reading) {
       setError('Temperature reading is required');
       return;
@@ -111,7 +128,6 @@ const TemperatureLoggingSection = ({
     try {
       setSubmitLoading(true);
       
-      // Current date and time for log_datetime
       const now = new Date();
       const formattedDateTime = now.toISOString();
       
@@ -119,13 +135,14 @@ const TemperatureLoggingSection = ({
         thermometer_used_id: selectedThermometer.id,
         area_unit_id: selectedAreaUnit.id,
         log_datetime: formattedDateTime,
-        // staff_id: staffId, // Backend uses request.user for logged_by_id
-        department_id: departmentId, // Include departmentId if your backend expects it
+        department_id: departmentId, 
         ...formData
       });
       
-      // Move to success step
       handleNext();
+      if (onLogSuccess) {
+        onLogSuccess(); 
+      }
     } catch (err) {
       console.error("Failed to submit temperature log:", err);
       setError(err.response?.data?.detail || err.message || 'Failed to submit temperature log. Please try again.');
@@ -351,55 +368,67 @@ const TemperatureLoggingSection = ({
     }
   };
 
-  return (
-    <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <DeviceThermostatIcon sx={{ fontSize: 28, mr: 1, color: theme.palette.secondary.main }} />
-        <Typography variant="h5" component="h2">
-          Temperature Logging
-        </Typography>
-      </Box>
+  const renderPendingPMChecks = () => {
+    if (isLoadingFromProps) return null; 
 
-      {isLoadingFromProps || componentLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-          <CircularProgress />
-        </Box>
-      ) : error && activeStep < steps.length -1 ? ( // Show general error only if not on success step
-        <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
-      ) : (
-        <Box sx={{ width: '100%' }}>
-          <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
+    if (pendingPMAreaUnits.length > 0) {
+      return (
+        <Paper elevation={1} sx={{ p: 2, mb: 3, backgroundColor: theme.palette.warning.light }}>
+          <Typography variant="h6" gutterBottom color="warning.dark">
+            PM Temperature Checks Pending
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            The following areas have AM logs but still require PM temperature checks today:
+          </Typography>
+          <List dense>
+            {pendingPMAreaUnits.map(unit => (
+              <ListItem key={unit.id} disablePadding>
+                <ListItemText primary={unit.name} />
+              </ListItem>
             ))}
-          </Stepper>
-          
-          <Box sx={{ mt: 2, mb: 2 }}>
-            {renderStepContent(activeStep)}
-          </Box>
-          
-          {activeStep !== 0 && activeStep !== 3 && (
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-              <Button onClick={handleBack}>
-                Back
-              </Button>
-              {activeStep === 2 && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSubmit}
-                  disabled={submitLoading}
-                >
-                  {submitLoading ? <CircularProgress size={24} /> : 'Submit'}
-                </Button>
-              )}
-            </Box>
+          </List>
+        </Paper>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <Box sx={{ width: '100%' }}>
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {renderPendingPMChecks()} 
+
+      <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
+        {steps.map((label) => (
+          <Step key={label}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+      
+      <Box sx={{ mt: 2, mb: 2 }}>
+        {renderStepContent(activeStep)}
+      </Box>
+      
+      {activeStep !== 0 && activeStep !== 3 && (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+          <Button onClick={handleBack}>
+            Back
+          </Button>
+          {activeStep === 2 && (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSubmit}
+              disabled={submitLoading}
+            >
+              {submitLoading ? <CircularProgress size={24} /> : 'Submit'}
+            </Button>
           )}
         </Box>
       )}
-    </Paper>
+    </Box>
   );
 };
 

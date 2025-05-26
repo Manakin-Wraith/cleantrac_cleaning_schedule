@@ -85,7 +85,7 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
     - [ ] Enhance visual design with subtle animations and depth
     - [ ] Add improved user profile section in header
     - [ ] Create more space-efficient header design
-    - [ ] Add dark mode support with theme toggle
+    - [ ] Add dark mode toggle
 - **[x] Department Management System**
   - [x] API: CRUD operations for departments (Superuser: CRUD, Manager: Read)
   - [x] Frontend: Implement Department Management UI
@@ -197,10 +197,9 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [ ] Function: `Save Signature` API call
 
 - **[ ] 3. Temperature Logging Workflow**
-  - [~] UI: Thermometer Selection Step
-    - [~] Modal dialog or initial section for selecting verified thermometer (Implemented, now uses centrally managed state from StaffTasksPage)
-    - [x] **Resolved**: Debugged and fixed 400 Bad Request error during temperature log submission (department validation logic in serializer).
-    - [x] **Resolved**: Fixed KeyError in Django Admin for `is_within_target_range` display on TemperatureLog list.
+  - [x] UI: Thermometer Selection Step
+    - [x] Modal dialog or initial section for selecting verified thermometer (Implemented, now uses centrally managed state from StaffTasksPage)
+    - [x] **Resolved**: PM reminder implementation and associated bug fixes (401 errors, department ID usage).
   - [ ] UI: Temperature Data Entry Step
     - [ ] Form fields for: Area/Unit, Temperature Reading, Time Period (AM/PM), Corrective Action (optional), Photo (optional)
   - [ ] UI: Error states and guidance for unverified thermometers
