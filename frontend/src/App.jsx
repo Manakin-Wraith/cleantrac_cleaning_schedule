@@ -15,7 +15,7 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
-          <Route path="/login" element={<PageLayout><LoginPage /></PageLayout>} />
+          <Route path="/login" element={<PageLayout showSidebar={false}><LoginPage /></PageLayout>} />
           
           {/* Protected Routes */}
           <Route element={<PrivateRoute allowedRoles={['manager', 'staff']} />}>

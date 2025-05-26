@@ -1,36 +1,38 @@
 import React, { useState } from 'react';
 import { Box, CssBaseline, Toolbar, useTheme } from '@mui/material';
 import HeaderBar from './HeaderBar';
-import Sidebar, { drawerWidth } from './Sidebar'; 
+import Sidebar, { drawerWidth as expandedSidebarWidthValue } from './Sidebar'; 
 
-const PageLayout = ({ children }) => {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+const PageLayout = ({ children, showSidebar = true }) => {
   const theme = useTheme();
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
+  const collapsedWidthValue = theme.spacing(7);
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+  const handleMobileDrawerToggle = () => {
+    setIsMobileDrawerOpen(!isMobileDrawerOpen);
   };
 
-  const handleSidebarToggle = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
+  const handleDesktopSidebarToggle = () => {
+    setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed);
   };
-
-  const currentDrawerWidth = isSidebarCollapsed ? theme.spacing(7) : `${drawerWidth}px`;
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}> 
+    <Box sx={{ display: 'flex', minHeight: '100vh', width: '100%' }}> 
       <CssBaseline />
       <HeaderBar 
-        handleDrawerToggle={handleDrawerToggle} 
-        handleSidebarToggle={handleSidebarToggle} 
-        isSidebarCollapsed={isSidebarCollapsed} 
+        handleDrawerToggle={handleMobileDrawerToggle}
+        handleSidebarToggle={handleDesktopSidebarToggle} 
+        isSidebarCollapsed={isDesktopSidebarCollapsed}
+        showSidebar={showSidebar}
       />
-      <Sidebar 
-        mobileOpen={mobileOpen} 
-        handleDrawerToggle={handleDrawerToggle} 
-        isCollapsed={isSidebarCollapsed} 
-      />
+      {showSidebar && (
+        <Sidebar 
+          isMobileOpen={isMobileDrawerOpen} 
+          onMobileClose={handleMobileDrawerToggle} 
+          isCollapsed={isDesktopSidebarCollapsed} 
+        />
+      )}
       
       <Box
         component="main"
@@ -38,12 +40,18 @@ const PageLayout = ({ children }) => {
           flexGrow: 1,
           py: 3,
           px: 2,
-          width: { sm: `calc(100% - ${currentDrawerWidth})` }, 
-          marginLeft: { sm: currentDrawerWidth }, 
           backgroundColor: '#f0f2f5',
           transition: theme.transitions.create(['width', 'margin'], { 
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
+          }),
+          width: '100%',
+          marginLeft: 0,
+          ...(showSidebar && {
+            [theme.breakpoints.up('md')]: {
+              marginLeft: isDesktopSidebarCollapsed ? `${collapsedWidthValue}px` : `${expandedSidebarWidthValue}px`,
+              width: `calc(100% - ${isDesktopSidebarCollapsed ? collapsedWidthValue : expandedSidebarWidthValue}px)`,
+            },
           }),
         }}
       >

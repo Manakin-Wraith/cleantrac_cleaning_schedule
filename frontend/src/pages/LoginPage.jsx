@@ -306,7 +306,7 @@ function LoginPage() {
     );
 
     return (
-        <Container component="main" maxWidth="xs">
+        <Container component="main" maxWidth={{ xs: 'xs', sm: 'sm' }}>
             <Box
                 sx={{
                     // marginTop: 8, // Removed for better centering by parent

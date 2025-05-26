@@ -19,12 +19,12 @@ const collapsedDrawerWidth = (theme) => theme.spacing(7);
 const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
   const { currentUser, logout } = useAuth();
   const theme = useTheme();
-  const isSmUp = useMediaQuery(theme.breakpoints.up('sm')); 
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md')); 
   const navigate = useNavigate();
 
-  const isPermanentDrawerEffectivelyOpen = isSmUp && !isCollapsed;
+  const isPermanentDrawerEffectivelyOpen = isMdUp && !isCollapsed;
   const isMobileDrawerOpen = mobileOpen; 
-  const showTooltip = isCollapsed && isSmUp && !mobileOpen;
+  const showTooltip = isCollapsed && isMdUp && !mobileOpen;
 
   const commonStyles = (isActive) => ({
     textDecoration: 'none',
@@ -97,7 +97,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
       >
         <img src={appLogo} alt="CleanTrack Logo" style={{ height: '32px', marginRight: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? '8px' : '0' }} /> 
         {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && (
-          <Typography variant="h6" component="div" sx={{ color: theme.palette.primary.main, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+          <Typography variant="h6" component="div" sx={{ color: theme.palette.text.primary, whiteSpace: 'nowrap', overflow: 'hidden' }}>
             CleanTrac
           </Typography>
         )}
@@ -114,7 +114,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
                     <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center' }}>
                       {link.icon}
                     </ListItemIcon>
-                    {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={link.text} />}
+                    {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={link.text} sx={{ color: theme.palette.text.primary }} />}
                   </ListItemButton>
                 </Tooltip>
               </ListItem>
@@ -130,7 +130,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
                   <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center', color: theme.palette.text.secondary }}> 
                     <LogoutIcon />
                   </ListItemIcon>
-                  {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary="Logout" />}
+                  {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary="Logout" sx={{ color: theme.palette.text.primary }} />}
                 </ListItemButton>
               </Tooltip>
             </ListItem>
@@ -145,7 +145,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
   return (
     <Box
       component="nav"
-      sx={{ width: { sm: currentPermanentDrawerWidth }, flexShrink: { sm: 0 }, transition: theme.transitions.create('width', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen }) }}
+      sx={{ width: { md: currentPermanentDrawerWidth }, flexShrink: { md: 0 }, transition: theme.transitions.create('width', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen }) }}
       aria-label="mailbox folders"
     >
       <Drawer 
@@ -156,7 +156,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
           keepMounted: true,
         }}
         sx={{
-          display: { xs: 'block', sm: 'none' },
+          display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth }, 
         }}
       >
@@ -166,7 +166,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
       <Drawer 
         variant="permanent"
         sx={{
-          display: { xs: 'none', sm: 'block' },
+          display: { xs: 'none', md: 'block' },
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box', 
             width: currentPermanentDrawerWidth, 

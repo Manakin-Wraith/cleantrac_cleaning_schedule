@@ -262,5 +262,6 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
 - [x] Create reusable PageLayout component for consistent page structure
 - [ ] Set up frontend testing environment (e.g., Jest, React Testing Library).
 - [ ] Set up backend testing environment (e.g., PyTest).
+- [ ] **Sidebar Content Visibility**: Investigate and resolve issue where sidebar content (title, links) is not visible when the sidebar is expanded, despite attempts to adjust text colors and ensure conditional rendering logic is correct. This occurs on pages that should display the sidebar.
 
 Use this checklist to track progress. You can add more granular sub-tasks as needed.
