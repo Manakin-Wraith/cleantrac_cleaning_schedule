@@ -199,8 +199,8 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
 - **[ ] 3. Temperature Logging Workflow**
   - [~] UI: Thermometer Selection Step
     - [~] Modal dialog or initial section for selecting verified thermometer (Implemented, now uses centrally managed state from StaffTasksPage)
-    - [x] Ensure only verified thermometers are listed (Data now flows correctly from StaffTasksPage)
-    - [x] Refresh list of verified thermometers after a new verification (Achieved by lifting state and callback mechanism in StaffTasksPage)
+    - [x] **Resolved**: Debugged and fixed 400 Bad Request error during temperature log submission (department validation logic in serializer).
+    - [x] **Resolved**: Fixed KeyError in Django Admin for `is_within_target_range` display on TemperatureLog list.
   - [ ] UI: Temperature Data Entry Step
     - [ ] Form fields for: Area/Unit, Temperature Reading, Time Period (AM/PM), Corrective Action (optional), Photo (optional)
   - [ ] UI: Error states and guidance for unverified thermometers

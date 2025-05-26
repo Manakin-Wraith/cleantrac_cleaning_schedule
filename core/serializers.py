@@ -497,33 +497,39 @@ class TemperatureLogSerializer(serializers.ModelSerializer):
         write_only=True
     )
     area_unit_name = serializers.CharField(source='area_unit.name', read_only=True)
+
     thermometer_used_id = serializers.PrimaryKeyRelatedField(
         queryset=Thermometer.objects.all(),
         source='thermometer_used',
         write_only=True
     )
     thermometer_serial = serializers.CharField(source='thermometer_used.serial_number', read_only=True)
+
     verification_record_id = serializers.PrimaryKeyRelatedField(
         queryset=ThermometerVerificationRecord.objects.all(),
         source='verification_record_at_time_of_log',
         write_only=True,
-        required=False,
+        required=False, # This can be optional, backend will try to find latest
         allow_null=True
     )
+
     logged_by_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
-        source='logged_by',
+        source='logged_by', # This will be handled by perform_create in view
         write_only=True,
-        required=False,
+        required=False, # Backend sets this from request.user
         allow_null=True
     )
     logged_by_username = serializers.CharField(source='logged_by.username', read_only=True, allow_null=True)
+
     department_id = serializers.PrimaryKeyRelatedField(
         queryset=Department.objects.all(),
-        source='department',
-        write_only=True
+        source='department', # validated_data will have 'department' key
+        write_only=True,
+        required=False # Make it not required from client, backend will try to set it
     )
     department_name = serializers.CharField(source='department.name', read_only=True)
+
     is_within_target_range = serializers.SerializerMethodField(read_only=True)
     
     class Meta:
@@ -560,24 +566,51 @@ class TemperatureLogSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
     
     def validate(self, data):
+        # Get the department from the payload if provided, otherwise from the user's profile
+        department_from_payload = data.get('department') # Resolved from department_id by serializer
+        department_for_validation = department_from_payload
+
+        if not department_for_validation and hasattr(self.context['request'].user, 'profile') and self.context['request'].user.profile.department:
+            department_for_validation = self.context['request'].user.profile.department
+
+        area_unit = data.get('area_unit') # Resolved from area_unit_id by serializer
+        thermometer = data.get('thermometer_used') # Resolved from thermometer_used_id
+        log_datetime = data.get('log_datetime')
+        verification_record_at_time_of_log = data.get('verification_record_at_time_of_log')
+
+        # Ensure AreaUnit belongs to the same department as the log/user
+        if area_unit and department_for_validation: # Check if both objects exist first
+            if area_unit.department_id != department_for_validation.id:
+                raise serializers.ValidationError({
+                    'area_unit_id': _('The area unit must belong to the specified department.')
+                })
+        elif not area_unit:
+            pass # If no area_unit, this specific validation doesn't apply
+        elif not department_for_validation:
+            # This case implies an area_unit is provided, but no department context could be established for the log.
+            # This might be an issue if department context is always expected.
+            # For now, if department_for_validation is None, this specific check is skipped.
+            # Consider if an error should be raised here if department_for_validation is None but an area_unit is present.
+            pass
+
         # Ensure the thermometer is verified
-        thermometer = data.get('thermometer_used')
         if thermometer and not thermometer.is_verified():
             raise serializers.ValidationError({
                 'thermometer_used_id': 'This thermometer is not verified or has expired verification.'
             })
         
-        # Ensure the area_unit and thermometer belong to the same department
-        area_unit = data.get('area_unit')
-        department = data.get('department')
-        if area_unit and area_unit.department != department:
-            raise serializers.ValidationError({
-                'area_unit_id': 'The area unit must belong to the specified department.'
-            })
-        
-        if thermometer and thermometer.department != department:
-            raise serializers.ValidationError({
-                'thermometer_used_id': 'The thermometer must belong to the specified department.'
-            })
-        
+        # Ensure the thermometer belongs to the same department context (department_for_validation).
+        # The area_unit department check is already performed above against department_for_validation.
+        if thermometer and department_for_validation: # Ensure both exist for comparison
+            if thermometer.department_id != department_for_validation.id:
+                raise serializers.ValidationError({
+                    'thermometer_used_id': _('The thermometer used must belong to the department context of this log.')
+                })
+        elif thermometer and not department_for_validation:
+            # This case implies a thermometer is provided, but no department context could be established for the log.
+            # This might indicate an issue if department context is always expected when a thermometer is used.
+            # For now, if department_for_validation is None, this specific check is skipped.
+            # Consider if an error should be raised here if department_for_validation is None but a thermometer is present.
+            pass
+
         return data

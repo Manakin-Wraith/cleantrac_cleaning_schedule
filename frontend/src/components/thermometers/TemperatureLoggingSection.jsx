@@ -119,7 +119,7 @@ const TemperatureLoggingSection = ({
         thermometer_used_id: selectedThermometer.id,
         area_unit_id: selectedAreaUnit.id,
         log_datetime: formattedDateTime,
-        staff_id: staffId, // Include staffId if your backend expects it
+        // staff_id: staffId, // Backend uses request.user for logged_by_id
         department_id: departmentId, // Include departmentId if your backend expects it
         ...formData
       });

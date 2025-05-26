@@ -64,10 +64,7 @@ class TemperatureLogAdmin(admin.ModelAdmin):
     readonly_fields = ('is_within_target_range',)
     
     def is_within_target_range(self, obj):
-        result = obj.is_within_target_range()
-        if result is None:
-            return 'No target set'
-        return result
+        return obj.is_within_target_range()
     is_within_target_range.boolean = True
     is_within_target_range.short_description = 'Within Target Range'
 
