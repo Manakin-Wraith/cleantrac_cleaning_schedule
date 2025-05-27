@@ -737,4 +737,157 @@ class TemperatureLogViewSet(viewsets.ModelViewSet):
         except ValueError:
             return Response({"detail": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['get'], url_path='areas-with-status')
+    def areas_with_status(self, request):
+        """Get all areas with their logged status for the current day"""
+        # Get the current date
+        today = timezone.now().date()
+        
+        # Get the user's department
+        user = request.user
+        if not hasattr(user, 'profile') or not user.profile.department:
+            return Response({"error": "User has no department"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        department_id = user.profile.department.id
+        
+        # Get all area units for the department
+        area_units = AreaUnit.objects.filter(department_id=department_id)
+        
+        # Get today's logs for this department
+        today_logs = self.get_queryset().filter(
+            log_datetime__date=today,
+            department_id=department_id
+        )
+        
+        # Create a dictionary to track which areas have been logged for each time period
+        logged_areas = {}
+        for log in today_logs:
+            area_key = f"{log.area_unit_id}_{log.time_period}"
+            if area_key not in logged_areas:
+                logged_areas[area_key] = {
+                    'area_unit_id': log.area_unit_id,
+                    'time_period': log.time_period,
+                    'temperature_reading': log.temperature_reading,
+                    'is_within_range': log.is_within_target_range(),
+                    'logged_at': log.log_datetime,
+                    'logged_by': log.logged_by.username if log.logged_by else None
+                }
+        
+        # Prepare the response data
+        result = []
+        for area in area_units:
+            area_data = {
+                'id': area.id,
+                'name': area.name,
+                'description': area.description,
+                'target_temperature_min': area.target_temperature_min,
+                'target_temperature_max': area.target_temperature_max,
+                'department_id': area.department_id,
+                'department_name': area.department.name,
+                'am_logged': f"{area.id}_AM" in logged_areas,
+                'pm_logged': f"{area.id}_PM" in logged_areas,
+                'am_log_details': logged_areas.get(f"{area.id}_AM"),
+                'pm_log_details': logged_areas.get(f"{area.id}_PM")
+            }
+            result.append(area_data)
+            
+        return Response(result)
+
+    @action(detail=False, methods=['get'], url_path='manager-summary')
+    def manager_summary(self, request):
+        """Get a summary of temperature logging status for managers"""
+        # Get the user's department
+        user = request.user
+        if not hasattr(user, 'profile') or not user.profile.department:
+            return Response({"error": "User has no department"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        department_id = user.profile.department.id
+        
+        # Get today's date
+        today = timezone.now().date()
+        
+        # Get all area units for the department
+        area_units = AreaUnit.objects.filter(department_id=department_id)
+        
+        # Get today's logs for this department
+        today_logs = self.get_queryset().filter(
+            log_datetime__date=today,
+            department_id=department_id
+        )
+        
+        # Prepare summary statistics
+        total_areas = area_units.count()
+        am_logged_count = len(set([log.area_unit_id for log in today_logs.filter(time_period='AM')]))
+        pm_logged_count = len(set([log.area_unit_id for log in today_logs.filter(time_period='PM')]))
+        
+        # Count areas with temperatures out of range
+        am_out_of_range = 0
+        pm_out_of_range = 0
+        
+        for log in today_logs.filter(time_period='AM'):
+            # Check if temperature is within target range
+            if log.area_unit.target_temperature_min is not None and log.area_unit.target_temperature_max is not None:
+                if not (log.area_unit.target_temperature_min <= log.temperature_reading <= log.area_unit.target_temperature_max):
+                    am_out_of_range += 1
+                
+        for log in today_logs.filter(time_period='PM'):
+            # Check if temperature is within target range
+            if log.area_unit.target_temperature_min is not None and log.area_unit.target_temperature_max is not None:
+                if not (log.area_unit.target_temperature_min <= log.temperature_reading <= log.area_unit.target_temperature_max):
+                    pm_out_of_range += 1
+        
+        # Get area details with logged status
+        areas_status = []
+        for area in area_units:
+            am_logs = today_logs.filter(area_unit_id=area.id, time_period='AM')
+            pm_logs = today_logs.filter(area_unit_id=area.id, time_period='PM')
+            
+            am_log = am_logs.first()
+            pm_log = pm_logs.first()
+            
+            # Check if temperatures are within target range
+            am_in_range = None
+            pm_in_range = None
+            
+            if am_log and area.target_temperature_min is not None and area.target_temperature_max is not None:
+                am_in_range = (area.target_temperature_min <= am_log.temperature_reading <= area.target_temperature_max)
+                
+            if pm_log and area.target_temperature_min is not None and area.target_temperature_max is not None:
+                pm_in_range = (area.target_temperature_min <= pm_log.temperature_reading <= area.target_temperature_max)
+            
+            area_data = {
+                'id': area.id,
+                'name': area.name,
+                'description': area.description,
+                'target_min': area.target_temperature_min,
+                'target_max': area.target_temperature_max,
+                'am_logged': am_logs.exists(),
+                'pm_logged': pm_logs.exists(),
+                'am_temperature': am_log.temperature_reading if am_log else None,
+                'pm_temperature': pm_log.temperature_reading if pm_log else None,
+                'am_in_range': am_in_range,
+                'pm_in_range': pm_in_range,
+                'am_logged_by': am_log.logged_by.username if am_log and am_log.logged_by else None,
+                'pm_logged_by': pm_log.logged_by.username if pm_log and pm_log.logged_by else None,
+                'am_logged_at': am_log.log_datetime if am_log else None,
+                'pm_logged_at': pm_log.log_datetime if pm_log else None,
+            }
+            areas_status.append(area_data)
+        
+        # Prepare the response
+        result = {
+            'summary': {
+                'total_areas': total_areas,
+                'am_logged_count': am_logged_count,
+                'pm_logged_count': pm_logged_count,
+                'am_completion_percentage': round((am_logged_count / total_areas) * 100) if total_areas > 0 else 0,
+                'pm_completion_percentage': round((pm_logged_count / total_areas) * 100) if total_areas > 0 else 0,
+                'am_out_of_range_count': am_out_of_range,
+                'pm_out_of_range_count': pm_out_of_range,
+            },
+            'areas': areas_status
+        }
+        
+        return Response(result)
+
 # Management Commands related views (if any in future)

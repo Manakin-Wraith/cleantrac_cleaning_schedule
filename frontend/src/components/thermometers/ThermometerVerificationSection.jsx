@@ -56,10 +56,8 @@ const ThermometerVerificationSection = ({
   const handleVerificationSubmit = async (formData) => {
     try {
       setError(''); 
-      await createVerificationRecord({
-        thermometer_id: selectedThermometer.id,
-        ...formData
-      });
+      // formData already contains thermometer_id from the ThermometerVerificationForm
+      await createVerificationRecord(formData);
       
       if (onVerificationSuccess) {
         onVerificationSuccess();
@@ -69,7 +67,8 @@ const ThermometerVerificationSection = ({
       setSelectedThermometer(null);
     } catch (err) {
       console.error("Failed to submit verification record:", err);
-      setError(err.response?.data?.detail || err.message || 'Failed to submit verification. Please try again.');
+      // Let the form handle the error display for field-specific errors
+      throw err;
     } 
   };
 

@@ -17,7 +17,8 @@ import {
   getAreaUnits,
   createTemperatureLog,
   getCurrentAssignment,
-  getTemperatureLogsByDate
+  getTemperatureLogsByDate,
+  getAreasWithLogStatus
 } from '../../services/thermometerService';
 
 const TemperatureLoggingSection = ({ 
@@ -54,31 +55,78 @@ const TemperatureLoggingSection = ({
         setComponentLoading(true);
         setError('');
         
-        // Get area units
-        const areasData = await getAreaUnits();
-        setAreaUnits(areasData || []);
-        
-        // Get today's temperature logs
-        const today = new Date().toISOString().split('T')[0];
+        // Get areas with their logged status
         try {
-          const logsData = await getTemperatureLogsByDate(today);
+          const areasWithStatusData = await getAreasWithLogStatus();
           
-          // Create a map of area IDs to their logs
+          // Set area units with enhanced status information
+          setAreaUnits(areasWithStatusData || []);
+          
+          // Create a map of area IDs to their logs for backward compatibility
           const logsMap = {};
-          logsData.forEach(log => {
-            if (!logsMap[log.area_unit_id]) {
-              logsMap[log.area_unit_id] = [];
+          const loggedAreaIds = [];
+          
+          areasWithStatusData.forEach(area => {
+            // If area has been logged in either AM or PM, add to logged areas
+            if (area.am_logged || area.pm_logged) {
+              loggedAreaIds.push(area.id);
+              
+              // Create entries in the logs map
+              logsMap[area.id] = [];
+              
+              if (area.am_log_details) {
+                logsMap[area.id].push({
+                  ...area.am_log_details,
+                  area_unit_id: area.id,
+                  area_unit_name: area.name,
+                  target_temperature_min: area.target_temperature_min,
+                  target_temperature_max: area.target_temperature_max
+                });
+              }
+              
+              if (area.pm_log_details) {
+                logsMap[area.id].push({
+                  ...area.pm_log_details,
+                  area_unit_id: area.id,
+                  area_unit_name: area.name,
+                  target_temperature_min: area.target_temperature_min,
+                  target_temperature_max: area.target_temperature_max
+                });
+              }
             }
-            logsMap[log.area_unit_id].push(log);
           });
           
           setTodaysLogs(logsMap);
-          
-          // Set logged areas
-          const loggedAreaIds = Object.keys(logsMap).map(id => parseInt(id));
           setLoggedAreas(loggedAreaIds);
-        } catch (logsErr) {
-          console.log('Failed to fetch today\'s temperature logs:', logsErr);
+        } catch (areasErr) {
+          console.error('Failed to fetch areas with status:', areasErr);
+          
+          // Fallback to original approach if new endpoint fails
+          const areasData = await getAreaUnits();
+          setAreaUnits(areasData || []);
+          
+          // Get today's temperature logs
+          const today = new Date().toISOString().split('T')[0];
+          try {
+            const logsData = await getTemperatureLogsByDate(today);
+            
+            // Create a map of area IDs to their logs
+            const logsMap = {};
+            logsData.forEach(log => {
+              if (!logsMap[log.area_unit_id]) {
+                logsMap[log.area_unit_id] = [];
+              }
+              logsMap[log.area_unit_id].push(log);
+            });
+            
+            setTodaysLogs(logsMap);
+            
+            // Set logged areas
+            const loggedAreaIds = Object.keys(logsMap).map(id => parseInt(id));
+            setLoggedAreas(loggedAreaIds);
+          } catch (logsErr) {
+            console.log('Failed to fetch today\'s temperature logs:', logsErr);
+          }
         }
         
         // Get current thermometer assignment to determine allowed time periods
@@ -182,23 +230,71 @@ const TemperatureLoggingSection = ({
         ...formData
       });
       
-      // Update logged areas state
-      setLoggedAreas(prev => {
-        if (!prev.includes(selectedAreaUnit.id)) {
-          return [...prev, selectedAreaUnit.id];
-        }
-        return prev;
-      });
-      
-      // Update today's logs
-      setTodaysLogs(prev => {
-        const updatedLogs = { ...prev };
-        if (!updatedLogs[selectedAreaUnit.id]) {
-          updatedLogs[selectedAreaUnit.id] = [];
-        }
-        updatedLogs[selectedAreaUnit.id].push(response);
-        return updatedLogs;
-      });
+      // Refresh data using the new API endpoint
+      try {
+        // Get areas with their logged status
+        const areasWithStatusData = await getAreasWithLogStatus();
+        
+        // Set area units with enhanced status information
+        setAreaUnits(areasWithStatusData || []);
+        
+        // Create a map of area IDs to their logs for backward compatibility
+        const logsMap = {};
+        const loggedAreaIds = [];
+        
+        areasWithStatusData.forEach(area => {
+          // If area has been logged in either AM or PM, add to logged areas
+          if (area.am_logged || area.pm_logged) {
+            loggedAreaIds.push(area.id);
+            
+            // Create entries in the logs map
+            logsMap[area.id] = [];
+            
+            if (area.am_log_details) {
+              logsMap[area.id].push({
+                ...area.am_log_details,
+                area_unit_id: area.id,
+                area_unit_name: area.name,
+                target_temperature_min: area.target_temperature_min,
+                target_temperature_max: area.target_temperature_max
+              });
+            }
+            
+            if (area.pm_log_details) {
+              logsMap[area.id].push({
+                ...area.pm_log_details,
+                area_unit_id: area.id,
+                area_unit_name: area.name,
+                target_temperature_min: area.target_temperature_min,
+                target_temperature_max: area.target_temperature_max
+              });
+            }
+          }
+        });
+        
+        setTodaysLogs(logsMap);
+        setLoggedAreas(loggedAreaIds);
+      } catch (refreshErr) {
+        console.error("Failed to refresh data after log submission:", refreshErr);
+        
+        // Fallback: Update logged areas state locally
+        setLoggedAreas(prev => {
+          if (!prev.includes(selectedAreaUnit.id)) {
+            return [...prev, selectedAreaUnit.id];
+          }
+          return prev;
+        });
+        
+        // Fallback: Update today's logs locally
+        setTodaysLogs(prev => {
+          const updatedLogs = { ...prev };
+          if (!updatedLogs[selectedAreaUnit.id]) {
+            updatedLogs[selectedAreaUnit.id] = [];
+          }
+          updatedLogs[selectedAreaUnit.id].push(response);
+          return updatedLogs;
+        });
+      }
       
       // Set newly logged area for animation
       setNewlyLoggedAreaId(selectedAreaUnit.id);
@@ -438,41 +534,104 @@ const TemperatureLoggingSection = ({
                 
                 {/* Areas needing temperature logs */}
                 <Box>
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                    <DeviceThermostatIcon sx={{ mr: 1, color: theme.palette.info.main }} />
                     {loggedAreas.length > 0 ? 'Areas Needing Temperature Logs' : 'Select an area to log temperature for:'}
                   </Typography>
-                  <Grid container spacing={2}>
-                    {areaUnits.filter(area => !loggedAreas.includes(area.id)).map((area) => (
-                      <Grid item xs={12} sm={6} md={4} key={area.id}>
-                        <Card 
-                          variant="outlined" 
-                          sx={{ 
-                            cursor: 'pointer',
-                            '&:hover': { 
-                              borderColor: theme.palette.primary.main,
-                              boxShadow: 1
-                            }
-                          }}
-                          onClick={() => handleSelectArea(area)}
-                        >
-                          <CardContent>
-                            <Typography variant="h6" gutterBottom>
-                              {area.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {area.description}
-                            </Typography>
-                            <Divider sx={{ my: 1 }} />
-                            <Typography variant="body2">
-                              Target Temperature Range:
-                            </Typography>
-                            <Typography variant="body1" color="primary">
-                              {area.target_temperature_min}°C - {area.target_temperature_max}°C
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Grid>
+                  
+                  {/* Tabs to filter by time period */}
+                  <Box sx={{ display: 'flex', mb: 2 }}>
+                    {allowedTimePeriods.map(period => (
+                      <Chip
+                        key={period}
+                        label={period === 'AM' ? 'Morning (AM)' : 'Afternoon (PM)'}
+                        color={formData.time_period === period ? 'primary' : 'default'}
+                        onClick={() => setFormData(prev => ({ ...prev, time_period: period }))}
+                        sx={{ mr: 1 }}
+                      />
                     ))}
+                  </Box>
+                  
+                  <Grid container spacing={2}>
+                    {areaUnits
+                      .filter(area => {
+                        // For AM period, show areas not logged in AM
+                        if (formData.time_period === 'AM') {
+                          return !area.am_logged;
+                        }
+                        // For PM period, show areas not logged in PM
+                        else if (formData.time_period === 'PM') {
+                          return !area.pm_logged;
+                        }
+                        // Fallback to old behavior if area doesn't have am_logged/pm_logged properties
+                        return !loggedAreas.includes(area.id);
+                      })
+                      .map((area) => {
+                        // Check if the area has been logged in the other time period
+                        const loggedInOtherPeriod = 
+                          (formData.time_period === 'AM' && area.pm_logged) || 
+                          (formData.time_period === 'PM' && area.am_logged);
+                        
+                        return (
+                          <Grid item xs={12} sm={6} md={4} key={area.id}>
+                            <Card 
+                              variant="outlined" 
+                              sx={{ 
+                                cursor: 'pointer',
+                                borderLeft: loggedInOtherPeriod ? '4px solid' : 'none',
+                                borderColor: loggedInOtherPeriod ? theme.palette.info.main : 'inherit',
+                                '&:hover': { 
+                                  borderColor: theme.palette.primary.main,
+                                  boxShadow: 1
+                                }
+                              }}
+                              onClick={() => handleSelectArea(area)}
+                            >
+                              {loggedInOtherPeriod && (
+                                <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
+                                  <Chip 
+                                    size="small"
+                                    label={formData.time_period === 'AM' ? 'PM Logged' : 'AM Logged'}
+                                    color="info"
+                                  />
+                                </Box>
+                              )}
+                              
+                              <CardContent>
+                                <Typography variant="h6" gutterBottom>
+                                  {area.name}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {area.description}
+                                </Typography>
+                                <Divider sx={{ my: 1 }} />
+                                <Typography variant="body2">
+                                  Target Range: {area.target_temperature_min}°C - {area.target_temperature_max}°C
+                                </Typography>
+                                
+                                {/* Show AM/PM status indicators */}
+                                <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                                  <Chip 
+                                    size="small" 
+                                    label="AM" 
+                                    color={area.am_logged ? "success" : "default"} 
+                                    variant={area.am_logged ? "filled" : "outlined"}
+                                    icon={area.am_logged ? <CheckCircleIcon fontSize="small" /> : undefined}
+                                  />
+                                  <Chip 
+                                    size="small" 
+                                    label="PM" 
+                                    color={area.pm_logged ? "success" : "default"}
+                                    variant={area.pm_logged ? "filled" : "outlined"}
+                                    icon={area.pm_logged ? <CheckCircleIcon fontSize="small" /> : undefined}
+                                  />
+                                </Box>
+                              </CardContent>
+                            </Card>
+                          </Grid>
+                        );
+                      })
+                    }
                   </Grid>
                 </Box>
               </>

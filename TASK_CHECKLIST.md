@@ -105,14 +105,24 @@
 - **[x] Temperature Logging API Enhancements**
   - [x] Add new endpoint in TemperatureLogViewSet to retrieve temperature logs by date.
   - [x] Implement API service function to get all current thermometer verification assignments.
+  - [x] Add new endpoint to retrieve areas with their logged status for the current day.
+  - [x] Create manager summary endpoint for temperature logging dashboard.
 - **[x] Staff Tasks Page Enhancements**
   - [x] Enhance StaffTasksPage to display logged areas for staff assigned to AM/PM temperature logging.
   - [x] Add visual indicators for logged areas with temperature status.
   - [x] Implement conditional visibility for thermometer verification and temperature logging sections.
   - [x] Show informative message when staff is not assigned to thermometer duties.
+  - [x] Improve visibility of previously logged temperature areas for staff members.
+  - [x] Add AM/PM filtering tabs for temperature logging areas.
 - **[x] System Testing & Validation**
   - [x] Test `ThermometerStatusDashboard` for correct display and no console warnings.
   - [x] Test `ThermometerAssignmentManager` for assignment creation/update, ensuring no console warnings and correct data submission.
   - [x] Verify overall functionality of thermometer verification assignment.
   - [x] Test temperature logs by date endpoint functionality.
+- **[x] Manager Dashboard Enhancements**
+  - [x] Create temperature logging summary widget for managers.
+  - [x] Add visual progress indicators for AM/PM temperature logging completion.
+  - [x] Implement detailed area-by-area temperature status view.
+  - [x] Add out-of-range temperature indicators for managers.
+
 - **[ ] Gather User Feedback** (Post-testing)

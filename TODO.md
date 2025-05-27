@@ -12,11 +12,13 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
    - Create data models (Thermometer, ThermometerVerificationRecord, TemperatureLog)
    - Build Thermometer Verification Screen
    - ✅ Implement Temperature Logging workflow with verified thermometer requirement
-   - Add dashboard indicators for thermometer status
+   - ✅ Add dashboard indicators for thermometer status
    - Integrate camera component for verification and logs
    - ✅ Implement staff assignment system for thermometer verification responsibility
    - ✅ Add date picker for scheduling thermometer verification assignments
    - ✅ Implement conditional visibility for thermometer sections based on staff assignments
+   - ✅ Enhance visibility of logged temperature areas for staff members
+   - ✅ Create manager dashboard for temperature logging status
 
 3. **Enhance UI/UX**
    - Modernize header and sidebar layout
@@ -31,7 +33,8 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
    - Implement dashboard widgets (Overall Completion, Overdue Tasks, Completion By Staff)
    - Add charts and visual data representations
    - Create quick actions widget
-   - Add thermometer status indicators
+   - ✅ Add thermometer status indicators
+   - ✅ Add temperature logging status summary widget
 
 5. **Enhance Calendar View**
    - Implement FullCalendar Resource View
@@ -198,21 +201,33 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [ ] Function: `Upload Photo` API call
   - [ ] Function: `Save Signature` API call
 
-- **[ ] 3. Temperature Logging Workflow**
+- **[x] 3. Temperature Logging Workflow**
   - [x] UI: Thermometer Selection Step
     - [x] Modal dialog or initial section for selecting verified thermometer (Implemented, now uses centrally managed state from StaffTasksPage)
   - [x] API: Retrieve Temperature Logs by Date
     - [x] Implement endpoint in TemperatureLogViewSet to get logs by specific date
     - [x] Add service function to fetch temperature logs by date
+    - [x] Create endpoint to retrieve areas with their logged status for the current day
+    - [x] Implement manager summary endpoint for temperature logging dashboard
   - [x] UI: Display Logged Areas
     - [x] Show summary of logged areas on StaffTasksPage
     - [x] Organize logged areas by time period (AM/PM)
     - [x] Add visual indicators for temperature status (within/outside range)
+    - [x] Improve visibility of previously logged areas with AM/PM filtering tabs
   - [x] Access Control: Conditional Visibility
     - [x] Only show thermometer verification and temperature logging sections to assigned staff
     - [x] Display informative message when staff is not assigned to thermometer duties
     - [x] **Resolved**: Debugged and fixed 400 Bad Request error during temperature log submission (department validation logic in serializer).
     - [x] **Resolved**: Fixed KeyError in Django Admin for `is_within_target_range` display on TemperatureLog list.
+  - [x] UI: Temperature Data Entry Step
+    - [x] Form fields for: Area/Unit, Temperature Reading, Time Period (AM/PM), Corrective Action (optional), Photo (optional)
+  - [x] UI: Error states and guidance for unverified thermometers
+    - [x] Clear message when no verified thermometers are available
+    - [x] Action button to navigate to verification screen
+  - [x] Feature: Temperature Data Collection
+  - [x] Feature: Thermometer Verification Enforcement
+  - [x] Function: `Select Thermometer` API call
+  - [x] Function: `Log Temperature` API call
   - [ ] UI: Temperature Data Entry Step
     - [ ] Form fields for: Area/Unit, Temperature Reading, Time Period (AM/PM), Corrective Action (optional), Photo (optional)
   - [ ] UI: Error states and guidance for unverified thermometers
@@ -237,15 +252,20 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [ ] Function: `Check Verification Assignment` API call
   - [ ] Function: `Get Thermometers Needing Verification` API call
 
-- **[ ] 5. Dashboard Thermometer Indicators**
-  - [ ] UI: Prominent status indicators for thermometers
-    - [ ] "Available Verified Thermometers" count with green indicator
-    - [ ] "Thermometers Requiring Verification" count with red indicator and link
-  - [ ] UI: Conditional "Log Temperatures" button
-    - [ ] Disabled state with tooltip when no verified thermometers
-    - [ ] Active state when verified thermometers available
-  - [ ] Feature: At-a-glance thermometer status
-  - [ ] Function: `Retrieve Thermometer Status Summary` API call
+- **[x] 5. Dashboard Thermometer Indicators**
+  - [x] UI: Prominent status indicators for thermometers
+    - [x] "Available Verified Thermometers" count with green indicator
+    - [x] "Thermometers Requiring Verification" count with red indicator and link
+  - [x] UI: Temperature logging status indicators
+    - [x] AM/PM completion percentages with progress bars
+    - [x] Out-of-range temperature counts with warning indicators
+    - [x] Detailed area-by-area temperature status view
+  - [x] UI: Conditional "Log Temperatures" button
+    - [x] Disabled state with tooltip when no verified thermometers
+    - [x] Active state when verified thermometers available
+  - [x] Feature: At-a-glance thermometer status
+  - [x] Function: `Retrieve Thermometer Status Summary` API call
+  - [x] Function: `Get Temperature Logging Manager Summary` API call
 
 ---
 

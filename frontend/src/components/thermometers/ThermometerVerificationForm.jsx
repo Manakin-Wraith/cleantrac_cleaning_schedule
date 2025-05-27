@@ -14,10 +14,13 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
     date_verified: today,
     calibrated_instrument_no: '',
     reading_after_verification: '',
-    corrective_action: ''
+    corrective_action: '',
+    serial_number: '',
+    model_identifier: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -31,15 +34,35 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
     
     // Validate form data
+    const newErrors = {};
+    let hasErrors = false;
+    
+    if (!formData.serial_number) {
+      newErrors.serial_number = 'Serial number is required';
+      hasErrors = true;
+    }
+    
+    if (!formData.model_identifier) {
+      newErrors.model_identifier = 'Model identifier is required';
+      hasErrors = true;
+    }
+    
     if (!formData.calibrated_instrument_no) {
-      setError('Calibrated instrument number is required');
-      return;
+      newErrors.calibrated_instrument_no = 'Calibrated instrument number is required';
+      hasErrors = true;
     }
     
     if (!formData.reading_after_verification) {
-      setError('Reading after verification is required');
+      newErrors.reading_after_verification = 'Reading after verification is required';
+      hasErrors = true;
+    }
+    
+    if (hasErrors) {
+      setFieldErrors(newErrors);
+      setError('Please fill in all required fields');
       return;
     }
     
@@ -48,12 +71,24 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
       // Format date to YYYY-MM-DD for API
       const formattedData = {
         ...formData,
-        date_verified: format(formData.date_verified, 'yyyy-MM-dd')
+        date_verified: format(formData.date_verified, 'yyyy-MM-dd'),
+        thermometer_id: thermometer.id
       };
       
       await onSubmit(formattedData);
     } catch (err) {
-      setError(err.message || 'Failed to submit verification. Please try again.');
+      if (err.response?.data) {
+        // Handle field-specific errors from API
+        const apiErrors = err.response.data;
+        if (typeof apiErrors === 'object') {
+          setFieldErrors(apiErrors);
+          setError('Verification failed. Please check the form for errors.');
+        } else {
+          setError(apiErrors || 'Failed to submit verification. Please try again.');
+        }
+      } else {
+        setError(err.message || 'Failed to submit verification. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -72,6 +107,48 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
         
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
+            <Grid xs={12}>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium', color: 'primary.main' }}>
+                Verification Details
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                Please verify the thermometer by confirming its serial number and model identifier.
+              </Typography>
+            </Grid>
+
+            <Grid xs={12} sm={6}>
+              <TextField
+                name="serial_number"
+                label="Serial Number"
+                value={formData.serial_number}
+                onChange={handleChange}
+                fullWidth
+                required
+                error={!!fieldErrors.serial_number}
+                helperText={fieldErrors.serial_number || 'Enter the exact serial number as shown on the thermometer'}
+              />
+            </Grid>
+            
+            <Grid xs={12} sm={6}>
+              <TextField
+                name="model_identifier"
+                label="Model Identifier"
+                value={formData.model_identifier}
+                onChange={handleChange}
+                fullWidth
+                required
+                error={!!fieldErrors.model_identifier}
+                helperText={fieldErrors.model_identifier || 'Enter the exact model identifier as shown on the thermometer'}
+              />
+            </Grid>
+
+            <Grid xs={12}>
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium', color: 'primary.main' }}>
+                Calibration Information
+              </Typography>
+            </Grid>
+            
             <Grid xs={12} sm={6}>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DatePicker
@@ -83,6 +160,8 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
                     textField: {
                       fullWidth: true,
                       required: true,
+                      error: !!fieldErrors.date_verified,
+                      helperText: fieldErrors.date_verified
                     }
                   }}
                 />
@@ -97,6 +176,8 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
                 onChange={handleChange}
                 fullWidth
                 required
+                error={!!fieldErrors.calibrated_instrument_no}
+                helperText={fieldErrors.calibrated_instrument_no}
               />
             </Grid>
             
@@ -110,6 +191,8 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
                 required
                 type="number"
                 inputProps={{ step: "0.1" }}
+                error={!!fieldErrors.reading_after_verification}
+                helperText={fieldErrors.reading_after_verification}
               />
             </Grid>
             
@@ -122,6 +205,8 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
                 fullWidth
                 multiline
                 rows={3}
+                error={!!fieldErrors.corrective_action}
+                helperText={fieldErrors.corrective_action}
               />
             </Grid>
           </Grid>

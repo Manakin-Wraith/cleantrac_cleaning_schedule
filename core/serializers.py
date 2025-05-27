@@ -423,6 +423,8 @@ class ThermometerVerificationRecordSerializer(serializers.ModelSerializer):
     )
     thermometer_serial = serializers.CharField(source='thermometer.serial_number', read_only=True)
     thermometer_model = serializers.CharField(source='thermometer.model_identifier', read_only=True)
+    model_identifier = serializers.CharField(write_only=True, help_text="Model identifier for verification")
+    serial_number = serializers.CharField(write_only=True, help_text="Serial number for verification")
     calibrated_by_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
         source='calibrated_by',
@@ -436,10 +438,34 @@ class ThermometerVerificationRecordSerializer(serializers.ModelSerializer):
         model = ThermometerVerificationRecord
         fields = [
             'id', 'thermometer_id', 'thermometer_serial', 'thermometer_model',
-            'date_verified', 'calibrated_instrument_no', 'reading_after_verification',
-            'calibrated_by_id', 'calibrated_by_username', 'manager_signature',
-            'corrective_action', 'photo_evidence', 'created_at'
+            'serial_number', 'model_identifier', 'date_verified', 'calibrated_instrument_no', 
+            'reading_after_verification', 'calibrated_by_id', 'calibrated_by_username', 
+            'manager_signature', 'corrective_action', 'photo_evidence', 'created_at'
         ]
+        
+    def validate(self, data):
+        # Extract the thermometer and submitted model/serial information
+        thermometer = data.get('thermometer')
+        submitted_serial = data.get('serial_number')
+        submitted_model = data.get('model_identifier')
+        
+        # Validate that the submitted serial number matches the thermometer's serial number
+        if thermometer.serial_number != submitted_serial:
+            raise serializers.ValidationError({
+                'serial_number': f"Serial number does not match the thermometer selected. Expected: {thermometer.serial_number}"
+            })
+        
+        # Validate that the submitted model identifier matches the thermometer's model
+        if thermometer.model_identifier != submitted_model:
+            raise serializers.ValidationError({
+                'model_identifier': f"Model identifier does not match the registered model for this thermometer. Expected: {thermometer.model_identifier}"
+            })
+            
+        # Remove the temporary fields that are not part of the model
+        data.pop('serial_number', None)
+        data.pop('model_identifier', None)
+        
+        return data
     
     def create(self, validated_data):
         # If calibrated_by is not provided, use the current user

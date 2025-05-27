@@ -10,6 +10,7 @@ import {
     AddCircleOutline, Visibility as VisibilityIcon, Edit as EditIcon, CheckCircle,
     RateReview as RateReviewIcon 
 } from '@mui/icons-material';
+import TemperatureLoggingSummary from '../components/thermometers/TemperatureLoggingSummary';
 // Thermometer components moved to dedicated page
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -816,7 +817,8 @@ function ManagerDashboardPage() {
                     {departmentName} Dashboard
                 </Typography>
                 
-                {/* Thermometer components moved to dedicated page */}
+                {/* Temperature Logging Status Summary */}
+                <TemperatureLoggingSummary />
                 
                 <Typography component="h2" variant="h5" gutterBottom sx={{ textAlign: 'center', mb: 4, mt: 4 }}>
                     Task Management

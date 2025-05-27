@@ -84,6 +84,16 @@ export const getTemperatureLogsByDate = async (date) => {
   return response.data;
 };
 
+export const getAreasWithLogStatus = async () => {
+  const response = await api.get('/temperature-logs/areas-with-status/');
+  return response.data;
+};
+
+export const getTemperatureLoggingManagerSummary = async () => {
+  const response = await api.get('/temperature-logs/manager-summary/');
+  return response.data;
+};
+
 export const getTemperatureLogsByArea = async (areaId) => {
   const response = await api.get(`/temperature-logs/by-area/${areaId}/`);
   return response.data;
