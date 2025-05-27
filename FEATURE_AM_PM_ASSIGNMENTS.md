@@ -8,21 +8,21 @@ This document outlines the tasks required to implement designated AM/PM staff as
 - [x] Clarify assignment duration and management (daily, ongoing, admin interface). **Decisions: Daily roster (can be scheduled weekly). Managed by Managers. UI: Explore integration with task scheduler (e.g., chips) or new UI if needed.**
 - [x] Clarify impact on current logging workflow (strict vs. flexible assignments). **Decision: Strict (only assigned staff can log for their period/department).**
 - [x] Clarify visibility for staff and managers. **Decision: Staff see assignments on `StaffTasksPage` (potentially bolder design). Managers manage via new UI/integration.**
-- [x] Define backend model structure for assignments. **(Fields: date, department, am_assigned_staff, pm_assigned_staff, audit fields).**
-- [ ] Define API endpoints for managing and fetching assignments.
+- [x] Define backend model structure for assignments. **Model `TemperatureCheckAssignment` added to `core/models.py`.**
+- [x] Define API endpoints for managing and fetching assignments. **Done: `TemperatureCheckAssignmentViewSet` in `core/views.py` and registered in `core/urls.py`.**
 - [ ] Design frontend UI for managing assignments (admin/manager view).
 - [ ] Design frontend UI for displaying assignments to staff.
 
 ## Phase 2: Backend Implementation
 
-- [ ] Create new Django model for `TemperatureCheckAssignment` (fields: date, department, am_assigned_staff, pm_assigned_staff, created_by, updated_by).
-- [ ] Create database migrations for the new model.
-- [ ] Implement Serializers for the new model.
-- [ ] Implement API ViewSet for CRUD operations on assignments.
-    - [ ] Endpoint for creating/updating assignments.
-    - [ ] Endpoint for fetching assignments (e.g., by date, department).
-    - [ ] Endpoint for staff to fetch their own assignments.
-- [ ] Implement permissions for API endpoints (e.g., only managers can assign).
+- [x] Create new Django model for `TemperatureCheckAssignment` (fields: date, department, am_assigned_staff, pm_assigned_staff, created_by, updated_by). **Done in `core/models.py`.**
+- [x] Create database migrations for the new model. **Ran `python manage.py makemigrations core` and `python manage.py migrate`.**
+- [x] Implement Serializers for the new model. **Done: `TemperatureCheckAssignmentSerializer` in `core/serializers.py`.**
+- [x] Implement API ViewSet for CRUD operations on assignments. **Done: `TemperatureCheckAssignmentViewSet` in `core/views.py`.**
+    - [x] Endpoint for creating/updating assignments. **Covered by ViewSet.**
+    - [x] Endpoint for fetching assignments (e.g., by date, department). **Covered by ViewSet `get_queryset` and query params.**
+    - [x] Endpoint for staff to fetch their own assignments. **Covered by ViewSet `get_queryset` logic.**
+- [x] Implement permissions for API endpoints (e.g., only managers can assign). **Done: `CanManageTemperatureCheckAssignments` in `core/permissions.py`.**
 - [ ] Write unit tests for backend logic and API endpoints.
 
 ## Phase 3: Frontend Implementation

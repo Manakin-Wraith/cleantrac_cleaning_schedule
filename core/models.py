@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
+from django.conf import settings
 
 # Create your models here.
 
@@ -258,7 +259,7 @@ class TemperatureLog(models.Model):
     
     def __str__(self):
         return f"{self.area_unit.name} - {self.temperature_reading}°C on {self.log_datetime.strftime('%Y-%m-%d %H:%M')} ({self.time_period})"
-    
+
     def is_within_target_range(self):
         """Check if temperature is within target range for the area unit"""
         if self.area_unit.target_temperature_min is None or self.area_unit.target_temperature_max is None:
@@ -266,6 +267,61 @@ class TemperatureLog(models.Model):
         
         return (self.area_unit.target_temperature_min <= self.temperature_reading <= 
                 self.area_unit.target_temperature_max)
+
+class TemperatureCheckAssignment(models.Model):
+    date = models.DateField()
+    department = models.ForeignKey(
+        'Department', 
+        on_delete=models.CASCADE,
+        related_name='temperature_check_assignments'
+    )
+    am_assigned_staff = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='am_temperature_assignments',
+        help_text="Staff member assigned for AM temperature checks."
+    )
+    pm_assigned_staff = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pm_temperature_assignments',
+        help_text="Staff member assigned for PM temperature checks."
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True, 
+        related_name='created_temperature_assignments',
+        help_text="User who created this assignment."
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='updated_temperature_assignments',
+        help_text="User who last updated this assignment."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('date', 'department')
+        ordering = ['-date', 'department']
+        verbose_name = "Temperature Check Assignment"
+        verbose_name_plural = "Temperature Check Assignments"
+
+    def __str__(self):
+        am_staff_name = self.am_assigned_staff.get_username() if self.am_assigned_staff else "N/A"
+        pm_staff_name = self.pm_assigned_staff.get_username() if self.pm_assigned_staff else "N/A"
+        dept_name = self.department.name if self.department else "N/A"
+        return f"Assignments for {dept_name} on {self.date} (AM: {am_staff_name}, PM: {pm_staff_name})"
+
 
 # To make UserProfile creation automatic when a User is created, we can use signals.
 # This is optional but good practice.

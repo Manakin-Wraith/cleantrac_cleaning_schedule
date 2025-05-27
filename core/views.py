@@ -9,22 +9,22 @@ from datetime import date as datetime_date
 from django.db.models import Count 
 
 from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog, PasswordResetToken, \
-    AreaUnit, Thermometer, ThermometerVerificationRecord, ThermometerVerificationAssignment, TemperatureLog
+    AreaUnit, Thermometer, ThermometerVerificationRecord, ThermometerVerificationAssignment, TemperatureLog, TemperatureCheckAssignment
 from .serializers import (
     DepartmentSerializer, UserSerializer, UserProfileSerializer, 
     CleaningItemSerializer, TaskInstanceSerializer, CompletionLogSerializer,
     CurrentUserSerializer, UserWithProfileSerializer,
     PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
     AreaUnitSerializer, ThermometerSerializer, ThermometerVerificationRecordSerializer,
-    ThermometerVerificationAssignmentSerializer, TemperatureLogSerializer
+    ThermometerVerificationAssignmentSerializer, TemperatureLogSerializer, TemperatureCheckAssignmentSerializer
 )
-from rest_framework.permissions import AllowAny # Corrected: AllowAny from DRF
+from rest_framework.permissions import AllowAny, IsAuthenticated # Corrected: AllowAny from DRF, IsAuthenticated for clarity
 from .permissions import (
     IsManagerForWriteOrAuthenticatedReadOnly, IsSuperUser, 
     CanLogCompletionAndManagerModify, IsSuperUserForWriteOrAuthenticatedReadOnly,
     UserAndProfileManagementPermissions, CanUpdateTaskStatus,
     IsSuperUserWriteOrManagerRead, IsThermometerVerificationStaff,
-    CanManageThermometerAssignments, CanLogTemperatures
+    CanManageThermometerAssignments, CanLogTemperatures, CanManageTemperatureCheckAssignments
 )
 from .sms_utils import send_sms # New import
 from django.contrib.auth.password_validation import validate_password # For password strength
@@ -719,5 +719,67 @@ class TemperatureLogViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset().filter(log_datetime__date=today)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+# AM/PM Temperature Check Assignment Views
+
+class TemperatureCheckAssignmentViewSet(viewsets.ModelViewSet):
+    queryset = TemperatureCheckAssignment.objects.all().order_by('-date', 'department__name')
+    serializer_class = TemperatureCheckAssignmentSerializer
+    permission_classes = [CanManageTemperatureCheckAssignments] 
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset() # Start with the base queryset
+
+        if not user.is_authenticated: # Should be caught by permissions, but as a safeguard
+            return queryset.none()
+
+        if user.is_superuser:
+            # Superusers see all assignments initially, before query param filtering
+            pass # No change to queryset needed here for superuser visibility
+        else:
+            try:
+                user_profile = user.profile
+                if user_profile.role == 'manager':
+                    # Managers see assignments for their own department if they have one.
+                    # If a manager is not assigned to a department, they see all (global manager for this resource).
+                    if user_profile.department:
+                        queryset = queryset.filter(department=user_profile.department)
+                    # else: manager not assigned to a department, sees all (no further filtering here)
+                elif user_profile.role == 'staff':
+                    # Staff see assignments for their department
+                    if user_profile.department:
+                        queryset = queryset.filter(department=user_profile.department)
+                    else:
+                        # Staff not in a department see no assignments
+                        queryset = queryset.none()
+                else: # Other roles?
+                    queryset = queryset.none() # Default to no assignments if role is not recognized
+            except AttributeError: # No profile
+                queryset = queryset.none() # No profile, no assignments
+
+        # Further filtering by query parameters (e.g., date, department_id)
+        date_param = self.request.query_params.get('date')
+        if date_param:
+            try:
+                # Validate date format if necessary, e.g., datetime_date.fromisoformat(date_param)
+                queryset = queryset.filter(date=date_param)
+            except ValueError:
+                # Handle invalid date format, perhaps return empty or raise error
+                pass # For now, ignore invalid date format, or could return queryset.none()
+        
+        department_id_param = self.request.query_params.get('department_id')
+        if department_id_param:
+            queryset = queryset.filter(department_id=department_id_param)
+            
+        return queryset # Already ordered by default queryset definition
+
+    def perform_create(self, serializer):
+        """Set the created_by field to the current user."""
+        serializer.save(created_by=self.request.user)
+
+    def perform_update(self, serializer):
+        """Set the updated_by field to the current user."""
+        serializer.save(updated_by=self.request.user)
 
 # Management Commands related views (if any in future)
