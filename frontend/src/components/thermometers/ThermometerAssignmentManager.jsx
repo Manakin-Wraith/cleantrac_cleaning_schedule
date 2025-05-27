@@ -4,15 +4,19 @@ import {
   TextField, Grid, Card, CardContent, CardActions, Divider,
   FormControl, InputLabel, MenuItem, Select, List, ListItem, ListItemText
 } from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { useTheme } from '@mui/material/styles';
 import PersonIcon from '@mui/icons-material/Person';
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
-import { format } from 'date-fns';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import { format, addDays } from 'date-fns';
 import { 
   getVerificationAssignments, 
   createVerificationAssignment,
   updateVerificationAssignment,
-  getCurrentAssignment
+  getCurrentAssignment,
+  getAllCurrentAssignments
 } from '../../services/thermometerService';
 import { getUsers } from '../../services/userService';
 import { getCurrentUser } from '../../services/authService';
@@ -22,12 +26,15 @@ const ThermometerAssignmentManager = () => {
   const [error, setError] = useState('');
   const [staffUsers, setStaffUsers] = useState([]);
   const [currentAssignment, setCurrentAssignment] = useState(null);
+  const [allAssignments, setAllAssignments] = useState([]);
   const [showAssignmentForm, setShowAssignmentForm] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [formData, setFormData] = useState({
     staff_member_id: '',
     department_id: '',
-    notes: ''
+    time_period: 'BOTH',
+    notes: '',
+    assigned_date: new Date()
   });
   const theme = useTheme();
 
@@ -56,13 +63,18 @@ const ThermometerAssignmentManager = () => {
         );
         setStaffUsers(staffOnlyUsers);
         
-        // Get current thermometer verification assignment
+        // Get all current thermometer verification assignments
         try {
-          const assignmentData = await getCurrentAssignment();
-          setCurrentAssignment(assignmentData);
+          const assignments = await getAllCurrentAssignments();
+          setAllAssignments(assignments || []);
+          
+          // For backward compatibility, also set currentAssignment
+          const defaultAssignment = assignments.find(a => a.time_period === 'BOTH') || 
+                                   assignments.find(a => a.time_period === 'AM') || 
+                                   assignments[0];
+          setCurrentAssignment(defaultAssignment || null);
         } catch (assignmentErr) {
-          // It's okay if there's no current assignment
-          console.log('No current thermometer verification assignment found');
+          console.log('No current thermometer verification assignments found');
         }
       } catch (err) {
         console.error("Failed to load staff and assignment data:", err);
@@ -79,13 +91,19 @@ const ThermometerAssignmentManager = () => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+  
+  const handleDateChange = (newDate) => {
+    setFormData(prev => ({ ...prev, assigned_date: newDate }));
+  };
 
   const handleShowAssignmentForm = () => {
     setShowAssignmentForm(true);
     setFormData({
       staff_member_id: (currentAssignment && currentAssignment.staff_member != null) ? currentAssignment.staff_member : '',
       department_id: currentUser?.profile?.department_id || '',
-      notes: currentAssignment?.notes || ''
+      time_period: currentAssignment?.time_period || 'BOTH',
+      notes: currentAssignment?.notes || '',
+      assigned_date: currentAssignment?.assigned_date ? new Date(currentAssignment.assigned_date) : new Date()
     });
   };
 
@@ -115,22 +133,30 @@ const ThermometerAssignmentManager = () => {
       const assignmentData = {
         staff_member_id: staffId,
         department_id: formData.department_id,
+        time_period: formData.time_period || 'BOTH',
         notes: formData.notes || '',
         is_active: true,
-        // Add date in YYYY-MM-DD format to avoid datetime issues
-        assignment_date: format(new Date(), 'yyyy-MM-dd')
+        // Use the selected date from the date picker
+        assigned_date: format(formData.assigned_date, 'yyyy-MM-dd')
       };
       
       console.log('Creating assignment with data:', assignmentData);
       
-      if (currentAssignment) {
-        // If there's a current assignment, update it to inactive first
+      // Check for existing assignments with the same time period
+      const existingAssignments = allAssignments.filter(a => 
+        (a.time_period === assignmentData.time_period || 
+         a.time_period === 'BOTH' || 
+         assignmentData.time_period === 'BOTH')
+      );
+      
+      // Deactivate any conflicting assignments
+      if (existingAssignments.length > 0) {
         try {
-          await updateVerificationAssignment(currentAssignment.id, {
-            is_active: false
-          });
+          await Promise.all(existingAssignments.map(assignment => 
+            updateVerificationAssignment(assignment.id, { is_active: false })
+          ));
         } catch (updateErr) {
-          console.warn('Failed to update existing assignment, continuing with new assignment:', updateErr);
+          console.warn('Failed to update existing assignments, continuing with new assignment:', updateErr);
         }
       }
       
@@ -138,7 +164,20 @@ const ThermometerAssignmentManager = () => {
       const newAssignment = await createVerificationAssignment(assignmentData);
       
       console.log('Assignment created successfully:', newAssignment);
-      setCurrentAssignment(newAssignment);
+      
+      // Refresh the assignments list
+      const updatedAssignments = await getAllCurrentAssignments();
+      setAllAssignments(updatedAssignments || []);
+      
+      // Reset the form
+      setFormData({
+        staff_member_id: '',
+        department_id: currentUser?.profile?.department_id || '',
+        time_period: 'BOTH',
+        notes: ''
+      });
+      
+      // Close the form
       setShowAssignmentForm(false);
     } catch (err) {
       console.error("Failed to create thermometer verification assignment:", err);
@@ -201,24 +240,64 @@ const ThermometerAssignmentManager = () => {
                 
                 <form onSubmit={handleSubmitAssignment}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <FormControl fullWidth required>
+                    <FormControl fullWidth sx={{ mb: 2 }}>
                       <InputLabel id="staff-member-label">Staff Member</InputLabel>
                       <Select
                         labelId="staff-member-label"
+                        id="staff_member_id"
                         name="staff_member_id"
                         value={formData.staff_member_id}
                         onChange={handleChange}
                         label="Staff Member"
+                        required
                       >
-                        {staffUsers.map(staff => (
-                          <MenuItem key={staff.id} value={staff.id}>
-                            {staff.first_name && staff.last_name 
-                              ? `${staff.first_name} ${staff.last_name}` 
-                              : staff.username}
+                        {staffUsers.map(user => (
+                          <MenuItem key={user.id} value={user.id}>
+                            {user.first_name && user.last_name ? 
+                              `${user.first_name} ${user.last_name}` : 
+                              user.username}
                           </MenuItem>
                         ))}
                       </Select>
                     </FormControl>
+                    
+                    <FormControl fullWidth sx={{ mb: 2 }}>
+                      <InputLabel id="time-period-label">Time Period</InputLabel>
+                      <Select
+                        labelId="time-period-label"
+                        name="time_period"
+                        value={formData.time_period}
+                        onChange={handleChange}
+                        label="Time Period"
+                      >
+                        <MenuItem value="AM">Morning (AM)</MenuItem>
+                        <MenuItem value="PM">Afternoon (PM)</MenuItem>
+                        <MenuItem value="BOTH">Both AM and PM</MenuItem>
+                      </Select>
+                    </FormControl>
+                    
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                        <CalendarTodayIcon fontSize="small" sx={{ mr: 1 }} />
+                        Assignment Date
+                      </Typography>
+                      <LocalizationProvider dateAdapter={AdapterDateFns}>
+                        <DatePicker
+                          label="Assignment Date"
+                          value={formData.assigned_date}
+                          onChange={handleDateChange}
+                          minDate={new Date()}
+                          maxDate={addDays(new Date(), 30)} // Allow scheduling up to 30 days in advance
+                          renderInput={(params) => <TextField {...params} fullWidth />}
+                          slotProps={{
+                            textField: { fullWidth: true }
+                          }}
+                        />
+                      </LocalizationProvider>
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        Schedule this assignment up to 30 days in advance
+                      </Typography>
+                    </Box>
                     
                     <TextField
                       name="notes"
@@ -265,14 +344,25 @@ const ThermometerAssignmentManager = () => {
                     <List>
                       <ListItem>
                         <ListItemText 
-                          primary="Assigned Staff" 
-                          secondary={getStaffName(currentAssignment.staff_member)}
-                        />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText 
-                          primary="Assigned Date" 
-                          secondary={new Date(currentAssignment.assigned_date).toLocaleDateString()}
+                          primary={
+                            <Typography variant="body1" component="span">
+                              <strong>Assigned To:</strong> {getStaffName(currentAssignment.staff_member)}
+                            </Typography>
+                          }
+                          secondary={
+                            <Box component="div">
+                              <Typography variant="body2" component="div" sx={{ mt: 1 }}>
+                                <strong>Department:</strong> {currentAssignment.department_name}
+                              </Typography>
+                              <Typography variant="body2" component="div" sx={{ mt: 1 }}>
+                                <strong>Time Period:</strong> {currentAssignment.time_period === 'AM' ? 'Morning (AM)' : 
+                                                                   currentAssignment.time_period === 'PM' ? 'Afternoon (PM)' : 'Both AM and PM'}
+                              </Typography>
+                              <Typography variant="body2" component="div" sx={{ mt: 1 }}>
+                                <strong>Date Assigned:</strong> {format(new Date(currentAssignment.assigned_date), 'MMMM d, yyyy')}
+                              </Typography>
+                            </Box>
+                          }
                         />
                       </ListItem>
                       {currentAssignment.notes && (

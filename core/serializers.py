@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from .models import (
     Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
     AreaUnit, Thermometer, ThermometerVerificationRecord, 
-    ThermometerVerificationAssignment, TemperatureLog, TemperatureCheckAssignment
+    ThermometerVerificationAssignment, TemperatureLog
 )
 from rest_framework.validators import UniqueValidator
 
@@ -474,7 +474,7 @@ class ThermometerVerificationAssignmentSerializer(serializers.ModelSerializer):
         model = ThermometerVerificationAssignment
         fields = [
             'id', 'staff_member_id', 'staff_member_username', 'staff_member_name',
-            'department_id', 'department_name', 'assigned_date',
+            'department_id', 'department_name', 'assigned_date', 'time_period',
             'assigned_by_id', 'assigned_by_username', 'is_active',
             'notes', 'created_at', 'updated_at'
         ]
@@ -613,71 +613,4 @@ class TemperatureLogSerializer(serializers.ModelSerializer):
             # Consider if an error should be raised here if department_for_validation is None but a thermometer is present.
             pass
 
-        return data
-
-# AM/PM Temperature Check Assignment Serializers
-
-class TemperatureCheckAssignmentSerializer(serializers.ModelSerializer):
-    department_name = serializers.CharField(source='department.name', read_only=True)
-    department = serializers.PrimaryKeyRelatedField(
-        queryset=Department.objects.all(), 
-        source='department' # This should map to the 'department' field on the model
-    )
-
-    am_assigned_staff_details = UserSerializer(source='am_assigned_staff', read_only=True)
-    am_assigned_staff = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), 
-        allow_null=True, 
-        required=False, 
-        source='am_assigned_staff' # Explicitly map to model field
-    )
-
-    pm_assigned_staff_details = UserSerializer(source='pm_assigned_staff', read_only=True)
-    pm_assigned_staff = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), 
-        allow_null=True, 
-        required=False, 
-        source='pm_assigned_staff' # Explicitly map to model field
-    )
-
-    created_by_details = UserSerializer(source='created_by', read_only=True)
-    updated_by_details = UserSerializer(source='updated_by', read_only=True)
-
-    class Meta:
-        model = TemperatureCheckAssignment
-        fields = [
-            'id', 
-            'date', 
-            'department',             # Writeable FK (ID)
-            'department_name',        # Readable department name
-            'am_assigned_staff',      # Writeable FK (ID)
-            'am_assigned_staff_details', # Readable user details
-            'pm_assigned_staff',      # Writeable FK (ID)
-            'pm_assigned_staff_details', # Readable user details
-            'created_by_details',     # Readable
-            'updated_by_details',     # Readable
-            'created_at', 
-            'updated_at'
-        ]
-        read_only_fields = ['created_at', 'updated_at']
-        # For write operations, 'department', 'am_assigned_staff', 'pm_assigned_staff' are used.
-        # 'created_by' and 'updated_by' are typically set in the view.
-
-    def validate(self, data):
-        # Example validation: Ensure assigned staff belong to the assignment's department if required.
-        # This depends on UserProfile being correctly linked to User and Department.
-        # department = data.get('department')
-        # am_staff = data.get('am_assigned_staff')
-        # pm_staff = data.get('pm_assigned_staff')
-
-        # if department and am_staff:
-        #     if not hasattr(am_staff, 'profile') or am_staff.profile.department != department:
-        #         raise serializers.ValidationError({
-        #             "am_assigned_staff": f"AM staff '{am_staff.username}' must belong to the department '{department.name}'."
-        #         })
-        # if department and pm_staff:
-        #     if not hasattr(pm_staff, 'profile') or pm_staff.profile.department != department:
-        #         raise serializers.ValidationError({
-        #             "pm_assigned_staff": f"PM staff '{pm_staff.username}' must belong to the department '{department.name}'."
-        #         })
         return data

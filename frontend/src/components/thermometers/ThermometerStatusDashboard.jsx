@@ -8,11 +8,13 @@ import ThermostatIcon from '@mui/icons-material/Thermostat';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PersonIcon from '@mui/icons-material/Person';
 import { 
   getThermometers,
   getThermometersNeedingVerification,
   getThermometersExpiringVerification,
-  getCurrentAssignment
+  getCurrentAssignment,
+  getAllCurrentAssignments
 } from '../../services/thermometerService';
 
 const ThermometerStatusDashboard = () => {
@@ -25,6 +27,7 @@ const ThermometerStatusDashboard = () => {
     expiringVerification: 0
   });
   const [currentAssignment, setCurrentAssignment] = useState(null);
+  const [allAssignments, setAllAssignments] = useState([]);
   const theme = useTheme();
 
   useEffect(() => {
@@ -56,13 +59,18 @@ const ThermometerStatusDashboard = () => {
           expiringVerification: expiringVerificationThermometers.length
         });
         
-        // Get current thermometer verification assignment
+        // Get all current thermometer verification assignments
         try {
-          const assignment = await getCurrentAssignment();
-          setCurrentAssignment(assignment);
+          const assignments = await getAllCurrentAssignments();
+          setAllAssignments(assignments || []);
+          
+          // For backward compatibility, also set currentAssignment
+          const defaultAssignment = assignments.find(a => a.time_period === 'BOTH') || 
+                                   assignments.find(a => a.time_period === 'AM') || 
+                                   assignments[0];
+          setCurrentAssignment(defaultAssignment || null);
         } catch (assignmentErr) {
-          // It's okay if there's no current assignment
-          console.log('No current thermometer verification assignment found');
+          console.log('No current thermometer verification assignments found');
         }
       } catch (err) {
         console.error("Failed to load thermometer stats:", err);
@@ -194,31 +202,110 @@ const ThermometerStatusDashboard = () => {
           
           <Box>
             <Typography variant="h6" gutterBottom>
-              Current Assignment
+              Current Assignments
             </Typography>
             
-            {currentAssignment ? (
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="body1">
-                    <strong>Assigned To:</strong> {currentAssignment.staff_member_name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    <strong>Assigned Date:</strong> {currentAssignment.assigned_date}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    <strong>Assigned By:</strong> {currentAssignment.assigned_by_username}
-                  </Typography>
-                  {currentAssignment.notes && (
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      <strong>Notes:</strong> {currentAssignment.notes}
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
+            {allAssignments.length > 0 ? (
+              <Grid container spacing={2}>
+                {/* Morning Assignment */}
+                <Grid item xs={12} md={6}>
+                  <Card variant="outlined" sx={{ height: '100%' }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Chip 
+                          label="Morning (AM)"
+                          size="small"
+                          color="primary"
+                          sx={{ mr: 1 }}
+                        />
+                      </Box>
+                      
+                      {allAssignments.find(a => a.time_period === 'AM' || a.time_period === 'BOTH') ? (
+                        <>
+                          {allAssignments
+                            .filter(a => a.time_period === 'AM' || a.time_period === 'BOTH')
+                            .map(assignment => (
+                              <Box key={assignment.id} sx={{ mb: 2 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                  <PersonIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+                                  <Typography variant="h6">
+                                    {assignment.staff_member_name || assignment.staff_member_username}
+                                  </Typography>
+                                </Box>
+                                <Typography variant="body2" color="text.secondary">
+                                  Assigned on {new Date(assignment.assigned_date).toLocaleDateString()}
+                                </Typography>
+                                {assignment.notes && (
+                                  <Typography variant="body2" sx={{ mt: 1 }}>
+                                    <strong>Notes:</strong> {assignment.notes}
+                                  </Typography>
+                                )}
+                              </Box>
+                            ))
+                          }
+                        </>
+                      ) : (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            No staff member assigned for morning verification.
+                          </Typography>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+                
+                {/* Afternoon Assignment */}
+                <Grid item xs={12} md={6}>
+                  <Card variant="outlined" sx={{ height: '100%' }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Chip 
+                          label="Afternoon (PM)"
+                          size="small"
+                          color="secondary"
+                          sx={{ mr: 1 }}
+                        />
+                      </Box>
+                      
+                      {allAssignments.find(a => a.time_period === 'PM' || a.time_period === 'BOTH') ? (
+                        <>
+                          {allAssignments
+                            .filter(a => a.time_period === 'PM' || a.time_period === 'BOTH')
+                            .map(assignment => (
+                              <Box key={assignment.id} sx={{ mb: 2 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                  <PersonIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+                                  <Typography variant="h6">
+                                    {assignment.staff_member_name || assignment.staff_member_username}
+                                  </Typography>
+                                </Box>
+                                <Typography variant="body2" color="text.secondary">
+                                  Assigned on {new Date(assignment.assigned_date).toLocaleDateString()}
+                                </Typography>
+                                {assignment.notes && (
+                                  <Typography variant="body2" sx={{ mt: 1 }}>
+                                    <strong>Notes:</strong> {assignment.notes}
+                                  </Typography>
+                                )}
+                              </Box>
+                            ))
+                          }
+                        </>
+                      ) : (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            No staff member assigned for afternoon verification.
+                          </Typography>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
             ) : (
               <Alert severity="info">
-                No staff member is currently assigned to thermometer verification duties.
+                No staff members are currently assigned to thermometer verification duties.
               </Alert>
             )}
           </Box>

@@ -68,6 +68,7 @@ function ManagerDashboardPage() {
     const [departmentTasks, setDepartmentTasks] = useState([]);
     const [localTasks, setLocalTasks] = useState([]); // Store locally created/modified tasks
     const [cleaningItems, setCleaningItems] = useState([]);
+    const [scheduledCleaningItemIds, setScheduledCleaningItemIds] = useState([]); // Track scheduled cleaning items
     const [staffUsers, setStaffUsers] = useState([]);
     const [loadingData, setLoadingData] = useState(false);
     const [dataError, setDataError] = useState('');
@@ -210,7 +211,17 @@ function ManagerDashboardPage() {
             )];
             setDepartmentTasks(combinedTasks);
             console.log('[ManagerDashboardPage] departmentTasks set in fetchManagerData:', JSON.stringify(tasksResponse, null, 2)); 
-            setCleaningItems(itemsResponse); 
+            setCleaningItems(itemsResponse);
+            
+            // Update the scheduled cleaning item IDs based on the tasks for the selected date
+            const scheduledItemIds = combinedTasks
+                .map(task => typeof task.cleaning_item_id === 'number' ? 
+                    task.cleaning_item_id : 
+                    (typeof task.cleaning_item === 'object' && task.cleaning_item?.id ? 
+                        task.cleaning_item.id : null))
+                .filter(id => id !== null);
+            
+            setScheduledCleaningItemIds(scheduledItemIds);
 
         } catch (err) {
             console.error("Failed to load manager dashboard data:", err);
@@ -387,6 +398,9 @@ function ManagerDashboardPage() {
                 // 2. Update React state
                 setLocalTasks(prev => [...prev, newTaskWithDetails]);
                 setDepartmentTasks(prev => [...prev, newTaskWithDetails]);
+                
+                // Add the cleaning item ID to the scheduled items list
+                setScheduledCleaningItemIds(prev => [...prev, payload.cleaning_item_id_write]);
 
                 // 3. Close modal
                 setIsCreateModalOpen(false);
@@ -826,33 +840,40 @@ function ManagerDashboardPage() {
                                     <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
                                         Available Tasks (Drag to Schedule)
                                     </Typography>
+                                    {cleaningItems.filter(item => !scheduledCleaningItemIds.includes(item.id)).length === 0 && (
+                                        <Typography variant="body2" sx={{ fontStyle: 'italic', textAlign: 'center', my: 2 }}>
+                                            All tasks have been scheduled
+                                        </Typography>
+                                    )}
                                     <Grid container spacing={1}>
-                                        {cleaningItems.map(item => (
-                                            <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
-                                                <Box
-                                                    className="draggable-cleaning-item"
-                                                    sx={{
-                                                        p: 1,
-                                                        backgroundColor: theme.palette.info.light, 
-                                                        color: theme.palette.info.contrastText,
-                                                        borderRadius: 1,
-                                                        cursor: 'grab',
-                                                        textAlign: 'center',
-                                                        fontSize: '0.875rem',
-                                                        '&:hover': {
-                                                            backgroundColor: theme.palette.info.main,
-                                                        }
-                                                    }}
-                                                    data-event={JSON.stringify({
-                                                        title: item.name,
-                                                        cleaning_item_id: item.id,
-                                                        duration: item.default_duration || "01:00" 
-                                                    })}
-                                                >
-                                                    {item.name}
-                                                </Box>
-                                            </Grid>
-                                        ))}
+                                        {cleaningItems
+                                            .filter(item => !scheduledCleaningItemIds.includes(item.id))
+                                            .map(item => (
+                                                <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
+                                                    <Box
+                                                        className="draggable-cleaning-item"
+                                                        sx={{
+                                                            p: 1,
+                                                            backgroundColor: theme.palette.info.light, 
+                                                            color: theme.palette.info.contrastText,
+                                                            borderRadius: 1,
+                                                            cursor: 'grab',
+                                                            textAlign: 'center',
+                                                            fontSize: '0.875rem',
+                                                            '&:hover': {
+                                                                backgroundColor: theme.palette.info.main,
+                                                            }
+                                                        }}
+                                                        data-event={JSON.stringify({
+                                                            title: item.name,
+                                                            cleaning_item_id: item.id,
+                                                            duration: item.default_duration || "01:00" 
+                                                        })}
+                                                    >
+                                                        {item.name}
+                                                    </Box>
+                                                </Grid>
+                                            ))}
                                     </Grid>
                                 </Box>
                             </Paper>

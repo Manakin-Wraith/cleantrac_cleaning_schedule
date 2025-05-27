@@ -11,10 +11,12 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
 2. **Implement Thermometer Verification System**
    - Create data models (Thermometer, ThermometerVerificationRecord, TemperatureLog)
    - Build Thermometer Verification Screen
-   - Implement Temperature Logging workflow with verified thermometer requirement
+   - ✅ Implement Temperature Logging workflow with verified thermometer requirement
    - Add dashboard indicators for thermometer status
    - Integrate camera component for verification and logs
-   - Implement staff assignment system for thermometer verification responsibility
+   - ✅ Implement staff assignment system for thermometer verification responsibility
+   - ✅ Add date picker for scheduling thermometer verification assignments
+   - ✅ Implement conditional visibility for thermometer sections based on staff assignments
 
 3. **Enhance UI/UX**
    - Modernize header and sidebar layout
@@ -85,7 +87,7 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
     - [ ] Enhance visual design with subtle animations and depth
     - [ ] Add improved user profile section in header
     - [ ] Create more space-efficient header design
-    - [ ] Add dark mode toggle
+    - [ ] Add dark mode support with theme toggle
 - **[x] Department Management System**
   - [x] API: CRUD operations for departments (Superuser: CRUD, Manager: Read)
   - [x] Frontend: Implement Department Management UI
@@ -199,7 +201,18 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
 - **[ ] 3. Temperature Logging Workflow**
   - [x] UI: Thermometer Selection Step
     - [x] Modal dialog or initial section for selecting verified thermometer (Implemented, now uses centrally managed state from StaffTasksPage)
-    - [x] **Resolved**: PM reminder implementation and associated bug fixes (401 errors, department ID usage).
+  - [x] API: Retrieve Temperature Logs by Date
+    - [x] Implement endpoint in TemperatureLogViewSet to get logs by specific date
+    - [x] Add service function to fetch temperature logs by date
+  - [x] UI: Display Logged Areas
+    - [x] Show summary of logged areas on StaffTasksPage
+    - [x] Organize logged areas by time period (AM/PM)
+    - [x] Add visual indicators for temperature status (within/outside range)
+  - [x] Access Control: Conditional Visibility
+    - [x] Only show thermometer verification and temperature logging sections to assigned staff
+    - [x] Display informative message when staff is not assigned to thermometer duties
+    - [x] **Resolved**: Debugged and fixed 400 Bad Request error during temperature log submission (department validation logic in serializer).
+    - [x] **Resolved**: Fixed KeyError in Django Admin for `is_within_target_range` display on TemperatureLog list.
   - [ ] UI: Temperature Data Entry Step
     - [ ] Form fields for: Area/Unit, Temperature Reading, Time Period (AM/PM), Corrective Action (optional), Photo (optional)
   - [ ] UI: Error states and guidance for unverified thermometers

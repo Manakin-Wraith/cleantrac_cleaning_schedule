@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Container, Typography, Box, CircularProgress, Paper, Grid, List, ListItem, ListItemText, Divider, Chip, Alert, Button, Card, CardContent, CardActions } from '@mui/material';
+import { Container, Typography, Box, CircularProgress, Paper, Grid, List, ListItem, ListItemText, Divider, Chip, Alert, Button, Card, CardContent, CardActions, Badge } from '@mui/material';
 import { getCurrentUser } from '../services/authService';
 import { getTaskInstances, updateTaskInstance } from '../services/taskService'; 
-import { getThermometersNeedingVerification, getVerifiedThermometers } from '../services/thermometerService'; 
-import { getTemperatureLogs } from '../services/temperatureLogService'; 
+import { getThermometersNeedingVerification, getVerifiedThermometers, getTemperatureLogsByDate, getCurrentAssignment } from '../services/thermometerService'; 
 import { formatDate } from '../utils/dateUtils'; 
 import { useTheme, alpha } from '@mui/material/styles';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -13,6 +12,7 @@ import BuildIcon from '@mui/icons-material/Build'; // For Equipment
 import ScienceIcon from '@mui/icons-material/Science'; // For Chemicals
 import ListAltIcon from '@mui/icons-material/ListAlt'; // For Method
 import NotesIcon from '@mui/icons-material/Notes'; // For Notes
+import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
 import ThermometerVerificationSection from '../components/thermometers/ThermometerVerificationSection';
 import TemperatureLoggingSection from '../components/thermometers/TemperatureLoggingSection';
 
@@ -38,67 +38,71 @@ function StaffTasksPage() {
     const [verifiedThermometers, setVerifiedThermometers] = useState([]);
     const [loadingThermometers, setLoadingThermometers] = useState(true);
     const [thermometerError, setThermometerError] = useState('');
+    
+    // State for temperature logging data
+    const [todaysLogs, setTodaysLogs] = useState([]);
+    const [loggedAreas, setLoggedAreas] = useState([]);
+    const [loadingLogs, setLoadingLogs] = useState(true);
+    const [areaUnits, setAreaUnits] = useState([]);
+    const [assignment, setAssignment] = useState(null);
+    const [allowedTimePeriods, setAllowedTimePeriods] = useState(['AM', 'PM']);
 
-    // New state for today's temperature logs
-    const [todaysTemperatureLogs, setTodaysTemperatureLogs] = useState([]);
-    const [loadingTodaysLogs, setLoadingTodaysLogs] = useState(true);
-    const [todaysLogsError, setTodaysLogsError] = useState('');
-
-    // Function to fetch both types of thermometer lists
+    // Function to fetch both types of thermometer lists and temperature logs
     const fetchThermometerData = useCallback(async () => {
         if (!user || !user.id) return; // Ensure user context is available
 
         setLoadingThermometers(true);
+        setLoadingLogs(true);
         setThermometerError('');
         try {
-            const [needingVerification, verified] = await Promise.all([
+            // Get today's date in YYYY-MM-DD format
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Fetch all required data in parallel
+            const [needingVerification, verified, todayLogsData, assignmentData] = await Promise.all([
                 getThermometersNeedingVerification(),
                 getVerifiedThermometers(),
+                getTemperatureLogsByDate(today),
+                getCurrentAssignment()
             ]);
+            
             setThermometersNeedingVerification(needingVerification || []);
             setVerifiedThermometers(verified || []);
-            console.log('Fetched thermometers needing verification:', needingVerification);
-            console.log('Fetched verified thermometers:', verified);
+            setTodaysLogs(todayLogsData || []);
+            setAssignment(assignmentData || null);
+            
+            // Process logs to get logged areas
+            const loggedAreaIds = [...new Set(todayLogsData.map(log => log.area_unit_id))];
+            setLoggedAreas(loggedAreaIds);
+            
+            // Set allowed time periods based on assignment
+            if (assignmentData) {
+                if (assignmentData.time_period === 'AM') {
+                    setAllowedTimePeriods(['AM']);
+                } else if (assignmentData.time_period === 'PM') {
+                    setAllowedTimePeriods(['PM']);
+                } else {
+                    // BOTH - allow both time periods
+                    setAllowedTimePeriods(['AM', 'PM']);
+                }
+            }
+            
+            // Extract area units from logs
+            const areas = [...new Set(todayLogsData.map(log => ({
+                id: log.area_unit_id,
+                name: log.area_unit_name,
+                target_temperature_min: log.target_temperature_min,
+                target_temperature_max: log.target_temperature_max
+            })))];
+            setAreaUnits(areas);
+            
         } catch (err) {
-            console.error("Failed to load thermometer data:", err);
-            setThermometerError(err.message || 'Failed to load thermometer data.');
-            // Set to empty arrays on error to prevent rendering issues with undefined
-            setThermometersNeedingVerification([]);
-            setVerifiedThermometers([]);
+            console.error('Error fetching thermometer data:', err);
+            setThermometerError('Failed to load thermometer data. Please refresh the page.');
         } finally {
             setLoadingThermometers(false);
         }
     }, [user]); // Dependency on user ensures it runs when user is loaded
-
-    // Function to fetch today's temperature logs
-    const fetchTodaysTemperatureLogs = useCallback(async () => {
-        if (!user || !user.profile?.department_id) { 
-            console.log('fetchTodaysTemperatureLogs: Pre-conditions not met. User:', user ? 'exists' : 'null', 'Profile:', user?.profile ? 'exists' : 'null/undefined', 'Department ID:', user?.profile?.department_id ? user.profile.department_id : 'null/undefined');
-            return;
-        }
-
-        console.log('fetchTodaysTemperatureLogs: Attempting to fetch logs for department ID:', user.profile.department_id);
-        setLoadingTodaysLogs(true); 
-        setTodaysLogsError('');
-        try {
-            const todayStr = getTodayDateString();
-            const params = {
-                department: user.profile.department_id, 
-                date: todayStr,
-            };
-            console.log('fetchTodaysTemperatureLogs: Params for getTemperatureLogs:', params);
-            const logs = await getTemperatureLogs(params);
-            setTodaysTemperatureLogs(logs || []);
-            console.log('Fetched today\'s temperature logs:', logs); 
-        } catch (err) {
-            console.error("Failed to load today's temperature logs (in StaffTasksPage catch):", err);
-            setTodaysLogsError(err.message || 'Failed to load today\'s temperature logs.');
-            setTodaysTemperatureLogs([]);
-        } finally {
-            console.log('fetchTodaysTemperatureLogs: Setting loadingTodaysLogs to false in finally block.');
-            setLoadingTodaysLogs(false);
-        }
-    }, [user]); // Dependency on user
 
     useEffect(() => {
         const fetchUserDataAndTasks = async () => {
@@ -138,11 +142,9 @@ function StaffTasksPage() {
     // useEffect to fetch thermometer data when user is loaded or fetchThermometerData function reference changes
     useEffect(() => {
         if (user && user.id) {
-            console.log('User object in useEffect for fetching logs & thermometers:', JSON.stringify(user, null, 2));
             fetchThermometerData();
-            fetchTodaysTemperatureLogs(); // Fetch logs when user is available
         }
-    }, [user, fetchThermometerData, fetchTodaysTemperatureLogs]); // Re-run if user or the callbacks change
+    }, [user, fetchThermometerData]); // Re-run if user or the callback itself changes
 
     const handleSubmitForReview = async (taskId) => {
         setUpdatingTask(taskId);
@@ -192,49 +194,146 @@ function StaffTasksPage() {
 
             {error && <Alert severity="warning" sx={{ mb: 2 }}>{error}</Alert>} 
             {thermometerError && <Alert severity="error" sx={{ mb: 2 }}>{thermometerError}</Alert>}
-            {todaysLogsError && <Alert severity="error" sx={{ mb: 2 }}>{todaysLogsError}</Alert>} 
 
-            {/* Thermometer Sections */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 2 }}>
-                        <Typography variant="h6" gutterBottom>Thermometer Verification</Typography>
-                        {loadingUser || loadingThermometers ? (
-                            <CircularProgress />
-                        ) : user && user.id ? (
-                            <ThermometerVerificationSection 
-                                thermometers={thermometersNeedingVerification}
-                                onVerificationSuccess={fetchThermometerData} // Pass the callback here
-                                isLoading={loadingThermometers}
-                                // error={thermometerError} // Error is handled globally or could be more specific if needed
-                                departmentId={user.profile?.department} // Pass departmentId if needed by the component
-                            />
-                        ) : (
-                            <Typography>User data not available.</Typography>
-                        )}
-                    </Paper>
+            {/* Thermometer Sections - Only shown when assigned */}
+            {!loadingUser && !loadingThermometers && assignment && (
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    {/* Thermometer Verification Section */}
+                    <Grid item xs={12} md={6}>
+                        <Paper elevation={2} sx={{ p: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6">Thermometer Verification</Typography>
+                                <Box sx={{ ml: 2 }}>
+                                    <Alert severity="info" icon={false} sx={{ py: 0, px: 1 }}>
+                                        <Typography variant="caption">
+                                            You are assigned to thermometer verification duties
+                                        </Typography>
+                                    </Alert>
+                                </Box>
+                            </Box>
+                            {loadingThermometers ? (
+                                <CircularProgress />
+                            ) : user && user.id ? (
+                                <ThermometerVerificationSection 
+                                    thermometers={thermometersNeedingVerification}
+                                    onVerificationSuccess={fetchThermometerData}
+                                    isLoading={loadingThermometers}
+                                    departmentId={user.profile?.department}
+                                />
+                            ) : (
+                                <Typography>User data not available.</Typography>
+                            )}
+                        </Paper>
+                    </Grid>
+                    
+                    {/* Temperature Logging Section */}
+                    <Grid item xs={12} md={6}>
+                        <Paper elevation={2} sx={{ p: 2 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6">Temperature Logging</Typography>
+                                <Chip 
+                                    label={assignment.time_period === 'AM' ? 'Morning (AM)' : 
+                                           assignment.time_period === 'PM' ? 'Afternoon (PM)' : 'Both AM and PM'}
+                                    color={assignment.time_period === 'BOTH' ? 'primary' : 'secondary'}
+                                    size="small"
+                                />
+                            </Box>
+                    
+                            {/* Temperature Logging Summary */}
+                            {!loadingLogs && todaysLogs.length > 0 && (
+                                <Box sx={{ mb: 3, p: 2, bgcolor: alpha(theme.palette.success.light, 0.1), borderRadius: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                        <DeviceThermostatIcon sx={{ mr: 1, color: theme.palette.success.main }} />
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+                                            Today's Logged Areas ({loggedAreas.length})
+                                        </Typography>
+                                    </Box>
+                                    
+                                    <Grid container spacing={1} sx={{ mt: 1 }}>
+                                        {allowedTimePeriods.map(period => {
+                                            // Filter logs for this time period
+                                            const periodLogs = todaysLogs.filter(log => log.time_period === period);
+                                            const periodAreaIds = [...new Set(periodLogs.map(log => log.area_unit_id))];
+                                            
+                                            return (
+                                                <Grid item xs={12} sm={6} key={period}>
+                                                    <Box sx={{ 
+                                                        p: 1.5, 
+                                                        bgcolor: theme.palette.background.paper,
+                                                        borderRadius: 1,
+                                                        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`
+                                                    }}>
+                                                        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                                                            {period === 'AM' ? 'Morning' : 'Afternoon'} ({periodAreaIds.length} areas)
+                                                        </Typography>
+                                                        
+                                                        {periodAreaIds.length > 0 ? (
+                                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                                {periodAreaIds.map(areaId => {
+                                                                    const areaLog = periodLogs.find(log => log.area_unit_id === areaId);
+                                                                    const isWithinRange = areaLog && 
+                                                                        parseFloat(areaLog.temperature_reading) >= parseFloat(areaLog.target_temperature_min) && 
+                                                                        parseFloat(areaLog.temperature_reading) <= parseFloat(areaLog.target_temperature_max);
+                                                                    
+                                                                    return (
+                                                                        <Chip 
+                                                                            key={areaId}
+                                                                            size="small"
+                                                                            label={areaLog?.area_unit_name || `Area ${areaId}`}
+                                                                            sx={{ 
+                                                                                bgcolor: isWithinRange ? alpha(theme.palette.success.light, 0.2) : alpha(theme.palette.error.light, 0.2),
+                                                                                color: isWithinRange ? theme.palette.success.dark : theme.palette.error.dark,
+                                                                                '& .MuiBadge-badge': {
+                                                                                    bgcolor: isWithinRange ? theme.palette.success.main : theme.palette.error.main,
+                                                                                    color: 'white'
+                                                                                }
+                                                                            }}
+                                                                            icon={<DeviceThermostatIcon fontSize="small" />}
+                                                                        />
+                                                                    );
+                                                                })}
+                                                            </Box>
+                                                        ) : (
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                No areas logged for this time period.
+                                                            </Typography>
+                                                        )}
+                                                    </Box>
+                                                </Grid>
+                                            );
+                                        })}
+                                    </Grid>
+                                </Box>
+                            )}
+                            
+                            {loadingUser || loadingThermometers ? (
+                                <CircularProgress />
+                            ) : user && user.id ? (
+                                <TemperatureLoggingSection 
+                                    verifiedThermometers={verifiedThermometers}
+                                    isLoading={loadingThermometers}
+                                    departmentId={user.profile?.department}
+                                    staffId={user.id}
+                                    currentUser={user}
+                                />
+                            ) : (
+                                <Typography>User data not available.</Typography>
+                            )}
+                        </Paper>
+                    </Grid>
                 </Grid>
-                <Grid item xs={12} md={6}>
-                    <Paper elevation={2} sx={{ p: 2 }}>
-                        <Typography variant="h6" gutterBottom>Temperature Logging</Typography>
-                        {loadingUser || loadingThermometers || loadingTodaysLogs ? (
-                            <CircularProgress />
-                        ) : user && user.id ? (
-                            <TemperatureLoggingSection 
-                                verifiedThermometers={verifiedThermometers}
-                                isLoading={loadingThermometers || loadingTodaysLogs} // Combine loading states
-                                // error={thermometerError || todaysLogsError} // Combine errors or handle separately in component
-                                departmentId={user.profile?.department}
-                                staffId={user.id}
-                                todaysTemperatureLogs={todaysTemperatureLogs} // Pass today's logs
-                                onLogSuccess={fetchTodaysTemperatureLogs} // Pass refresh function
-                            />
-                        ) : (
-                            <Typography>User data not available.</Typography>
-                        )}
-                    </Paper>
-                </Grid>
-            </Grid>
+            )}
+
+            {/* Show a message when no assignment exists */}
+            {!loadingUser && !loadingThermometers && !assignment && (
+                <Alert 
+                    severity="info" 
+                    sx={{ mb: 4 }}
+                    icon={<DeviceThermostatIcon />}
+                >
+                    You are not currently assigned to thermometer verification or temperature logging duties.
+                </Alert>
+            )}
 
             {loadingTasks ? (
                 <CircularProgress sx={{ display: 'block', margin: 'auto', mt: 4 }} />

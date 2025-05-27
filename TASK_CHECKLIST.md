@@ -95,12 +95,24 @@
 
 - **[x] `ThermometerStatusDashboard.jsx` - UI Fixes**
   - [x] Resolve MUI Grid v2 prop warnings (remove `item` prop, apply responsive props directly).
+  - [x] Update display to show AM and PM assignees separately for better visibility.
+  - [x] Reset assignment form after a staff member has been assigned.
 - **[x] `ThermometerAssignmentManager.jsx` - UI & Logic Fixes**
   - [x] Resolve MUI `Select` component "out-of-range value `undefined`" warning for `staff_member_id`.
   - [x] Ensure `department_id` is correctly included in assignment creation payload.
   - [x] Ensure `assignment_date` is correctly formatted for API.
+  - [x] Add date picker for scheduling assignments up to 30 days in advance.
+- **[x] Temperature Logging API Enhancements**
+  - [x] Add new endpoint in TemperatureLogViewSet to retrieve temperature logs by date.
+  - [x] Implement API service function to get all current thermometer verification assignments.
+- **[x] Staff Tasks Page Enhancements**
+  - [x] Enhance StaffTasksPage to display logged areas for staff assigned to AM/PM temperature logging.
+  - [x] Add visual indicators for logged areas with temperature status.
+  - [x] Implement conditional visibility for thermometer verification and temperature logging sections.
+  - [x] Show informative message when staff is not assigned to thermometer duties.
 - **[x] System Testing & Validation**
   - [x] Test `ThermometerStatusDashboard` for correct display and no console warnings.
   - [x] Test `ThermometerAssignmentManager` for assignment creation/update, ensuring no console warnings and correct data submission.
   - [x] Verify overall functionality of thermometer verification assignment.
+  - [x] Test temperature logs by date endpoint functionality.
 - **[ ] Gather User Feedback** (Post-testing)

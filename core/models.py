@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
-from django.conf import settings
 
 # Create your models here.
 
@@ -201,10 +200,17 @@ class ThermometerVerificationRecord(models.Model):
 
 class ThermometerVerificationAssignment(models.Model):
     """Tracks which staff member is responsible for thermometer verification"""
+    TIME_PERIOD_CHOICES = [
+        ('AM', 'Morning'),
+        ('PM', 'Afternoon'),
+        ('BOTH', 'Both AM and PM'),
+    ]
+    
     staff_member = models.ForeignKey(User, on_delete=models.CASCADE, related_name='thermometer_verification_assignments')
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='thermometer_verification_assignments')
     assigned_date = models.DateField(default=timezone.now)
     assigned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='thermometer_assignments_made')
+    time_period = models.CharField(max_length=4, choices=TIME_PERIOD_CHOICES, default='BOTH')
     is_active = models.BooleanField(default=True)
     notes = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -218,13 +224,23 @@ class ThermometerVerificationAssignment(models.Model):
         return f"{self.staff_member.username} assigned to {self.department.name} thermometer verification"
     
     def save(self, *args, **kwargs):
-        """Ensure only one active assignment per department"""
+        """Ensure only one active assignment per department and time period"""
         if self.is_active:
-            # Deactivate any other active assignments for this department
-            ThermometerVerificationAssignment.objects.filter(
-                department=self.department,
-                is_active=True
-            ).exclude(id=self.id).update(is_active=False)
+            # Deactivate any other active assignments for this department and time period
+            # If this is a 'BOTH' assignment, deactivate all other assignments
+            if self.time_period == 'BOTH':
+                ThermometerVerificationAssignment.objects.filter(
+                    department=self.department,
+                    is_active=True
+                ).exclude(id=self.id).update(is_active=False)
+            else:
+                # Deactivate assignments with the same time period or 'BOTH'
+                ThermometerVerificationAssignment.objects.filter(
+                    department=self.department,
+                    is_active=True
+                ).filter(
+                    models.Q(time_period=self.time_period) | models.Q(time_period='BOTH')
+                ).exclude(id=self.id).update(is_active=False)
         super().save(*args, **kwargs)
 
 class TemperatureLog(models.Model):
@@ -259,7 +275,7 @@ class TemperatureLog(models.Model):
     
     def __str__(self):
         return f"{self.area_unit.name} - {self.temperature_reading}°C on {self.log_datetime.strftime('%Y-%m-%d %H:%M')} ({self.time_period})"
-
+    
     def is_within_target_range(self):
         """Check if temperature is within target range for the area unit"""
         if self.area_unit.target_temperature_min is None or self.area_unit.target_temperature_max is None:
@@ -267,61 +283,6 @@ class TemperatureLog(models.Model):
         
         return (self.area_unit.target_temperature_min <= self.temperature_reading <= 
                 self.area_unit.target_temperature_max)
-
-class TemperatureCheckAssignment(models.Model):
-    date = models.DateField()
-    department = models.ForeignKey(
-        'Department', 
-        on_delete=models.CASCADE,
-        related_name='temperature_check_assignments'
-    )
-    am_assigned_staff = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='am_temperature_assignments',
-        help_text="Staff member assigned for AM temperature checks."
-    )
-    pm_assigned_staff = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='pm_temperature_assignments',
-        help_text="Staff member assigned for PM temperature checks."
-    )
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True, 
-        related_name='created_temperature_assignments',
-        help_text="User who created this assignment."
-    )
-    updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='updated_temperature_assignments',
-        help_text="User who last updated this assignment."
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        unique_together = ('date', 'department')
-        ordering = ['-date', 'department']
-        verbose_name = "Temperature Check Assignment"
-        verbose_name_plural = "Temperature Check Assignments"
-
-    def __str__(self):
-        am_staff_name = self.am_assigned_staff.get_username() if self.am_assigned_staff else "N/A"
-        pm_staff_name = self.pm_assigned_staff.get_username() if self.pm_assigned_staff else "N/A"
-        dept_name = self.department.name if self.department else "N/A"
-        return f"Assignments for {dept_name} on {self.date} (AM: {am_staff_name}, PM: {pm_staff_name})"
-
 
 # To make UserProfile creation automatic when a User is created, we can use signals.
 # This is optional but good practice.

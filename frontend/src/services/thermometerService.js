@@ -7,7 +7,7 @@ export const getThermometers = async (params = {}) => {
 };
 
 export const getThermometer = async (id) => {
-  const response = await api.get(`/api/thermometers/${id}/`);
+  const response = await api.get(`/thermometers/${id}/`);
   return response.data;
 };
 
@@ -140,6 +140,11 @@ export const getVerificationAssignments = async (params = {}) => {
 
 export const getCurrentAssignment = async () => {
   const response = await api.get('/thermometer-verification-assignments/current-assignment/');
+  return response.data;
+};
+
+export const getAllCurrentAssignments = async () => {
+  const response = await api.get('/thermometer-verification-assignments/', { params: { is_active: true } });
   return response.data;
 };
 
