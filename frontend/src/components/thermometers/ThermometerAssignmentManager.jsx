@@ -346,7 +346,7 @@ const ThermometerAssignmentManager = () => {
                         <ListItemText 
                           primary={
                             <Typography variant="body1" component="span">
-                              <strong>Assigned To:</strong> {getStaffName(currentAssignment.staff_member)}
+                              <strong>Assigned To:</strong> {getStaffName(currentAssignment.staff_member_actual_id)}
                             </Typography>
                           }
                           secondary={

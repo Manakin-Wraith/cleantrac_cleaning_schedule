@@ -15,9 +15,7 @@ from .views import (
     ThermometerViewSet,
     ThermometerVerificationRecordViewSet,
     ThermometerVerificationAssignmentViewSet,
-    TemperatureLogViewSet,
-    WeeklyTemperatureReviewViewSet,
-    DailyCleaningRecordViewSet
+    TemperatureLogViewSet
 )
 
 # Create a router and register our viewsets with it.
@@ -35,10 +33,6 @@ router.register(r'thermometers', ThermometerViewSet, basename='thermometer')
 router.register(r'thermometer-verification-records', ThermometerVerificationRecordViewSet, basename='thermometerverificationrecord')
 router.register(r'thermometer-verification-assignments', ThermometerVerificationAssignmentViewSet, basename='thermometerverificationassignment')
 router.register(r'temperature-logs', TemperatureLogViewSet, basename='temperaturelog')
-
-# Food Safety File Endpoints
-router.register(r'weekly-temperature-reviews', WeeklyTemperatureReviewViewSet, basename='weeklytemperaturereview')
-router.register(r'daily-cleaning-records', DailyCleaningRecordViewSet, basename='dailycleaningrecord')
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [

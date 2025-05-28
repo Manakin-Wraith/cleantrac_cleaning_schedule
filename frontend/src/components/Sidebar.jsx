@@ -13,7 +13,6 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import LogoutIcon from '@mui/icons-material/Logout'; 
 import BusinessIcon from '@mui/icons-material/Business';
 import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat'; 
-import ArticleIcon from '@mui/icons-material/Article'; 
 
 export const drawerWidth = 240;
 const collapsedDrawerWidth = (theme) => theme.spacing(7); 
@@ -54,7 +53,6 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
     { text: 'Item Management', icon: <ListAltIcon />, path: '/manager-items' },
     { text: 'Staff', icon: <PeopleIcon />, path: '/manager-users' },
     { text: 'Thermometers', icon: <DeviceThermostatIcon />, path: '/manager-thermometers' },
-    { text: 'Food Safety Files', icon: <ArticleIcon />, path: '/food-safety-forms' },
   ];
 
   const staffLinks = [
