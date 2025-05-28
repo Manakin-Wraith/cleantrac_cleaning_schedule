@@ -7,15 +7,31 @@ from .models import UserProfile
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     """
     Signal handler to create or update a UserProfile when a User is saved.
+    - If a new user is created, this signal now defers profile creation
+      to other mechanisms (like admin inlines or explicit programmatic creation).
+    - If an existing user is updated, it ensures a profile exists.
     """
     if created:
-        UserProfile.objects.create(user=instance)
+        # When a user is created, we 'pass'.
+        # This allows admin inlines or other explicit processes to handle profile creation
+        # without conflict from this signal.
+        # If a user is created programmatically without a profile,
+        # the 'else' block below will create it on the user's first save/update.
+        pass
     else:
-        # If you want to update the profile when the user is updated (e.g., email change)
-        # you might need to access it via instance.profile and save it.
-        # However, usually UserProfile fields are managed separately.
-        # For now, we'll just ensure it exists if for some reason it wasn't created.
-        try:
-            instance.profile.save() # This will create if it doesn't exist, or update if it does.
-        except UserProfile.DoesNotExist:
-            UserProfile.objects.create(user=instance) # Ensure profile exists
+        # For existing users being updated, or for users who were created
+        # without a profile (due to the 'if created: pass' logic),
+        # ensure a UserProfile exists.
+        profile, profile_was_just_created = UserProfile.objects.get_or_create(user=instance)
+        
+        # Optional: If the profile was just created for an existing user,
+        # you might want to log this or perform initial setup.
+        # if profile_was_just_created:
+        #     print(f"UserProfile created on update for user {instance.username}")
+
+        # Optional: If you need to sync fields from User to UserProfile on update
+        # (e.g., if UserProfile stores a copy of the user's email and it might change)
+        # if hasattr(profile, 'email') and profile.email != instance.email:
+        #     profile.email = instance.email # Example
+        #     profile.save()
+        pass # Main goal here is just ensuring existence via get_or_create
