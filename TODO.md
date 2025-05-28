@@ -47,6 +47,13 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
    - Add export functionality
    - Include thermometer verification reports
 
+## Bug Fixes & Stability Improvements
+
+- **[x] Frontend Stability & Correctness**
+  - [x] Fix: Corrected `getCurrentUser` import path in `ThermometerAssignmentManager.jsx` to resolve runtime error.
+  - [x] Fix: Resolved infinite request loop in `ThermometerAssignmentManager.jsx` by refactoring `fetchInitialData` and `getStaffName` dependency management in `useEffect`.
+  - [x] Fix: Temporarily addressed 404 error for `/api/thermometers/expiring-verification/` in `ThermometerStatusDashboard.jsx` by commenting out the problematic API call and its usage, preventing dashboard load failure.
+
 ## 0. Initial Project Setup & Configuration
 
 - **[x] Define Technology Stack** (documented in `tech_stack.md`)

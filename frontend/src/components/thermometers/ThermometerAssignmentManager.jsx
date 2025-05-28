@@ -1,91 +1,151 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Typography, Box, Paper, Button, CircularProgress, Alert, 
   TextField, Grid, Card, CardContent, CardActions, Divider,
-  FormControl, InputLabel, MenuItem, Select, List, ListItem, ListItemText
+  FormControl, InputLabel, MenuItem, Select, List, ListItem, ListItemText, Chip
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-import { useTheme } from '@mui/material/styles';
-import PersonIcon from '@mui/icons-material/Person';
+import { format, addDays, isToday, startOfDay } from 'date-fns';
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
+import PersonIcon from '@mui/icons-material/Person';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import { format, addDays } from 'date-fns';
-import { 
-  getVerificationAssignments, 
-  createVerificationAssignment,
-  updateVerificationAssignment,
-  getCurrentAssignment,
-  getAllCurrentAssignments
-} from '../../services/thermometerService';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
+
 import { getUsers } from '../../services/userService';
 import { getCurrentUser } from '../../services/authService';
+import { 
+  getAllCurrentAssignments, 
+  createVerificationAssignment, 
+  updateVerificationAssignment 
+} from '../../services/thermometerService';
+import { useTheme } from '@mui/material/styles';
 
 const ThermometerAssignmentManager = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [staffUsers, setStaffUsers] = useState([]);
-  const [currentAssignment, setCurrentAssignment] = useState(null);
-  const [allAssignments, setAllAssignments] = useState([]);
-  const [showAssignmentForm, setShowAssignmentForm] = useState(false);
+  const theme = useTheme();
   const [currentUser, setCurrentUser] = useState(null);
+  const [staffUsers, setStaffUsers] = useState([]);
+  const [allAssignments, setAllAssignments] = useState([]); 
+  const [currentAssignment, setCurrentAssignment] = useState(null); 
+  const [todayAssignmentStatus, setTodayAssignmentStatus] = useState({
+    am: null, 
+    pm: null, 
+    both: null, 
+    needsAttention: false,
+    message: '',
+    amAssigned: false,
+    pmAssigned: false,
+    amStaffName: '',
+    pmStaffName: '',
+  });
   const [formData, setFormData] = useState({
+    id: null, 
     staff_member_id: '',
     department_id: '',
     time_period: 'BOTH',
     notes: '',
-    assigned_date: new Date()
+    assigned_date: new Date(),
   });
-  const theme = useTheme();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showAssignmentForm, setShowAssignmentForm] = useState(false);
+
+  const getStaffName = useCallback((userId) => {
+    if (!userId || !staffUsers.length) return 'Unknown Staff';
+    const staff = staffUsers.find(user => user.id === userId);
+    if (staff) {
+      return staff.first_name && staff.last_name ? `${staff.first_name} ${staff.last_name}` : staff.username;
+    }
+    return 'Unknown Staff';
+  }, [staffUsers]);
+
+  const fetchInitialData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const userData = await getCurrentUser();
+      setCurrentUser(userData);
+      
+      if (userData?.profile?.department_id && !formData.id) {
+        setFormData(prev => ({ ...prev, department_id: userData.profile.department_id }));
+      }
+      
+      const usersData = await getUsers();
+      const staffOnlyUsers = usersData.filter(user => user.profile && user.profile.role === 'staff');
+      setStaffUsers(staffOnlyUsers);
+      
+      const getStaffNameFromFetchedList = (userId, fetchedStaffList) => {
+        if (!userId || !fetchedStaffList.length) return 'Unknown Staff';
+        const staff = fetchedStaffList.find(user => user.id === userId);
+        if (staff) {
+          return staff.first_name && staff.last_name ? `${staff.first_name} ${staff.last_name}` : staff.username;
+        }
+        return 'Unknown Staff';
+      };
+
+      const activeAssignments = await getAllCurrentAssignments();
+      setAllAssignments(activeAssignments || []);
+
+      const today = startOfDay(new Date());
+      const todaysAssignments = (activeAssignments || []).filter(a => 
+        a.is_active && isToday(new Date(a.assigned_date))
+      );
+
+      let amAssignment = todaysAssignments.find(a => a.time_period === 'AM');
+      let pmAssignment = todaysAssignments.find(a => a.time_period === 'PM');
+      const bothAssignment = todaysAssignments.find(a => a.time_period === 'BOTH');
+
+      if (bothAssignment) {
+        amAssignment = bothAssignment;
+        pmAssignment = bothAssignment;
+      }
+
+      const amAssigned = !!amAssignment;
+      const pmAssigned = !!pmAssignment;
+      const amStaffName = amAssignment ? getStaffNameFromFetchedList(amAssignment.staff_member_actual_id, staffOnlyUsers) : '';
+      const pmStaffName = pmAssignment ? getStaffNameFromFetchedList(pmAssignment.staff_member_actual_id, staffOnlyUsers) : '';
+
+      let statusMessage = '';
+      let needsAttention = false;
+
+      if (amAssigned && pmAssigned) {
+        statusMessage = 'All thermometer verification assignments for today are covered.';
+      } else if (!amAssigned && !pmAssigned) {
+        statusMessage = 'Morning (AM) and Afternoon (PM) verifications need assignment.';
+        needsAttention = true;
+      } else if (!amAssigned) {
+        statusMessage = 'Morning (AM) verification needs assignment.';
+        needsAttention = true;
+      } else { 
+        statusMessage = 'Afternoon (PM) verification needs assignment.';
+        needsAttention = true;
+      }
+
+      setTodayAssignmentStatus({
+        am: amAssignment,
+        pm: pmAssignment,
+        both: bothAssignment, 
+        needsAttention,
+        message: statusMessage,
+        amAssigned,
+        pmAssigned,
+        amStaffName,
+        pmStaffName,
+      });
+
+    } catch (err) {
+      console.error("Failed to load initial data:", err);
+      setError(err.response?.data?.detail || err.message || 'Failed to load data. Please try refreshing.');
+    } finally {
+      setLoading(false);
+    }
+  }, [formData.id]);
 
   useEffect(() => {
-    const fetchStaffAndAssignments = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        
-        // Get current user for department info
-        const userData = await getCurrentUser();
-        setCurrentUser(userData);
-        
-        // Set department ID in form data
-        if (userData?.profile?.department_id) {
-          setFormData(prev => ({
-            ...prev,
-            department_id: userData.profile.department_id
-          }));
-        }
-        
-        // Get all staff users
-        const usersData = await getUsers();
-        const staffOnlyUsers = usersData.filter(user => 
-          user.profile && user.profile.role === 'staff'
-        );
-        setStaffUsers(staffOnlyUsers);
-        
-        // Get all current thermometer verification assignments
-        try {
-          const assignments = await getAllCurrentAssignments();
-          setAllAssignments(assignments || []);
-          
-          // For backward compatibility, also set currentAssignment
-          const defaultAssignment = assignments.find(a => a.time_period === 'BOTH') || 
-                                   assignments.find(a => a.time_period === 'AM') || 
-                                   assignments[0];
-          setCurrentAssignment(defaultAssignment || null);
-        } catch (assignmentErr) {
-          console.log('No current thermometer verification assignments found');
-        }
-      } catch (err) {
-        console.error("Failed to load staff and assignment data:", err);
-        setError(err.message || 'Failed to load staff and assignment data. Please try refreshing.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStaffAndAssignments();
-  }, []);
+    fetchInitialData();
+  }, [fetchInitialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -93,315 +153,312 @@ const ThermometerAssignmentManager = () => {
   };
   
   const handleDateChange = (newDate) => {
-    setFormData(prev => ({ ...prev, assigned_date: newDate }));
+    setFormData(prev => ({ ...prev, assigned_date: newDate ? startOfDay(newDate) : null }));
   };
 
-  const handleShowAssignmentForm = () => {
+  const handleOpenAssignmentForm = (assignmentToEdit = null, defaultTimePeriod = 'BOTH') => {
+    setError('');
+    if (assignmentToEdit) {
+      setFormData({
+        id: assignmentToEdit.id,
+        staff_member_id: assignmentToEdit.staff_member_actual_id || '',
+        department_id: assignmentToEdit.department_id || currentUser?.profile?.department_id || '',
+        time_period: assignmentToEdit.time_period || 'BOTH',
+        notes: assignmentToEdit.notes || '',
+        assigned_date: assignmentToEdit.assigned_date ? new Date(assignmentToEdit.assigned_date) : new Date(),
+      });
+    } else {
+      setFormData({
+        id: null,
+        staff_member_id: '',
+        department_id: currentUser?.profile?.department_id || '',
+        time_period: defaultTimePeriod,
+        notes: '',
+        assigned_date: new Date(),
+      });
+    }
     setShowAssignmentForm(true);
-    setFormData({
-      staff_member_id: (currentAssignment && currentAssignment.staff_member != null) ? currentAssignment.staff_member : '',
-      department_id: currentUser?.profile?.department_id || '',
-      time_period: currentAssignment?.time_period || 'BOTH',
-      notes: currentAssignment?.notes || '',
-      assigned_date: currentAssignment?.assigned_date ? new Date(currentAssignment.assigned_date) : new Date()
-    });
   };
 
   const handleCancelAssignment = () => {
     setShowAssignmentForm(false);
+    setError(''); 
+    setFormData({
+      id: null, staff_member_id: '', department_id: currentUser?.profile?.department_id || '', 
+      time_period: 'BOTH', notes: '', assigned_date: new Date()
+    });
   };
 
   const handleSubmitAssignment = async (e) => {
     e.preventDefault();
     setError('');
     
-    // Validate form data
     if (!formData.staff_member_id) {
-      setError('Please select a staff member');
+      setError('Please select a staff member.');
       return;
     }
-    
+    if (!formData.assigned_date) {
+      setError('Please select an assignment date.');
+      return;
+    }
+
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Convert staff_member_id to a number if it's a string
       const staffId = typeof formData.staff_member_id === 'string' 
         ? parseInt(formData.staff_member_id, 10) 
         : formData.staff_member_id;
-      
-      // Create the assignment data object
-      const assignmentData = {
+
+      const assignmentPayload = {
         staff_member_id: staffId,
         department_id: formData.department_id,
-        time_period: formData.time_period || 'BOTH',
+        time_period: formData.time_period,
         notes: formData.notes || '',
-        is_active: true,
-        // Use the selected date from the date picker
+        is_active: true, 
         assigned_date: format(formData.assigned_date, 'yyyy-MM-dd')
       };
-      
-      console.log('Creating assignment with data:', assignmentData);
-      
-      // Check for existing assignments with the same time period
-      const existingAssignments = allAssignments.filter(a => 
-        (a.time_period === assignmentData.time_period || 
-         a.time_period === 'BOTH' || 
-         assignmentData.time_period === 'BOTH')
-      );
-      
-      // Deactivate any conflicting assignments
-      if (existingAssignments.length > 0) {
-        try {
-          await Promise.all(existingAssignments.map(assignment => 
-            updateVerificationAssignment(assignment.id, { is_active: false })
-          ));
-        } catch (updateErr) {
-          console.warn('Failed to update existing assignments, continuing with new assignment:', updateErr);
-        }
+
+      if (formData.id) {
+        await updateVerificationAssignment(formData.id, assignmentPayload);
+        console.log('Assignment updated successfully');
+      } else {
+        await createVerificationAssignment(assignmentPayload);
+        console.log('Assignment created successfully');
       }
       
-      // Create the new assignment
-      const newAssignment = await createVerificationAssignment(assignmentData);
-      
-      console.log('Assignment created successfully:', newAssignment);
-      
-      // Refresh the assignments list
-      const updatedAssignments = await getAllCurrentAssignments();
-      setAllAssignments(updatedAssignments || []);
-      
-      // Reset the form
+      await fetchInitialData(); 
+      setShowAssignmentForm(false);
       setFormData({
+        id: null,
         staff_member_id: '',
         department_id: currentUser?.profile?.department_id || '',
         time_period: 'BOTH',
-        notes: ''
+        notes: '',
+        assigned_date: new Date(),
       });
-      
-      // Close the form
-      setShowAssignmentForm(false);
+
     } catch (err) {
-      console.error("Failed to create thermometer verification assignment:", err);
-      
-      // More detailed error logging
-      if (err.response) {
-        console.error('Error response data:', err.response.data);
-        console.error('Error response status:', err.response.status);
-      }
-      
-      setError(
-        err.response?.data?.detail || 
-        (typeof err.response?.data === 'object' ? JSON.stringify(err.response.data) : err.response?.data) || 
-        err.message || 
-        'Failed to create assignment. Please try again.'
-      );
+      console.error("Failed to save assignment:", err);
+      const errorDetail = err.response?.data?.detail || 
+                        (typeof err.response?.data === 'object' ? JSON.stringify(err.response.data) : err.response?.data) || 
+                        err.message || 
+                        'Failed to save assignment. Please try again.';
+      setError(errorDetail);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStaffName = (userId) => {
-    const staff = staffUsers.find(user => user.id === userId);
-    if (staff) {
-      if (staff.first_name && staff.last_name) {
-        return `${staff.first_name} ${staff.last_name}`;
-      }
-      return staff.username;
-    }
-    return 'Unknown Staff';
-  };
-
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <AssignmentIndIcon sx={{ fontSize: 28, mr: 1, color: theme.palette.primary.main }} />
-        <Typography variant="h5" component="h2">
-          Thermometer Verification Assignment
+        <AssignmentIndIcon sx={{ mr: 1, color: theme.palette.primary.main, fontSize: '2rem' }} />
+        <Typography variant="h5" component="div">
+          Thermometer Verification Assignment Management
         </Typography>
       </Box>
-      
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-          <CircularProgress />
-        </Box>
-      ) : error ? (
-        <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
-      ) : (
-        <>
-          {showAssignmentForm ? (
-            <Card variant="outlined" sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Assign Staff to Thermometer Verification
-                </Typography>
-                
-                <Divider sx={{ mb: 3 }} />
-                
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-                
-                <form onSubmit={handleSubmitAssignment}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                      <InputLabel id="staff-member-label">Staff Member</InputLabel>
-                      <Select
-                        labelId="staff-member-label"
-                        id="staff_member_id"
-                        name="staff_member_id"
-                        value={formData.staff_member_id}
-                        onChange={handleChange}
-                        label="Staff Member"
-                        required
-                      >
-                        {staffUsers.map(user => (
-                          <MenuItem key={user.id} value={user.id}>
-                            {user.first_name && user.last_name ? 
-                              `${user.first_name} ${user.last_name}` : 
-                              user.username}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                      <InputLabel id="time-period-label">Time Period</InputLabel>
-                      <Select
-                        labelId="time-period-label"
-                        name="time_period"
-                        value={formData.time_period}
-                        onChange={handleChange}
-                        label="Time Period"
-                      >
-                        <MenuItem value="AM">Morning (AM)</MenuItem>
-                        <MenuItem value="PM">Afternoon (PM)</MenuItem>
-                        <MenuItem value="BOTH">Both AM and PM</MenuItem>
-                      </Select>
-                    </FormControl>
-                    
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                        <CalendarTodayIcon fontSize="small" sx={{ mr: 1 }} />
-                        Assignment Date
-                      </Typography>
-                      <LocalizationProvider dateAdapter={AdapterDateFns}>
-                        <DatePicker
-                          label="Assignment Date"
-                          value={formData.assigned_date}
-                          onChange={handleDateChange}
-                          minDate={new Date()}
-                          maxDate={addDays(new Date(), 30)} // Allow scheduling up to 30 days in advance
-                          renderInput={(params) => <TextField {...params} fullWidth />}
-                          slotProps={{
-                            textField: { fullWidth: true }
-                          }}
-                        />
-                      </LocalizationProvider>
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                        Schedule this assignment up to 30 days in advance
-                      </Typography>
-                    </Box>
-                    
-                    <TextField
-                      name="notes"
-                      label="Assignment Notes"
-                      value={formData.notes}
+
+      {loading && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
+      {error && !showAssignmentForm && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {showAssignmentForm ? (
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+              {formData.id ? 'Edit Verification Assignment' : 'Assign New Verification Duty'}
+            </Typography>
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>} {/* Show error inside form too */}
+            <form onSubmit={handleSubmitAssignment}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth required>
+                    <InputLabel id="staff-member-label">Staff Member</InputLabel>
+                    <Select
+                      labelId="staff-member-label"
+                      name="staff_member_id"
+                      value={formData.staff_member_id}
                       onChange={handleChange}
-                      fullWidth
-                      multiline
-                      rows={3}
+                      label="Staff Member"
+                    >
+                      <MenuItem value="">
+                        <em>Select Staff Member</em>
+                      </MenuItem>
+                      {staffUsers.map(user => (
+                        <MenuItem key={user.id} value={user.id}>
+                          {user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <LocalizationProvider dateAdapter={AdapterDateFns}>
+                    <DatePicker
+                      label="Assigned Date"
+                      value={formData.assigned_date}
+                      onChange={handleDateChange}
+                      minDate={startOfDay(new Date())} // Ensure minDate is also start of day
+                      maxDate={addDays(new Date(), 30)} 
+                      renderInput={(params) => <TextField {...params} fullWidth required />}
+                      slotProps={{
+                        textField: { fullWidth: true, required: true }
+                      }}
                     />
-                  </Box>
-                </form>
-              </CardContent>
-              
-              <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
-                <Button 
-                  onClick={handleCancelAssignment}
-                  disabled={loading}
-                >
+                  </LocalizationProvider>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth required>
+                    <InputLabel id="time-period-label">Time Period</InputLabel>
+                    <Select
+                      labelId="time-period-label"
+                      name="time_period"
+                      value={formData.time_period}
+                      onChange={handleChange}
+                      label="Time Period"
+                    >
+                      <MenuItem value="AM">Morning (AM)</MenuItem>
+                      <MenuItem value="PM">Afternoon (PM)</MenuItem>
+                      <MenuItem value="BOTH">Both AM and PM</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    name="department_id"
+                    label="Department ID (Auto-filled)"
+                    value={formData.department_id}
+                    onChange={handleChange} // Should ideally be read-only or handled differently if editable
+                    InputProps={{
+                      readOnly: true, // Make department ID read-only on the form
+                    }}
+                    disabled // Visually indicate it's not for direct input
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    name="notes"
+                    label="Notes (Optional)"
+                    multiline
+                    rows={3}
+                    value={formData.notes}
+                    onChange={handleChange}
+                  />
+                </Grid>
+              </Grid>
+              <CardActions sx={{ justifyContent: 'flex-end', p: 0, pt: 2 }}>
+                <Button onClick={handleCancelAssignment} color="inherit" sx={{ mr: 1 }}>
                   Cancel
                 </Button>
-                <Button 
-                  variant="contained" 
-                  color="primary"
-                  onClick={handleSubmitAssignment}
-                  disabled={loading}
-                >
-                  {loading ? <CircularProgress size={24} /> : 'Assign Staff'}
+                <Button type="submit" variant="contained" color="primary" disabled={loading}>
+                  {loading ? <CircularProgress size={24} /> : (formData.id ? 'Update Assignment' : 'Create Assignment')}
                 </Button>
               </CardActions>
-            </Card>
-          ) : (
-            <>
-              {currentAssignment ? (
-                <Card variant="outlined" sx={{ mb: 3 }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <PersonIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
-                      <Typography variant="h6">
-                        Current Assignment
-                      </Typography>
-                    </Box>
-                    
-                    <List>
-                      <ListItem>
-                        <ListItemText 
-                          primary={
-                            <Typography variant="body1" component="span">
-                              <strong>Assigned To:</strong> {getStaffName(currentAssignment.staff_member_actual_id)}
-                            </Typography>
-                          }
-                          secondary={
-                            <Box component="div">
-                              <Typography variant="body2" component="div" sx={{ mt: 1 }}>
-                                <strong>Department:</strong> {currentAssignment.department_name}
-                              </Typography>
-                              <Typography variant="body2" component="div" sx={{ mt: 1 }}>
-                                <strong>Time Period:</strong> {currentAssignment.time_period === 'AM' ? 'Morning (AM)' : 
-                                                                   currentAssignment.time_period === 'PM' ? 'Afternoon (PM)' : 'Both AM and PM'}
-                              </Typography>
-                              <Typography variant="body2" component="div" sx={{ mt: 1 }}>
-                                <strong>Date Assigned:</strong> {format(new Date(currentAssignment.assigned_date), 'MMMM d, yyyy')}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                      </ListItem>
-                      {currentAssignment.notes && (
-                        <ListItem>
-                          <ListItemText 
-                            primary="Notes" 
-                            secondary={currentAssignment.notes}
-                          />
-                        </ListItem>
-                      )}
-                    </List>
-                    
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={handleShowAssignmentForm}
-                      sx={{ mt: 2 }}
-                    >
-                      Change Assignment
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Box sx={{ mb: 3 }}>
-                  <Alert severity="info" sx={{ mb: 2 }}>
-                    No staff member is currently assigned to thermometer verification duties.
-                  </Alert>
-                  
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleShowAssignmentForm}
-                  >
-                    Assign Staff
-                  </Button>
-                </Box>
-              )}
-            </>
+            </form>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Today's Assignment Status Alert */}
+          {todayAssignmentStatus.message && (
+            <Alert 
+              severity={todayAssignmentStatus.needsAttention ? "warning" : "success"} 
+              icon={todayAssignmentStatus.needsAttention ? <ReportProblemIcon /> : <CheckCircleOutlineIcon />}
+              sx={{ mb: 2 }}
+            >
+              {todayAssignmentStatus.message}
+            </Alert>
           )}
+
+          {/* Action Buttons for Unassigned Slots */}
+          {todayAssignmentStatus.needsAttention && (
+            <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+              {!todayAssignmentStatus.amAssigned && (
+                <Button 
+                  variant="outlined" 
+                  onClick={() => handleOpenAssignmentForm(null, 'AM')}
+                  startIcon={<PersonIcon />}
+                >
+                  Assign AM Duty
+                </Button>
+              )}
+              {!todayAssignmentStatus.pmAssigned && (
+                <Button 
+                  variant="outlined" 
+                  onClick={() => handleOpenAssignmentForm(null, 'PM')}
+                  startIcon={<PersonIcon />}
+                >
+                  Assign PM Duty
+                </Button>
+              )}
+            </Box>
+          )}
+          
+          <Divider sx={{ my: 2 }} />
+
+          {/* Today's Assignment Details */}
+          <Typography variant="h6" gutterBottom>
+            Today's Assignment Details ({format(new Date(), 'MMMM d, yyyy')})
+          </Typography>
+          <List dense>
+            <ListItem sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5, borderBottom: '1px solid #eee' }}>
+              <ListItemText 
+                primaryTypographyProps={{ fontWeight: 'medium' }}
+                primary={<span>Morning (AM): <Chip 
+                  label={todayAssignmentStatus.amStaffName || 'Not Assigned'}
+                  color={todayAssignmentStatus.amAssigned ? "success" : "default"}
+                  size="small"
+                  variant={todayAssignmentStatus.amAssigned ? "filled" : "outlined"}
+                  icon={todayAssignmentStatus.amAssigned ? <CheckCircleOutlineIcon fontSize="small" /> : <PersonIcon fontSize="small"/>}
+                /></span>}
+                secondary={todayAssignmentStatus.am && `Dept: ${todayAssignmentStatus.am.department_name}`}
+              />
+              {todayAssignmentStatus.amAssigned && (
+                <Button 
+                  size="small" 
+                  variant="text" 
+                  onClick={() => handleOpenAssignmentForm(todayAssignmentStatus.am, 'AM')}
+                >
+                  Edit
+                </Button>
+              )}
+            </ListItem>
+            <ListItem sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5 }}>
+              <ListItemText 
+                primaryTypographyProps={{ fontWeight: 'medium' }}
+                primary={<span>Afternoon (PM): <Chip 
+                  label={todayAssignmentStatus.pmStaffName || 'Not Assigned'}
+                  color={todayAssignmentStatus.pmAssigned ? "success" : "default"}
+                  size="small"
+                  variant={todayAssignmentStatus.pmAssigned ? "filled" : "outlined"}
+                  icon={todayAssignmentStatus.pmAssigned ? <CheckCircleOutlineIcon fontSize="small" /> : <PersonIcon fontSize="small"/>}
+                /></span>}
+                secondary={todayAssignmentStatus.pm && `Dept: ${todayAssignmentStatus.pm.department_name}`}
+              />
+              {todayAssignmentStatus.pmAssigned && (
+                <Button 
+                  size="small" 
+                  variant="text" 
+                  onClick={() => handleOpenAssignmentForm(todayAssignmentStatus.pm, 'PM')}
+                >
+                  Edit
+                </Button>
+              )}
+            </ListItem>
+          </List>
+
+          <Divider sx={{ my: 2 }} />
+
+          {/* General Action Button */}
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => handleOpenAssignmentForm(null, 'BOTH')} // Defaults to new 'BOTH' assignment for today
+            startIcon={<CalendarTodayIcon />}
+            sx={{ mt: 1 }}
+          >
+            New/Manage Assignment
+          </Button>
         </>
       )}
     </Paper>

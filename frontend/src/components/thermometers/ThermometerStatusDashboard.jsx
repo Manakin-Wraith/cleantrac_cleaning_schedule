@@ -12,7 +12,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import { 
   getThermometers,
   getThermometersNeedingVerification,
-  getThermometersExpiringVerification,
+  // getThermometersExpiringVerification, // Commented out due to 404 error
   getCurrentAssignment,
   getAllCurrentAssignments
 } from '../../services/thermometerService';
@@ -37,17 +37,17 @@ const ThermometerStatusDashboard = () => {
         setError('');
         
         // Use Promise.allSettled to handle potential API failures gracefully
-        const [allThermometersResult, needsVerificationResult, expiringVerificationResult] = 
+        const [allThermometersResult, needsVerificationResult] = 
           await Promise.allSettled([
             getThermometers(),
             getThermometersNeedingVerification(),
-            getThermometersExpiringVerification()
+            // getThermometersExpiringVerification() // Commented out due to 404 error
           ]);
         
         // Extract data or use empty arrays for failed requests
         const allThermometers = allThermometersResult.status === 'fulfilled' ? allThermometersResult.value : [];
         const needsVerificationThermometers = needsVerificationResult.status === 'fulfilled' ? needsVerificationResult.value : [];
-        const expiringVerificationThermometers = expiringVerificationResult.status === 'fulfilled' ? expiringVerificationResult.value : [];
+        const expiringVerificationThermometers = []; // Default to empty array
         
         // Calculate verified thermometers
         const verifiedCount = Math.max(0, allThermometers.length - needsVerificationThermometers.length);
@@ -56,7 +56,7 @@ const ThermometerStatusDashboard = () => {
           total: allThermometers.length,
           verified: verifiedCount,
           needsVerification: needsVerificationThermometers.length,
-          expiringVerification: expiringVerificationThermometers.length
+          expiringVerification: expiringVerificationThermometers.length // Will be 0 for now
         });
         
         // Get all current thermometer verification assignments

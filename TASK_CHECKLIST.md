@@ -102,6 +102,12 @@
   - [x] Ensure `department_id` is correctly included in assignment creation payload.
   - [x] Ensure `assignment_date` is correctly formatted for API.
   - [x] Add date picker for scheduling assignments up to 30 days in advance.
+  - [x] Refactor UI to clearly show today's AM/PM assignment status with actionable alerts.
+  - [x] Implement separate "Assign AM Duty" and "Assign PM Duty" buttons for unassigned slots.
+  - [x] Display today's AM and PM assigned staff with "Edit" buttons for quick modification.
+  - [x] Streamline form opening logic (`handleOpenAssignmentForm`) for new/edit scenarios.
+  - [x] Update form submission (`handleSubmitAssignment`) for create/update and data refresh.
+  - [x] Remove redundant display of assigned staff in the main assignment section (focus on status).
 - **[x] Temperature Logging API Enhancements**
   - [x] Add new endpoint in TemperatureLogViewSet to retrieve temperature logs by date.
   - [x] Implement API service function to get all current thermometer verification assignments.
