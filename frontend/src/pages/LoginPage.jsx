@@ -11,7 +11,10 @@ import {
     Link, // Added for Forgot Password
     Grid, // Added for layout
     Alert, // Added for messages
+    InputAdornment, // Added for password reveal
+    IconButton, // Added for password reveal
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material'; // Added for password reveal
 // import { loginUser, getCurrentUser } from '../services/authService'; // No longer directly used
 import { useAuth } from '../context/AuthContext'; // Import useAuth
 import { requestPasswordReset, confirmPasswordReset } from '../services/authService'; // Added
@@ -21,6 +24,7 @@ function LoginPage() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false); // Added for login password reveal
     
     // Password Reset State
     const [resetStep, setResetStep] = useState('login'); // 'login', 'request', 'confirm'
@@ -30,10 +34,27 @@ function LoginPage() {
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
     const [resetLoading, setResetLoading] = useState(false);
     const [resetMessage, setResetMessage] = useState({ type: '', text: '' }); // { type: 'success'/'error', text: '...'}
+    const [showNewPassword, setShowNewPassword] = useState(false); // Added for new password reveal
+    const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false); // Added for confirm new password reveal
 
     const navigate = useNavigate(); 
     const { enqueueSnackbar } = useSnackbar(); 
     const { login } = useAuth(); // Get login function from AuthContext
+
+    const handleClickShowPassword = () => setShowPassword((show) => !show);
+    const handleMouseDownPassword = (event) => {
+        event.preventDefault();
+    };
+
+    const handleClickShowNewPassword = () => setShowNewPassword((show) => !show);
+    const handleMouseDownNewPassword = (event) => {
+        event.preventDefault();
+    };
+
+    const handleClickShowConfirmNewPassword = () => setShowConfirmNewPassword((show) => !show);
+    const handleMouseDownConfirmNewPassword = (event) => {
+        event.preventDefault();
+    };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -153,12 +174,26 @@ function LoginPage() {
                     fullWidth
                     name="password"
                     label="Password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     id="password"
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    aria-label="toggle password visibility"
+                                    onClick={handleClickShowPassword}
+                                    onMouseDown={handleMouseDownPassword}
+                                    edge="end"
+                                >
+                                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
                 />
                 <Button
                     type="submit"
@@ -263,12 +298,27 @@ function LoginPage() {
                     fullWidth
                     name="newPassword"
                     label="New Password"
-                    type="password"
+                    type={showNewPassword ? 'text' : 'password'}
                     id="newPassword"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     disabled={resetLoading}
-                    sx={{ mb: 1 }}
+                    error={newPassword !== confirmNewPassword && confirmNewPassword !== ''}
+                    helperText={newPassword !== confirmNewPassword && confirmNewPassword !== '' ? "Passwords do not match" : ""}
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    aria-label="toggle new password visibility"
+                                    onClick={handleClickShowNewPassword}
+                                    onMouseDown={handleMouseDownNewPassword}
+                                    edge="end"
+                                >
+                                    {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
                 />
                 <TextField
                     margin="normal"
@@ -276,14 +326,27 @@ function LoginPage() {
                     fullWidth
                     name="confirmNewPassword"
                     label="Confirm New Password"
-                    type="password"
+                    type={showConfirmNewPassword ? 'text' : 'password'}
                     id="confirmNewPassword"
                     value={confirmNewPassword}
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                     disabled={resetLoading}
                     error={newPassword !== confirmNewPassword && confirmNewPassword !== ''}
-                    helperText={newPassword !== confirmNewPassword && confirmNewPassword !== '' ? "Passwords do not match." : ""}
-                    sx={{ mb: 2 }}
+                    helperText={newPassword !== confirmNewPassword && confirmNewPassword !== '' ? "Passwords do not match" : ""}
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    aria-label="toggle confirm new password visibility"
+                                    onClick={handleClickShowConfirmNewPassword}
+                                    onMouseDown={handleMouseDownConfirmNewPassword}
+                                    edge="end"
+                                >
+                                    {showConfirmNewPassword ? <VisibilityOff /> : <Visibility />}
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
                 />
                 <Button
                     type="submit"
