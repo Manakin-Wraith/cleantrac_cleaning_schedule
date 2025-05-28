@@ -284,6 +284,80 @@ class TemperatureLog(models.Model):
         return (self.area_unit.target_temperature_min <= self.temperature_reading <= 
                 self.area_unit.target_temperature_max)
 
+# Food Safety File Models - Temperature Checklist
+class WeeklyTemperatureReview(models.Model):
+    department = models.ForeignKey(
+        Department, 
+        on_delete=models.CASCADE, 
+        related_name='weekly_temperature_reviews'
+    )
+    week_start_date = models.DateField(
+        help_text="The Monday of the week being reviewed."
+    )
+    reviewed_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='temperature_reviews_conducted'
+    )
+    review_timestamp = models.DateTimeField(
+        default=timezone.now,
+        help_text="Timestamp of when the review was submitted."
+    )
+    overall_comment = models.TextField(
+        blank=True, 
+        null=True,
+        help_text="Overall comments for the week's temperature checks."
+    )
+
+    class Meta:
+        unique_together = ('department', 'week_start_date')
+        ordering = ['-week_start_date', 'department']
+        verbose_name = "Weekly Temperature Review"
+        verbose_name_plural = "Weekly Temperature Reviews"
+
+    def __str__(self):
+        return f"Temperature Review for {self.department.name} - Week of {self.week_start_date.strftime('%Y-%m-%d')}"
+
+# Food Safety File Models - Daily Cleaning Checklist
+class DailyCleaningRecord(models.Model):
+    cleaning_item = models.ForeignKey(
+        CleaningItem, 
+        on_delete=models.CASCADE, 
+        related_name='daily_records'
+    )
+    date_recorded = models.DateField(
+        help_text="The date for which this cleaning status is recorded."
+    )
+    is_completed = models.BooleanField(
+        default=False, 
+        help_text="Was the cleaning task completed for this day?"
+    )
+    completed_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='cleaning_records_completed',
+        help_text="User who completed or verified the task for the day."
+    )
+    comment = models.TextField(
+        blank=True, 
+        null=True,
+        help_text="Any comments related to this specific cleaning record."
+    )
+
+    class Meta:
+        unique_together = ('cleaning_item', 'date_recorded')
+        ordering = ['-date_recorded', 'cleaning_item']
+        verbose_name = "Daily Cleaning Record"
+        verbose_name_plural = "Daily Cleaning Records"
+
+    def __str__(self):
+        status = "Completed" if self.is_completed else "Not Completed"
+        return f"{self.cleaning_item.name} on {self.date_recorded.strftime('%Y-%m-%d')} - {status}"
+
 # To make UserProfile creation automatic when a User is created, we can use signals.
 # This is optional but good practice.
 # In core/signals.py (new file):

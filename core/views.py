@@ -9,14 +9,16 @@ from datetime import date as datetime_date
 from django.db.models import Count 
 
 from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog, PasswordResetToken, \
-    AreaUnit, Thermometer, ThermometerVerificationRecord, ThermometerVerificationAssignment, TemperatureLog
+    AreaUnit, Thermometer, ThermometerVerificationRecord, ThermometerVerificationAssignment, TemperatureLog, \
+    WeeklyTemperatureReview, DailyCleaningRecord
 from .serializers import (
     DepartmentSerializer, UserSerializer, UserProfileSerializer, 
     CleaningItemSerializer, TaskInstanceSerializer, CompletionLogSerializer,
     CurrentUserSerializer, UserWithProfileSerializer,
     PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
     AreaUnitSerializer, ThermometerSerializer, ThermometerVerificationRecordSerializer,
-    ThermometerVerificationAssignmentSerializer, TemperatureLogSerializer
+    ThermometerVerificationAssignmentSerializer, TemperatureLogSerializer,
+    WeeklyTemperatureReviewSerializer, DailyCleaningRecordSerializer
 )
 from rest_framework.permissions import AllowAny # Corrected: AllowAny from DRF
 from .permissions import (
@@ -889,5 +891,73 @@ class TemperatureLogViewSet(viewsets.ModelViewSet):
         }
         
         return Response(result)
+
+# Food Safety File Viewsets
+class WeeklyTemperatureReviewViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows weekly temperature reviews to be viewed or edited.
+    """
+    queryset = WeeklyTemperatureReview.objects.all().order_by('-week_start_date')
+    serializer_class = WeeklyTemperatureReviewSerializer
+    permission_classes = [permissions.IsAuthenticated] # Basic permission, can be refined
+
+    def perform_create(self, serializer):
+        # Automatically set the reviewed_by field to the current user
+        serializer.save(reviewed_by=self.request.user)
+
+    def get_queryset(self):
+        """
+        Optionally restricts the returned reviews to a given user,
+        by filtering against a `department` query parameter in the URL.
+        Allows filtering by department for managers or general overview.
+        """
+        queryset = WeeklyTemperatureReview.objects.all().order_by('-week_start_date')
+        department_id = self.request.query_params.get('department_id')
+        if department_id is not None:
+            queryset = queryset.filter(department_id=department_id)
+        
+        # Further filtering based on user role could be added here
+        # For example, if a staff user should only see their department's reviews
+        # user = self.request.user
+        # if hasattr(user, 'userprofile') and user.userprofile.role == 'staff':
+        #     queryset = queryset.filter(department=user.userprofile.department)
+            
+        return queryset
+
+class DailyCleaningRecordViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows daily cleaning records to be viewed or edited.
+    """
+    queryset = DailyCleaningRecord.objects.all().order_by('-date_recorded')
+    serializer_class = DailyCleaningRecordSerializer
+    permission_classes = [permissions.IsAuthenticated] # Basic permission, can be refined
+
+    def perform_create(self, serializer):
+        # Automatically set the completed_by field to the current user
+        serializer.save(completed_by=self.request.user)
+
+    def get_queryset(self):
+        """
+        Optionally restricts the returned cleaning records.
+        Allows filtering by cleaning_item_id or department_id.
+        """
+        queryset = DailyCleaningRecord.objects.all().order_by('-date_recorded', 'cleaning_item__name')
+        # user = self.request.user # Not used yet, but available
+        
+        cleaning_item_id = self.request.query_params.get('cleaning_item_id')
+        if cleaning_item_id is not None:
+            queryset = queryset.filter(cleaning_item_id=cleaning_item_id)
+
+        department_id = self.request.query_params.get('department_id')
+        if department_id is not None:
+            queryset = queryset.filter(cleaning_item__department_id=department_id)
+
+        # Example: If staff should only see records they completed or for their department
+        # if hasattr(user, 'userprofile') and user.userprofile.role == 'staff':
+        #    queryset = queryset.filter(
+        #        Q(completed_by=user) | Q(cleaning_item__department=user.userprofile.department)
+        #    ).distinct()
+            
+        return queryset
 
 # Management Commands related views (if any in future)

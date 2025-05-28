@@ -10,6 +10,7 @@ import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import DepartmentManagementPage from './pages/DepartmentManagementPage';
 import ThermometerManagementPage from './pages/ThermometerManagementPage';
+import FoodSafetyPage from './pages/FoodSafetyPage';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
             {/* Department Management - accessible to superusers (full CRUD) and managers (read-only view) */}
             {/* The PrivateRoute allows managers. The component itself handles if a manager can only read. */}
             <Route path="/admin/departments" element={<PageLayout><DepartmentManagementPage /></PageLayout>} />
+            <Route path="/food-safety-forms" element={<PageLayout><FoodSafetyPage /></PageLayout>} />
           </Route>
 
           <Route path="/" element={<Navigate replace to="/login" />} />

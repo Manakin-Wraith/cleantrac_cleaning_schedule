@@ -3,7 +3,8 @@ from django.contrib.auth.models import User
 from .models import (
     Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
     AreaUnit, Thermometer, ThermometerVerificationRecord, 
-    ThermometerVerificationAssignment, TemperatureLog
+    ThermometerVerificationAssignment, TemperatureLog,
+    WeeklyTemperatureReview, DailyCleaningRecord
 )
 from rest_framework.validators import UniqueValidator
 
@@ -640,3 +641,43 @@ class TemperatureLogSerializer(serializers.ModelSerializer):
             pass
 
         return data
+
+# Food Safety File Serializers
+class WeeklyTemperatureReviewSerializer(serializers.ModelSerializer):
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True
+    )
+    reviewed_by_username = serializers.CharField(source='reviewed_by.username', read_only=True, allow_null=True)
+    # reviewed_by field will be set in the view during creation
+
+    class Meta:
+        model = WeeklyTemperatureReview
+        fields = [
+            'id', 'department_id', 'department_name', 'week_start_date', 
+            'reviewed_by_username', 'review_timestamp', 'overall_comment'
+        ]
+        read_only_fields = ['review_timestamp', 'reviewed_by_username']
+
+class DailyCleaningRecordSerializer(serializers.ModelSerializer):
+    cleaning_item_name = serializers.CharField(source='cleaning_item.name', read_only=True)
+    cleaning_item_id = serializers.PrimaryKeyRelatedField(
+        queryset=CleaningItem.objects.all(),
+        source='cleaning_item',
+        write_only=True
+    )
+    completed_by_username = serializers.CharField(source='completed_by.username', read_only=True, allow_null=True)
+    # completed_by field will be set in the view during creation
+    department_name = serializers.CharField(source='cleaning_item.department.name', read_only=True)
+
+
+    class Meta:
+        model = DailyCleaningRecord
+        fields = [
+            'id', 'cleaning_item_id', 'cleaning_item_name', 'department_name',
+            'date_recorded', 'is_completed', 
+            'completed_by_username', 'comment'
+        ]
+        read_only_fields = ['completed_by_username', 'department_name']
