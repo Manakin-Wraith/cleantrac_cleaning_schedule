@@ -28,8 +28,8 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  /* display: flex; */ /* Removed to prevent layout conflicts */
+  /* place-items: center; */ /* Removed to prevent layout conflicts */
   min-width: 320px;
   min-height: 100vh;
 }

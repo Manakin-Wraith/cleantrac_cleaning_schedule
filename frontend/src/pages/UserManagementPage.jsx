@@ -9,7 +9,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useSnackbar } from 'notistack';
 
-import PageLayout from '../components/PageLayout';
+// import PageLayout from '../components/PageLayout'; // Removed, PageLayout is handled by App.jsx
 import UserFormModal from '../components/users/UserFormModal'; 
 import { getUsers, deleteUser } from '../services/userService'; // deleteUser added
 import { useAuth } from '../context/AuthContext'; // To get current user role
@@ -80,15 +80,18 @@ function UserManagementPage() {
 
 
     if (loading) {
-        return <PageLayout title="User Management"><Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}><CircularProgress /></Box></PageLayout>;
+        return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 'calc(100vh - 64px - 48px)', p: 3 }}><CircularProgress /></Box>; // Adjusted height assuming header and some padding
     }
 
     if (error) {
-        return <PageLayout title="User Management"><Typography color="error">Error: {error}</Typography></PageLayout>;
+        return <Box sx={{p: 3}}><Typography color="error">Error: {error}</Typography></Box>;
     }
 
     return (
-        <PageLayout title="User Management">
+        <Box sx={{ width: '100%', p: { xs: 1, sm: 2, md: 3 } }}> {/* Main container for the page content */}
+            <Typography variant="h4" component="h1" gutterBottom sx={{ mb: { xs: 2, sm: 3} }}>
+                User Management
+            </Typography>
             <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
             <Button
                 variant="contained"
@@ -163,8 +166,8 @@ function UserManagementPage() {
                     user={currentUserToEdit}
                     currentUserRole={loggedInUser?.profile?.role}
                 />
-            )} 
-        </PageLayout>
+            )}
+        </Box>
     );
 }
 

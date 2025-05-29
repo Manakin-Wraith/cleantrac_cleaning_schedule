@@ -21,6 +21,7 @@ export const drawerWidth = 240;
 const collapsedDrawerWidth = (theme) => theme.spacing(7); 
 
 const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
+
   const [openSections, setOpenSections] = React.useState({});
   const { currentUser, logout } = useAuth();
   const theme = useTheme();
@@ -46,6 +47,8 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
     '& .MuiListItemButton-root': {
       borderLeft: isActive || isParentActive ? `3px solid ${theme.palette.primary.main}` : '3px solid transparent',
       paddingLeft: isActive || isParentActive ? `calc(${theme.spacing(3)} - 3px)` : theme.spacing(3), 
+      // boxSizing: 'border-box', // Removed - was incorrectly added
+      // backgroundColor: 'lime', // DEBUG: Removed - was incorrectly added
       '&:hover': {
         backgroundColor: theme.palette.action.hover, 
       },
@@ -235,6 +238,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
 
   const currentPermanentDrawerWidth = isCollapsed ? collapsedDrawerWidth(theme) : drawerWidth;
 
+
   return (
     <Box
       component="nav"
@@ -265,9 +269,11 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
             width: currentPermanentDrawerWidth, 
             borderRight: '1px solid rgba(0, 0, 0, 0.12)',
             overflowX: 'hidden', 
+
+            flexShrink: 0, // Prevent shrinking
             transition: theme.transitions.create('width', { 
               easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.enteringScreen,
+              duration: 225, // Fixed duration in ms for both expanding and collapsing
             }),
           },
         }}
