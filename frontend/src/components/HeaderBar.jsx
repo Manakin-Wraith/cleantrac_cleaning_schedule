@@ -1,17 +1,46 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, CircularProgress, IconButton, useTheme } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, CircularProgress, IconButton, useTheme, Avatar, Menu, MenuItem, ListItemIcon, Divider } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu'; 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'; 
-import { Link as RouterLink } from 'react-router-dom';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import SettingsIcon from '@mui/icons-material/Settings';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { drawerWidth as expandedDrawerWidthValue } from './Sidebar'; 
 
 const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed, showSidebar }) => { 
   const { currentUser, logout, isLoading } = useAuth();
   const theme = useTheme(); 
+  const navigate = useNavigate();
+
+  const [anchorEl, setAnchorEl] = React.useState(null);
+  const menuOpen = Boolean(anchorEl);
+
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   const handleLogout = async () => {
+    handleMenuClose();
     await logout(); 
+    navigate('/login'); // Redirect to login after logout
+  };
+
+  const handleProfile = () => {
+    handleMenuClose();
+    // navigate('/profile'); // TODO: Implement profile page and navigation
+    console.log('Navigate to profile page');
+  };
+
+  const handleSettings = () => {
+    handleMenuClose();
+    // navigate('/settings'); // TODO: Implement settings page and navigation
+    console.log('Navigate to settings page');
   };
 
   const collapsedWidthValue = theme.spacing(7);
@@ -40,7 +69,7 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
         }),
       }}
     >
-      <Toolbar>
+      <Toolbar sx={{ minHeight: { xs: '56px', sm: '56px', md: '56px' }, alignItems: 'center' }}>
         <IconButton
           color="inherit"
           aria-label="open drawer"
@@ -72,16 +101,84 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
         ) : currentUser ? (
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             {currentUser.profile?.department_name && (
-              <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', md: 'block' } }}> 
+              <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'block' } }}> 
                 Dept: {currentUser.profile.department_name}
               </Typography>
             )}
-            <Typography variant="subtitle2" sx={{ mr: 2 }}>
-              {currentUser.username} ({currentUser.profile?.role})
-            </Typography>
-            <Button color="inherit" onClick={handleLogout}>
-              Logout
-            </Button>
+            <IconButton
+              onClick={handleMenuOpen}
+              size="small"
+              sx={{ ml: 1 }}
+              aria-controls={menuOpen ? 'account-menu' : undefined}
+              aria-haspopup="true"
+              aria-expanded={menuOpen ? 'true' : undefined}
+            >
+              <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.secondary.main }}>
+                {currentUser.username ? currentUser.username[0].toUpperCase() : <AccountCircleIcon />}
+              </Avatar>
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              id="account-menu"
+              open={menuOpen}
+              onClose={handleMenuClose}
+              onClick={handleMenuClose} // Also close on item click if not navigating away
+              PaperProps={{
+                elevation: 0,
+                sx: {
+                  overflow: 'visible',
+                  filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                  mt: 1.5,
+                  '& .MuiAvatar-root': {
+                    width: 32,
+                    height: 32,
+                    ml: -0.5,
+                    mr: 1,
+                  },
+                  '&:before': {
+                    content: '""',
+                    display: 'block',
+                    position: 'absolute',
+                    top: 0,
+                    right: 14,
+                    width: 10,
+                    height: 10,
+                    bgcolor: 'background.paper',
+                    transform: 'translateY(-50%) rotate(45deg)',
+                    zIndex: 0,
+                  },
+                },
+              }}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            >
+              <MenuItem disabled sx={{ '&.Mui-disabled': { opacity: 1, color: theme.palette.text.primary } }}>
+                <Typography variant="subtitle1" component="div" sx={{ fontWeight: 'medium' }}>{currentUser.username}</Typography>
+              </MenuItem>
+              <MenuItem disabled sx={{ '&.Mui-disabled': { opacity: 0.7 } }}>
+                <Typography variant="body2" component="div">Role: {currentUser.profile?.role}</Typography>
+              </MenuItem>
+              <Divider />
+              <MenuItem onClick={handleProfile}>
+                <ListItemIcon>
+                  <AccountCircleIcon fontSize="small" />
+                </ListItemIcon>
+                Profile
+              </MenuItem>
+              <MenuItem onClick={handleSettings}>
+                <ListItemIcon>
+                  <SettingsIcon fontSize="small" />
+                </ListItemIcon>
+                Settings
+              </MenuItem>
+              <Divider />
+              <MenuItem onClick={handleLogout}>
+                <ListItemIcon>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                Logout
+              </MenuItem>
+            </Menu>
           </Box>
         ) : (
           <Button color="inherit" component={RouterLink} to="/login">

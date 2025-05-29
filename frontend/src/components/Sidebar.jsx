@@ -1,6 +1,6 @@
 import React from 'react';
-import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, Box, Divider, useTheme, useMediaQuery, Tooltip } from '@mui/material';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, Box, Divider, useTheme, useMediaQuery, Tooltip, Collapse } from '@mui/material';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import appLogo from '../assets/box_icon.png'; 
 
@@ -13,33 +13,66 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import LogoutIcon from '@mui/icons-material/Logout'; 
 import BusinessIcon from '@mui/icons-material/Business';
 import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat'; 
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import TuneIcon from '@mui/icons-material/Tune'; // For Management group 
 
 export const drawerWidth = 240;
 const collapsedDrawerWidth = (theme) => theme.spacing(7); 
 
 const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
+  const [openSections, setOpenSections] = React.useState({});
   const { currentUser, logout } = useAuth();
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md')); 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleSectionToggle = (sectionName) => {
+    setOpenSections(prevOpenSections => ({
+      ...prevOpenSections,
+      [sectionName]: !prevOpenSections[sectionName],
+    }));
+  };
 
   const isPermanentDrawerEffectivelyOpen = isMdUp && !isCollapsed;
   const isMobileDrawerOpen = mobileOpen; 
   const showTooltip = isCollapsed && isMdUp && !mobileOpen;
 
-  const commonStyles = (isActive) => ({
+  const commonStyles = (isActive, isParentActive = false) => ({
     textDecoration: 'none',
     color: 'inherit',
     display: 'block',
     '& .MuiListItemButton-root': {
-      borderLeft: isActive ? `3px solid ${theme.palette.primary.main}` : '3px solid transparent',
-      paddingLeft: isActive ? `calc(${theme.spacing(3)} - 3px)` : theme.spacing(3), 
+      borderLeft: isActive || isParentActive ? `3px solid ${theme.palette.primary.main}` : '3px solid transparent',
+      paddingLeft: isActive || isParentActive ? `calc(${theme.spacing(3)} - 3px)` : theme.spacing(3), 
       '&:hover': {
         backgroundColor: theme.palette.action.hover, 
       },
     },
     '& .MuiListItemIcon-root': {
-      color: isActive ? theme.palette.primary.main : theme.palette.text.secondary, 
+      color: isActive || isParentActive ? theme.palette.primary.main : theme.palette.text.secondary, 
+    },
+    '& .MuiListItemText-primary': {
+      color: isActive || isParentActive ? theme.palette.primary.main : theme.palette.text.primary,
+      fontWeight: isActive || isParentActive ? 'medium' : 'normal',
+    },
+  });
+
+  const nestedListItemStyles = (isActive) => ({
+    textDecoration: 'none',
+    color: 'inherit',
+    display: 'block',
+    '& .MuiListItemButton-root': {
+      paddingLeft: theme.spacing(4), // Indent nested items
+      borderLeft: isActive ? `3px solid ${theme.palette.primary.main}` : '3px solid transparent',
+      '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+      },
+    },
+    '& .MuiListItemIcon-root': {
+      color: isActive ? theme.palette.primary.main : theme.palette.text.secondary,
+      minWidth: theme.spacing(4), // Adjust icon spacing for nested items
     },
     '& .MuiListItemText-primary': {
       color: isActive ? theme.palette.primary.main : theme.palette.text.primary,
@@ -47,12 +80,25 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
     },
   });
 
-  const managerLinks = [
+  const departmentManagementLink = { 
+    text: 'Departments', 
+    icon: <BusinessIcon />,
+    path: '/admin/departments' 
+  };
+
+  const baseManagerLinks = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/manager-dashboard' },
-    { text: 'Coming SOON!', icon: <CalendarMonthIcon />, path: '/manager-schedule' },
-    { text: 'Item Management', icon: <ListAltIcon />, path: '/manager-items' },
-    { text: 'Staff', icon: <PeopleIcon />, path: '/manager-users' },
+    {
+      text: 'Management',
+      icon: <TuneIcon />,
+      children: [
+        { text: 'Item Management', icon: <ListAltIcon />, path: '/manager-items' },
+        { text: 'Staff', icon: <PeopleIcon />, path: '/manager-users' },
+        // departmentManagementLink will be added here conditionally
+      ],
+    },
     { text: 'Thermometers', icon: <DeviceThermostatIcon />, path: '/manager-thermometers' },
+    { text: 'Coming SOON!', icon: <CalendarMonthIcon />, path: '/manager-schedule' }, // Example: can be top-level or nested
   ];
 
   const staffLinks = [
@@ -60,22 +106,23 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
   ];
 
   let determinedLinks = [];
-  const departmentManagementLink = { 
-    text: 'Departments', 
-    icon: <BusinessIcon />,
-    path: '/admin/departments' 
-  };
 
   if (currentUser?.is_superuser) {
-    determinedLinks = [
-      ...managerLinks,
-      departmentManagementLink
-    ];
+    const managementChildren = baseManagerLinks.find(link => link.text === 'Management').children;
+    determinedLinks = baseManagerLinks.map(link => 
+      link.text === 'Management' 
+        ? { ...link, children: [...managementChildren, departmentManagementLink] } 
+        : link
+    );
   } else if (currentUser?.profile?.role === 'manager') {
-    determinedLinks = [
-      ...managerLinks,
-      departmentManagementLink
-    ];
+    // For managers, include department management if they have access, or filter it out if not needed by default
+    // Assuming managers always see department link if it's part of their role's general links
+    const managementChildren = baseManagerLinks.find(link => link.text === 'Management').children;
+    determinedLinks = baseManagerLinks.map(link => 
+      link.text === 'Management' 
+        ? { ...link, children: [...managementChildren, departmentManagementLink] } // Or filter departmentManagementLink based on specific manager perms
+        : link
+    );
   } else if (currentUser?.profile?.role === 'staff') {
     determinedLinks = staffLinks;
   }
@@ -106,23 +153,67 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
       </Toolbar>
       
       <Divider />
-      <List sx={{ pt: 0 }}>
-        {determinedLinks.map((link) => (
-          <NavLink to={link.path} key={link.text} style={{ textDecoration: 'none', color: 'inherit' }}>
-            {({ isActive }) => (
-              <ListItem disablePadding sx={commonStyles(isActive)}>
-                <Tooltip title={showTooltip ? link.text : ''} placement="right" arrow>
-                  <ListItemButton sx={{ justifyContent: showTooltip ? 'center' : 'flex-start', px: showTooltip ? theme.spacing(2.5) : `calc(${theme.spacing(3)} - 3px)` }}>
-                    <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center' }}>
-                      {link.icon}
-                    </ListItemIcon>
-                    {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={link.text} sx={{ color: theme.palette.text.primary }} />}
-                  </ListItemButton>
-                </Tooltip>
-              </ListItem>
-            )}
-          </NavLink>
-        ))}
+      <List sx={{ pt: 0 }} component="nav">
+        {determinedLinks.map((link) => {
+          const isParentActive = link.children && link.children.some(child => location.pathname.startsWith(child.path));
+          if (link.children) {
+            return (
+              <React.Fragment key={link.text}>
+                <ListItem disablePadding sx={commonStyles(false, isParentActive)}>
+                  <Tooltip title={showTooltip ? link.text : ''} placement="right" arrow>
+                    <ListItemButton 
+                      onClick={() => handleSectionToggle(link.text)} 
+                      sx={{ justifyContent: showTooltip ? 'center' : 'flex-start', px: showTooltip ? theme.spacing(2.5) : `calc(${theme.spacing(3)} - 3px)` }}
+                    >
+                      <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center' }}>
+                        {link.icon}
+                      </ListItemIcon>
+                      {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={link.text} sx={{ color: theme.palette.text.primary }} />}
+                      {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && (openSections[link.text] ? <ExpandLess /> : <ExpandMore />)}
+                    </ListItemButton>
+                  </Tooltip>
+                </ListItem>
+                <Collapse in={openSections[link.text]} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {link.children.map((childLink) => (
+                      <NavLink to={childLink.path} key={childLink.text} style={{ textDecoration: 'none', color: 'inherit' }}>
+                        {({ isActive }) => (
+                          <ListItem disablePadding sx={nestedListItemStyles(isActive)}>
+                            <Tooltip title={showTooltip ? childLink.text : ''} placement="right" arrow>
+                              <ListItemButton sx={{ justifyContent: showTooltip ? 'center' : 'flex-start', pl: showTooltip ? theme.spacing(2.5) : theme.spacing(4) }}>
+                                <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 2 : 'auto', justifyContent: 'center', pl: showTooltip ? 0 : theme.spacing(0.5) }}>
+                                  {childLink.icon}
+                                </ListItemIcon>
+                                {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={childLink.text} sx={{ color: theme.palette.text.primary }} />}
+                              </ListItemButton>
+                            </Tooltip>
+                          </ListItem>
+                        )}
+                      </NavLink>
+                    ))}
+                  </List>
+                </Collapse>
+              </React.Fragment>
+            );
+          }
+          // Render non-parent link
+          return (
+            <NavLink to={link.path} key={link.text} style={{ textDecoration: 'none', color: 'inherit' }}>
+              {({ isActive }) => (
+                <ListItem disablePadding sx={commonStyles(isActive)}>
+                  <Tooltip title={showTooltip ? link.text : ''} placement="right" arrow>
+                    <ListItemButton sx={{ justifyContent: showTooltip ? 'center' : 'flex-start', px: showTooltip ? theme.spacing(2.5) : `calc(${theme.spacing(3)} - 3px)` }}>
+                      <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center' }}>
+                        {link.icon}
+                      </ListItemIcon>
+                      {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={link.text} sx={{ color: theme.palette.text.primary }} />}
+                    </ListItemButton>
+                  </Tooltip>
+                </ListItem>
+              )}
+            </NavLink>
+          );
+        })}
         {currentUser && (
           <>
             <Divider sx={{ my: 1 }} />
