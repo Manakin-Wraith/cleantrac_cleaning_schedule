@@ -40,48 +40,49 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
   const isMobileDrawerOpen = mobileOpen; 
   const showTooltip = isCollapsed && isMdUp && !mobileOpen;
 
-  const commonStyles = (isActive, isParentActive = false) => ({
-    textDecoration: 'none',
-    color: 'inherit',
-    display: 'block',
-    '& .MuiListItemButton-root': {
-      borderLeft: isActive || isParentActive ? `3px solid ${theme.palette.primary.main}` : '3px solid transparent',
-      paddingLeft: isActive || isParentActive ? `calc(${theme.spacing(3)} - 3px)` : theme.spacing(3), 
-      // boxSizing: 'border-box', // Removed - was incorrectly added
-      // backgroundColor: 'lime', // DEBUG: Removed - was incorrectly added
-      '&:hover': {
-        backgroundColor: theme.palette.action.hover, 
+  const getListItemButtonStyles = (isActiveState, isParentActiveState = false) => {
+    const active = isActiveState || isParentActiveState;
+    const showText = isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen;
+    return {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: showTooltip && !showText ? 'center' : 'flex-start',
+      padding: theme.spacing(1, showText ? 2 : (showTooltip ? 1.5 : 2)),
+      margin: theme.spacing(0.5, 1.5),
+      borderRadius: '22px', // Pill shape
+      minHeight: '44px',
+      width: `calc(100% - ${theme.spacing(1.5 * 2)})`, // Account for margin
+      boxSizing: 'border-box',
+      transition: theme.transitions.create(['background-color', 'color', 'opacity'], {
+        duration: theme.transitions.duration.short,
+      }),
+      ...(active && {
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.primary.contrastText,
+        '&:hover': {
+          backgroundColor: theme.palette.primary.dark,
+        },
+        '& .MuiListItemText-primary': {
+            fontWeight: 500,
+        },
+      }),
+      ...(!active && {
+        color: theme.palette.text.secondary,
+        '&:hover': {
+          backgroundColor: theme.palette.action.hover,
+          color: theme.palette.text.primary,
+        },
+        '& .MuiListItemText-primary': {
+            fontWeight: 400,
+        },
+      }),
+      '& .MuiListItemIcon-root': {
+        minWidth: 0,
+        mr: showText ? 2 : 'auto',
+        justifyContent: 'center',
       },
-    },
-    '& .MuiListItemIcon-root': {
-      color: isActive || isParentActive ? theme.palette.primary.main : theme.palette.text.secondary, 
-    },
-    '& .MuiListItemText-primary': {
-      color: isActive || isParentActive ? theme.palette.primary.main : theme.palette.text.primary,
-      fontWeight: isActive || isParentActive ? 'medium' : 'normal',
-    },
-  });
-
-  const nestedListItemStyles = (isActive) => ({
-    textDecoration: 'none',
-    color: 'inherit',
-    display: 'block',
-    '& .MuiListItemButton-root': {
-      paddingLeft: theme.spacing(4), // Indent nested items
-      borderLeft: isActive ? `3px solid ${theme.palette.primary.main}` : '3px solid transparent',
-      '&:hover': {
-        backgroundColor: theme.palette.action.hover,
-      },
-    },
-    '& .MuiListItemIcon-root': {
-      color: isActive ? theme.palette.primary.main : theme.palette.text.secondary,
-      minWidth: theme.spacing(4), // Adjust icon spacing for nested items
-    },
-    '& .MuiListItemText-primary': {
-      color: isActive ? theme.palette.primary.main : theme.palette.text.primary,
-      fontWeight: isActive ? 'medium' : 'normal',
-    },
-  });
+    };
+  };
 
   const departmentManagementLink = { 
     text: 'Departments', 
@@ -162,16 +163,16 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
           if (link.children) {
             return (
               <React.Fragment key={link.text}>
-                <ListItem disablePadding sx={commonStyles(false, isParentActive)}>
+                <ListItem disablePadding>
                   <Tooltip title={showTooltip ? link.text : ''} placement="right" arrow>
                     <ListItemButton 
                       onClick={() => handleSectionToggle(link.text)} 
-                      sx={{ justifyContent: showTooltip ? 'center' : 'flex-start', px: showTooltip ? theme.spacing(2.5) : `calc(${theme.spacing(3)} - 3px)` }}
+                      sx={getListItemButtonStyles(false, isParentActive)}
                     >
                       <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center' }}>
                         {link.icon}
                       </ListItemIcon>
-                      {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={link.text} sx={{ color: theme.palette.text.primary }} />}
+                      {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={link.text} />}
                       {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && (openSections[link.text] ? <ExpandLess /> : <ExpandMore />)}
                     </ListItemButton>
                   </Tooltip>
@@ -181,13 +182,13 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
                     {link.children.map((childLink) => (
                       <NavLink to={childLink.path} key={childLink.text} style={{ textDecoration: 'none', color: 'inherit' }}>
                         {({ isActive }) => (
-                          <ListItem disablePadding sx={nestedListItemStyles(isActive)}>
+                          <ListItem disablePadding>
                             <Tooltip title={showTooltip ? childLink.text : ''} placement="right" arrow>
-                              <ListItemButton sx={{ justifyContent: showTooltip ? 'center' : 'flex-start', pl: showTooltip ? theme.spacing(2.5) : theme.spacing(4) }}>
+                              <ListItemButton sx={getListItemButtonStyles(isActive)}>
                                 <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 2 : 'auto', justifyContent: 'center', pl: showTooltip ? 0 : theme.spacing(0.5) }}>
                                   {childLink.icon}
                                 </ListItemIcon>
-                                {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={childLink.text} sx={{ color: theme.palette.text.primary }} />}
+                                {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={childLink.text} />}
                               </ListItemButton>
                             </Tooltip>
                           </ListItem>
@@ -203,13 +204,13 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
           return (
             <NavLink to={link.path} key={link.text} style={{ textDecoration: 'none', color: 'inherit' }}>
               {({ isActive }) => (
-                <ListItem disablePadding sx={commonStyles(isActive)}>
+                <ListItem disablePadding>
                   <Tooltip title={showTooltip ? link.text : ''} placement="right" arrow>
-                    <ListItemButton sx={{ justifyContent: showTooltip ? 'center' : 'flex-start', px: showTooltip ? theme.spacing(2.5) : `calc(${theme.spacing(3)} - 3px)` }}>
+                    <ListItemButton sx={getListItemButtonStyles(isActive)}>
                       <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center' }}>
                         {link.icon}
                       </ListItemIcon>
-                      {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={link.text} sx={{ color: theme.palette.text.primary }} />}
+                      {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={link.text} />}
                     </ListItemButton>
                   </Tooltip>
                 </ListItem>
@@ -220,13 +221,13 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
         {currentUser && (
           <>
             <Divider sx={{ my: 1 }} />
-            <ListItem disablePadding sx={commonStyles(false)}> 
+            <ListItem disablePadding> 
               <Tooltip title={showTooltip ? 'Logout' : ''} placement="right" arrow>
-                <ListItemButton onClick={handleLogoutClick} sx={{ justifyContent: showTooltip ? 'center' : 'flex-start', px: showTooltip ? theme.spacing(2.5) : `calc(${theme.spacing(3)} - 3px)` }}>
-                  <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center', color: theme.palette.text.secondary }}> 
+                <ListItemButton onClick={handleLogoutClick} sx={getListItemButtonStyles(false)}>
+                  <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center' }}> 
                     <LogoutIcon />
                   </ListItemIcon>
-                  {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary="Logout" sx={{ color: theme.palette.text.primary }} />}
+                  {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary="Logout" />}
                 </ListItemButton>
               </Tooltip>
             </ListItem>
@@ -242,42 +243,46 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
   return (
     <Box
       component="nav"
-      sx={{ width: { md: currentPermanentDrawerWidth }, flexShrink: { md: 0 }, transition: theme.transitions.create('width', { easing: theme.transitions.easing.sharp, duration: theme.transitions.duration.enteringScreen }) }}
+      sx={{ width: { md: currentPermanentDrawerWidth }, flexShrink: { md: 0 } }} // Removed transition from Box sx
       aria-label="mailbox folders"
     >
-      <Drawer 
+      {/* Drawer for mobile */}
+      <Drawer
         variant="temporary"
         open={mobileOpen}
-        onClose={handleDrawerToggle} 
+        onClose={handleDrawerToggle} // Restored
         ModalProps={{
-          keepMounted: true,
+          keepMounted: true, // Better open performance on mobile.
         }}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth }, 
+        PaperProps={{
+          sx: {
+            width: drawerWidth,
+            backgroundColor: theme.palette.sidebarBackground, // Use new sidebar background
+            borderRight: `1px solid ${theme.palette.divider}`,
+            boxSizing: 'border-box',
+          }
         }}
       >
-        {drawerContent} 
+        {drawerContent}
       </Drawer>
-      
-      <Drawer 
-        variant="permanent"
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          '& .MuiDrawer-paper': {
-            boxSizing: 'border-box', 
-            width: currentPermanentDrawerWidth, 
-            borderRight: '1px solid rgba(0, 0, 0, 0.12)',
-            overflowX: 'hidden', 
 
-            flexShrink: 0, // Prevent shrinking
-            transition: theme.transitions.create('width', { 
+      {/* Drawer for desktop */}
+      <Drawer
+        variant="permanent"
+        open // Permanent drawers are typically 'open' and their visibility/width is controlled by styles
+        PaperProps={{
+          sx: {
+            backgroundColor: theme.palette.sidebarBackground, // Use new sidebar background
+            width: isPermanentDrawerEffectivelyOpen ? drawerWidth : collapsedDrawerWidth(theme),
+            borderRight: 'none', 
+            transition: theme.transitions.create('width', {
               easing: theme.transitions.easing.sharp,
-              duration: 225, // Fixed duration in ms for both expanding and collapsing
+              duration: theme.transitions.duration.enteringScreen,
             }),
-          },
+            overflowX: 'hidden',
+            boxSizing: 'border-box',
+          }
         }}
-        open 
       >
         {drawerContent}
       </Drawer>

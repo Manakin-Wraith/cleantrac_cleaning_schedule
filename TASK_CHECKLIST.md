@@ -15,6 +15,7 @@
   - [x] Navigation Links (role-based, placeholders for now, includes Logout)
     - [x] Manager: Dashboard, Schedule/Calendar, Item Management, Staff
     - [x] Staff: My Tasks
+  - [x] Enhanced desktop view: Expanded sidebar now overlaps main content
 - **[x] Integrate Header & Sidebar into Main Application Layout**
   - [x] `HeaderBar` integrated into `PageLayout.jsx`.
   - [x] `Sidebar` integrated into `PageLayout.jsx`.

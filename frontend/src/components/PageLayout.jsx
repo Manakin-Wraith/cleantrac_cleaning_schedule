@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, CssBaseline, Toolbar, useTheme } from '@mui/material';
+import { Box, CssBaseline, Toolbar, useTheme, Container } from '@mui/material';
 import HeaderBar from './HeaderBar';
 import Sidebar, { drawerWidth as expandedSidebarWidthValue } from './Sidebar'; 
 
@@ -39,29 +39,34 @@ const PageLayout = ({ children, showSidebar = true }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          py: 3,
-          px: 3, // Best practice for desktop layouts
-
-          minHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing(3)} - 1px)`, // Adjust for header, padding, and potential border
-          marginTop: `calc(${theme.mixins.toolbar.minHeight}px + ${theme.spacing(3)})`, // Margin top to account for HeaderBar and top padding
-          transition: theme.transitions.create(['width', 'margin'], { 
+          backgroundColor: theme.palette.background.paper, // White background for main content
+          // py and px removed, will be applied to the Container
+          minHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px - 1px)`, // Adjusted for header and potential border
+          marginTop: `${theme.mixins.toolbar.minHeight}px`, // Align directly below HeaderBar
+          display: 'flex', // Added to allow Toolbar and Container to be direct children with correct flow
+          flexDirection: 'column', // Added for Toolbar and Container stacking
+          transition: theme.transitions.create(['width', 'margin', 'border-radius'], { 
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
           }),
-          // width: '100%', // Removed: flexGrow should handle expansion
-          // marginLeft: 0, // Removed: Conditional logic below handles this
           ...(showSidebar && {
             [theme.breakpoints.up('md')]: {
-              marginLeft: isDesktopSidebarCollapsed ? `${collapsedWidthValue}px` : `${expandedSidebarWidthValue}px`
-              // width: `calc(100% - ${isDesktopSidebarCollapsed ? collapsedWidthValue : expandedSidebarWidthValue}px)`, // Removed, flexGrow:1 should handle this
+              marginLeft: `${collapsedWidthValue}px`, // Always use collapsed width for margin, sidebar will overlap
+              borderTopLeftRadius: theme.shape.borderRadius * 2, // 'Scooped' corner
             },
-            // For mobile, when sidebar is shown (as a temporary drawer), main content shouldn't have margin or width adjustments here.
-            // It should naturally take full width minus nothing, as the drawer overlays.
           }),
+          ...(!showSidebar && {
+            borderTopLeftRadius: 0, // No radius if sidebar is hidden
+          }),
+          [theme.breakpoints.down('md')]: {
+            borderTopLeftRadius: 0, // No radius on smaller screens where sidebar is temporary
+          },
         }}
       >
         <Toolbar /> 
-        {children}
+        <Container maxWidth="lg" sx={{ flexGrow: 1, py: 3, px: { xs: 2, sm: 3 } }}>
+          {children}
+        </Container>
       </Box>
     </Box>
   );

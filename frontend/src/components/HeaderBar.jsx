@@ -45,7 +45,7 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
 
   const collapsedWidthValue = theme.spacing(7);
   const currentEffectiveDrawerWidth = showSidebar 
-    ? (isSidebarCollapsed ? collapsedWidthValue : expandedDrawerWidthValue) 
+    ? collapsedWidthValue // Always use collapsed width for AppBar calculations when sidebar is shown
     : 0;
 
   return (
@@ -53,6 +53,7 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
       position="fixed" 
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 1,
+        borderBottom: `1px solid ${theme.palette.divider}`, // Added for visual separation
         transition: theme.transitions.create(['width', 'margin'], { 
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.enteringScreen,

@@ -920,14 +920,16 @@ function ManagerDashboardPage() {
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns}>
             <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-                <Typography component="h1" variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 1 }}>
-                    {departmentName} Dashboard
-                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', mb: 4 /* Added margin below this centered block */ }}>
+                    <Typography component="h1" variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 1 }}>
+                        {departmentName} Dashboard
+                    </Typography>
+                    
+                    {/* Temperature Logging Status Summary */}
+                    <TemperatureLoggingSummary />
+                </Box>
                 
-                {/* Temperature Logging Status Summary */}
-                <TemperatureLoggingSummary />
-                
-                <Typography component="h2" variant="h5" gutterBottom sx={{ textAlign: 'center', mb: 4, mt: 4 }}>
+                <Typography component="h2" variant="h5" gutterBottom sx={{ textAlign: 'center', mb: 4, mt: 0 /* Adjusted mt as spacing is now from Box above */ }}>
                     Task Management
                 </Typography>
 

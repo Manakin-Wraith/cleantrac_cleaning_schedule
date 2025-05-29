@@ -39,7 +39,7 @@ This section covers the interface primarily used by managers or supervisors for 
 *   **Purpose:** Provide consistent navigation and structure across the application after login, *reflecting the user's current departmental context.*
 *   **Wireframe Description:**
     *   Fixed Header Bar at the top: App Name/Logo, User Name & Role display, *Current Active Department Display (e.g., "Butchery View")*, Logout Button.
-    *   Fixed Sidebar Navigation on the left (or collapsible):
+    *   Fixed Sidebar Navigation on the left (collapsible; when expanded on desktop, it overlaps the main content area):
         *   App Logo (smaller version).
         *   Navigation Links specific to the user's role *and current department* (Manager links for Butchery: Butchery Dashboard, Butchery Daily Schedule, etc. Staff links for HMR: My HMR Tasks).
     *   Main Content Area on the right: This area dynamically loads the content of the selected page, *filtered for the current department.*

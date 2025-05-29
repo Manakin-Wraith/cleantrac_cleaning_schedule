@@ -91,6 +91,7 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [x] Standardize page layout and centering (e.g., PageLayout component)
   - [x] Resolve MUI Select out-of-range warning for department_id in UserFormModal
   - [ ] Modernize header and sidebar layout
+    - [x] Implement overlapping sidebar for expanded desktop view
     - [ ] Implement nested navigation with grouping for better organization
     - [ ] Create contextual sidebar that adapts to user's current section
     - [ ] Improve mobile experience with bottom navigation
