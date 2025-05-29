@@ -3,12 +3,12 @@ import {
     Container, Typography, Box, Grid, Paper, CircularProgress, Button, Modal,
     TextField, Select, MenuItem, FormControl, InputLabel, List, ListItem, ListItemText,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert, Chip, IconButton, Tooltip,
-    Tabs, Tab 
+    Tabs, Tab, Checkbox
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles'; 
 import {
     AddCircleOutline, Visibility as VisibilityIcon, Edit as EditIcon, CheckCircle,
-    RateReview as RateReviewIcon 
+    RateReview as RateReviewIcon, Delete as DeleteIcon 
 } from '@mui/icons-material';
 import TemperatureLoggingSummary from '../components/thermometers/TemperatureLoggingSummary';
 // Thermometer components moved to dedicated page
@@ -16,7 +16,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { getCurrentUser } from '../services/authService';
-import { getTaskInstances, createTaskInstance, updateTaskInstance, markTaskAsComplete } from '../services/taskService';
+import { getTaskInstances, createTaskInstance, updateTaskInstance, deleteTaskInstance, deleteMultipleTaskInstances } from '../services/taskService';
 import { getCleaningItems } from '../services/cleaningItemService';
 import { getUsers } from '../services/userService';
 import { useSnackbar } from 'notistack';
@@ -24,6 +24,11 @@ import TaskDetailModal from '../components/modals/TaskDetailModal';
 import EditTaskAssignmentModal from '../components/modals/EditTaskAssignmentModal'; 
 import TaskSchedulerCalendar from '../components/calendar/TaskSchedulerCalendar'; 
 import { Draggable } from '@fullcalendar/interaction'; 
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 
 const getTodayDateString = (date = new Date()) => {
     const year = date.getFullYear();
@@ -96,8 +101,15 @@ function ManagerDashboardPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false); 
     const [selectedTaskEditData, setSelectedTaskEditData] = useState({ task: null, resolvedItemName: '' });
 
+    // State for delete confirmation
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [taskToDelete, setTaskToDelete] = useState(null);
+    const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
+
     // State for view toggle (list vs scheduler)
     const [currentView, setCurrentView] = useState('scheduler'); 
+
+    const [selectedTaskIds, setSelectedTaskIds] = useState(new Set());
 
     const externalEventsRef = useRef(null); 
 
@@ -134,6 +146,9 @@ function ManagerDashboardPage() {
 
     // Helper function to get cleaning item name robustly
     const getResolvedCleaningItemName = (task) => {
+        if (!task) {
+            return 'the selected task'; // Or a more generic placeholder like 'this task'
+        }
         if (task.cleaning_item && typeof task.cleaning_item === 'object' && task.cleaning_item.name) {
             return task.cleaning_item.name;
         }
@@ -471,6 +486,98 @@ function ManagerDashboardPage() {
         const resolvedName = getResolvedCleaningItemName(task);
         setSelectedTaskEditData({ task: task, resolvedItemName: resolvedName });
         setIsEditModalOpen(true);
+    };
+
+    const handleOpenDeleteConfirm = (task) => {
+        setTaskToDelete(task);
+        setIsDeleteConfirmOpen(true);
+    };
+
+    const handleCloseDeleteConfirm = () => {
+        setTaskToDelete(null);
+        setIsDeleteConfirmOpen(false);
+    };
+
+    const handleOpenBulkDeleteConfirm = () => {
+        if (selectedTaskIds.size > 0) {
+            setIsBulkDeleteConfirmOpen(true);
+        } else {
+            enqueueSnackbar('No tasks selected for deletion.', { variant: 'info' });
+        }
+    };
+
+    const handleCloseBulkDeleteConfirm = () => {
+        setIsBulkDeleteConfirmOpen(false);
+    };
+
+    const handleBulkDeleteTasks = async () => {
+        const idsToDelete = Array.from(selectedTaskIds);
+        if (idsToDelete.length === 0) {
+            enqueueSnackbar('No tasks selected for deletion.', { variant: 'info' });
+            return;
+        }
+
+        try {
+            const response = await deleteMultipleTaskInstances(idsToDelete);
+            enqueueSnackbar(response.message || `${idsToDelete.length} task(s) deleted successfully.`, { variant: 'success' });
+            setSelectedTaskIds(new Set()); // Clear selection
+            setIsBulkDeleteConfirmOpen(false); // Close dialog
+            // Refresh task list by calling fetchManagerData
+            if (user) { // Ensure user object is available
+                if (selectedDate) {
+                    fetchManagerData(user, selectedDate, true); // true to skip full loading indicator
+                } else {
+                    // Fallback to today if no specific date was selected for the list view
+                    fetchManagerData(user, new Date(getTodayDateString()), true); 
+                }
+            } else {
+                console.error('User object not available, cannot refresh tasks.');
+                enqueueSnackbar('Could not refresh task list: user data missing.', { variant: 'warning' });
+            }
+        } catch (error) {
+            console.error('Error deleting multiple tasks:', error);
+            enqueueSnackbar(error.message || 'Failed to delete selected tasks.', { variant: 'error' });
+        }
+    };
+
+    const isSelected = (id) => selectedTaskIds.has(id);
+
+    const handleRowCheckboxChange = (event, id) => {
+        const newSelectedTaskIds = new Set(selectedTaskIds);
+        if (event.target.checked) {
+            newSelectedTaskIds.add(id);
+        } else {
+            newSelectedTaskIds.delete(id);
+        }
+        setSelectedTaskIds(newSelectedTaskIds);
+        event.stopPropagation(); // Prevent row click if any other handler is on the row
+    };
+
+    const handleSelectAllClick = (event) => {
+        if (event.target.checked) {
+            const newSelectedIds = new Set(departmentTasks.map((task) => task.id));
+            setSelectedTaskIds(newSelectedIds);
+            return;
+        }
+        setSelectedTaskIds(new Set());
+    };
+
+    const handleDeleteTask = async () => {
+        if (!taskToDelete) return;
+
+        try {
+            await deleteTaskInstance(taskToDelete.id); 
+
+            setDepartmentTasks(prevTasks => prevTasks.filter(task => task.id !== taskToDelete.id));
+            enqueueSnackbar('Task deleted successfully.', 'success');
+            // Optionally, refresh data from server if not relying purely on local state update
+            // fetchManagerData(user, selectedDate, true);
+        } catch (error) {
+            console.error("Error deleting task:", error);
+            const errorMessage = error.response?.data?.detail || error.message || 'Failed to delete task.';
+            enqueueSnackbar(errorMessage, 'error');
+        }
+        handleCloseDeleteConfirm();
     };
 
     const handleCloseDetailModal = () => {
@@ -1001,7 +1108,20 @@ function ManagerDashboardPage() {
                 )}
 
                 {currentView === 'list' && (
-                    <Paper elevation={3} sx={{ p: 2, mt: 2 }}>
+                    <>
+                        {selectedTaskIds.size > 0 && (
+                            <Box sx={{ mb: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                                <Button
+                                    variant="contained"
+                                    color="error"
+                                    startIcon={<DeleteIcon />}
+                                    onClick={handleOpenBulkDeleteConfirm}
+                                >
+                                    Delete Selected ({selectedTaskIds.size})
+                                </Button>
+                            </Box>
+                        )}
+                        <Paper elevation={3} sx={{ p: 2, mt: selectedTaskIds.size > 0 ? 1 : 2 }}>
                         <Typography variant="h6" gutterBottom component="div">
                             Task List for {selectedDate ? new Date(selectedDate).toLocaleDateString() : 'Today'}
                         </Typography>
@@ -1014,6 +1134,14 @@ function ManagerDashboardPage() {
                                 <Table stickyHeader aria-label="department tasks table">
                                     <TableHead>
                                         <TableRow>
+                                            <TableCell padding="checkbox">
+                                                <Checkbox
+                                                    indeterminate={selectedTaskIds.size > 0 && selectedTaskIds.size < departmentTasks.length}
+                                                    checked={departmentTasks.length > 0 && selectedTaskIds.size === departmentTasks.length}
+                                                    onChange={handleSelectAllClick}
+                                                    inputProps={{ 'aria-label': 'select all tasks' }}
+                                                />
+                                            </TableCell>
                                             <TableCell>Cleaning Item</TableCell>
                                             <TableCell>Assigned To</TableCell>
                                             <TableCell>Due Date</TableCell>
@@ -1024,9 +1152,28 @@ function ManagerDashboardPage() {
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {departmentTasks.map((task) => (
-                                            <TableRow key={task.id} sx={getRowStyle(task.status)}>
-                                                <TableCell>{getResolvedCleaningItemName(task) || 'N/A'}</TableCell>
+                                        {departmentTasks.map((task) => {
+                                            const isItemSelected = isSelected(task.id);
+                                            const labelId = `checkbox-label-${task.id}`;
+
+                                            return (
+                                                <TableRow 
+                                                    key={task.id} 
+                                                    sx={getRowStyle(task.status)}
+                                                    hover
+                                                    role="checkbox"
+                                                    aria-checked={isItemSelected}
+                                                    tabIndex={-1}
+                                                    selected={isItemSelected}
+                                                >
+                                                    <TableCell padding="checkbox">
+                                                        <Checkbox
+                                                            checked={isItemSelected}
+                                                            onChange={(event) => handleRowCheckboxChange(event, task.id)}
+                                                            inputProps={{ 'aria-labelledby': labelId }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell id={labelId}>{getResolvedCleaningItemName(task) || 'N/A'}</TableCell>
                                                 <TableCell>
                                                     {task.assigned_to_details 
                                                         ? `${task.assigned_to_details.first_name || ''} ${task.assigned_to_details.last_name || ''}`.trim() || task.assigned_to_details.username 
@@ -1075,14 +1222,20 @@ function ManagerDashboardPage() {
                                                             </IconButton>
                                                         </span>
                                                     </Tooltip>
+                                                    <Tooltip title="Delete Task">
+                                                        <IconButton size="small" onClick={() => handleOpenDeleteConfirm(task)}>
+                                                            <DeleteIcon />
+                                                        </IconButton>
+                                                    </Tooltip>
                                                 </TableCell>
                                             </TableRow>
-                                        ))}
+                                        );})}
                                     </TableBody>
                                 </Table>
                             </TableContainer>
                         )}
-                    </Paper>
+                        </Paper>
+                    </>
                 )}
 
                 <Modal
@@ -1199,6 +1352,51 @@ function ManagerDashboardPage() {
                         </Box>
                     </Box>
                 </Modal>
+
+                <Dialog
+                    open={isDeleteConfirmOpen}
+                    onClose={handleCloseDeleteConfirm}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                >
+                    <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="alert-dialog-description">
+                            Are you sure you want to delete the task: "{getResolvedCleaningItemName(taskToDelete)}"? This action cannot be undone.
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseDeleteConfirm}>Cancel</Button>
+                        <Button onClick={handleDeleteTask} color="error" autoFocus>
+                            Delete
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Bulk Delete Confirmation Dialog */}
+                <Dialog
+                    open={isBulkDeleteConfirmOpen}
+                    onClose={handleCloseBulkDeleteConfirm}
+                    aria-labelledby="bulk-alert-dialog-title"
+                    aria-describedby="bulk-alert-dialog-description"
+                >
+                    <DialogTitle id="bulk-alert-dialog-title">{"Confirm Bulk Delete"}</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="bulk-alert-dialog-description">
+                            Are you sure you want to delete {selectedTaskIds.size} selected task(s)? This action cannot be undone.
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseBulkDeleteConfirm}>Cancel</Button>
+                        <Button 
+                            onClick={handleBulkDeleteTasks} 
+                            color="error" 
+                            autoFocus
+                        >
+                            Delete Selected
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
                 <TaskDetailModal 
                     open={isDetailModalOpen} 

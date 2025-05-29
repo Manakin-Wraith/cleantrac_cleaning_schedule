@@ -45,6 +45,30 @@
         *   Sub-task: Verify `cleaning_item_id` and `assigned_to_id` in `departmentTasks` during calendar event mapping.
         *   Sub-task: Verify `getItemName` and `getStaffName` function logic.
     - [ ] Refine styling of draggable items from external list and drop zones on calendar if needed.
+
+- **[x] Bulk Task Deletion (Manager Task List View)**
+  - [x] Frontend: Add "Select All" and individual row checkboxes (`ManagerDashboardPage.jsx`).
+  - [x] Frontend: Implement state management for selected tasks (`selectedTaskIds` in `ManagerDashboardPage.jsx`).
+  - [x] Frontend: Add "Delete Selected" button, visible when tasks are selected (`ManagerDashboardPage.jsx`).
+  - [x] Frontend: Implement confirmation dialog for bulk deletion (`ManagerDashboardPage.jsx`).
+  - [x] Frontend: Create `deleteMultipleTaskInstances` service function (`taskService.js`).
+  - [x] Backend: Implement `bulk_delete` action in `TaskInstanceViewSet` (`core/views.py`) with permission checks.
+  - [x] Backend: Ensure correct URL routing for `bulk_delete` endpoint (`core/urls.py` - automatic via router).
+  - [x] Integration: Implement `handleBulkDeleteTasks` in `ManagerDashboardPage.jsx` (API call, UI feedback, task list refresh).
+  - [x] Refinement: Correct task list refresh in `handleBulkDeleteTasks` to use `fetchManagerData` with proper arguments.
+  - **[ ] Testing - Bulk Task Deletion**
+    - [ ] Test selecting/deselecting all tasks using "Select All" checkbox.
+    - [ ] Test selecting/deselecting individual tasks using row checkboxes.
+    - [ ] Test "Delete Selected" button appears only when tasks are selected and shows correct count.
+    - [ ] Test bulk delete confirmation dialog: "Cancel" action.
+    - [ ] Test bulk delete confirmation dialog: "Delete Selected" action.
+    - [ ] Test successful bulk deletion of multiple tasks (verify tasks removed from UI and database).
+    - [ ] Test attempting bulk deletion with no tasks selected (verify snackbar message, no API call).
+    - [ ] Test permission handling:
+        - [ ] Manager can delete tasks from their own department.
+        - [ ] Manager cannot delete tasks from other departments (if test setup allows this scenario).
+        - [ ] Superuser can delete tasks from any department.
+    - [ ] Test error handling (e.g., simulate API error during deletion and verify UI feedback).
 - **[ ] Main Dashboard Page - Widget Implementation**
   - [ ] Design UI for dashboard widgets (Overall Completion, Overdue Tasks, Completion by Staff).
   - [ ] Develop/Adapt API endpoints for widget summary data (department-scoped).

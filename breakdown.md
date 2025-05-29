@@ -99,8 +99,8 @@ This section covers the interface primarily used by managers or supervisors for 
             *   "Mark Complete" Button (Manager override).
             *   "Edit Assignment" Button (Allows changing Responsible Staff for this instance, maybe inline or via a small modal).
 *   **UI Components:** Heading, Date Picker, Button Group, Button, Filter Panel (Container), Dropdown (Multi-select), Radio Buttons/Checkboxes, Search Input Field, Table (Header, Rows, Cells), Status Icon, Action Buttons (View, Mark Complete, Edit).
-*   **Features:** Task Management (Viewing, Filtering, Status Tracking, Assignment Management), Scheduling (Viewing generated tasks), Filtering & Sorting.
-*   **Key Functions:** `Retrieve Tasks` (API call with date/filter parameters, *scoped to department*), `Apply Filters`, `Select Date/Range`, `Sort Table`, `Open Task Detail Modal`, `Mark Task Complete` (API call), `Edit Task Assignment` (API call), `Open Item Form Modal` (*for department-specific items*).
+*   **Features:** Task Management (Viewing, Filtering, Status Tracking, Assignment Management, **Bulk Task Deletion**), Scheduling (Viewing generated tasks), Filtering & Sorting.
+*   **Key Functions:** `Retrieve Tasks` (API call with date/filter parameters, *scoped to department*), `Apply Filters`, `Select Date/Range`, `Sort Table`, `Open Task Detail Modal`, `Mark Task Complete` (API call), `Edit Task Assignment` (API call), `Open Item Form Modal` (*for department-specific items*), **`Handle Task Selection (Select All/Individual)`**, **`Initiate Bulk Delete` (API call with selected task IDs, includes confirmation)**.
 
 **5. Item Management Page (Manager View)**
 

@@ -6,7 +6,8 @@ from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from django.utils import timezone 
 from datetime import date as datetime_date 
-from django.db.models import Count 
+from django.db.models import Count
+from django.db import transaction 
 
 from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog, PasswordResetToken, \
     AreaUnit, Thermometer, ThermometerVerificationRecord, ThermometerVerificationAssignment, TemperatureLog
@@ -24,7 +25,7 @@ from .permissions import (
     CanLogCompletionAndManagerModify, IsSuperUserForWriteOrAuthenticatedReadOnly,
     UserAndProfileManagementPermissions, CanUpdateTaskStatus,
     IsSuperUserWriteOrManagerRead, IsThermometerVerificationStaff,
-    CanManageThermometerAssignments, CanLogTemperatures
+    CanManageThermometerAssignments, CanLogTemperatures, CanManageTaskInstance
 )
 from .sms_utils import send_sms # New import
 from django.contrib.auth.password_validation import validate_password # For password strength
@@ -240,8 +241,61 @@ class CleaningItemViewSet(viewsets.ModelViewSet):
         return CleaningItem.objects.none() # Default to empty if no department or profile
 
 class TaskInstanceViewSet(viewsets.ModelViewSet):
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def bulk_delete(self, request):
+        task_ids = request.data.get('ids', [])
+        if not isinstance(task_ids, list) or not all(isinstance(item, int) for item in task_ids) or not task_ids:
+            return Response({'error': 'A non-empty list of integer task IDs is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        tasks_to_delete_qs = TaskInstance.objects.filter(id__in=task_ids)
+        
+        permitted_task_ids_to_delete = []
+        denied_ids_info = [] # For more detailed feedback if needed
+
+        if user.is_superuser:
+            permitted_task_ids_to_delete = [task.id for task in tasks_to_delete_qs]
+        else:
+            try:
+                user_profile = user.profile
+                if user_profile.role == UserProfile.ROLE_MANAGER and user_profile.department:
+                    for task_id in task_ids: # Iterate over requested IDs to check one by one
+                        try:
+                            task_instance = TaskInstance.objects.get(id=task_id)
+                            if task_instance.department == user_profile.department:
+                                permitted_task_ids_to_delete.append(task_instance.id)
+                            else:
+                                denied_ids_info.append({'id': task_id, 'reason': 'Not in your department'})
+                        except TaskInstance.DoesNotExist:
+                            denied_ids_info.append({'id': task_id, 'reason': 'Not found'})
+                else: 
+                    return Response({'error': 'You do not have permission to perform this action (not a manager or no department).'}, status=status.HTTP_403_FORBIDDEN)
+            except UserProfile.DoesNotExist:
+                return Response({'error': 'User profile not found.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if not permitted_task_ids_to_delete:
+            if denied_ids_info:
+                 return Response({'message': 'No tasks were deleted. See details for reasons.', 'details': denied_ids_info}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'No valid tasks found for deletion based on the provided IDs.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        deleted_count = 0
+        try:
+            with transaction.atomic():
+                actual_deleted_count, _ = TaskInstance.objects.filter(id__in=permitted_task_ids_to_delete).delete()
+                deleted_count = actual_deleted_count
+        except Exception as e:
+            # Log the exception e, e.g., import logging; logging.error(f"Bulk delete error: {e}")
+            return Response({'error': f'An error occurred during deletion: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        response_data = {'message': f'Successfully deleted {deleted_count} tasks.'}
+        if denied_ids_info:
+            response_data['info'] = f'{len(denied_ids_info)} tasks could not be deleted. See details.'
+            response_data['details_denied'] = denied_ids_info
+        
+        return Response(response_data, status=status.HTTP_200_OK)
     serializer_class = TaskInstanceSerializer
-    permission_classes = [CanUpdateTaskStatus] # Apply new status update permission
+    # Apply general management permission and specific status update permission
+    permission_classes = [CanManageTaskInstance, CanUpdateTaskStatus]
 
     def get_queryset(self):
         user = self.request.user

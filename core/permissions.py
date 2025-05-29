@@ -293,14 +293,95 @@ class CanUpdateTaskStatus(BasePermission):
             return False # Default deny if no role matches or other condition unhandled
         
         # For other write methods like PUT or DELETE, if you want to restrict them based on status:
-        # if request.method == 'PUT': # Full update
-        #     # Potentially disallow PUT if task is completed, etc.
-        #     pass 
-        # if request.method == 'DELETE':
-        #     # Potentially disallow DELETE if task is completed, etc.
-        #     pass
+    # if request.method == 'PUT': # Full update
+    #     # Potentially disallow PUT if task is completed, etc.
+    #     pass 
+    # if request.method == 'DELETE':
+    #     # Potentially disallow DELETE if task is completed, etc.
+    #     pass
 
-        return True # Allow other write methods if not PATCH, or further restrict if needed.
+    # If it's not a PATCH request, this permission class currently allows it by default.
+    # This might need to be more restrictive if CanUpdateTaskStatus is the *only* permission.
+    # However, if used with another permission like CanManageTaskInstance, this is fine.
+        return True
+
+
+class CanManageTaskInstance(BasePermission):
+    """
+    Custom permission to control who can manage (update, delete) TaskInstances.
+    - Superusers can do anything.
+    - Managers can update/delete tasks within their own department.
+    - Staff cannot delete tasks (they can only update status via CanUpdateTaskStatus).
+    - Read-only access is granted to authenticated users who pass queryset checks.
+    """
+    message = 'You do not have permission to perform this action on this task.'
+
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated
+
+    def has_object_permission(self, request, view, obj):
+        # obj is the TaskInstance
+        if not request.user.is_authenticated:
+            return False
+
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+
+        # Allow read-only for any authenticated user (department filtering by queryset)
+        if request.method in SAFE_METHODS:
+            return True
+
+        # For write methods (PUT, PATCH, DELETE)
+        try:
+            user_profile = request.user.profile
+            user_role = user_profile.role
+            user_department = user_profile.department
+        except UserProfile.DoesNotExist:
+            self.message = 'User profile not found.'
+            return False
+        except AttributeError: # Catches if request.user has no 'profile' attribute
+            self.message = 'User profile attribute not found.'
+            return False
+
+        # Determine object's department - obj is TaskInstance
+        obj_department = obj.department
+        if not obj_department: # Should not happen for a valid task
+            self.message = 'Task department could not be determined.'
+            return False
+        
+        # Managers can manage tasks (update/delete) within their own department
+        if user_role == UserProfile.ROLE_MANAGER:
+            if user_department == obj_department:
+                # For DELETE and full PUT, manager of the department is allowed.
+                # PATCH requests will also be checked by CanUpdateTaskStatus if it's in view.permission_classes
+                return True
+            else:
+                self.message = 'Managers can only manage tasks within their own department.'
+                return False
+        
+        # Staff and other roles (if any) cannot DELETE or PUT by default with this permission.
+        if request.method == 'DELETE' or request.method == 'PUT':
+            self.message = 'Staff members are not allowed to delete or fully update tasks.'
+            return False
+
+        # If it's a PATCH request for a non-manager, this permission alone would deny.
+        # However, if CanUpdateTaskStatus is also present, it will handle PATCH for staff.
+        # If this is the only permission, staff PATCH is denied here.
+        # If the request is PATCH and user is staff, and CanUpdateTaskStatus is also applied, 
+        # DRF checks all permissions. If this one returns False, access is denied.
+        # So, we should allow PATCH here if user is staff and it's their task/department, 
+        # letting CanUpdateTaskStatus handle the specific status transition logic.
+        if request.method == 'PATCH' and user_role == UserProfile.ROLE_STAFF:
+            # Basic check: staff can only PATCH tasks in their department or assigned to them.
+            # More detailed status change logic is in CanUpdateTaskStatus.
+            if user_department == obj_department or obj.assigned_to == user_profile:
+                 return True # Allow, CanUpdateTaskStatus will do finer checks
+            else:
+                self.message = 'Staff can only modify tasks in their department or assigned to them.'
+                return False
+
+        return False # Default deny for other cases
 
 class CanLogCompletionAndManagerModify(BasePermission):
     """

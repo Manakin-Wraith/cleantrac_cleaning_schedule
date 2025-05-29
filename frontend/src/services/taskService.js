@@ -161,3 +161,55 @@ export const fetchCleaningItemsByDepartment = async (departmentId) => {
 
 // Future functions for tasks can be added here, e.g.:
 // export const getTaskInstanceById = async (taskId) => { ... };
+
+/**
+ * Deletes a task instance.
+ * 
+ * @param {number} taskId - ID of the task instance to delete.
+ * @returns {Promise<void>} A promise that resolves when the task is successfully deleted.
+ */
+export const deleteMultipleTaskInstances = async (taskIds) => {
+    try {
+        // Using POST for bulk operations with a body is common, even for deletions.
+        // Alternatively, some APIs use DELETE with a body, but POST is widely supported.
+        const response = await api.post('/taskinstances/bulk_delete/', { ids: taskIds });
+        return response.data; // Or response itself if you need status, etc.
+    } catch (error) {
+        console.error(
+            "Error deleting multiple task instances:", 
+            error.response ? error.response.data : error.message,
+            error.response ? `Status: ${error.response.status}` : '',
+            error.config ? `Payload: ${JSON.stringify(error.config.data)}`: ''
+        );
+        let errorMessage = "Failed to delete selected tasks.";
+        if (error.response && error.response.data) {
+            if (typeof error.response.data === 'string') {
+                errorMessage = error.response.data;
+            } else if (error.response.data.detail) {
+                errorMessage = error.response.data.detail;
+            } else if (error.response.data.error) {
+                errorMessage = error.response.data.error;
+            } else if (Object.keys(error.response.data).length > 0) {
+                // Try to format object errors
+                errorMessage = Object.entries(error.response.data)
+                    .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+                    .join('; ');
+            }
+        }
+        throw new Error(errorMessage);
+    }
+};
+
+export const deleteTaskInstance = async (taskId) => {
+    try {
+        await api.delete(`/taskinstances/${taskId}/`);
+        // No response data expected for a successful DELETE, but some APIs might return 204 No Content
+    } catch (error) {
+        console.error(`Error deleting task instance ${taskId}:`, error.response?.data || error.message);
+        // Re-throw a more specific error or the error data from the response
+        const errorMessage = error.response?.data?.detail || 
+                             (error.response?.status ? `Server error: ${error.response.status}` : error.message) || 
+                             'Failed to delete task instance.';
+        throw new Error(errorMessage);
+    }
+};

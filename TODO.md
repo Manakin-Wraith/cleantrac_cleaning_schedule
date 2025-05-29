@@ -340,6 +340,12 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
   - [ ] UI: Filter Panel (Staff, Status, Search by Item Name, Apply/Clear Buttons)
   - [x] UI: Task List Table (Status Icon, Item Name, Frequency, Responsible Staff, Supervisor, Due Date/Day, Actions) (Task details display correctly, including item names, assignees, start/end times. A dedicated 'Task List' tab view using a Material UI table is now also implemented and functional, displaying tasks for the selected date.)
   - [x] UI: **Calendar View** (FullCalendar integrated, displays tasks by staff and time, supports drag & drop for rescheduling/reassigning, and resizing for duration. Task events correctly display item and staff names.)
+  - **[x] Implement Bulk Task Deletion for Task List View**
+    - [x] Frontend: Add selection checkboxes (select all, individual rows).
+    - [x] Frontend: Add "Delete Selected" button and confirmation dialog.
+    - [x] Frontend: Implement service call for bulk deletion.
+    - [x] Backend: Create API endpoint for bulk deletion with permission checks.
+    - [x] Integration: Connect frontend to backend, handle UI updates and refresh.
     - [x] Calendar: Persist `start_time`, `end_time`, `due_date`, and `assignee` changes from drag & drop and resize operations to the backend.
     - [ ] **Calendar UI/UX Enhancements (Manager Scheduler View):**
         - [ ] Implement FullCalendar **Resource View** (e.g., `resourceTimeGridWeek`, `resourceTimeGridDay`) to display staff as distinct columns/lanes, replacing the current horizontal staff name list.
