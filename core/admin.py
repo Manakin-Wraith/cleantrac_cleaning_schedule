@@ -4,7 +4,8 @@ from django.contrib.auth.models import User
 from .models import (
     Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
     AreaUnit, Thermometer, ThermometerVerificationRecord, 
-    ThermometerVerificationAssignment, TemperatureLog
+    ThermometerVerificationAssignment, TemperatureLog,
+    DocumentTemplate, GeneratedDocument
 )
 
 # Basic registration
@@ -113,6 +114,25 @@ class UserAdmin(BaseUserAdmin):
 # Re-register UserAdmin
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
+
+# Document Template Management Admin Registration
+
+class DocumentTemplateAdmin(admin.ModelAdmin):
+    list_display = ('name', 'department', 'template_type', 'created_by', 'created_at', 'updated_at')
+    list_filter = ('department', 'template_type', 'created_at')
+    search_fields = ('name', 'description', 'department__name', 'created_by__username')
+    date_hierarchy = 'created_at'
+
+admin.site.register(DocumentTemplate, DocumentTemplateAdmin)
+
+class GeneratedDocumentAdmin(admin.ModelAdmin):
+    list_display = ('template', 'department', 'generated_by', 'status', 'created_at')
+    list_filter = ('department', 'status', 'created_at')
+    search_fields = ('template__name', 'department__name', 'generated_by__username')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('parameters',)
+
+admin.site.register(GeneratedDocument, GeneratedDocumentAdmin)
 
 # You can create more customized ModelAdmin classes for other models as needed
 # For example, for TaskInstance:

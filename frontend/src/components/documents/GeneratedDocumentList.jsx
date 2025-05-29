@@ -39,11 +39,11 @@ const GeneratedDocumentList = () => {
     }
   };
 
-  const handleDownload = (document) => {
+  const handleDownload = (doc) => {
     // Create a link to download the generated file
     const link = document.createElement('a');
-    link.href = document.generated_file;
-    link.download = `${document.template_name}-${new Date(document.created_at).toISOString().split('T')[0]}`;
+    link.href = doc.generated_file;
+    link.download = `${doc.template_name}-${new Date(doc.created_at).toISOString().split('T')[0]}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

@@ -3,9 +3,11 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.utils import timezone
 from django.db.models import Q
+from django.core.files.base import ContentFile
 import json
 import pandas as pd
 import os
+import io
 from datetime import datetime, timedelta
 
 from .models import DocumentTemplate, GeneratedDocument, TaskInstance, ThermometerVerificationRecord, TemperatureLog
@@ -222,8 +224,8 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             
             # Check if there are any verification records in the date range
             count = ThermometerVerificationRecord.objects.filter(
-                verification_date__gte=start_date,
-                verification_date__lte=end_date,
+                date_verified__gte=start_date,
+                date_verified__lte=end_date,
                 thermometer__department=template.department
             ).count()
             
@@ -298,20 +300,20 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             if template.template_type == 'verification' and parameters.get('includeThermometerVerifications', True):
                 # Get verification records for preview
                 records = ThermometerVerificationRecord.objects.filter(
-                    verification_date__gte=start_date,
-                    verification_date__lte=end_date,
+                    date_verified__gte=start_date,
+                    date_verified__lte=end_date,
                     thermometer__department=template.department
-                ).order_by('-verification_date')[:20]  # Limit to 20 for preview
+                ).order_by('-date_verified')[:20]  # Limit to 20 for preview
                 
                 if records.exists():
                     record_data = []
                     for record in records:
                         record_data.append({
-                            'Date': record.verification_date.strftime('%Y-%m-%d'),
-                            'Thermometer': record.thermometer.name,
-                            'Result': 'Passed' if record.passed else 'Failed',
-                            'Verified By': record.verified_by.username,
-                            'Notes': record.notes or ''
+                            'Date': record.date_verified.strftime('%Y-%m-%d'),
+                            'Thermometer': record.thermometer.serial_number,
+                            'Result': 'Passed',
+                            'Verified By': record.calibrated_by.username if record.calibrated_by else 'Unknown',
+                            'Notes': record.corrective_action or ''
                         })
                     
                     preview_data['sections'].append({
@@ -328,6 +330,84 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             })
         
         return preview_data
+
+
+def generate_document_file(template, parameters, user):
+    """
+    Generate a document file based on the template and parameters.
+    Returns a tuple of (file_content, filename, error_message).
+    """
+    try:
+        # Get the template file
+        template_file_path = template.template_file.path
+        
+        # Parse parameters
+        start_date = datetime.strptime(parameters.get('startDate'), '%Y-%m-%d').date()
+        end_date = datetime.strptime(parameters.get('endDate'), '%Y-%m-%d').date()
+        
+        # Create a new workbook based on the template
+        try:
+            # Load the template workbook
+            wb = pd.ExcelFile(template_file_path)
+            output = io.BytesIO()
+            
+            # Create a writer to save the modified workbook
+            writer = pd.ExcelWriter(output, engine='openpyxl')
+            
+            # Process each sheet in the workbook
+            for sheet_name in wb.sheet_names:
+                # Read the sheet
+                df = pd.read_excel(wb, sheet_name=sheet_name)
+                
+                # Add data to the sheet based on template type
+                if template.template_type == 'verification' and parameters.get('includeThermometerVerifications', True):
+                    # Get verification records
+                    records = ThermometerVerificationRecord.objects.filter(
+                        date_verified__gte=start_date,
+                        date_verified__lte=end_date,
+                        thermometer__department=template.department
+                    ).order_by('-date_verified')
+                    
+                    # Create a dataframe from the records
+                    if records.exists():
+                        data = []
+                        for record in records:
+                            data.append({
+                                'Date': record.date_verified.strftime('%Y-%m-%d'),
+                                'Thermometer': record.thermometer.serial_number,
+                                'Calibration Instrument': record.calibrated_instrument_no,
+                                'Reading': str(record.reading_after_verification),
+                                'Verified By': record.calibrated_by.username if record.calibrated_by else 'Unknown',
+                                'Notes': record.corrective_action or ''
+                            })
+                        
+                        # Create a new dataframe with the verification data
+                        verification_df = pd.DataFrame(data)
+                        
+                        # Find where to insert the data in the template
+                        # For simplicity, we'll just append the data to the sheet
+                        # In a real implementation, you would look for placeholders in the template
+                        df = pd.concat([df, verification_df], ignore_index=True)
+                
+                # Save the modified sheet to the workbook
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+            
+            # Save the workbook
+            writer.close()
+            
+            # Get the file content
+            file_content = output.getvalue()
+            
+            # Generate a filename
+            filename = f"{template.name}_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
+            
+            return file_content, filename, None
+            
+        except Exception as e:
+            return None, None, f"Error processing Excel template: {str(e)}"
+        
+    except Exception as e:
+        return None, None, f"Error generating document: {str(e)}"
 
 
 class GeneratedDocumentViewSet(viewsets.ModelViewSet):
@@ -362,6 +442,70 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
                 return GeneratedDocument.objects.none()
         except:
             return GeneratedDocument.objects.none()
+    
+    def create(self, request, *args, **kwargs):
+        # Extract data from request
+        template_id = request.data.get('template_id')
+        department_id = request.data.get('department_id')
+        parameters = request.data.get('parameters', {})
+        
+        # Validate required fields
+        if not template_id or not department_id or not parameters:
+            return Response(
+                {"detail": "Missing required fields: template_id, department_id, or parameters"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Get the template
+            template = DocumentTemplate.objects.get(id=template_id)
+            
+            # Generate the document file
+            file_content, filename, error_message = generate_document_file(template, parameters, request.user)
+            
+            if error_message:
+                # Create a failed document record
+                document = GeneratedDocument.objects.create(
+                    template=template,
+                    department_id=department_id,
+                    generated_by=request.user,
+                    status='failed',
+                    error_message=error_message,
+                    parameters=parameters
+                )
+                
+                return Response(
+                    {"detail": error_message, "document_id": document.id},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Create the document file
+            document = GeneratedDocument(
+                template=template,
+                department_id=department_id,
+                generated_by=request.user,
+                status='completed',
+                parameters=parameters
+            )
+            
+            # Save the generated file
+            document.generated_file.save(filename, ContentFile(file_content))
+            document.save()
+            
+            # Serialize and return the document
+            serializer = self.get_serializer(document)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except DocumentTemplate.DoesNotExist:
+            return Response(
+                {"detail": "Template not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": f"Error generating document: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     def perform_create(self, serializer):
         # Set generated_by to the requesting user
