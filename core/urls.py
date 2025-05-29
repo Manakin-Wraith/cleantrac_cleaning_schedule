@@ -17,6 +17,10 @@ from .views import (
     ThermometerVerificationAssignmentViewSet,
     TemperatureLogViewSet
 )
+from .document_template_views import (
+    DocumentTemplateViewSet,
+    GeneratedDocumentViewSet
+)
 
 # Create a router and register our viewsets with it.
 router = DefaultRouter()
@@ -33,6 +37,10 @@ router.register(r'thermometers', ThermometerViewSet, basename='thermometer')
 router.register(r'thermometer-verification-records', ThermometerVerificationRecordViewSet, basename='thermometerverificationrecord')
 router.register(r'thermometer-verification-assignments', ThermometerVerificationAssignmentViewSet, basename='thermometerverificationassignment')
 router.register(r'temperature-logs', TemperatureLogViewSet, basename='temperaturelog')
+
+# Register Document Template Management ViewSets
+router.register(r'document-templates', DocumentTemplateViewSet, basename='documenttemplate')
+router.register(r'generated-documents', GeneratedDocumentViewSet, basename='generateddocument')
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [

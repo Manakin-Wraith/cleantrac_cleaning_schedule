@@ -101,3 +101,12 @@ export const confirmPasswordReset = async (username, token, newPassword) => {
         throw error.response?.data || new Error(error.message || 'Failed to confirm password reset.');
     }
 };
+
+// Function to get the auth header for API requests
+export const getAuthHeader = () => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+        return { 'Authorization': `Token ${token}` };
+    }
+    return {};
+};

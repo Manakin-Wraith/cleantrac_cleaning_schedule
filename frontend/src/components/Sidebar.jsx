@@ -16,6 +16,7 @@ import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import TuneIcon from '@mui/icons-material/Tune'; // For Management group 
+import DescriptionIcon from '@mui/icons-material/Description'; // For Document Templates
 
 export const drawerWidth = 240;
 const collapsedDrawerWidth = (theme) => theme.spacing(7); 
@@ -102,6 +103,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
       ],
     },
     { text: 'Thermometers', icon: <DeviceThermostatIcon />, path: '/manager-thermometers' },
+    { text: 'Document Templates', icon: <DescriptionIcon />, path: '/manager-documents' },
     { text: 'Coming SOON!', icon: <CalendarMonthIcon />, path: '/manager-schedule' }, // Example: can be top-level or nested
   ];
 

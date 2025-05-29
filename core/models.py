@@ -284,6 +284,65 @@ class TemperatureLog(models.Model):
         return (self.area_unit.target_temperature_min <= self.temperature_reading <= 
                 self.area_unit.target_temperature_max)
 
+class DocumentTemplate(models.Model):
+    """
+    Represents a document template that can be used to generate reports.
+    Templates are Excel files that can be populated with data from the system.
+    """
+    TEMPLATE_TYPE_CHOICES = [
+        ('temperature', 'Temperature Log'),
+        ('cleaning', 'Cleaning Schedule'),
+        ('verification', 'Thermometer Verification'),
+        ('general', 'General Purpose'),
+    ]
+    
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='document_templates')
+    template_file = models.FileField(upload_to='document_templates/')
+    template_type = models.CharField(max_length=20, choices=TEMPLATE_TYPE_CHOICES, default='general')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_templates')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.name} ({self.department.name}) - {self.get_template_type_display()}"
+    
+    class Meta:
+        verbose_name = "Document Template"
+        verbose_name_plural = "Document Templates"
+        ordering = ['-updated_at']
+
+
+class GeneratedDocument(models.Model):
+    """
+    Represents a document generated from a template with specific data.
+    Tracks the history of document generation for auditing purposes.
+    """
+    STATUS_CHOICES = [
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+    
+    template = models.ForeignKey(DocumentTemplate, on_delete=models.CASCADE, related_name='generated_documents')
+    generated_file = models.FileField(upload_to='generated_documents/')
+    generated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='generated_documents')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='generated_documents')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='processing')
+    error_message = models.TextField(blank=True, null=True)
+    parameters = models.JSONField(default=dict, help_text="Parameters used to generate the document")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Generated from {self.template.name} by {self.generated_by.username if self.generated_by else 'Unknown'} on {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+    
+    class Meta:
+        verbose_name = "Generated Document"
+        verbose_name_plural = "Generated Documents"
+        ordering = ['-created_at']
+
+
 # To make UserProfile creation automatic when a User is created, we can use signals.
 # This is optional but good practice.
 # In core/signals.py (new file):

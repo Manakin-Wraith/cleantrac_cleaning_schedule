@@ -13,6 +13,7 @@ import PageLayout from './components/PageLayout';
 import PrivateRoute from './components/PrivateRoute';
 import DepartmentManagementPage from './pages/DepartmentManagementPage';
 import ThermometerManagementPage from './pages/ThermometerManagementPage';
+import DocumentTemplateManagementPage from './pages/DocumentTemplateManagementPage';
 
 // Helper component to apply theme based on auth context
 const ThemedApp = () => {
@@ -57,6 +58,7 @@ const ThemedApp = () => {
           <Route path="/manager-items" element={<PageLayout><ItemManagementPage /></PageLayout>} />
           <Route path="/manager-users" element={<PageLayout><UserManagementPage /></PageLayout>} />
           <Route path="/manager-thermometers" element={<PageLayout><ThermometerManagementPage /></PageLayout>} />
+          <Route path="/manager-documents" element={<PageLayout><DocumentTemplateManagementPage /></PageLayout>} />
           <Route path="/admin/departments" element={<PageLayout><DepartmentManagementPage /></PageLayout>} />
         </Route>
 
