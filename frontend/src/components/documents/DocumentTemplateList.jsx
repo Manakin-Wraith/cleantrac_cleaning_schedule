@@ -13,7 +13,7 @@ import axios from 'axios';
 import { API_URL } from '../../config';
 import { getAuthHeader } from '../../services/authService';
 
-const DocumentTemplateList = ({ onGenerateDocument }) => {
+const DocumentTemplateList = ({ onGenerateDocument, onEditTemplate }) => {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -181,6 +181,15 @@ const DocumentTemplateList = ({ onGenerateDocument }) => {
                         color="primary"
                       >
                         <CloudDownloadIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Edit Template">
+                      <IconButton 
+                        size="small" 
+                        onClick={() => onEditTemplate && onEditTemplate(template)}
+                        color="secondary"
+                      >
+                        <EditIcon />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete Template">

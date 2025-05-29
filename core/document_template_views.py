@@ -311,9 +311,13 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                         record_data.append({
                             'Date': record.date_verified.strftime('%Y-%m-%d'),
                             'Thermometer': record.thermometer.serial_number,
+                            'Model': getattr(record.thermometer, 'model', 'N/A'),
+                            'Calibrated Instrument': record.calibrated_instrument_no,
+                            'Reading': f"{record.reading_after_verification}°C",
                             'Result': 'Passed',
                             'Verified By': record.calibrated_by.username if record.calibrated_by else 'Unknown',
-                            'Notes': record.corrective_action or ''
+                            'Corrective Action': record.corrective_action or 'None',
+                            'Created At': record.created_at.strftime('%Y-%m-%d %H:%M') if record.created_at else 'N/A'
                         })
                     
                     preview_data['sections'].append({
@@ -347,53 +351,48 @@ def generate_document_file(template, parameters, user):
         
         # Create a new workbook based on the template
         try:
-            # Load the template workbook
-            wb = pd.ExcelFile(template_file_path)
-            output = io.BytesIO()
+            # Load the template workbook using openpyxl directly for more control
+            from openpyxl import load_workbook
+            wb = load_workbook(template_file_path)
             
-            # Create a writer to save the modified workbook
-            writer = pd.ExcelWriter(output, engine='openpyxl')
-            
-            # Process each sheet in the workbook
-            for sheet_name in wb.sheet_names:
-                # Read the sheet
-                df = pd.read_excel(wb, sheet_name=sheet_name)
+            # Get verification records
+            if template.template_type == 'verification' and parameters.get('includeThermometerVerifications', True):
+                records = ThermometerVerificationRecord.objects.filter(
+                    date_verified__gte=start_date,
+                    date_verified__lte=end_date,
+                    thermometer__department=template.department
+                ).order_by('-date_verified')
                 
-                # Add data to the sheet based on template type
-                if template.template_type == 'verification' and parameters.get('includeThermometerVerifications', True):
-                    # Get verification records
-                    records = ThermometerVerificationRecord.objects.filter(
-                        date_verified__gte=start_date,
-                        date_verified__lte=end_date,
-                        thermometer__department=template.department
-                    ).order_by('-date_verified')
+                if records.exists():
+                    # Get the active worksheet (usually the first one)
+                    ws = wb.active
                     
-                    # Create a dataframe from the records
-                    if records.exists():
-                        data = []
-                        for record in records:
-                            data.append({
-                                'Date': record.date_verified.strftime('%Y-%m-%d'),
-                                'Thermometer': record.thermometer.serial_number,
-                                'Calibration Instrument': record.calibrated_instrument_no,
-                                'Reading': str(record.reading_after_verification),
-                                'Verified By': record.calibrated_by.username if record.calibrated_by else 'Unknown',
-                                'Notes': record.corrective_action or ''
-                            })
+                    # Add date range to the worksheet (typically in cell A1 or a header area)
+                    date_range_text = f"Date Range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
+                    if 'A1' in ws and not ws['A1'].value:
+                        ws['A1'] = date_range_text
+                    
+                    # Find the starting row for data (typically after headers)
+                    # This is a simplified approach - in a real implementation, you would
+                    # look for specific markers or headers in the template
+                    start_row = 5  # Assuming data starts at row 5
+                    
+                    # Populate the verification data
+                    for i, record in enumerate(records):
+                        row = start_row + i
                         
-                        # Create a new dataframe with the verification data
-                        verification_df = pd.DataFrame(data)
-                        
-                        # Find where to insert the data in the template
-                        # For simplicity, we'll just append the data to the sheet
-                        # In a real implementation, you would look for placeholders in the template
-                        df = pd.concat([df, verification_df], ignore_index=True)
-                
-                # Save the modified sheet to the workbook
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                        # Map data to columns - adjust column letters based on your template
+                        ws.cell(row=row, column=1, value=record.date_verified.strftime('%Y-%m-%d'))  # Date
+                        ws.cell(row=row, column=2, value=record.thermometer.serial_number)  # Thermometer
+                        ws.cell(row=row, column=3, value=record.calibrated_instrument_no)  # Calibrated Instrument
+                        ws.cell(row=row, column=4, value=f"{record.reading_after_verification}°C")  # Reading
+                        ws.cell(row=row, column=5, value=record.calibrated_by.username if record.calibrated_by else "Unknown")  # Verified By
+                        ws.cell(row=row, column=6, value=record.corrective_action or "None")  # Corrective Action
             
-            # Save the workbook
-            writer.close()
+            # Save the workbook to a BytesIO object
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
             
             # Get the file content
             file_content = output.getvalue()

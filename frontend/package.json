@@ -24,10 +24,12 @@
     "@reduxjs/toolkit": "^2.8.2",
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",
+    "exceljs": "^4.4.0",
     "notistack": "^3.0.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-redux": "^9.2.0"
+    "react-redux": "^9.2.0",
+    "react-spreadsheet": "^0.10.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

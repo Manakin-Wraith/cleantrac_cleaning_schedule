@@ -8,11 +8,13 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DescriptionIcon from '@mui/icons-material/Description';
 import HistoryIcon from '@mui/icons-material/History';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import EditIcon from '@mui/icons-material/Edit';
 import { getCurrentUser } from '../services/authService';
 import DocumentTemplateList from '../components/documents/DocumentTemplateList';
 import DocumentTemplateForm from '../components/documents/DocumentTemplateForm';
 import GeneratedDocumentList from '../components/documents/GeneratedDocumentList';
 import DocumentGenerationForm from '../components/documents/DocumentGenerationForm';
+import TemplateEditor from '../components/documents/TemplateEditor';
 
 function DocumentTemplateManagementPage() {
   const [user, setUser] = useState(null);
@@ -21,7 +23,9 @@ function DocumentTemplateManagementPage() {
   const [currentTab, setCurrentTab] = useState('templates');
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [showGenerationForm, setShowGenerationForm] = useState(false);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [editingTemplateId, setEditingTemplateId] = useState(null);
   const theme = useTheme();
 
   useEffect(() => {
@@ -47,7 +51,9 @@ function DocumentTemplateManagementPage() {
     // Reset form visibility when changing tabs
     setShowTemplateForm(false);
     setShowGenerationForm(false);
+    setShowTemplateEditor(false);
     setSelectedTemplate(null);
+    setEditingTemplateId(null);
   };
 
   const handleShowTemplateForm = () => {
@@ -68,9 +74,24 @@ function DocumentTemplateManagementPage() {
     setShowGenerationForm(true);
   };
 
+  const handleEditTemplate = (template) => {
+    setEditingTemplateId(template.id);
+    setShowTemplateEditor(true);
+  };
+
+  const handleCreateNewTemplate = () => {
+    setEditingTemplateId(null);
+    setShowTemplateEditor(true);
+  };
+
   const handleCancelGeneration = () => {
     setShowGenerationForm(false);
     setSelectedTemplate(null);
+  };
+
+  const handleCancelTemplateEditor = () => {
+    setShowTemplateEditor(false);
+    setEditingTemplateId(null);
   };
 
   const handleDocumentGenerated = () => {
@@ -78,6 +99,12 @@ function DocumentTemplateManagementPage() {
     setSelectedTemplate(null);
     setCurrentTab('history');
     // Refresh data if needed
+  };
+
+  const handleTemplateSaved = () => {
+    setShowTemplateEditor(false);
+    setEditingTemplateId(null);
+    // Refresh template list
   };
 
   if (loadingUser) {
@@ -137,6 +164,12 @@ function DocumentTemplateManagementPage() {
             icon={<HistoryIcon />} 
             iconPosition="start"
           />
+          <Tab 
+            label="Template Editor" 
+            value="editor" 
+            icon={<EditIcon />} 
+            iconPosition="start"
+          />
         </Tabs>
       </Box>
 
@@ -153,22 +186,42 @@ function DocumentTemplateManagementPage() {
               onCancel={handleCancelGeneration}
               onSuccess={handleDocumentGenerated}
             />
+          ) : showTemplateEditor ? (
+            <TemplateEditor
+              templateId={editingTemplateId}
+              onSave={handleTemplateSaved}
+              onCancel={handleCancelTemplateEditor}
+            />
           ) : (
             <>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h5" component="h2">
                   Available Templates
                 </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<AddCircleOutlineIcon />}
-                  onClick={handleShowTemplateForm}
-                >
-                  Add Template
-                </Button>
+                <Box>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    startIcon={<AddCircleOutlineIcon />}
+                    onClick={handleShowTemplateForm}
+                    sx={{ mr: 1 }}
+                  >
+                    Upload Template
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    startIcon={<EditIcon />}
+                    onClick={handleCreateNewTemplate}
+                  >
+                    Create Template
+                  </Button>
+                </Box>
               </Box>
-              <DocumentTemplateList onGenerateDocument={handleGenerateDocument} />
+              <DocumentTemplateList 
+                onGenerateDocument={handleGenerateDocument} 
+                onEditTemplate={handleEditTemplate}
+              />
             </>
           )}
         </>
@@ -181,6 +234,14 @@ function DocumentTemplateManagementPage() {
           </Typography>
           <GeneratedDocumentList />
         </>
+      )}
+
+      {currentTab === 'editor' && (
+        <TemplateEditor
+          templateId={editingTemplateId}
+          onSave={handleTemplateSaved}
+          onCancel={handleCancelTemplateEditor}
+        />
       )}
     </Container>
   );

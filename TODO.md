@@ -41,11 +41,21 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
    - Improve task event rendering
    - Add collapsible sidebar for enhanced controls
 
-6. **Implement Reports Page**
-   - Create report configuration section
-   - Implement various report types
-   - Add export functionality
-   - Include thermometer verification reports
+6. **Document Template System**
+   - ✅ Create document template models and APIs
+   - ✅ Implement template upload and management
+   - ✅ Build document generation workflow
+   - ✅ Add template editor for creating custom templates
+   - ✅ Implement thermometer verification report generation
+   - ✅ Enhance document preview with comprehensive data
+   - Write unit tests for document generation
+   - Add more template types (cleaning schedules, temperature logs)
+
+7. **Implement Reports Page**
+   - ✅ Create report configuration section
+   - ✅ Implement various report types
+   - ✅ Add export functionality
+   - ✅ Include thermometer verification reports
 
 ## Bug Fixes & Stability Improvements
 
