@@ -16,7 +16,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { getCurrentUser } from '../services/authService';
-import { getTaskInstances, createTaskInstance, updateTaskInstance, deleteTaskInstance, deleteMultipleTaskInstances } from '../services/taskService';
+import { getTaskInstances, createTaskInstance, updateTaskInstance, deleteTaskInstance, deleteMultipleTaskInstances, markTaskAsComplete } from '../services/taskService';
 import { getCleaningItems } from '../services/cleaningItemService';
 import { getUsers } from '../services/userService';
 import { useSnackbar } from 'notistack';

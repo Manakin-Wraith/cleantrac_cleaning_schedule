@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 from django.utils import timezone
+from .models import UserProfile
 
 class IsSuperUser(BasePermission):
     """Allows access only to superusers."""
@@ -12,7 +13,7 @@ class IsManager(BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
         try:
-            return request.user.profile.role == 'manager'
+            return request.user.profile.role == UserProfile.ROLE_MANAGER
         except AttributeError: # Handles cases like no profile (though our signals should prevent this for active users)
             return False
 
@@ -22,7 +23,7 @@ class IsStaff(BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
         try:
-            return request.user.profile.role == 'staff'
+            return request.user.profile.role == UserProfile.ROLE_STAFF
         except AttributeError:
             return False
 
@@ -37,7 +38,7 @@ class IsManagerForWriteOrAuthenticatedReadOnly(BasePermission):
         
         # For write methods (POST, PUT, PATCH, DELETE), check if user is a manager
         try:
-            return request.user.profile.role == 'manager'
+            return request.user.profile.role == UserProfile.ROLE_MANAGER
         except AttributeError:
             return False
 
@@ -54,7 +55,7 @@ class IsManagerForWriteOrAuthenticatedReadOnly(BasePermission):
 
         # Write permissions.
         try:
-            user_is_manager = request.user.profile.role == 'manager'
+            user_is_manager = request.user.profile.role == UserProfile.ROLE_MANAGER
             user_department = request.user.profile.department
 
             if not user_is_manager or not user_department:
@@ -111,7 +112,7 @@ class IsSuperUserWriteOrManagerRead(BasePermission):
         
         if request.method in SAFE_METHODS:
             # Allow read for superuser or manager
-            return request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == 'manager')
+            return request.user.is_superuser or (hasattr(request.user, 'profile') and request.user.profile.role == UserProfile.ROLE_MANAGER)
         
         # For unsafe methods (POST, PUT, DELETE), only superuser
         return request.user.is_superuser
@@ -137,7 +138,7 @@ class UserAndProfileManagementPermissions(BasePermission):
             if request.user.is_superuser:
                 return True
             try:
-                return request.user.profile.role == 'manager'
+                return request.user.profile.role == UserProfile.ROLE_MANAGER
             except AttributeError: # No profile
                 return False
         
@@ -146,7 +147,7 @@ class UserAndProfileManagementPermissions(BasePermission):
         if request.user.is_superuser:
             return True
         try:
-            return request.user.profile.role == 'manager'
+            return request.user.profile.role == UserProfile.ROLE_MANAGER
         except AttributeError:
             return False
 
@@ -176,7 +177,7 @@ class UserAndProfileManagementPermissions(BasePermission):
             
             # Manager can update users/profiles in their department
             try:
-                if request.user.profile.role == 'manager' and request.user.profile.department:
+                if request.user.profile.role == UserProfile.ROLE_MANAGER and request.user.profile.department:
                     if is_user_object and hasattr(obj, 'profile') and obj.profile.department == request.user.profile.department:
                         return True
                     if is_profile_object and obj.department == request.user.profile.department:
@@ -189,7 +190,7 @@ class UserAndProfileManagementPermissions(BasePermission):
         if request.method == 'DELETE':
             # Managers can delete users/profiles in their department, but not themselves
             try:
-                if request.user.profile.role == 'manager' and request.user.profile.department:
+                if request.user.profile.role == UserProfile.ROLE_MANAGER and request.user.profile.department:
                     if is_user_object and hasattr(obj, 'profile') and obj.profile.department == request.user.profile.department and obj != request.user:
                         return True
                     if is_profile_object and obj.department == request.user.profile.department and obj.user != request.user:
@@ -408,7 +409,7 @@ class CanLogCompletionAndManagerModify(BasePermission):
         
         # For other write methods (PUT, PATCH, DELETE), check if user is a manager
         try:
-            return request.user.profile.role == 'manager'
+            return request.user.profile.role == UserProfile.ROLE_MANAGER
         except AttributeError:
             return False
     
@@ -435,7 +436,7 @@ class CanLogCompletionAndManagerModify(BasePermission):
                 obj_department = obj.task_instance.cleaning_item.department
             
             # Check if the user is a manager of the object's department
-            user_is_manager = request.user.profile.role == 'manager'
+            user_is_manager = request.user.profile.role == UserProfile.ROLE_MANAGER
             user_department = request.user.profile.department
             
             return user_is_manager and user_department == obj_department
@@ -470,11 +471,11 @@ class IsThermometerVerificationStaff(BasePermission):
         # For write methods, check if user is a manager or assigned verification staff
         try:
             # Managers can always perform verification
-            if request.user.profile.role == 'manager':
+            if request.user.profile.role == UserProfile.ROLE_MANAGER:
                 return True
             
             # Staff can only perform verification if they are assigned to it
-            if request.user.profile.role == 'staff':
+            if request.user.profile.role == UserProfile.ROLE_STAFF:
                 # Check if the user is assigned to thermometer verification duties
                 from .models import ThermometerVerificationAssignment
                 is_assigned = ThermometerVerificationAssignment.objects.filter(
@@ -514,11 +515,11 @@ class IsThermometerVerificationStaff(BasePermission):
                 return False
             
             # Managers can always perform verification in their department
-            if request.user.profile.role == 'manager':
+            if request.user.profile.role == UserProfile.ROLE_MANAGER:
                 return True
             
             # Staff can only perform verification if they are assigned to it
-            if request.user.profile.role == 'staff':
+            if request.user.profile.role == UserProfile.ROLE_STAFF:
                 # Check if the user is assigned to thermometer verification duties
                 from .models import ThermometerVerificationAssignment
                 is_assigned = ThermometerVerificationAssignment.objects.filter(
@@ -557,7 +558,7 @@ class CanManageThermometerAssignments(BasePermission):
         
         # For write methods, check if user is a manager
         try:
-            return request.user.profile.role == 'manager'
+            return request.user.profile.role == UserProfile.ROLE_MANAGER
         except AttributeError:
             return False
     
@@ -570,11 +571,11 @@ class CanManageThermometerAssignments(BasePermission):
         if request.method in SAFE_METHODS:
             try:
                 # Staff can see their own assignments
-                if request.user.profile.role == 'staff':
+                if request.user.profile.role == UserProfile.ROLE_STAFF:
                     return obj.staff_member == request.user
                 
                 # Managers can see assignments in their department
-                if request.user.profile.role == 'manager':
+                if request.user.profile.role == UserProfile.ROLE_MANAGER:
                     return obj.department == request.user.profile.department
                 
                 return False
@@ -584,7 +585,7 @@ class CanManageThermometerAssignments(BasePermission):
         # For write methods, check if user is a manager of the object's department
         try:
             # Managers can only manage assignments in their department
-            if request.user.profile.role == 'manager':
+            if request.user.profile.role == UserProfile.ROLE_MANAGER:
                 return obj.department == request.user.profile.department
             
             return False
@@ -620,7 +621,7 @@ class CanLogTemperatures(BasePermission):
         
         # For other write methods, check if user is a manager
         try:
-            return request.user.profile.role == 'manager'
+            return request.user.profile.role == UserProfile.ROLE_MANAGER
         except AttributeError:
             return False
     
@@ -636,11 +637,11 @@ class CanLogTemperatures(BasePermission):
         # For write methods, check if user is a manager of the object's department
         try:
             # Managers can only manage logs in their department
-            if request.user.profile.role == 'manager':
+            if request.user.profile.role == UserProfile.ROLE_MANAGER:
                 return obj.department == request.user.profile.department
             
             # Staff can only update/delete their own logs
-            if request.user.profile.role == 'staff':
+            if request.user.profile.role == UserProfile.ROLE_STAFF:
                 return obj.logged_by == request.user and obj.department == request.user.profile.department
             
             return False
