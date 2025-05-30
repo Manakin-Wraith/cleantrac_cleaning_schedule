@@ -22,6 +22,7 @@ import ScienceIcon from '@mui/icons-material/Science'; // For Chemicals
 import ListAltIcon from '@mui/icons-material/ListAlt'; // For Method
 import NotesIcon from '@mui/icons-material/Notes'; // For Notes
 import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 
 function StaffTasksPage() {
     const [user, setUser] = useState(null);
@@ -70,7 +71,10 @@ function StaffTasksPage() {
             setThermometersNeedingVerification(needingVerification || []);
             setVerifiedThermometers(verified || []);
             setTodaysLogs(todayLogsData || []);
-            setVerificationAssignment(verificationData || null);
+            
+            // Only set verification assignment if the user is actually assigned to it
+            // verificationData will be an empty object if user is not assigned
+            setVerificationAssignment(verificationData && verificationData.id ? verificationData : null);
             
             // Process temperature check assignments - handle AM/PM assignments properly
             const temperatureChecks = temperatureCheckData || {};
