@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Container, Typography, Box, CircularProgress, Alert, Tabs, Tab,
-  Paper, Button, Grid, Card, CardContent, Divider, Chip
+  Box, Tabs, Tab, Button, Grid
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -15,6 +14,11 @@ import ThermometerAssignmentManager from '../components/thermometers/Thermometer
 import ThermometerList from '../components/thermometers/ThermometerList';
 import ThermometerForm from '../components/thermometers/ThermometerForm';
 import VerificationRecordsList from '../components/thermometers/VerificationRecordsList';
+import { 
+  DashboardLayout, 
+  DashboardCard, 
+  SectionTitle 
+} from '../components/dashboard';
 
 function ThermometerVerificationPage() {
   const [user, setUser] = useState(null);
@@ -61,49 +65,37 @@ function ThermometerVerificationPage() {
     // Refresh data if needed
   };
 
-  if (loadingUser) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-        <Typography variant="h6" color="text.secondary" align="center">
-          Could not load thermometer verification page. Please try again later.
-        </Typography>
-      </Container>
-    );
-  }
-
   // Check if user is a manager or superuser
   const isManagerOrAdmin = user && (
     user.is_superuser || 
     (user.profile && user.profile.role === 'manager')
   );
-
-  if (!isManagerOrAdmin) {
+  
+  // Prepare error message for non-managers
+  const permissionError = !isManagerOrAdmin ? 
+    'You do not have permission to access this page. Only managers can manage thermometer verification.' : '';
+  
+  // If there's a permission error or another error, or if still loading, use the dashboard layout to show the appropriate state
+  if (loadingUser || error || permissionError) {
     return (
-      <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          You do not have permission to access this page. Only managers can manage thermometer verification.
-        </Alert>
-      </Container>
+      <DashboardLayout
+        title="Thermometer Verification Management"
+        loading={loadingUser}
+        error={error || permissionError}
+        errorMessage="Could not load thermometer verification page. Please try again later."
+      />
     );
   }
 
   const departmentName = user?.profile?.department_name || 'Your';
+  const title = `${departmentName} Thermometer Verification`;
+  
+  // No alerts needed
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Typography component="h1" variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 1 }}>
-        {departmentName} Thermometer Verification Management
-      </Typography>
-
+    <DashboardLayout
+      title={title}
+    >
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={currentTab} onChange={handleTabChange} aria-label="thermometer verification tabs">
           <Tab 
@@ -129,85 +121,14 @@ function ThermometerVerificationPage() {
 
       {currentTab === 'dashboard' && (
         <>
-          {/* Notification Area */}
-          <Box sx={{ mb: 3 }}>
-            <Grid container spacing={2}>
-              <Grid xs={12}>
-                <Card variant="outlined" sx={{ borderColor: theme.palette.warning.light }}>
-                  <CardContent sx={{ p: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                      <ReportProblemIcon sx={{ color: theme.palette.warning.main, mr: 2, mt: 0.5 }} />
-                      <Box>
-                        <Typography variant="h6" sx={{ mb: 1 }}>Thermometer Verification Assignment</Typography>
-                        <Typography variant="body2" sx={{ mb: 1 }}>
-                          Ensure thermometer verification responsibilities are assigned to staff members.
-                          Unassigned duties may result in compliance issues.
-                        </Typography>
-                        <Box sx={{ mt: 1 }}>
-                          <Alert severity="warning" icon={<DeviceThermostatIcon />}>
-                            <Typography variant="body2">
-                              <strong>Thermometer Verification:</strong> Assign staff for daily thermometer verification.
-                            </Typography>
-                          </Alert>
-                        </Box>
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          </Box>
-          
           <ThermometerStatusDashboard />
           
-          <Typography variant="h5" component="h2" sx={{ mt: 4, mb: 2 }}>
-            Assignment Overview
-          </Typography>
+
           
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid xs={12}>
-              <Card variant="outlined" sx={{ height: '100%' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <DeviceThermostatIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
-                    <Typography variant="h6">Thermometer Verification</Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Staff assigned to verify thermometers must check calibration and record verification results.
-                  </Typography>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Frequency: Daily
-                    </Typography>
-                    <Chip 
-                      label="Critical Safety Task" 
-                      size="small" 
-                      color="error" 
-                      variant="outlined" 
-                    />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-          
-          <Typography variant="h5" component="h2" sx={{ mb: 3 }}>
-            Staff Assignment Management
-          </Typography>
+          <SectionTitle title="Staff Assignment Management" />
           
           <Grid container spacing={3}>
-            <Grid xs={12}>
-              <Card variant="outlined" sx={{ mb: 2 }}>
-                <CardContent sx={{ p: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <DeviceThermostatIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
-                    <Typography variant="h6">Thermometer Verification</Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Assign staff members responsible for verifying thermometers to ensure they are properly calibrated and ready for use.
-                  </Typography>
-                </CardContent>
-              </Card>
+            <Grid item xs={12}>
               <ThermometerAssignmentManager />
             </Grid>
           </Grid>
@@ -216,21 +137,21 @@ function ThermometerVerificationPage() {
 
       {currentTab === 'thermometers' && (
         <>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5" component="h2">
-              Thermometer Inventory
-            </Typography>
-            {!showThermometerForm && (
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AddCircleOutlineIcon />}
-                onClick={handleShowThermometerForm}
-              >
-                Add Thermometer
-              </Button>
-            )}
-          </Box>
+          <SectionTitle 
+            title="Thermometer Inventory" 
+            action={
+              !showThermometerForm && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<AddCircleOutlineIcon />}
+                  onClick={handleShowThermometerForm}
+                >
+                  Add Thermometer
+                </Button>
+              )
+            }
+          />
 
           {showThermometerForm ? (
             <ThermometerForm 
@@ -245,13 +166,11 @@ function ThermometerVerificationPage() {
 
       {currentTab === 'records' && (
         <>
-          <Typography variant="h5" component="h2" sx={{ mb: 3 }}>
-            Thermometer Verification Records
-          </Typography>
+          <SectionTitle title="Thermometer Verification Records" />
           <VerificationRecordsList />
         </>
       )}
-    </Container>
+    </DashboardLayout>
   );
 }
 

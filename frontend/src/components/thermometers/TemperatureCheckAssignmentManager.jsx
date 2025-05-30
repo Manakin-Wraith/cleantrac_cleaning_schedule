@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Typography, Box, Paper, Button, CircularProgress, Alert, 
   TextField, Grid, Card, CardContent, CardActions, Divider,
-  FormControl, InputLabel, MenuItem, Select, List, ListItem, ListItemText, Chip
+  FormControl, InputLabel, MenuItem, Select, List, ListItem, ListItemText, Chip,
+  Stack, IconButton, Tooltip
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
@@ -13,6 +14,8 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import EditIcon from '@mui/icons-material/Edit';
+import AddIcon from '@mui/icons-material/Add';
 
 import { getUsers } from '../../services/userService';
 import { getCurrentUser } from '../../services/authService';
@@ -51,7 +54,7 @@ const TemperatureCheckAssignmentManager = () => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showAssignmentForm, setShowAssignmentForm] = useState(false);
-  const [activeTimePeriod, setActiveTimePeriod] = useState('AM'); // For form selection
+  const [activeTimePeriod, setActiveTimePeriod] = useState('AM');
 
   const getStaffName = useCallback((userId) => {
     if (!userId || !staffUsers.length) return 'Unknown Staff';
@@ -135,7 +138,7 @@ const TemperatureCheckAssignmentManager = () => {
     } finally {
       setLoading(false);
     }
-  }, [formData.id]); // Removed getStaffName from dependencies
+  }, [formData.id]);
 
   useEffect(() => {
     fetchInitialData();
@@ -201,35 +204,39 @@ const TemperatureCheckAssignmentManager = () => {
       setError('Please select an assignment date.');
       return;
     }
+    if (!formData.time_period) {
+      setError('Please select a time period (AM/PM).');
+      return;
+    }
+    if (!formData.department_id) {
+      setError('Department ID is required.');
+      return;
+    }
 
-    setLoading(true);
     try {
-      const staffId = typeof formData.staff_member_id === 'string' 
-        ? parseInt(formData.staff_member_id, 10) 
-        : formData.staff_member_id;
-
-      const assignmentPayload = {
-        staff_member_id: staffId,
+      setLoading(true);
+      
+      const payload = {
+        staff_member_id: formData.staff_member_id,
         department_id: formData.department_id,
+        assigned_date: format(formData.assigned_date, 'yyyy-MM-dd'),
         time_period: formData.time_period,
-        notes: formData.notes || '',
-        is_active: true, 
-        assigned_date: format(formData.assigned_date, 'yyyy-MM-dd')
+        notes: formData.notes || ''
       };
 
-      // Clear any previous messages
-      setError('');
-      setSuccessMessage('');
+      let response;
       
       if (formData.id) {
-        await updateTemperatureCheckAssignment(formData.id, assignmentPayload);
-        setSuccessMessage(`Temperature check assignment for ${getStaffName(staffId)} (${formData.time_period}) updated successfully`);
+        // Update existing assignment
+        response = await updateTemperatureCheckAssignment(formData.id, payload);
+        setSuccessMessage(`Successfully updated ${formData.time_period} temperature check assignment.`);
       } else {
-        await createTemperatureCheckAssignment(assignmentPayload);
-        setSuccessMessage(`Temperature check assignment for ${getStaffName(staffId)} (${formData.time_period}) created successfully`);
+        // Create new assignment
+        response = await createTemperatureCheckAssignment(payload);
+        setSuccessMessage(`Successfully created ${formData.time_period} temperature check assignment.`);
       }
       
-      await fetchInitialData(); 
+      // Reset form and refresh data
       setShowAssignmentForm(false);
       setFormData({
         id: null,
@@ -237,15 +244,23 @@ const TemperatureCheckAssignmentManager = () => {
         department_id: currentUser?.profile?.department_id || '',
         time_period: activeTimePeriod,
         notes: '',
-        assigned_date: new Date(),
+        assigned_date: new Date()
       });
-
+      
+      // Refresh data
+      fetchInitialData();
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
+      
     } catch (err) {
       console.error("Failed to save assignment:", err);
       const errorDetail = err.response?.data?.detail || 
-                        (typeof err.response?.data === 'object' ? JSON.stringify(err.response.data) : err.response?.data) || 
-                        err.message || 
-                        'Failed to save assignment. Please try again.';
+                         (typeof err.response?.data === 'object' ? JSON.stringify(err.response.data) : err.response?.data) || 
+                         err.message || 
+                         'Failed to save assignment. Please try again.';
       setError(errorDetail);
     } finally {
       setLoading(false);
@@ -253,54 +268,44 @@ const TemperatureCheckAssignmentManager = () => {
   };
 
   return (
-    <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <AccessTimeIcon sx={{ mr: 1, color: theme.palette.primary.main, fontSize: '2rem' }} />
-        <Typography variant="h5" component="div">
-          Temperature Check Assignment Management
-        </Typography>
-      </Box>
-
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6">Temperature Check Assignments</Typography>
-        <Typography variant="body2" color="text.secondary">
-          Assign staff members to perform temperature checks (AM/PM)
-        </Typography>
+    <Paper elevation={0} sx={{ p: 3, borderRadius: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <AccessTimeIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+        <Typography variant="h6">Temperature Check Assignment Management</Typography>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {successMessage && <Alert severity="success" sx={{ mb: 2 }}>{successMessage}</Alert>}
-      
       {loading && <CircularProgress sx={{ display: 'block', margin: '20px auto' }} />}
 
       {showAssignmentForm ? (
         <Card variant="outlined">
           <CardContent>
-            <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+            <Typography variant="h6" gutterBottom>
               {formData.id ? 'Edit Temperature Check Assignment' : 'Assign New Temperature Check Duty'}
             </Typography>
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            
             <form onSubmit={handleSubmitAssignment}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth required>
-                  <InputLabel id="staff-member-label">Staff Member</InputLabel>
-                  <Select
-                    labelId="staff-member-label"
-                    name="staff_member_id"
-                    value={formData.staff_member_id}
-                    onChange={handleChange}
-                    label="Staff Member"
-                  >
-                    <MenuItem value="">
-                      <em>Select Staff Member</em>
-                    </MenuItem>
-                    {staffUsers.map(user => (
-                      <MenuItem key={user.id} value={user.id}>
-                        {user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username}
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth required>
+                    <InputLabel id="staff-member-label">Staff Member</InputLabel>
+                    <Select
+                      labelId="staff-member-label"
+                      name="staff_member_id"
+                      value={formData.staff_member_id}
+                      onChange={handleChange}
+                      label="Staff Member"
+                    >
+                      <MenuItem value="">
+                        <em>Select Staff Member</em>
                       </MenuItem>
-                    ))}
-                  </Select>
+                      {staffUsers.map(user => (
+                        <MenuItem key={user.id} value={user.id}>
+                          {user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username}
+                        </MenuItem>
+                      ))}
+                    </Select>
                   </FormControl>
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -357,7 +362,7 @@ const TemperatureCheckAssignmentManager = () => {
                   />
                 </Grid>
               </Grid>
-              <CardActions sx={{ justifyContent: 'flex-end', p: 0, pt: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                 <Button onClick={handleCancelAssignment} color="inherit" sx={{ mr: 1 }}>
                   Cancel
                 </Button>
@@ -369,193 +374,129 @@ const TemperatureCheckAssignmentManager = () => {
                 >
                   {loading ? 'Saving...' : (formData.id ? 'Update Assignment' : 'Create Assignment')}
                 </Button>
-              </CardActions>
+              </Box>
             </form>
           </CardContent>
         </Card>
       ) : (
         <>
+          {/* Today's Assignments - Horizontal Layout */}
           <Card variant="outlined" sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Today's Temperature Check Assignments
-              </Typography>
-              
-              {todayAssignmentStatus.needsAttention ? (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <ReportProblemIcon sx={{ mr: 1 }} />
-                    <Typography>{todayAssignmentStatus.message}</Typography>
-                  </Box>
-                </Alert>
-              ) : (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <CheckCircleOutlineIcon sx={{ mr: 1 }} />
-                    <Typography>{todayAssignmentStatus.message}</Typography>
-                  </Box>
-                </Alert>
-              )}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">Today's Temperature Check Assignments</Typography>
+                {todayAssignmentStatus.needsAttention ? (
+                  <Chip 
+                    icon={<ReportProblemIcon />} 
+                    label="Needs Attention" 
+                    color="warning" 
+                    variant="outlined" 
+                  />
+                ) : (
+                  <Chip 
+                    icon={<CheckCircleOutlineIcon />} 
+                    label="All Covered" 
+                    color="success" 
+                    variant="outlined" 
+                  />
+                )}
+              </Box>
               
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
-                  <Card variant="outlined">
+                  <Card variant="outlined" sx={{ height: '100%' }}>
                     <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <AccessTimeIcon sx={{ mr: 1, color: theme.palette.info.main }} />
-                        <Typography variant="h6">Morning (AM) Check</Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <AccessTimeIcon sx={{ mr: 1, color: theme.palette.info.main }} />
+                          <Typography variant="subtitle1">Morning (AM) Check</Typography>
+                        </Box>
+                        {todayAssignmentStatus.amAssigned ? (
+                          <Tooltip title="Edit Assignment">
+                            <IconButton 
+                              size="small" 
+                              color="primary"
+                              onClick={() => handleOpenAssignmentForm(todayAssignmentStatus.am, 'AM')}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="Assign Staff">
+                            <IconButton 
+                              size="small" 
+                              color="primary"
+                              onClick={() => handleOpenAssignmentForm(null, 'AM')}
+                            >
+                              <AddIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </Box>
                       
                       {todayAssignmentStatus.amAssigned ? (
-                        <>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <PersonIcon sx={{ mr: 1, color: theme.palette.success.main }} />
-                            <Typography>
-                              Assigned to: <strong>{todayAssignmentStatus.amStaffName}</strong>
-                            </Typography>
-                          </Box>
-                          <Button 
-                            variant="outlined" 
-                            color="primary" 
-                            size="small"
-                            onClick={() => handleOpenAssignmentForm(todayAssignmentStatus.am, 'AM')}
-                            sx={{ mt: 1 }}
-                          >
-                            Edit Assignment
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Typography color="text.secondary" sx={{ mb: 1 }}>
-                            No staff assigned for morning temperature checks.
+                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                          <PersonIcon sx={{ mr: 1, color: theme.palette.success.main, fontSize: '1rem' }} />
+                          <Typography variant="body2">
+                            Assigned to: <strong>{todayAssignmentStatus.amStaffName}</strong>
                           </Typography>
-                          <Button 
-                            variant="contained" 
-                            color="primary" 
-                            size="small"
-                            onClick={() => handleOpenAssignmentForm(null, 'AM')}
-                            sx={{ mt: 1 }}
-                          >
-                            Assign Staff
-                          </Button>
-                        </>
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                          No staff assigned for morning temperature checks
+                        </Typography>
                       )}
                     </CardContent>
                   </Card>
                 </Grid>
                 
                 <Grid item xs={12} md={6}>
-                  <Card variant="outlined">
+                  <Card variant="outlined" sx={{ height: '100%' }}>
                     <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <AccessTimeIcon sx={{ mr: 1, color: theme.palette.warning.main }} />
-                        <Typography variant="h6">Afternoon (PM) Check</Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <AccessTimeIcon sx={{ mr: 1, color: theme.palette.warning.main }} />
+                          <Typography variant="subtitle1">Afternoon (PM) Check</Typography>
+                        </Box>
+                        {todayAssignmentStatus.pmAssigned ? (
+                          <Tooltip title="Edit Assignment">
+                            <IconButton 
+                              size="small" 
+                              color="primary"
+                              onClick={() => handleOpenAssignmentForm(todayAssignmentStatus.pm, 'PM')}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="Assign Staff">
+                            <IconButton 
+                              size="small" 
+                              color="primary"
+                              onClick={() => handleOpenAssignmentForm(null, 'PM')}
+                            >
+                              <AddIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </Box>
                       
                       {todayAssignmentStatus.pmAssigned ? (
-                        <>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <PersonIcon sx={{ mr: 1, color: theme.palette.success.main }} />
-                            <Typography>
-                              Assigned to: <strong>{todayAssignmentStatus.pmStaffName}</strong>
-                            </Typography>
-                          </Box>
-                          <Button 
-                            variant="outlined" 
-                            color="primary" 
-                            size="small"
-                            onClick={() => handleOpenAssignmentForm(todayAssignmentStatus.pm, 'PM')}
-                            sx={{ mt: 1 }}
-                          >
-                            Edit Assignment
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Typography color="text.secondary" sx={{ mb: 1 }}>
-                            No staff assigned for afternoon temperature checks.
+                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                          <PersonIcon sx={{ mr: 1, color: theme.palette.success.main, fontSize: '1rem' }} />
+                          <Typography variant="body2">
+                            Assigned to: <strong>{todayAssignmentStatus.pmStaffName}</strong>
                           </Typography>
-                          <Button 
-                            variant="contained" 
-                            color="primary" 
-                            size="small"
-                            onClick={() => handleOpenAssignmentForm(null, 'PM')}
-                            sx={{ mt: 1 }}
-                          >
-                            Assign Staff
-                          </Button>
-                        </>
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                          No staff assigned for afternoon temperature checks
+                        </Typography>
                       )}
                     </CardContent>
                   </Card>
                 </Grid>
               </Grid>
-            </CardContent>
-          </Card>
-          
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                All Active Temperature Check Assignments
-              </Typography>
-              
-              {allAssignments.length > 0 ? (
-                <List>
-                  {allAssignments.map(assignment => (
-                    <ListItem 
-                      key={assignment.id} 
-                      divider 
-                      sx={{ 
-                        display: 'flex', 
-                        flexDirection: { xs: 'column', sm: 'row' },
-                        alignItems: { xs: 'flex-start', sm: 'center' }
-                      }}
-                    >
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <PersonIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
-                            <Typography variant="subtitle1">
-                              {assignment.staff_member_name || assignment.staff_member_username}
-                            </Typography>
-                          </Box>
-                        }
-                        secondary={
-                          <Box sx={{ display: 'flex', flexDirection: 'column', mt: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <CalendarTodayIcon sx={{ mr: 1, fontSize: '0.875rem', color: theme.palette.text.secondary }} />
-                              <Typography variant="body2" color="text.secondary">
-                                {new Date(assignment.assigned_date).toLocaleDateString()}
-                              </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                              <AccessTimeIcon sx={{ mr: 1, fontSize: '0.875rem', color: theme.palette.text.secondary }} />
-                              <Typography variant="body2" color="text.secondary">
-                                {assignment.time_period === 'AM' ? 'Morning Check' : 'Afternoon Check'}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        }
-                        sx={{ flex: 1 }}
-                      />
-                      <Box sx={{ display: 'flex', mt: { xs: 1, sm: 0 } }}>
-                        <Button 
-                          variant="outlined" 
-                          size="small" 
-                          onClick={() => handleOpenAssignmentForm(assignment, assignment.time_period)}
-                          sx={{ mr: 1 }}
-                        >
-                          Edit
-                        </Button>
-                      </Box>
-                    </ListItem>
-                  ))}
-                </List>
-              ) : (
-                <Typography color="text.secondary">
-                  No active temperature check assignments found.
-                </Typography>
-              )}
             </CardContent>
           </Card>
         </>
