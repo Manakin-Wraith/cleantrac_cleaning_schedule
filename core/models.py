@@ -247,6 +247,43 @@ class ThermometerVerificationAssignment(models.Model):
                 ).exclude(id=self.id).update(is_active=False)
         super().save(*args, **kwargs)
 
+class TemperatureCheckAssignment(models.Model):
+    """Tracks which staff member is responsible for temperature checks (AM/PM)"""
+    TIME_PERIOD_CHOICES = [
+        ('AM', 'Morning'),
+        ('PM', 'Afternoon'),
+    ]
+    
+    staff_member = models.ForeignKey(User, on_delete=models.CASCADE, related_name='temperature_check_assignments')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='temperature_check_assignments')
+    assigned_date = models.DateField(default=timezone.now)
+    assigned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='temperature_check_assignments_made')
+    time_period = models.CharField(max_length=2, choices=TIME_PERIOD_CHOICES)
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Temperature Check Assignment"
+        verbose_name_plural = "Temperature Check Assignments"
+        unique_together = [('department', 'assigned_date', 'time_period')]
+    
+    def __str__(self):
+        return f"{self.staff_member.username} assigned to {self.department.name} {self.get_time_period_display()} temperature checks"
+    
+    def save(self, *args, **kwargs):
+        """Ensure only one active assignment per department, date and time period"""
+        if self.is_active:
+            # Deactivate any other active assignments for this department, date and time period
+            TemperatureCheckAssignment.objects.filter(
+                department=self.department,
+                assigned_date=self.assigned_date,
+                time_period=self.time_period,
+                is_active=True
+            ).exclude(id=self.id).update(is_active=False)
+        super().save(*args, **kwargs)
+
 class TemperatureLog(models.Model):
     """Records temperature readings for specific areas/units"""
     TIME_PERIOD_CHOICES = [

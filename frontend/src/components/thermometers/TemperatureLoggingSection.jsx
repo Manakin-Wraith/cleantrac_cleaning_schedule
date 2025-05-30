@@ -385,13 +385,13 @@ const TemperatureLoggingSection = ({
                         <Typography variant="h6" gutterBottom>
                           {thermometer.serial_number}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography component="span" variant="body2" color="text.secondary">
                           Model: {thermometer.model_identifier}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography component="span" variant="body2" color="text.secondary">
                           Last Verified: {thermometer.last_verification_date}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography component="span" variant="body2" color="text.secondary">
                           Expires: {thermometer.verification_expiry_date}
                         </Typography>
                       </CardContent>
@@ -469,7 +469,7 @@ const TemperatureLoggingSection = ({
                                 <Typography variant="h6" gutterBottom>
                                   {area.name}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography component="span" variant="body2" color="text.secondary">
                                   {area.description}
                                 </Typography>
                                 
@@ -601,7 +601,7 @@ const TemperatureLoggingSection = ({
                                 <Typography variant="h6" gutterBottom>
                                   {area.name}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography component="span" variant="body2" color="text.secondary">
                                   {area.description}
                                 </Typography>
                                 <Divider sx={{ my: 1 }} />
@@ -650,7 +650,7 @@ const TemperatureLoggingSection = ({
               <CardContent>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography component="span" variant="body2" color="text.secondary">
                       Thermometer:
                     </Typography>
                     <Typography variant="body1">
@@ -658,7 +658,7 @@ const TemperatureLoggingSection = ({
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography component="span" variant="body2" color="text.secondary">
                       Area:
                     </Typography>
                     <Typography variant="body1">
@@ -666,7 +666,7 @@ const TemperatureLoggingSection = ({
                     </Typography>
                   </Grid>
                   <Grid item xs={12}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography component="span" variant="body2" color="text.secondary">
                       Target Temperature Range:
                     </Typography>
                     <Typography variant="body1" color="primary">

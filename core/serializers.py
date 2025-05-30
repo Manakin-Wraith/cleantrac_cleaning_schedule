@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from .models import (
     Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
     AreaUnit, Thermometer, ThermometerVerificationRecord, 
-    ThermometerVerificationAssignment, TemperatureLog
+    ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog
 )
 from rest_framework.validators import UniqueValidator
 
@@ -501,6 +501,50 @@ class ThermometerVerificationAssignmentSerializer(serializers.ModelSerializer):
         model = ThermometerVerificationAssignment
         fields = [
             'id', 'staff_member_id', 'staff_member_username', 'staff_member_name', 'staff_member_actual_id', # Added field to Meta
+            'department_id', 'department_name', 'assigned_date', 'time_period',
+            'assigned_by_id', 'assigned_by_username', 'is_active',
+            'notes', 'created_at', 'updated_at'
+        ]
+    
+    def get_staff_member_name(self, obj):
+        if obj.staff_member.first_name and obj.staff_member.last_name:
+            return f"{obj.staff_member.first_name} {obj.staff_member.last_name}"
+        return obj.staff_member.username
+    
+    def create(self, validated_data):
+        # If assigned_by is not provided, use the current user
+        if 'assigned_by' not in validated_data or validated_data['assigned_by'] is None:
+            validated_data['assigned_by'] = self.context['request'].user
+        return super().create(validated_data)
+
+class TemperatureCheckAssignmentSerializer(serializers.ModelSerializer):
+    staff_member_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='staff_member',
+        write_only=True
+    )
+    staff_member_username = serializers.CharField(source='staff_member.username', read_only=True)
+    staff_member_name = serializers.SerializerMethodField(read_only=True)
+    staff_member_actual_id = serializers.IntegerField(source='staff_member.id', read_only=True)
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True
+    )
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    assigned_by_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='assigned_by',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    assigned_by_username = serializers.CharField(source='assigned_by.username', read_only=True, allow_null=True)
+    
+    class Meta:
+        model = TemperatureCheckAssignment
+        fields = [
+            'id', 'staff_member_id', 'staff_member_username', 'staff_member_name', 'staff_member_actual_id',
             'department_id', 'department_name', 'assigned_date', 'time_period',
             'assigned_by_id', 'assigned_by_username', 'is_active',
             'notes', 'created_at', 'updated_at'

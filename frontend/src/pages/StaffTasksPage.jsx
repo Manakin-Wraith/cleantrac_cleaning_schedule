@@ -1,11 +1,20 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Container, Typography, Box, CircularProgress, Paper, Grid, List, ListItem, ListItemText, Divider, Chip, Alert, Button, Card, CardContent, CardActions, Badge } from '@mui/material';
-import { getCurrentUser } from '../services/authService';
-import { getTaskInstances, updateTaskInstance } from '../services/taskService'; 
-import { getThermometersNeedingVerification, getVerifiedThermometers, getTemperatureLogsByDate, getCurrentAssignment } from '../services/thermometerService'; 
-import { formatDate } from '../utils/dateUtils'; 
+import React, { useState, useEffect, useCallback } from 'react';
+import { Container, Grid, Paper, Typography, Box, Button, Chip, CircularProgress, Alert, List, ListItem, ListItemText, Divider, Badge, Card, CardContent, CardActions } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import { getTaskInstances, updateTaskInstance } from '../services/taskService';
+import { getCurrentUser } from '../services/authService';
+import {
+    getVerifiedThermometers,
+    getThermometersNeedingVerification,
+    getTemperatureLogsByDate,
+    getCurrentAssignment,
+    getMyTemperatureCheckAssignments,
+    getTemperatureLogsByArea,
+    getAreaUnits
+} from '../services/thermometerService';
+import { formatDate, getTodayDateString } from '../utils/dateUtils';
+import ThermometerVerificationSection from '../components/thermometers/ThermometerVerificationSection';
+import TemperatureLoggingSection from '../components/thermometers/TemperatureLoggingSection';
 import EventIcon from '@mui/icons-material/Event';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BuildIcon from '@mui/icons-material/Build'; // For Equipment
@@ -13,16 +22,6 @@ import ScienceIcon from '@mui/icons-material/Science'; // For Chemicals
 import ListAltIcon from '@mui/icons-material/ListAlt'; // For Method
 import NotesIcon from '@mui/icons-material/Notes'; // For Notes
 import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
-import ThermometerVerificationSection from '../components/thermometers/ThermometerVerificationSection';
-import TemperatureLoggingSection from '../components/thermometers/TemperatureLoggingSection';
-
-const getTodayDateString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0'); 
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
 
 function StaffTasksPage() {
     const [user, setUser] = useState(null);
@@ -44,7 +43,8 @@ function StaffTasksPage() {
     const [loggedAreas, setLoggedAreas] = useState([]);
     const [loadingLogs, setLoadingLogs] = useState(true);
     const [areaUnits, setAreaUnits] = useState([]);
-    const [assignment, setAssignment] = useState(null);
+    const [verificationAssignment, setVerificationAssignment] = useState(null);
+    const [temperatureCheckAssignment, setTemperatureCheckAssignment] = useState(null);
     const [allowedTimePeriods, setAllowedTimePeriods] = useState(['AM', 'PM']);
 
     // Function to fetch both types of thermometer lists and temperature logs
@@ -59,33 +59,58 @@ function StaffTasksPage() {
             const today = new Date().toISOString().split('T')[0];
             
             // Fetch all required data in parallel
-            const [needingVerification, verified, todayLogsData, assignmentData] = await Promise.all([
+            const [needingVerification, verified, todayLogsData, verificationData, temperatureCheckData] = await Promise.all([
                 getThermometersNeedingVerification(),
                 getVerifiedThermometers(),
                 getTemperatureLogsByDate(today),
-                getCurrentAssignment()
+                getCurrentAssignment(),
+                getMyTemperatureCheckAssignments()
             ]);
             
             setThermometersNeedingVerification(needingVerification || []);
             setVerifiedThermometers(verified || []);
             setTodaysLogs(todayLogsData || []);
-            setAssignment(assignmentData || null);
+            setVerificationAssignment(verificationData || null);
+            
+            // Process temperature check assignments - handle AM/PM assignments properly
+            const temperatureChecks = temperatureCheckData || {};
+            
+            // The API returns an object with am_assignment and pm_assignment properties
+            const amAssignment = temperatureChecks.am_assignment || null;
+            const pmAssignment = temperatureChecks.pm_assignment || null;
+            
+            // Determine which assignment to use based on current time or if only one is available
+            const currentHour = new Date().getHours();
+            const isPM = currentHour >= 12;
+            
+            // Set the appropriate assignment based on time of day or availability
+            if (isPM && pmAssignment) {
+                setTemperatureCheckAssignment(pmAssignment);
+            } else if (!isPM && amAssignment) {
+                setTemperatureCheckAssignment(amAssignment);
+            } else if (pmAssignment) {
+                setTemperatureCheckAssignment(pmAssignment);
+            } else if (amAssignment) {
+                setTemperatureCheckAssignment(amAssignment);
+            } else {
+                setTemperatureCheckAssignment(null);
+            }
             
             // Process logs to get logged areas
             const loggedAreaIds = [...new Set(todayLogsData.map(log => log.area_unit_id))];
             setLoggedAreas(loggedAreaIds);
             
-            // Set allowed time periods based on assignment
-            if (assignmentData) {
-                if (assignmentData.time_period === 'AM') {
-                    setAllowedTimePeriods(['AM']);
-                } else if (assignmentData.time_period === 'PM') {
-                    setAllowedTimePeriods(['PM']);
-                } else {
-                    // BOTH - allow both time periods
-                    setAllowedTimePeriods(['AM', 'PM']);
-                }
+            // Set allowed time periods based on temperature check assignments
+            const allowedPeriods = [];
+            if (amAssignment) {
+                allowedPeriods.push('AM');
             }
+            if (pmAssignment) {
+                allowedPeriods.push('PM');
+            }
+            
+            // If we have assignments, set the allowed periods; otherwise, empty array
+            setAllowedTimePeriods(allowedPeriods.length > 0 ? allowedPeriods : []);
             
             // Extract area units from logs
             const areas = [...new Set(todayLogsData.map(log => ({
@@ -196,48 +221,54 @@ function StaffTasksPage() {
             {thermometerError && <Alert severity="error" sx={{ mb: 2 }}>{thermometerError}</Alert>}
 
             {/* Thermometer Sections - Only shown when assigned */}
-            {!loadingUser && !loadingThermometers && assignment && (
+            {!loadingUser && !loadingThermometers && (verificationAssignment || temperatureCheckAssignment) && (
                 <Grid container spacing={3} sx={{ mb: 4 }}>
-                    {/* Thermometer Verification Section */}
-                    <Grid item xs={12} md={6}>
-                        <Paper elevation={2} sx={{ p: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <Typography variant="h6">Thermometer Verification</Typography>
-                                <Box sx={{ ml: 2 }}>
-                                    <Alert severity="info" icon={false} sx={{ py: 0, px: 1 }}>
-                                        <Typography variant="caption">
-                                            You are assigned to thermometer verification duties
-                                        </Typography>
-                                    </Alert>
+                    {/* Thermometer Verification Section - Only shown when user has verification assignment */}
+                    {verificationAssignment && (
+                        <Grid container={false} spacing={0} sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
+                            <Paper elevation={2} sx={{ p: 2 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                    <Typography variant="h6">Thermometer Verification</Typography>
+                                    <Chip 
+                                        label="Assigned to you"
+                                        color="primary"
+                                        size="small"
+                                    />
                                 </Box>
-                            </Box>
-                            {loadingThermometers ? (
-                                <CircularProgress />
-                            ) : user && user.id ? (
-                                <ThermometerVerificationSection 
-                                    thermometers={thermometersNeedingVerification}
-                                    onVerificationSuccess={fetchThermometerData}
-                                    isLoading={loadingThermometers}
-                                    departmentId={user.profile?.department}
-                                />
-                            ) : (
-                                <Typography>User data not available.</Typography>
-                            )}
-                        </Paper>
-                    </Grid>
+                                
+                                {loadingThermometers ? (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                                        <CircularProgress />
+                                    </Box>
+                                ) : thermometerError ? (
+                                    <Alert severity="error">{thermometerError}</Alert>
+                                ) : user && user.id ? (
+                                    <ThermometerVerificationSection 
+                                        thermometers={thermometersNeedingVerification}
+                                        onVerificationSuccess={fetchThermometerData}
+                                        isLoading={loadingThermometers}
+                                        departmentId={user.profile?.department}
+                                    />
+                                ) : (
+                                    <Typography>User data not available.</Typography>
+                                )}
+                            </Paper>
+                        </Grid>
+                    )}
                     
-                    {/* Temperature Logging Section */}
-                    <Grid item xs={12} md={6}>
-                        <Paper elevation={2} sx={{ p: 2 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                <Typography variant="h6">Temperature Logging</Typography>
-                                <Chip 
-                                    label={assignment.time_period === 'AM' ? 'Morning (AM)' : 
-                                           assignment.time_period === 'PM' ? 'Afternoon (PM)' : 'Both AM and PM'}
-                                    color={assignment.time_period === 'BOTH' ? 'primary' : 'secondary'}
-                                    size="small"
-                                />
-                            </Box>
+                    {/* Temperature Logging Section - Only shown when user has temperature check assignment */}
+                    {temperatureCheckAssignment && (
+                        <Grid container={false} spacing={0} sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
+                            <Paper elevation={2} sx={{ p: 2 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                    <Typography variant="h6">Temperature Logging</Typography>
+                                    <Chip 
+                                        label={temperatureCheckAssignment.time_period === 'AM' ? 'Morning (AM)' : 
+                                               temperatureCheckAssignment.time_period === 'PM' ? 'Afternoon (PM)' : 'Both AM and PM'}
+                                        color={temperatureCheckAssignment.time_period === 'BOTH' ? 'primary' : 'secondary'}
+                                        size="small"
+                                    />
+                                </Box>
                     
                             {/* Temperature Logging Summary */}
                             {!loadingLogs && todaysLogs.length > 0 && (
@@ -256,7 +287,7 @@ function StaffTasksPage() {
                                             const periodAreaIds = [...new Set(periodLogs.map(log => log.area_unit_id))];
                                             
                                             return (
-                                                <Grid item xs={12} sm={6} key={period}>
+                                                <Grid container={false} spacing={0} sx={{ width: { xs: '100%', sm: '50%' }, p: 0.5 }} key={period}>
                                                     <Box sx={{ 
                                                         p: 1.5, 
                                                         bgcolor: theme.palette.background.paper,
@@ -321,17 +352,91 @@ function StaffTasksPage() {
                             )}
                         </Paper>
                     </Grid>
+                    )}
                 </Grid>
             )}
 
-            {/* Show a message when no assignment exists */}
-            {!loadingUser && !loadingThermometers && !assignment && (
+            {/* Temperature Responsibilities Summary */}
+            {!loadingUser && !loadingThermometers && (verificationAssignment || temperatureCheckAssignment) && (
+                <Paper elevation={2} sx={{ p: 2, mb: 4 }}>
+                    <Typography variant="h6" gutterBottom>Your Temperature Responsibilities</Typography>
+                    <Grid container spacing={2}>
+                        <Grid container={false} spacing={0} sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
+                            <Card variant={verificationAssignment ? "outlined" : ""} 
+                                  sx={{ 
+                                      p: 2, 
+                                      bgcolor: verificationAssignment ? alpha(theme.palette.primary.main, 0.1) : alpha(theme.palette.grey[300], 0.5),
+                                      height: '100%'
+                                  }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                    <DeviceThermostatIcon sx={{ mr: 1, color: verificationAssignment ? theme.palette.primary.main : theme.palette.text.disabled }} />
+                                    <Typography variant="subtitle1" color={verificationAssignment ? 'textPrimary' : 'textSecondary'}>
+                                        Thermometer Verification
+                                    </Typography>
+                                </Box>
+                                {verificationAssignment ? (
+                                    <>
+                                        <Chip 
+                                            label="Assigned to you" 
+                                            color="primary" 
+                                            size="small" 
+                                            sx={{ mb: 1 }}
+                                        />
+                                        <Typography variant="body2">
+                                            You are responsible for verifying thermometers in your department.
+                                        </Typography>
+                                    </>
+                                ) : (
+                                    <Typography variant="body2" color="textSecondary">
+                                        You are not assigned to thermometer verification duties.
+                                    </Typography>
+                                )}
+                            </Card>
+                        </Grid>
+                        <Grid container={false} spacing={0} sx={{ width: { xs: '100%', md: '50%' }, p: 1 }}>
+                            <Card variant={temperatureCheckAssignment ? "outlined" : ""} 
+                                  sx={{ 
+                                      p: 2, 
+                                      bgcolor: temperatureCheckAssignment ? alpha(theme.palette.secondary.main, 0.1) : alpha(theme.palette.grey[300], 0.5),
+                                      height: '100%'
+                                  }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                    <AccessTimeIcon sx={{ mr: 1, color: temperatureCheckAssignment ? theme.palette.secondary.main : theme.palette.text.disabled }} />
+                                    <Typography variant="subtitle1" color={temperatureCheckAssignment ? 'textPrimary' : 'textSecondary'}>
+                                        Temperature Checks
+                                    </Typography>
+                                </Box>
+                                {temperatureCheckAssignment ? (
+                                    <>
+                                        <Chip 
+                                            label={temperatureCheckAssignment.time_period === 'AM' ? 'Morning (AM)' : 
+                                                   temperatureCheckAssignment.time_period === 'PM' ? 'Afternoon (PM)' : 'Both AM and PM'}
+                                            color="secondary" 
+                                            size="small" 
+                                            sx={{ mb: 1 }}
+                                        />
+                                        <Typography variant="body2">
+                                            You are responsible for logging temperatures during your assigned time period(s).
+                                        </Typography>
+                                    </>
+                                ) : (
+                                    <Typography variant="body2" color="textSecondary">
+                                        You are not assigned to temperature logging duties.
+                                    </Typography>
+                                )}
+                            </Card>
+                        </Grid>
+                    </Grid>
+                </Paper>
+            )}
+            
+            {/* Show a message when no assignments exist */}
+            {!loadingUser && !loadingThermometers && !verificationAssignment && !temperatureCheckAssignment && (
                 <Alert 
                     severity="info" 
                     sx={{ mb: 4 }}
-                    icon={<DeviceThermostatIcon />}
                 >
-                    You are not currently assigned to thermometer verification or temperature logging duties.
+                    You are not currently assigned to any thermometer or temperature logging duties. Please contact your manager if you believe this is incorrect.
                 </Alert>
             )}
 

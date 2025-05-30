@@ -10,14 +10,14 @@ from django.db.models import Count
 from django.db import transaction 
 
 from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog, PasswordResetToken, \
-    AreaUnit, Thermometer, ThermometerVerificationRecord, ThermometerVerificationAssignment, TemperatureLog
+    AreaUnit, Thermometer, ThermometerVerificationRecord, ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog
 from .serializers import (
     DepartmentSerializer, UserSerializer, UserProfileSerializer, 
     CleaningItemSerializer, TaskInstanceSerializer, CompletionLogSerializer,
     CurrentUserSerializer, UserWithProfileSerializer,
     PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
     AreaUnitSerializer, ThermometerSerializer, ThermometerVerificationRecordSerializer,
-    ThermometerVerificationAssignmentSerializer, TemperatureLogSerializer
+    ThermometerVerificationAssignmentSerializer, TemperatureCheckAssignmentSerializer, TemperatureLogSerializer
 )
 from rest_framework.permissions import AllowAny # Corrected: AllowAny from DRF
 from .permissions import (
@@ -25,7 +25,7 @@ from .permissions import (
     CanLogCompletionAndManagerModify, IsSuperUserForWriteOrAuthenticatedReadOnly,
     UserAndProfileManagementPermissions, CanUpdateTaskStatus,
     IsSuperUserWriteOrManagerRead, IsThermometerVerificationStaff,
-    CanManageThermometerAssignments, CanLogTemperatures, CanManageTaskInstance
+    CanManageThermometerAssignments, CanManageTemperatureCheckAssignments, CanLogTemperatures, CanManageTaskInstance
 )
 from .sms_utils import send_sms # New import
 from django.contrib.auth.password_validation import validate_password # For password strength
@@ -706,6 +706,107 @@ class ThermometerVerificationAssignmentViewSet(viewsets.ModelViewSet):
                 return Response(serializer.data)
             else:
                 return Response({"detail": "You are not currently assigned to thermometer verification duties."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class TemperatureCheckAssignmentViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing temperature check assignments (AM/PM).
+    Only managers can create, update, or delete assignments in their department.
+    Staff can view their own assignments.
+    """
+    serializer_class = TemperatureCheckAssignmentSerializer
+    permission_classes = [CanManageTemperatureCheckAssignments]
+    
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return TemperatureCheckAssignment.objects.none()
+        
+        if user.is_superuser:
+            return TemperatureCheckAssignment.objects.all()
+        
+        # Filter by user's role and department
+        try:
+            if user.profile.role == 'manager' and user.profile.department:
+                # Managers can see all assignments in their department
+                return TemperatureCheckAssignment.objects.filter(
+                    department=user.profile.department
+                )
+            elif user.profile.role == 'staff':
+                # Staff can only see their own assignments
+                return TemperatureCheckAssignment.objects.filter(
+                    staff_member=user
+                )
+            return TemperatureCheckAssignment.objects.none()
+        except AttributeError:
+            return TemperatureCheckAssignment.objects.none()
+    
+    def perform_create(self, serializer):
+        # Set the assigned_by field to the current user if not provided
+        # Ensure the assignment is created in the user's department
+        if not self.request.user.is_superuser and hasattr(self.request.user, 'profile') and self.request.user.profile.department:
+            serializer.save(
+                assigned_by=self.request.user,
+                department=self.request.user.profile.department
+            )
+        else:
+            serializer.save(assigned_by=self.request.user)
+    
+    @action(detail=False, methods=['get'], url_path='current-assignments')
+    def current_assignments(self, request):
+        """
+        Returns the current active temperature check assignments for the user's department.
+        """
+        try:
+            if request.user.profile and request.user.profile.department:
+                am_assignment = TemperatureCheckAssignment.objects.filter(
+                    department=request.user.profile.department,
+                    time_period='AM',
+                    is_active=True
+                ).order_by('-assigned_date').first()
+                
+                pm_assignment = TemperatureCheckAssignment.objects.filter(
+                    department=request.user.profile.department,
+                    time_period='PM',
+                    is_active=True
+                ).order_by('-assigned_date').first()
+                
+                result = {
+                    'am_assignment': self.get_serializer(am_assignment).data if am_assignment else None,
+                    'pm_assignment': self.get_serializer(pm_assignment).data if pm_assignment else None
+                }
+                
+                return Response(result)
+            else:
+                return Response({"detail": "User has no department assigned."}, status=status.HTTP_400_BAD_REQUEST)
+        except AttributeError:
+            return Response({"detail": "User profile not found."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='my-assignments')
+    def my_assignments(self, request):
+        """
+        Returns the current active temperature check assignments for the requesting user.
+        """
+        try:
+            am_assignment = TemperatureCheckAssignment.objects.filter(
+                staff_member=request.user,
+                time_period='AM',
+                is_active=True
+            ).order_by('-assigned_date').first()
+            
+            pm_assignment = TemperatureCheckAssignment.objects.filter(
+                staff_member=request.user,
+                time_period='PM',
+                is_active=True
+            ).order_by('-assigned_date').first()
+            
+            result = {
+                'am_assignment': self.get_serializer(am_assignment).data if am_assignment else None,
+                'pm_assignment': self.get_serializer(pm_assignment).data if pm_assignment else None
+            }
+            
+            return Response(result)
         except Exception as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 

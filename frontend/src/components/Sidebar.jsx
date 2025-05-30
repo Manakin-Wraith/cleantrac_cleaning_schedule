@@ -17,6 +17,7 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import TuneIcon from '@mui/icons-material/Tune'; // For Management group 
 import DescriptionIcon from '@mui/icons-material/Description'; // For Document Templates
+import AccessTimeIcon from '@mui/icons-material/AccessTime'; // Added missing import
 
 export const drawerWidth = 240;
 const collapsedDrawerWidth = (theme) => theme.spacing(7); 
@@ -102,7 +103,15 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
         // departmentManagementLink will be added here conditionally
       ],
     },
-    { text: 'Thermometers', icon: <DeviceThermostatIcon />, path: '/manager-thermometers' },
+    {
+      text: 'Temperature',
+      icon: <DeviceThermostatIcon />,
+      children: [
+        { text: 'Thermometer Management', icon: <DeviceThermostatIcon />, path: '/manager-thermometers' },
+        { text: 'Thermometer Verification', icon: <DeviceThermostatIcon />, path: '/manager-thermometer-verification' },
+        { text: 'Temperature Checks', icon: <AccessTimeIcon />, path: '/manager-temperature-checks' },
+      ],
+    },
     { text: 'Document Templates', icon: <DescriptionIcon />, path: '/manager-documents' },
     { text: 'Coming SOON!', icon: <CalendarMonthIcon />, path: '/manager-schedule' }, // Example: can be top-level or nested
   ];

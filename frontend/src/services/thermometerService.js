@@ -149,8 +149,13 @@ export const getVerificationAssignments = async (params = {}) => {
 };
 
 export const getCurrentAssignment = async () => {
-  const response = await api.get('/thermometer-verification-assignments/current-assignment/');
-  return response.data;
+  try {
+    const response = await api.get('/thermometer-verification-assignments/my-assignment/');
+    return response.data;
+  } catch (error) {
+    console.warn('Error fetching thermometer verification assignment:', error);
+    return null;
+  }
 };
 
 export const getAllCurrentAssignments = async () => {
@@ -170,5 +175,36 @@ export const createVerificationAssignment = async (assignmentData) => {
 
 export const updateVerificationAssignment = async (id, assignmentData) => {
   const response = await api.put(`/thermometer-verification-assignments/${id}/`, assignmentData);
+  return response.data;
+};
+
+// Temperature Check Assignment endpoints
+export const getTemperatureCheckAssignments = async (params = {}) => {
+  const response = await api.get('/temperature-check-assignments/', { params });
+  return response.data;
+};
+
+export const getCurrentTemperatureCheckAssignments = async () => {
+  const response = await api.get('/temperature-check-assignments/current-assignments/');
+  return response.data;
+};
+
+export const getAllCurrentTemperatureCheckAssignments = async () => {
+  const response = await api.get('/temperature-check-assignments/', { params: { is_active: true } });
+  return response.data;
+};
+
+export const getMyTemperatureCheckAssignments = async () => {
+  const response = await api.get('/temperature-check-assignments/my-assignments/');
+  return response.data;
+};
+
+export const createTemperatureCheckAssignment = async (assignmentData) => {
+  const response = await api.post('/temperature-check-assignments/', assignmentData);
+  return response.data;
+};
+
+export const updateTemperatureCheckAssignment = async (id, assignmentData) => {
+  const response = await api.put(`/temperature-check-assignments/${id}/`, assignmentData);
   return response.data;
 };

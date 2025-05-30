@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from .models import (
     Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
     AreaUnit, Thermometer, ThermometerVerificationRecord, 
-    ThermometerVerificationAssignment, TemperatureLog,
+    ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog,
     DocumentTemplate, GeneratedDocument
 )
 
@@ -55,6 +55,15 @@ class ThermometerVerificationAssignmentAdmin(admin.ModelAdmin):
     date_hierarchy = 'assigned_date'
 
 admin.site.register(ThermometerVerificationAssignment, ThermometerVerificationAssignmentAdmin)
+
+class TemperatureCheckAssignmentAdmin(admin.ModelAdmin):
+    list_display = ('staff_member', 'department', 'assigned_date', 'time_period', 'assigned_by', 'is_active')
+    list_filter = ('department', 'time_period', 'is_active', 'assigned_date')
+    search_fields = ('staff_member__username', 'staff_member__first_name', 
+                    'staff_member__last_name', 'department__name')
+    date_hierarchy = 'assigned_date'
+
+admin.site.register(TemperatureCheckAssignment, TemperatureCheckAssignmentAdmin)
 
 class TemperatureLogAdmin(admin.ModelAdmin):
     list_display = ('area_unit', 'log_datetime', 'temperature_reading', 'time_period', 

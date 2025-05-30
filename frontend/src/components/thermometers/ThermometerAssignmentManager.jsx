@@ -29,21 +29,16 @@ const ThermometerAssignmentManager = () => {
   const [allAssignments, setAllAssignments] = useState([]); 
   const [currentAssignment, setCurrentAssignment] = useState(null); 
   const [todayAssignmentStatus, setTodayAssignmentStatus] = useState({
-    am: null, 
-    pm: null, 
-    both: null, 
+    assignment: null,
     needsAttention: false,
     message: '',
-    amAssigned: false,
-    pmAssigned: false,
-    amStaffName: '',
-    pmStaffName: '',
+    assigned: false,
+    staffName: '',
   });
   const [formData, setFormData] = useState({
     id: null, 
     staff_member_id: '',
     department_id: '',
-    time_period: 'BOTH',
     notes: '',
     assigned_date: new Date(),
   });
@@ -89,50 +84,29 @@ const ThermometerAssignmentManager = () => {
       setAllAssignments(activeAssignments || []);
 
       const today = startOfDay(new Date());
-      const todaysAssignments = (activeAssignments || []).filter(a => 
+      const todaysAssignment = (activeAssignments || []).find(a => 
         a.is_active && isToday(new Date(a.assigned_date))
       );
 
-      let amAssignment = todaysAssignments.find(a => a.time_period === 'AM');
-      let pmAssignment = todaysAssignments.find(a => a.time_period === 'PM');
-      const bothAssignment = todaysAssignments.find(a => a.time_period === 'BOTH');
-
-      if (bothAssignment) {
-        amAssignment = bothAssignment;
-        pmAssignment = bothAssignment;
-      }
-
-      const amAssigned = !!amAssignment;
-      const pmAssigned = !!pmAssignment;
-      const amStaffName = amAssignment ? getStaffNameFromFetchedList(amAssignment.staff_member_actual_id, staffOnlyUsers) : '';
-      const pmStaffName = pmAssignment ? getStaffNameFromFetchedList(pmAssignment.staff_member_actual_id, staffOnlyUsers) : '';
+      const assigned = !!todaysAssignment;
+      const staffName = todaysAssignment ? getStaffNameFromFetchedList(todaysAssignment.staff_member_actual_id, staffOnlyUsers) : '';
 
       let statusMessage = '';
       let needsAttention = false;
 
-      if (amAssigned && pmAssigned) {
-        statusMessage = 'All thermometer verification assignments for today are covered.';
-      } else if (!amAssigned && !pmAssigned) {
-        statusMessage = 'Morning (AM) and Afternoon (PM) verifications need assignment.';
-        needsAttention = true;
-      } else if (!amAssigned) {
-        statusMessage = 'Morning (AM) verification needs assignment.';
-        needsAttention = true;
-      } else { 
-        statusMessage = 'Afternoon (PM) verification needs assignment.';
+      if (assigned) {
+        statusMessage = 'Thermometer verification assignment for today is covered.';
+      } else {
+        statusMessage = 'Thermometer verification needs assignment.';
         needsAttention = true;
       }
 
       setTodayAssignmentStatus({
-        am: amAssignment,
-        pm: pmAssignment,
-        both: bothAssignment, 
+        assignment: todaysAssignment,
         needsAttention,
         message: statusMessage,
-        amAssigned,
-        pmAssigned,
-        amStaffName,
-        pmStaffName,
+        assigned,
+        staffName,
       });
 
     } catch (err) {
@@ -156,14 +130,13 @@ const ThermometerAssignmentManager = () => {
     setFormData(prev => ({ ...prev, assigned_date: newDate ? startOfDay(newDate) : null }));
   };
 
-  const handleOpenAssignmentForm = (assignmentToEdit = null, defaultTimePeriod = 'BOTH') => {
+  const handleOpenAssignmentForm = (assignmentToEdit = null) => {
     setError('');
     if (assignmentToEdit) {
       setFormData({
         id: assignmentToEdit.id,
         staff_member_id: assignmentToEdit.staff_member_actual_id || '',
         department_id: assignmentToEdit.department_id || currentUser?.profile?.department_id || '',
-        time_period: assignmentToEdit.time_period || 'BOTH',
         notes: assignmentToEdit.notes || '',
         assigned_date: assignmentToEdit.assigned_date ? new Date(assignmentToEdit.assigned_date) : new Date(),
       });
@@ -172,7 +145,6 @@ const ThermometerAssignmentManager = () => {
         id: null,
         staff_member_id: '',
         department_id: currentUser?.profile?.department_id || '',
-        time_period: defaultTimePeriod,
         notes: '',
         assigned_date: new Date(),
       });
@@ -185,7 +157,7 @@ const ThermometerAssignmentManager = () => {
     setError(''); 
     setFormData({
       id: null, staff_member_id: '', department_id: currentUser?.profile?.department_id || '', 
-      time_period: 'BOTH', notes: '', assigned_date: new Date()
+      notes: '', assigned_date: new Date()
     });
   };
 
@@ -211,7 +183,6 @@ const ThermometerAssignmentManager = () => {
       const assignmentPayload = {
         staff_member_id: staffId,
         department_id: formData.department_id,
-        time_period: formData.time_period,
         notes: formData.notes || '',
         is_active: true, 
         assigned_date: format(formData.assigned_date, 'yyyy-MM-dd')
@@ -231,7 +202,6 @@ const ThermometerAssignmentManager = () => {
         id: null,
         staff_member_id: '',
         department_id: currentUser?.profile?.department_id || '',
-        time_period: 'BOTH',
         notes: '',
         assigned_date: new Date(),
       });
@@ -305,22 +275,7 @@ const ThermometerAssignmentManager = () => {
                     />
                   </LocalizationProvider>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth required>
-                    <InputLabel id="time-period-label">Time Period</InputLabel>
-                    <Select
-                      labelId="time-period-label"
-                      name="time_period"
-                      value={formData.time_period}
-                      onChange={handleChange}
-                      label="Time Period"
-                    >
-                      <MenuItem value="AM">Morning (AM)</MenuItem>
-                      <MenuItem value="PM">Afternoon (PM)</MenuItem>
-                      <MenuItem value="BOTH">Both AM and PM</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
+
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
@@ -370,27 +325,16 @@ const ThermometerAssignmentManager = () => {
             </Alert>
           )}
 
-          {/* Action Buttons for Unassigned Slots */}
+          {/* Action Button for Unassigned Verification */}
           {todayAssignmentStatus.needsAttention && (
             <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-              {!todayAssignmentStatus.amAssigned && (
-                <Button 
-                  variant="outlined" 
-                  onClick={() => handleOpenAssignmentForm(null, 'AM')}
-                  startIcon={<PersonIcon />}
-                >
-                  Assign AM Duty
-                </Button>
-              )}
-              {!todayAssignmentStatus.pmAssigned && (
-                <Button 
-                  variant="outlined" 
-                  onClick={() => handleOpenAssignmentForm(null, 'PM')}
-                  startIcon={<PersonIcon />}
-                >
-                  Assign PM Duty
-                </Button>
-              )}
+              <Button 
+                variant="outlined" 
+                onClick={() => handleOpenAssignmentForm(null)}
+                startIcon={<PersonIcon />}
+              >
+                Assign Verification Duty
+              </Button>
             </Box>
           )}
           
@@ -401,45 +345,23 @@ const ThermometerAssignmentManager = () => {
             Today's Assignment Details ({format(new Date(), 'MMMM d, yyyy')})
           </Typography>
           <List dense>
-            <ListItem sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5, borderBottom: '1px solid #eee' }}>
-              <ListItemText 
-                primaryTypographyProps={{ fontWeight: 'medium' }}
-                primary={<span>Morning (AM): <Chip 
-                  label={todayAssignmentStatus.amStaffName || 'Not Assigned'}
-                  color={todayAssignmentStatus.amAssigned ? "success" : "default"}
-                  size="small"
-                  variant={todayAssignmentStatus.amAssigned ? "filled" : "outlined"}
-                  icon={todayAssignmentStatus.amAssigned ? <CheckCircleOutlineIcon fontSize="small" /> : <PersonIcon fontSize="small"/>}
-                /></span>}
-                secondary={todayAssignmentStatus.am && `Dept: ${todayAssignmentStatus.am.department_name}`}
-              />
-              {todayAssignmentStatus.amAssigned && (
-                <Button 
-                  size="small" 
-                  variant="text" 
-                  onClick={() => handleOpenAssignmentForm(todayAssignmentStatus.am, 'AM')}
-                >
-                  Edit
-                </Button>
-              )}
-            </ListItem>
             <ListItem sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5 }}>
               <ListItemText 
                 primaryTypographyProps={{ fontWeight: 'medium' }}
-                primary={<span>Afternoon (PM): <Chip 
-                  label={todayAssignmentStatus.pmStaffName || 'Not Assigned'}
-                  color={todayAssignmentStatus.pmAssigned ? "success" : "default"}
+                primary={<span>Assigned Staff: <Chip 
+                  label={todayAssignmentStatus.staffName || 'Not Assigned'}
+                  color={todayAssignmentStatus.assigned ? "success" : "default"}
                   size="small"
-                  variant={todayAssignmentStatus.pmAssigned ? "filled" : "outlined"}
-                  icon={todayAssignmentStatus.pmAssigned ? <CheckCircleOutlineIcon fontSize="small" /> : <PersonIcon fontSize="small"/>}
+                  variant={todayAssignmentStatus.assigned ? "filled" : "outlined"}
+                  icon={todayAssignmentStatus.assigned ? <CheckCircleOutlineIcon fontSize="small" /> : <PersonIcon fontSize="small"/>}
                 /></span>}
-                secondary={todayAssignmentStatus.pm && `Dept: ${todayAssignmentStatus.pm.department_name}`}
+                secondary={todayAssignmentStatus.assignment && `Dept: ${todayAssignmentStatus.assignment.department_name}`}
               />
-              {todayAssignmentStatus.pmAssigned && (
+              {todayAssignmentStatus.assigned && (
                 <Button 
                   size="small" 
                   variant="text" 
-                  onClick={() => handleOpenAssignmentForm(todayAssignmentStatus.pm, 'PM')}
+                  onClick={() => handleOpenAssignmentForm(todayAssignmentStatus.assignment)}
                 >
                   Edit
                 </Button>
@@ -453,7 +375,7 @@ const ThermometerAssignmentManager = () => {
           <Button
             variant="contained"
             color="primary"
-            onClick={() => handleOpenAssignmentForm(null, 'BOTH')} // Defaults to new 'BOTH' assignment for today
+            onClick={() => handleOpenAssignmentForm(null)} // Defaults to new assignment for today
             startIcon={<CalendarTodayIcon />}
             sx={{ mt: 1 }}
           >

@@ -9,6 +9,7 @@ This document provides a comprehensive overview of all temperature logging and t
 - [API Endpoints](#api-endpoints)
 - [User Flows](#user-flows)
 - [Documentation & Templates](#documentation--templates)
+- [Implementation Plan: Splitting Thermometer Verification from Temperature Checks](#implementation-plan-splitting-thermometer-verification-from-temperature-checks)
 
 ## Backend Implementation
 
@@ -185,3 +186,178 @@ Location: `media/document_templates/`
 - Calibration schedule should be strictly followed
 - Access to temperature logging should be restricted to authorized personnel
 - Document templates should be version controlled
+
+## Implementation Plan: Splitting Thermometer Verification from Temperature Checks
+
+This implementation plan outlines the steps needed to split the thermometer verification assignment from the temperature (AM/PM) check assignment functionality, allowing managers to assign different staff members to these distinct responsibilities.
+
+### I. Backend Changes
+
+#### 1. Database Schema Updates
+
+- [x] **Create a New Model: `TemperatureCheckAssignment`**
+  - [x] Define model fields (staff_member, department, time_period, etc.)
+  - [x] Set up appropriate relationships
+  - [x] Add unique constraints
+  - [x] Implement save method with proper validation
+
+- [x] **Modify Existing Model: `ThermometerVerificationAssignment`**
+  - [x] Remove `time_period` field (verification is a single responsibility)
+  - [x] Update save method to handle uniqueness constraints
+  - [x] Update any related methods that depend on time_period
+
+#### 2. API Endpoints
+
+- [x] **Create New ViewSet: `TemperatureCheckAssignmentViewSet`**
+  - [x] Implement CRUD operations
+  - [x] Set up appropriate permissions
+  - [x] Add to URL router
+
+- [x] **Update Existing ViewSet: `ThermometerVerificationAssignmentViewSet`**
+  - [x] Remove time_period handling logic
+  - [x] Update queries to reflect the simplified model
+
+#### 3. Serializers
+
+- [x] **Create New Serializer: `TemperatureCheckAssignmentSerializer`**
+  - [x] Include validation for unique constraints
+  - [x] Include proper related fields
+
+- [x] **Update Existing Serializer: `ThermometerVerificationAssignmentSerializer`**
+  - [x] Remove time_period field and related validation
+
+### II. Frontend Changes
+
+#### 1. Component Updates
+
+- [x] **Split `ThermometerAssignmentManager.jsx` into Two Components:**
+  - [x] Maintain `ThermometerAssignmentManager.jsx` - For verification assignments only
+  - [x] Create `TemperatureCheckAssignmentManager.jsx` - For temperature check assignments
+  - [x] Update imports and references in parent components
+
+- [x] **Update UI to Reflect Split Responsibilities:**
+  - [x] Add clear section headers to distinguish between verification and temperature checks
+  - [x] Create separate forms and assignment displays
+  - [x] Update status indicators to show both types of assignments
+
+#### 2. Service Layer Updates
+
+- [x] **Update `thermometerService.js`:**
+  - [x] Add new API methods for temperature check assignments
+  - [x] Update existing methods to reflect backend changes
+  - [x] Create helper functions to check if a user is assigned to either responsibility
+
+#### 3. Page Updates
+
+- [x] **Update `ThermometerManagementPage.jsx`:**
+  - [x] Include both assignment managers with clear separation
+  - [x] Add tabs or sections to organize the interface
+
+- [x] **Update `StaffTasksPage.jsx`:**
+  - [x] Check for both types of assignments to determine what to show
+  - [x] Update UI to clearly indicate which responsibility the staff member has
+
+### III. Permission System Updates
+
+- [x] **Create New Permission Class: `CanManageTemperatureCheckAssignments`**
+  - [x] Implement permission logic similar to existing `CanManageThermometerAssignments` but for temperature checks
+
+- [x] **Update Existing Permission Class: `CanManageThermometerAssignments`**
+  - [x] Simplify to only check for verification assignments
+
+### IV. Migration Strategy
+
+- [x] **Create Database Migration:**
+  - [x] Generate migration for new model and model changes
+  - [x] Test migration on development environment
+
+- [x] **Create Data Migration Script:**
+  - [x] Create a Django management command `migrate_temperature_assignments.py`
+  - [x] For each existing `ThermometerVerificationAssignment`:
+    - [x] Keep it for verification duties (without time_period)
+    - [x] Create corresponding `TemperatureCheckAssignment` records based on time_period
+  - [x] Handle edge cases (assignments with BOTH time periods should create two separate records)
+  - [x] Add logging and error handling
+  - [x] Test data migration on development environment
+
+### V. User Experience Improvements
+
+- [x] **Manager Dashboard:**
+  - [x] Create assignment overview card showing both types of assignments
+  - [x] Implement color-coded status indicators
+  - [x] Add quick action buttons for assignments
+
+- [x] **Staff Dashboard:**
+  - [x] Add clear visual indicators for staff responsibilities
+  - [x] Create separate sections for verification and temperature check tasks
+  - [x] Implement progress tracking for each responsibility
+
+- [x] **Notification System:**
+  - [x] Add alerts for unassigned responsibilities
+  - [x] Implement staff assignment reminders
+  - [x] Create confirmation messages for assignment updates
+
+### VI. Testing & Quality Assurance
+
+- [x] **Unit Tests:**
+  - [x] Test new model and updated model
+  - [x] Test serializers and viewsets
+  - [x] Test permissions
+
+- [x] **Integration Tests:**
+  - [x] Test API endpoints
+  - [x] Test data migration
+  - [x] Test frontend-backend interaction
+
+- [x] **User Acceptance Testing:**
+  - [x] Test manager assignment workflow
+  - [x] Test staff responsibility visualization
+  - [x] Verify all user flows work as expected
+
+### VII. Additional UI Improvements
+
+- [x] **Create Dedicated Pages for Each Function:**
+  - [x] Create `ThermometerVerificationPage.jsx` for verification assignments
+  - [x] Create `TemperatureChecksPage.jsx` for temperature check assignments
+  - [x] Update `ThermometerManagementPage.jsx` to serve as a hub/landing page
+
+- [x] **Navigation Improvements:**
+  - [x] Update Sidebar to include separate menu items for each function
+  - [x] Create a nested Temperature menu with clear options
+  - [x] Add visual indicators to distinguish between functions
+
+- [x] **Fix UI Issues:**
+  - [x] Remove deprecated MUI Grid props (item, xs, sm, md)
+  - [x] Fix DOM nesting errors with Typography components
+  - [x] Add proper error handling for API requests
+  - [x] Remove Current Assignments display from Thermometer Status dashboard
+
+- [x] **Fix Assignment Conflicts:**
+  - [x] Remove AM/PM buttons from thermometer verification assignments
+  - [x] Ensure thermometer verification doesn't override temperature check assignments
+  - [x] Update the StaffTasksPage to properly handle both types of assignments
+
+### VIII. Implementation Summary
+
+We have successfully implemented the split between thermometer verification and temperature check assignments, allowing managers to assign different staff members to these distinct responsibilities. The implementation includes:
+
+1. **Backend Changes**:
+   - Created a new `TemperatureCheckAssignment` model for AM/PM temperature checks
+   - Modified the existing `ThermometerVerificationAssignment` model to focus solely on verification duties
+   - Implemented appropriate API endpoints, serializers, and permissions
+   - Created a data migration script to transfer existing assignments to the new structure
+
+2. **Frontend Changes**:
+   - Created dedicated pages for thermometer verification and temperature checks
+   - Transformed the ThermometerManagementPage into a central hub with navigation cards
+   - Updated the Sidebar with a nested Temperature menu for better organization
+   - Enhanced the StaffTasksPage to correctly display both types of assignments
+
+3. **User Experience Improvements**:
+   - Added clear visual indicators for staff responsibilities
+   - Fixed UI issues and deprecated component props
+   - Removed AM/PM options from thermometer verification to prevent conflicts
+   - Improved error handling for API requests
+   - Removed redundant assignment displays from the Thermometer Status dashboard
+
+This implementation provides a more flexible and clear separation of duties, allowing managers to assign the most appropriate staff members to each responsibility and ensuring better compliance with food safety requirements. The UI is now more intuitive with dedicated pages for each function and improved navigation.
