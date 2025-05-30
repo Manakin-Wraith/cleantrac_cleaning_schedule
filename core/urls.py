@@ -15,6 +15,7 @@ from .views import (
     ThermometerViewSet,
     ThermometerVerificationRecordViewSet,
     ThermometerVerificationAssignmentViewSet,
+    TemperatureCheckAssignmentViewSet,
     TemperatureLogViewSet
 )
 from .document_template_views import (
@@ -36,6 +37,7 @@ router.register(r'area-units', AreaUnitViewSet, basename='areaunit')
 router.register(r'thermometers', ThermometerViewSet, basename='thermometer')
 router.register(r'thermometer-verification-records', ThermometerVerificationRecordViewSet, basename='thermometerverificationrecord')
 router.register(r'thermometer-verification-assignments', ThermometerVerificationAssignmentViewSet, basename='thermometerverificationassignment')
+router.register(r'temperature-check-assignments', TemperatureCheckAssignmentViewSet, basename='temperaturecheckassignment')
 router.register(r'temperature-logs', TemperatureLogViewSet, basename='temperaturelog')
 
 # Register Document Template Management ViewSets

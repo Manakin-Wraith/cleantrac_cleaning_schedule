@@ -592,6 +592,65 @@ class CanManageThermometerAssignments(BasePermission):
         except AttributeError:
             return False
 
+class CanManageTemperatureCheckAssignments(BasePermission):
+    """
+    Permission to manage temperature check assignments (AM/PM).
+    This permission allows:
+    - Superusers: Full access
+    - Managers: Full access to their department's assignments
+    - Staff: Read-only access to their own assignments
+    """
+    message = "You are not authorized to manage temperature check assignments."
+    
+    def has_permission(self, request, view):
+        # Must be authenticated for any access
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+        
+        # For read methods, allow any authenticated user (get_queryset will filter)
+        if request.method in SAFE_METHODS:
+            return True
+        
+        # For write methods, check if user is a manager
+        try:
+            return request.user.profile.role == UserProfile.ROLE_MANAGER
+        except AttributeError:
+            return False
+    
+    def has_object_permission(self, request, view, obj):
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+        
+        # For read methods, allow staff to see their own assignments and managers to see their department's
+        if request.method in SAFE_METHODS:
+            try:
+                # Staff can see their own assignments
+                if request.user.profile.role == UserProfile.ROLE_STAFF:
+                    return obj.staff_member == request.user
+                
+                # Managers can see assignments in their department
+                if request.user.profile.role == UserProfile.ROLE_MANAGER:
+                    return obj.department == request.user.profile.department
+                
+                return False
+            except AttributeError:
+                return False
+        
+        # For write methods, check if user is a manager of the object's department
+        try:
+            # Managers can only manage assignments in their department
+            if request.user.profile.role == UserProfile.ROLE_MANAGER:
+                return obj.department == request.user.profile.department
+            
+            return False
+        except AttributeError:
+            return False
+
 class CanLogTemperatures(BasePermission):
     """
     Permission to log temperatures.

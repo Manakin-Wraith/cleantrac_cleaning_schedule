@@ -1,28 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Container, Typography, Box, CircularProgress, Alert, Tabs, Tab,
-  Paper, Button, Grid, Card, CardContent, Divider
+  Container, Typography, Box, CircularProgress, Alert,
+  Grid, Card, CardContent, Button
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import ThermostatIcon from '@mui/icons-material/Thermostat';
+import { useNavigate } from 'react-router-dom';
 import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
-import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { getCurrentUser } from '../services/authService';
-import ThermometerStatusDashboard from '../components/thermometers/ThermometerStatusDashboard';
-import ThermometerAssignmentManager from '../components/thermometers/ThermometerAssignmentManager';
-import ThermometerList from '../components/thermometers/ThermometerList';
-import ThermometerForm from '../components/thermometers/ThermometerForm';
-import VerificationRecordsList from '../components/thermometers/VerificationRecordsList';
-import TemperatureLogsList from '../components/thermometers/TemperatureLogsList';
 
 function ThermometerManagementPage() {
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [error, setError] = useState('');
-  const [currentTab, setCurrentTab] = useState('dashboard');
-  const [showThermometerForm, setShowThermometerForm] = useState(false);
   const theme = useTheme();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -41,24 +34,9 @@ function ThermometerManagementPage() {
 
     fetchUserData();
   }, []);
-
-  const handleTabChange = (event, newValue) => {
-    setCurrentTab(newValue);
-    // Reset form visibility when changing tabs
-    setShowThermometerForm(false);
-  };
-
-  const handleShowThermometerForm = () => {
-    setShowThermometerForm(true);
-  };
-
-  const handleCancelThermometerForm = () => {
-    setShowThermometerForm(false);
-  };
-
-  const handleThermometerCreated = () => {
-    setShowThermometerForm(false);
-    // Refresh data if needed
+  
+  const handleNavigate = (path) => {
+    navigate(path);
   };
 
   if (loadingUser) {
@@ -100,92 +78,130 @@ function ThermometerManagementPage() {
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Typography component="h1" variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 1 }}>
-        {departmentName} Thermometer Management
+      <Typography component="h1" variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 3 }}>
+        {departmentName} Temperature Management Hub
       </Typography>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={currentTab} onChange={handleTabChange} aria-label="thermometer management tabs">
-          <Tab 
-            label="Dashboard" 
-            value="dashboard" 
-            icon={<ThermostatIcon />} 
-            iconPosition="start"
-          />
-          <Tab 
-            label="Thermometers" 
-            value="thermometers" 
-            icon={<DeviceThermostatIcon />} 
-            iconPosition="start"
-          />
-          <Tab 
-            label="Verification Records" 
-            value="records" 
-            icon={<AssignmentIndIcon />} 
-            iconPosition="start"
-          />
-          <Tab 
-            label="Temperature Logs" 
-            value="logs" 
-            icon={<DeviceThermostatIcon />} 
-            iconPosition="start"
-          />
-        </Tabs>
-      </Box>
+      <Typography variant="h6" gutterBottom sx={{ textAlign: 'center', mb: 4, color: 'text.secondary' }}>
+        Select a temperature management area to access
+      </Typography>
 
-      {currentTab === 'dashboard' && (
-        <>
-          <ThermometerStatusDashboard />
-          <ThermometerAssignmentManager />
-        </>
-      )}
-
-      {currentTab === 'thermometers' && (
-        <>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5" component="h2">
-              Thermometer Inventory
-            </Typography>
-            {!showThermometerForm && (
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AddCircleOutlineIcon />}
-                onClick={handleShowThermometerForm}
+      <Grid container spacing={4} sx={{ mb: 6 }}>
+        {/* Thermometer Management Card */}
+        <Grid xs={12} md={4}>
+          <Card 
+            sx={{ 
+              height: '100%', 
+              display: 'flex', 
+              flexDirection: 'column',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+                cursor: 'pointer'
+              }
+            }}
+            onClick={() => handleNavigate('/manager-thermometers')}
+          >
+            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
+              <DeviceThermostatIcon sx={{ fontSize: 60, color: theme.palette.primary.main, mb: 2 }} />
+              <Typography variant="h5" component="h2" gutterBottom align="center">
+                Thermometer Inventory
+              </Typography>
+              <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
+                Manage your thermometer inventory, add new thermometers, and track their status
+              </Typography>
+              <Button 
+                variant="outlined" 
+                color="primary" 
+                endIcon={<ArrowForwardIcon />}
+                sx={{ mt: 'auto' }}
               >
-                Add Thermometer
+                Access Inventory
               </Button>
-            )}
-          </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-          {showThermometerForm ? (
-            <ThermometerForm 
-              onCancel={handleCancelThermometerForm}
-              onSuccess={handleThermometerCreated}
-            />
-          ) : (
-            <ThermometerList />
-          )}
-        </>
-      )}
+        {/* Thermometer Verification Card */}
+        <Grid xs={12} md={4}>
+          <Card 
+            sx={{ 
+              height: '100%', 
+              display: 'flex', 
+              flexDirection: 'column',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+                cursor: 'pointer'
+              }
+            }}
+            onClick={() => handleNavigate('/manager-thermometer-verification')}
+          >
+            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
+              <DeviceThermostatIcon sx={{ fontSize: 60, color: theme.palette.error.main, mb: 2 }} />
+              <Typography variant="h5" component="h2" gutterBottom align="center">
+                Thermometer Verification
+              </Typography>
+              <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
+                Assign staff for thermometer verification duties and track verification records
+              </Typography>
+              <Button 
+                variant="outlined" 
+                color="error" 
+                endIcon={<ArrowForwardIcon />}
+                sx={{ mt: 'auto' }}
+              >
+                Manage Verification
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
 
-      {currentTab === 'records' && (
-        <>
-          <Typography variant="h5" component="h2" sx={{ mb: 3 }}>
-            Verification Records
-          </Typography>
-          <VerificationRecordsList />
-        </>
-      )}
+        {/* Temperature Checks Card */}
+        <Grid xs={12} md={4}>
+          <Card 
+            sx={{ 
+              height: '100%', 
+              display: 'flex', 
+              flexDirection: 'column',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4,
+                cursor: 'pointer'
+              }
+            }}
+            onClick={() => handleNavigate('/manager-temperature-checks')}
+          >
+            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
+              <AccessTimeIcon sx={{ fontSize: 60, color: theme.palette.secondary.main, mb: 2 }} />
+              <Typography variant="h5" component="h2" gutterBottom align="center">
+                Temperature Checks
+              </Typography>
+              <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
+                Assign staff for AM/PM temperature checks and view temperature log records
+              </Typography>
+              <Button 
+                variant="outlined" 
+                color="secondary" 
+                endIcon={<ArrowForwardIcon />}
+                sx={{ mt: 'auto' }}
+              >
+                Manage Temperature Checks
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-      {currentTab === 'logs' && (
-        <>
-          <Typography variant="h5" component="h2" sx={{ mb: 3 }}>
-            Temperature Logs
-          </Typography>
-          <TemperatureLogsList />
-        </>
-      )}
+      <Alert severity="info" sx={{ mt: 4 }}>
+        <Typography variant="body1">
+          <strong>Note:</strong> The thermometer verification and temperature checks features have been separated to improve clarity and workflow efficiency. 
+          Use the navigation links above to access the specific functionality you need.
+        </Typography>
+      </Alert>
     </Container>
   );
 }
