@@ -18,6 +18,7 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import TuneIcon from '@mui/icons-material/Tune'; // For Management group 
 import DescriptionIcon from '@mui/icons-material/Description'; // For Document Templates
 import AccessTimeIcon from '@mui/icons-material/AccessTime'; // Added missing import
+import LocalShippingIcon from '@mui/icons-material/LocalShipping'; // For Suppliers
 
 export const drawerWidth = 240;
 const collapsedDrawerWidth = (theme) => theme.spacing(7); 
@@ -100,6 +101,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
       children: [
         { text: 'Item Management', icon: <ListAltIcon />, path: '/manager-items' },
         { text: 'Staff', icon: <PeopleIcon />, path: '/manager-users' },
+        { text: 'Suppliers', icon: <LocalShippingIcon />, path: '/manager-suppliers' },
         // departmentManagementLink will be added here conditionally
       ],
     },

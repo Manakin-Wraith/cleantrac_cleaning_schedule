@@ -9,15 +9,20 @@ from datetime import date as datetime_date
 from django.db.models import Count
 from django.db import transaction 
 
-from .models import Department, UserProfile, CleaningItem, TaskInstance, CompletionLog, PasswordResetToken, \
-    AreaUnit, Thermometer, ThermometerVerificationRecord, ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog
+from .models import (
+    Department, UserProfile, CleaningItem, TaskInstance, CompletionLog, PasswordResetToken,
+    AreaUnit, Thermometer, ThermometerVerificationRecord, 
+    ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog,
+    Supplier
+)
 from .serializers import (
     DepartmentSerializer, UserSerializer, UserProfileSerializer, 
     CleaningItemSerializer, TaskInstanceSerializer, CompletionLogSerializer,
     CurrentUserSerializer, UserWithProfileSerializer,
     PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
     AreaUnitSerializer, ThermometerSerializer, ThermometerVerificationRecordSerializer,
-    ThermometerVerificationAssignmentSerializer, TemperatureCheckAssignmentSerializer, TemperatureLogSerializer
+    ThermometerVerificationAssignmentSerializer, TemperatureCheckAssignmentSerializer, TemperatureLogSerializer,
+    SupplierSerializer
 )
 from rest_framework.permissions import AllowAny # Corrected: AllowAny from DRF
 from .permissions import (
@@ -1044,5 +1049,66 @@ class TemperatureLogViewSet(viewsets.ModelViewSet):
         }
         
         return Response(result)
+
+class SupplierViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing suppliers.
+    Only managers can create, update, or delete suppliers in their department.
+    All authenticated users can view suppliers in their department.
+    """
+    serializer_class = SupplierSerializer
+    permission_classes = [IsManagerForWriteOrAuthenticatedReadOnly]
+    
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Supplier.objects.all()
+        elif hasattr(user, 'profile') and user.profile.department:
+            return Supplier.objects.filter(department=user.profile.department)
+        return Supplier.objects.none()
+    
+    def perform_create(self, serializer):
+        # Debug logging
+        print("Request data:", self.request.data)
+        print("Validated data:", serializer.validated_data)
+        print("Department in validated data:", 'department' in serializer.validated_data)
+        print("Department value:", serializer.validated_data.get('department', 'Not provided'))
+        
+        # If department_id is not provided, use the user's department
+        if 'department' not in serializer.validated_data and hasattr(self.request.user, 'profile'):
+            print("Using user's department:", self.request.user.profile.department)
+            serializer.save(department=self.request.user.profile.department)
+        else:
+            print("Using provided department")
+            serializer.save()
+            
+    def create(self, request, *args, **kwargs):
+        print("\n==== SUPPLIER CREATE REQUEST =====")
+        print("Raw request data:", request.data)
+        print("Content type:", request.content_type)
+        print("Request method:", request.method)
+        print("Request user:", request.user)
+        print("User department:", request.user.profile.department if hasattr(request.user, 'profile') else None)
+        
+        # Check if department_id is in the request data
+        department_id = request.data.get('department_id')
+        print("Department ID in request:", department_id)
+        print("Type of department_id:", type(department_id))
+        
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            print("Validation errors:", serializer.errors)
+            # Return detailed error response
+            from rest_framework.response import Response
+            from rest_framework import status
+            return Response({
+                'errors': serializer.errors,
+                'request_data': request.data,
+                'message': 'Validation failed'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        print("Serializer is valid. Validated data:", serializer.validated_data)
+        return super().create(request, *args, **kwargs)
+
 
 # Management Commands related views (if any in future)

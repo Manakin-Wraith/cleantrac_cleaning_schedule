@@ -5,7 +5,7 @@ from .models import (
     Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
     AreaUnit, Thermometer, ThermometerVerificationRecord, 
     ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog,
-    DocumentTemplate, GeneratedDocument
+    DocumentTemplate, GeneratedDocument, Supplier
 )
 
 # Basic registration
@@ -142,6 +142,16 @@ class GeneratedDocumentAdmin(admin.ModelAdmin):
     readonly_fields = ('parameters',)
 
 admin.site.register(GeneratedDocument, GeneratedDocumentAdmin)
+
+# Supplier Admin Registration
+class SupplierAdmin(admin.ModelAdmin):
+    list_display = ('supplier_code', 'supplier_name', 'department', 'country_of_origin', 'created_at', 'updated_at')
+    list_filter = ('department', 'country_of_origin', 'created_at')
+    search_fields = ('supplier_code', 'supplier_name', 'contact_info', 'address', 'country_of_origin')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('created_at', 'updated_at')
+
+admin.site.register(Supplier, SupplierAdmin)
 
 # You can create more customized ModelAdmin classes for other models as needed
 # For example, for TaskInstance:
