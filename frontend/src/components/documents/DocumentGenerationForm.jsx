@@ -26,6 +26,12 @@ const DocumentGenerationForm = ({ template, onCancel, onSuccess }) => {
     includeTemperatureLogs: template?.template_type === 'temperature',
     includeCleaningTasks: template?.template_type === 'cleaning',
     includeThermometerVerifications: template?.template_type === 'verification',
+    // Additional options for temperature checklist
+    dateFormat: '%Y-%m-%d',
+    highlightOutOfRange: true,
+    includeCorrectiveActions: true,
+    groupByDate: true,
+    showTargetRanges: true,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -88,6 +94,30 @@ const DocumentGenerationForm = ({ template, onCancel, onSuccess }) => {
         includeCleaningTasks: formData.includeCleaningTasks,
         includeThermometerVerifications: formData.includeThermometerVerifications,
       };
+      
+      // Add temperature-specific parameters if this is a temperature template
+      if (template.template_type === 'temperature') {
+        newParameters.dateFormat = formData.dateFormat;
+        newParameters.highlightOutOfRange = formData.highlightOutOfRange;
+        newParameters.includeCorrectiveActions = formData.includeCorrectiveActions;
+        newParameters.groupByDate = formData.groupByDate;
+        newParameters.showTargetRanges = formData.showTargetRanges;
+        
+        // Add column mapping if we're using the HMR Temperature checklist
+        if (template.name.includes('HMR') || template.name.includes('Temperature')) {
+          newParameters.columnMapping = {
+            'date': 1,
+            'area': 2,
+            'time_period': 3,
+            'temperature': 4,
+            'min_temp': 5,
+            'max_temp': 6,
+            'thermometer': 7,
+            'logged_by': 8,
+            'corrective_action': 9
+          };
+        }
+      }
       
       setParameters(newParameters);
       setActiveStep(1); // Move to preview step
@@ -173,55 +203,140 @@ const DocumentGenerationForm = ({ template, onCancel, onSuccess }) => {
       {activeStep === 0 ? (
         <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
-          <Grid item xs={12} sm={6}>
+          <Grid xs={12} sm={6}>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Start Date"
                 value={formData.startDate}
                 onChange={(date) => handleDateChange('startDate', date)}
-                renderInput={(params) => <TextField {...params} fullWidth required />}
+                slotProps={{ textField: { fullWidth: true, required: true } }}
               />
             </LocalizationProvider>
           </Grid>
           
-          <Grid item xs={12} sm={6}>
+          <Grid xs={12} sm={6}>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="End Date"
                 value={formData.endDate}
                 onChange={(date) => handleDateChange('endDate', date)}
-                renderInput={(params) => <TextField {...params} fullWidth required />}
+                slotProps={{ textField: { fullWidth: true, required: true } }}
               />
             </LocalizationProvider>
           </Grid>
           
           {template.template_type === 'temperature' && (
-            <Grid item xs={12}>
-              <FormControl component="fieldset">
-                <FormHelperText>Data to Include</FormHelperText>
-                <Grid container>
-                  <Grid item xs={12}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        name="includeTemperatureLogs"
-                        checked={formData.includeTemperatureLogs}
-                        onChange={handleInputChange}
-                      />
-                      {' '}Include Temperature Logs
-                    </label>
+            <>
+              <Grid xs={12}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Temperature Checklist Options
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+              </Grid>
+              
+              <Grid xs={12}>
+                <FormControl component="fieldset" fullWidth>
+                  <FormHelperText>Data to Include</FormHelperText>
+                  <Grid container spacing={2}>
+                    <Grid xs={12} sm={6}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="includeTemperatureLogs"
+                          checked={formData.includeTemperatureLogs}
+                          onChange={handleInputChange}
+                        />
+                        {' '}Include Temperature Logs
+                      </label>
+                    </Grid>
+                    <Grid xs={12} sm={6}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="includeCorrectiveActions"
+                          checked={formData.includeCorrectiveActions}
+                          onChange={handleInputChange}
+                        />
+                        {' '}Include Corrective Actions
+                      </label>
+                    </Grid>
+                    <Grid xs={12} sm={6}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="highlightOutOfRange"
+                          checked={formData.highlightOutOfRange}
+                          onChange={handleInputChange}
+                        />
+                        {' '}Highlight Out-of-Range Temperatures
+                      </label>
+                    </Grid>
+                    <Grid xs={12} sm={6}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="showTargetRanges"
+                          checked={formData.showTargetRanges}
+                          onChange={handleInputChange}
+                        />
+                        {' '}Show Target Temperature Ranges
+                      </label>
+                    </Grid>
+                    <Grid xs={12} sm={6}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="groupByDate"
+                          checked={formData.groupByDate}
+                          onChange={handleInputChange}
+                        />
+                        {' '}Group Readings by Date
+                      </label>
+                    </Grid>
                   </Grid>
+                </FormControl>
+              </Grid>
+              
+              <Grid xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel id="date-format-label">Date Format</InputLabel>
+                  <Select
+                    labelId="date-format-label"
+                    id="date-format"
+                    name="dateFormat"
+                    value={formData.dateFormat}
+                    onChange={handleInputChange}
+                    label="Date Format"
+                  >
+                    <MenuItem value="%Y-%m-%d">YYYY-MM-DD (2025-05-30)</MenuItem>
+                    <MenuItem value="%d/%m/%Y">DD/MM/YYYY (30/05/2025)</MenuItem>
+                    <MenuItem value="%m/%d/%Y">MM/DD/YYYY (05/30/2025)</MenuItem>
+                    <MenuItem value="%d %b %Y">DD Mon YYYY (30 May 2025)</MenuItem>
+                    <MenuItem value="%B %d, %Y">Month DD, YYYY (May 30, 2025)</MenuItem>
+                  </Select>
+                  <FormHelperText>Select the date format for the document</FormHelperText>
+                </FormControl>
+              </Grid>
+              
+              {template.name.includes('HMR') && (
+                <Grid xs={12}>
+                  <Alert severity="info" sx={{ mt: 1 }}>
+                    <Typography variant="body2">
+                      This template is specifically designed for the HMR Temperature checklist. 
+                      The system will automatically map temperature data to the appropriate columns in the template.
+                    </Typography>
+                  </Alert>
                 </Grid>
-              </FormControl>
-            </Grid>
+              )}
+            </>
           )}
           
           {template.template_type === 'cleaning' && (
-            <Grid item xs={12}>
+            <Grid xs={12}>
               <FormControl component="fieldset">
                 <FormHelperText>Data to Include</FormHelperText>
                 <Grid container>
-                  <Grid item xs={12}>
+                  <Grid xs={12}>
                     <label>
                       <input
                         type="checkbox"
@@ -238,11 +353,11 @@ const DocumentGenerationForm = ({ template, onCancel, onSuccess }) => {
           )}
           
           {template.template_type === 'verification' && (
-            <Grid item xs={12}>
+            <Grid xs={12}>
               <FormControl component="fieldset">
                 <FormHelperText>Data to Include</FormHelperText>
                 <Grid container>
-                  <Grid item xs={12}>
+                  <Grid xs={12}>
                     <label>
                       <input
                         type="checkbox"
@@ -258,7 +373,7 @@ const DocumentGenerationForm = ({ template, onCancel, onSuccess }) => {
             </Grid>
           )}
           
-          <Grid item xs={12} sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+          <Grid xs={12} sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
             <Button
               variant="outlined"
               color="secondary"

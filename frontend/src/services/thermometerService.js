@@ -148,13 +148,25 @@ export const getVerificationAssignments = async (params = {}) => {
   return response.data;
 };
 
+/**
+ * Gets the current THERMOMETER VERIFICATION assignment for the logged-in user.
+ * This is specifically for thermometer verification duties, not temperature checks.
+ * 
+ * @returns {Promise<Object>} The thermometer verification assignment or an empty object if not assigned
+ */
 export const getCurrentAssignment = async () => {
   try {
     const response = await api.get('/thermometer-verification-assignments/my-assignment/');
-    return response.data;
+    // If the response is empty or doesn't have an ID, the user is not assigned to verification
+    return response.data && typeof response.data === 'object' ? response.data : {};
   } catch (error) {
+    // 404 means the user is not assigned to thermometer verification
+    if (error.response && error.response.status === 404) {
+      console.info('User is not assigned to thermometer verification');
+      return {};
+    }
     console.warn('Error fetching thermometer verification assignment:', error);
-    return null;
+    return {};
   }
 };
 
@@ -163,9 +175,16 @@ export const getAllCurrentAssignments = async () => {
   return response.data;
 };
 
+// This is a duplicate function that should be removed as getCurrentAssignment already does this
+// Keeping it for backward compatibility
 export const getMyAssignment = async () => {
-  const response = await api.get('/thermometer-verification-assignments/my-assignment/');
-  return response.data;
+  try {
+    const response = await api.get('/thermometer-verification-assignments/my-assignment/');
+    return response.data;
+  } catch (error) {
+    console.warn('Error fetching thermometer verification assignment:', error);
+    return {};
+  }
 };
 
 export const createVerificationAssignment = async (assignmentData) => {
@@ -194,9 +213,25 @@ export const getAllCurrentTemperatureCheckAssignments = async () => {
   return response.data;
 };
 
+/**
+ * Gets the current TEMPERATURE CHECK assignments (AM/PM) for the logged-in user.
+ * This is specifically for temperature check duties, not thermometer verification.
+ * 
+ * @returns {Promise<Object>} Object containing am_assignment and pm_assignment properties
+ */
 export const getMyTemperatureCheckAssignments = async () => {
-  const response = await api.get('/temperature-check-assignments/my-assignments/');
-  return response.data;
+  try {
+    const response = await api.get('/temperature-check-assignments/my-assignments/');
+    return response.data && typeof response.data === 'object' ? response.data : { am_assignment: null, pm_assignment: null };
+  } catch (error) {
+    // 404 means the user is not assigned to temperature checks
+    if (error.response && error.response.status === 404) {
+      console.info('User is not assigned to temperature checks');
+      return { am_assignment: null, pm_assignment: null };
+    }
+    console.warn('Error fetching temperature check assignments:', error);
+    return { am_assignment: null, pm_assignment: null };
+  }
 };
 
 export const createTemperatureCheckAssignment = async (assignmentData) => {

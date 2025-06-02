@@ -43,7 +43,7 @@ const GeneratedDocumentList = () => {
     // Create a link to download the generated file
     const link = document.createElement('a');
     link.href = doc.generated_file;
-    link.download = `${doc.template_name}-${new Date(doc.created_at).toISOString().split('T')[0]}`;
+    link.download = `${doc.template_name}-${new Date(doc.created_at).toISOString().split('T')[0]}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
