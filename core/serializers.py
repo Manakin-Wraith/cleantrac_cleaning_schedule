@@ -3,7 +3,8 @@ from django.contrib.auth.models import User
 from .models import (
     Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
     AreaUnit, Thermometer, ThermometerVerificationRecord, 
-    ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog
+    ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog,
+    Supplier
 )
 from rest_framework.validators import UniqueValidator
 
@@ -685,3 +686,30 @@ class TemperatureLogSerializer(serializers.ModelSerializer):
             pass
 
         return data
+
+
+class SupplierSerializer(serializers.ModelSerializer):
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True,
+        required=True,
+        error_messages={
+            'required': 'Department ID is required.',
+            'does_not_exist': 'Invalid department ID provided.'
+        }
+    )
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    
+    def validate_department_id(self, value):
+        if not value:
+            raise serializers.ValidationError('Department ID cannot be empty.')
+        return value
+    
+    class Meta:
+        model = Supplier
+        fields = [
+            'id', 'supplier_code', 'supplier_name', 'contact_info', 'address',
+            'country_of_origin', 'department_id', 'department_name',
+            'created_at', 'updated_at'
+        ]

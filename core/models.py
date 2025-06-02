@@ -384,6 +384,28 @@ class GeneratedDocument(models.Model):
         ordering = ['-created_at']
 
 
+class Supplier(models.Model):
+    """Represents a supplier for a specific department."""
+    supplier_code = models.CharField(max_length=50)
+    supplier_name = models.CharField(max_length=200)
+    contact_info = models.TextField(blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    country_of_origin = models.CharField(max_length=100, default="South Africa")
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='suppliers')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Supplier"
+        verbose_name_plural = "Suppliers"
+        ordering = ['supplier_name']
+        # Ensure supplier_code is unique per department
+        unique_together = [('supplier_code', 'department')]
+    
+    def __str__(self):
+        return f"{self.supplier_name} ({self.supplier_code}) - {self.department.name}"
+
+
 # To make UserProfile creation automatic when a User is created, we can use signals.
 # This is optional but good practice.
 # In core/signals.py (new file):
