@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Card, CardContent, CardActions, Button, Grid,
   Chip, CircularProgress, Alert, Divider, IconButton, Tooltip,
-  Select, MenuItem, FormControl, InputLabel
+  Select, MenuItem, FormControl, InputLabel, Dialog, DialogActions, 
+  DialogContent, DialogContentText, DialogTitle, Snackbar
 } from '@mui/material';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import EditIcon from '@mui/icons-material/Edit';
@@ -19,6 +20,11 @@ const DocumentTemplateList = ({ onGenerateDocument, onEditTemplate }) => {
   const [error, setError] = useState('');
   const [templateType, setTemplateType] = useState('');
   const [templateTypes, setTemplateTypes] = useState({});
+  
+  // Snackbar state
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('info'); // 'success', 'error', 'warning', 'info'
   const theme = useTheme();
 
   useEffect(() => {
@@ -73,21 +79,45 @@ const DocumentTemplateList = ({ onGenerateDocument, onEditTemplate }) => {
     document.body.removeChild(link);
   };
 
-  const handleDelete = async (templateId) => {
-    if (!window.confirm('Are you sure you want to delete this template?')) {
-      return;
-    }
+  // State for delete confirmation dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState(null);
+
+  const handleDeleteClick = (templateId) => {
+    setTemplateToDelete(templateId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!templateToDelete) return;
     
     try {
-      await axios.delete(`${API_URL}/document-templates/${templateId}/`, {
+      await axios.delete(`${API_URL}/document-templates/${templateToDelete}/`, {
         headers: getAuthHeader()
       });
       // Refresh the template list
       fetchTemplates();
+      // Show success message
+      setSnackbarMessage('Template deleted successfully');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
     } catch (err) {
       console.error('Error deleting template:', err);
       setError('Failed to delete template. Please try again.');
+      // Show error message
+      setSnackbarMessage('Failed to delete template');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    } finally {
+      // Close the dialog
+      setDeleteDialogOpen(false);
+      setTemplateToDelete(null);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setTemplateToDelete(null);
   };
 
   if (loading) {
@@ -195,7 +225,7 @@ const DocumentTemplateList = ({ onGenerateDocument, onEditTemplate }) => {
                     <Tooltip title="Delete Template">
                       <IconButton 
                         size="small" 
-                        onClick={() => handleDelete(template.id)}
+                        onClick={() => handleDeleteClick(template.id)}
                         color="error"
                       >
                         <DeleteIcon />
@@ -215,6 +245,48 @@ const DocumentTemplateList = ({ onGenerateDocument, onEditTemplate }) => {
           ))}
         </Grid>
       )}
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title" sx={{ bgcolor: theme.palette.error.main, color: 'white' }}>
+          Confirm Deletion
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2, mt: 1 }}>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this template? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleDeleteCancel} variant="outlined">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} variant="contained" color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Snackbar for notifications */}
+      <Snackbar 
+        open={snackbarOpen} 
+        autoHideDuration={6000} 
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbarOpen(false)} 
+          severity={snackbarSeverity} 
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
