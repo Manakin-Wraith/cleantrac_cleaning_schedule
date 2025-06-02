@@ -123,53 +123,212 @@ const DocumentPreview = ({ template, parameters, onProceed, onCancel }) => {
 
       {/* Preview Data */}
       {previewData && (
-        <Box sx={{ mb: 3 }}>
+        <Box>
           <Typography variant="h6" gutterBottom>
             Data Preview
           </Typography>
-
-          {previewData.sections.map((section, index) => (
-            <Box key={index} sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                {section.title}
-              </Typography>
-              
-              {section.data && section.data.length > 0 ? (
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        {section.columns.map((column, colIndex) => (
-                          <TableCell key={colIndex}>{column}</TableCell>
-                        ))}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {section.data.slice(0, 5).map((row, rowIndex) => (
-                        <TableRow key={rowIndex}>
-                          {section.columns.map((column, colIndex) => (
-                            <TableCell key={colIndex}>
-                              {row[column] !== undefined ? String(row[column]) : ''}
-                            </TableCell>
-                          ))}
+          
+          {template.template_type === 'verification' && previewData.verifications && (
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Thermometer</TableCell>
+                    <TableCell>Verified By</TableCell>
+                    <TableCell>Result</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {previewData.verifications.slice(0, 5).map((record, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{record.date}</TableCell>
+                      <TableCell>{record.thermometer}</TableCell>
+                      <TableCell>{record.verified_by}</TableCell>
+                      <TableCell>{record.reading}</TableCell>
+                    </TableRow>
+                  ))}
+                  {previewData.verifications.length > 5 && (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        <Typography variant="body2" color="text.secondary">
+                          ... and {previewData.verifications.length - 5} more records
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+          
+          {template.template_type === 'temperature' && previewData.temperature_logs && (
+            <>
+              <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Area/Unit</TableCell>
+                      <TableCell>Time</TableCell>
+                      <TableCell>Temperature</TableCell>
+                      <TableCell>Target Range</TableCell>
+                      <TableCell>Status</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {previewData.temperature_logs.slice(0, 5).map((log, index) => {
+                      // Determine temperature status
+                      let status = 'Unknown';
+                      let statusColor = 'inherit';
+                      
+                      if (log.in_range === true) {
+                        status = 'Within Range';
+                        statusColor = 'success.main';
+                      } else if (log.in_range === false) {
+                        status = 'Out of Range';
+                        statusColor = 'error.main';
+                      }
+                      
+                      return (
+                        <TableRow key={index}>
+                          <TableCell>{log.date}</TableCell>
+                          <TableCell>{log.area_name}</TableCell>
+                          <TableCell>{log.time_period}</TableCell>
+                          <TableCell>
+                            <Typography 
+                              sx={{ 
+                                color: log.in_range === false ? 'error.main' : 'inherit',
+                                fontWeight: log.in_range === false ? 'bold' : 'normal'
+                              }}
+                            >
+                              {log.temperature}°C
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            {log.min_temp && log.max_temp ? 
+                              `${log.min_temp}°C - ${log.max_temp}°C` : 
+                              'Not set'}
+                          </TableCell>
+                          <TableCell>
+                            <Typography sx={{ color: statusColor }}>
+                              {status}
+                            </Typography>
+                          </TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Alert severity="info">No data available for this section.</Alert>
+                      );
+                    })}
+                    {previewData.temperature_logs.length > 5 && (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center">
+                          <Typography variant="body2" color="text.secondary">
+                            ... and {previewData.temperature_logs.length - 5} more temperature logs
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              
+              {/* Temperature Summary */}
+              {previewData.temperature_summary && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Temperature Summary
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    <Paper variant="outlined" sx={{ p: 2, flex: '1 1 200px' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Readings
+                      </Typography>
+                      <Typography variant="h6">
+                        {previewData.temperature_summary.total_readings}
+                      </Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 2, flex: '1 1 200px' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Within Range
+                      </Typography>
+                      <Typography variant="h6" color="success.main">
+                        {previewData.temperature_summary.in_range_count} 
+                        ({Math.round(previewData.temperature_summary.in_range_percentage)}%)
+                      </Typography>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 2, flex: '1 1 200px' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Out of Range
+                      </Typography>
+                      <Typography variant="h6" color="error.main">
+                        {previewData.temperature_summary.out_of_range_count}
+                        ({Math.round(previewData.temperature_summary.out_of_range_percentage)}%)
+                      </Typography>
+                    </Paper>
+                  </Box>
+                </Box>
               )}
               
-              {section.data && section.data.length > 5 && (
-                <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                  Showing 5 of {section.data.length} rows...
-                </Typography>
+              {/* HMR Temperature Checklist specific information */}
+              {template.name.includes('HMR') && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2">
+                    HMR Temperature Checklist Format
+                  </Typography>
+                  <Typography variant="body2">
+                    The generated document will follow the HMR Temperature checklist format with:
+                    <ul>
+                      <li>Color-coded temperature readings (red for out-of-range)</li>
+                      <li>Organized by date and area</li>
+                      <li>Target temperature ranges included</li>
+                      <li>Staff information and thermometer details</li>
+                    </ul>
+                  </Typography>
+                </Alert>
               )}
-            </Box>
-          ))}
+            </>
+          )}
+          
+          {template.template_type === 'cleaning' && previewData.cleaning_tasks && (
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Task</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Completed By</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {previewData.cleaning_tasks.slice(0, 5).map((task, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{task.date}</TableCell>
+                      <TableCell>{task.name}</TableCell>
+                      <TableCell>{task.status}</TableCell>
+                      <TableCell>{task.completed_by}</TableCell>
+                    </TableRow>
+                  ))}
+                  {previewData.cleaning_tasks.length > 5 && (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        <Typography variant="body2" color="text.secondary">
+                          ... and {previewData.cleaning_tasks.length - 5} more tasks
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+          
+          {(!previewData.verifications && !previewData.cleaning_tasks && !previewData.temperature_logs) && (
+            <Alert severity="info">
+              No preview data available. The document will be generated based on the selected parameters.
+            </Alert>
+          )}
 
-          {previewData.sections.length === 0 && (
+          {previewData.sections && previewData.sections.length === 0 && (
             <Alert severity="info">No preview data available.</Alert>
           )}
         </Box>

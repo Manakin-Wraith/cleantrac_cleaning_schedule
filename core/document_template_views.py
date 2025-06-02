@@ -4,11 +4,21 @@ from rest_framework.decorators import action
 from django.utils import timezone
 from django.db.models import Q
 from django.core.files.base import ContentFile
-import json
-import pandas as pd
-import os
+from django.core.files.storage import default_storage
+from django.http import HttpResponse
 import io
 from datetime import datetime, timedelta
+import json
+import traceback
+import pandas as pd
+import os
+
+# ReportLab Imports
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch, cm
+from reportlab.lib import colors
 
 from .models import DocumentTemplate, GeneratedDocument, TaskInstance, ThermometerVerificationRecord, TemperatureLog
 from .document_template_serializers import DocumentTemplateSerializer, GeneratedDocumentSerializer
@@ -186,14 +196,79 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             
             # Check if there are any temperature logs in the date range
             count = TemperatureLog.objects.filter(
-                recorded_at__date__gte=start_date,
-                recorded_at__date__lte=end_date,
-                thermometer__department=template.department
+                log_datetime__date__gte=start_date,
+                log_datetime__date__lte=end_date,
+                department=template.department
             ).count()
             
             return count > 0
-        except:
+        except Exception as e:
+            print(f"Error checking temperature data availability: {str(e)}")
             return False
+            
+    def _get_sample_temperature_logs(self, template, parameters):
+        """
+        Get sample temperature logs for preview.
+        """
+        try:
+            start_date = datetime.strptime(parameters.get('startDate'), '%Y-%m-%d').date()
+            end_date = datetime.strptime(parameters.get('endDate'), '%Y-%m-%d').date()
+            
+            # Get temperature logs for the specified date range and department
+            logs = TemperatureLog.objects.filter(
+                log_datetime__date__gte=start_date,
+                log_datetime__date__lte=end_date,
+                department=template.department
+            ).select_related(
+                'area_unit',
+                'thermometer_used',
+                'logged_by'
+            ).order_by('-log_datetime')[:10]  # Limit to 10 logs for preview
+            
+            # Format logs for preview
+            formatted_logs = []
+            for log in logs:
+                formatted_log = {
+                    'date': log.log_datetime.strftime('%Y-%m-%d'),
+                    'time': log.log_datetime.strftime('%H:%M'),
+                    'area_name': log.area_unit.name,
+                    'area_id': log.area_unit.id,
+                    'time_period': log.get_time_period_display(),
+                    'temperature': float(log.temperature_reading),
+                    'thermometer': log.thermometer_used.serial_number,
+                    'logged_by': log.logged_by.username,
+                    'in_range': log.is_within_target_range(),
+                }
+                
+                # Add target temperature range if available
+                if log.area_unit.target_temperature_min is not None:
+                    formatted_log['min_temp'] = float(log.area_unit.target_temperature_min)
+                if log.area_unit.target_temperature_max is not None:
+                    formatted_log['max_temp'] = float(log.area_unit.target_temperature_max)
+                
+                # Add corrective action if available
+                if log.corrective_action:
+                    formatted_log['corrective_action'] = log.corrective_action
+                
+                formatted_logs.append(formatted_log)
+            
+            # Generate summary statistics
+            total_logs = len(formatted_logs)
+            in_range_count = sum(1 for log in formatted_logs if log.get('in_range') is True)
+            out_of_range_count = sum(1 for log in formatted_logs if log.get('in_range') is False)
+            
+            summary = {
+                'total_readings': total_logs,
+                'in_range_count': in_range_count,
+                'out_of_range_count': out_of_range_count,
+                'in_range_percentage': (in_range_count / total_logs * 100) if total_logs > 0 else 0,
+                'out_of_range_percentage': (out_of_range_count / total_logs * 100) if total_logs > 0 else 0,
+            }
+            
+            return formatted_logs, summary
+        except Exception as e:
+            print(f"Error getting sample temperature logs: {str(e)}")
+            return [], {'total_readings': 0, 'in_range_count': 0, 'out_of_range_count': 0, 'in_range_percentage': 0, 'out_of_range_percentage': 0}
     
     def _check_cleaning_data_availability(self, template, parameters):
         """
@@ -235,178 +310,341 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
     
     def _generate_preview_data(self, template, parameters):
         """
-        Generate preview data based on template type and parameters.
+        Generates preview data based on template type and parameters.
         """
-        preview_data = {
-            'sections': []
-        }
+        preview_data = {}
         
+        # Generate preview data based on template type
+        if template.template_type == 'verification':
+            # Get sample verification records
+            records = self._get_sample_verification_records(template, parameters)
+            preview_data['verifications'] = records
+            
+        elif template.template_type == 'cleaning':
+            # Get sample cleaning tasks
+            tasks = self._get_sample_cleaning_tasks(template, parameters)
+            preview_data['cleaning_tasks'] = tasks
+            
+        elif template.template_type == 'temperature':
+            # Get sample temperature logs
+            logs, summary = self._get_sample_temperature_logs(template, parameters)
+            preview_data['temperature_logs'] = logs
+            preview_data['temperature_summary'] = summary
+        
+        return preview_data
+    
+    def _get_sample_verification_records(self, template, parameters):
+        """
+        Get sample verification records for preview.
+        """
         try:
             start_date = datetime.strptime(parameters.get('startDate'), '%Y-%m-%d').date()
             end_date = datetime.strptime(parameters.get('endDate'), '%Y-%m-%d').date()
             
-            if template.template_type == 'temperature' and parameters.get('includeTemperatureLogs', True):
-                # Get temperature logs for preview
-                logs = TemperatureLog.objects.filter(
-                    recorded_at__date__gte=start_date,
-                    recorded_at__date__lte=end_date,
-                    thermometer__department=template.department
-                ).order_by('-recorded_at')[:20]  # Limit to 20 for preview
-                
-                if logs.exists():
-                    log_data = []
-                    for log in logs:
-                        log_data.append({
-                            'Date': log.recorded_at.strftime('%Y-%m-%d'),
-                            'Time': log.recorded_at.strftime('%H:%M'),
-                            'Thermometer': log.thermometer.name,
-                            'Temperature': f"{log.temperature}°C",
-                            'Recorded By': log.recorded_by.username,
-                            'Notes': log.notes or ''
-                        })
-                    
-                    preview_data['sections'].append({
-                        'title': 'Temperature Logs',
-                        'columns': ['Date', 'Time', 'Thermometer', 'Temperature', 'Recorded By', 'Notes'],
-                        'data': log_data
-                    })
+            # Get verification records for the specified date range and department
+            records = ThermometerVerificationRecord.objects.filter(
+                date_verified__gte=start_date,
+                date_verified__lte=end_date,
+                thermometer__department=template.department
+            ).select_related(
+                'thermometer',
+                'calibrated_by'
+            ).order_by('-date_verified')[:10]  # Limit to 10 records for preview
             
-            if template.template_type == 'cleaning' and parameters.get('includeCleaningTasks', True):
-                # Get cleaning tasks for preview
-                tasks = TaskInstance.objects.filter(
-                    scheduled_date__gte=start_date,
-                    scheduled_date__lte=end_date,
-                    cleaning_item__department=template.department
-                ).order_by('-scheduled_date')[:20]  # Limit to 20 for preview
+            # Format records for preview
+            formatted_records = []
+            for record in records:
+                formatted_record = {
+                    'date': record.date_verified.strftime('%Y-%m-%d'),
+                    'thermometer': record.thermometer.serial_number,
+                    'verified_by': record.calibrated_by.username if record.calibrated_by else "Unknown",
+                    'reading': f"{record.reading_after_verification}°C",
+                    'calibrated_instrument': record.calibrated_instrument_no
+                }
                 
-                if tasks.exists():
-                    task_data = []
-                    for task in tasks:
-                        task_data.append({
-                            'Date': task.scheduled_date.strftime('%Y-%m-%d'),
-                            'Item': task.cleaning_item.name,
-                            'Status': task.get_status_display(),
-                            'Completed By': task.completed_by.username if task.completed_by else '',
-                            'Completed At': task.completed_at.strftime('%Y-%m-%d %H:%M') if task.completed_at else '',
-                            'Notes': task.notes or ''
-                        })
-                    
-                    preview_data['sections'].append({
-                        'title': 'Cleaning Tasks',
-                        'columns': ['Date', 'Item', 'Status', 'Completed By', 'Completed At', 'Notes'],
-                        'data': task_data
-                    })
+                formatted_records.append(formatted_record)
             
-            if template.template_type == 'verification' and parameters.get('includeThermometerVerifications', True):
-                # Get verification records for preview
-                records = ThermometerVerificationRecord.objects.filter(
-                    date_verified__gte=start_date,
-                    date_verified__lte=end_date,
-                    thermometer__department=template.department
-                ).order_by('-date_verified')[:20]  # Limit to 20 for preview
-                
-                if records.exists():
-                    record_data = []
-                    for record in records:
-                        record_data.append({
-                            'Date': record.date_verified.strftime('%Y-%m-%d'),
-                            'Thermometer': record.thermometer.serial_number,
-                            'Model': getattr(record.thermometer, 'model', 'N/A'),
-                            'Calibrated Instrument': record.calibrated_instrument_no,
-                            'Reading': f"{record.reading_after_verification}°C",
-                            'Result': 'Passed',
-                            'Verified By': record.calibrated_by.username if record.calibrated_by else 'Unknown',
-                            'Corrective Action': record.corrective_action or 'None',
-                            'Created At': record.created_at.strftime('%Y-%m-%d %H:%M') if record.created_at else 'N/A'
-                        })
-                    
-                    preview_data['sections'].append({
-                        'title': 'Thermometer Verifications',
-                        'columns': ['Date', 'Thermometer', 'Result', 'Verified By', 'Notes'],
-                        'data': record_data
-                    })
+            return formatted_records
         except Exception as e:
-            # Add an error section if something goes wrong
-            preview_data['sections'].append({
-                'title': 'Error Generating Preview',
-                'columns': ['Error'],
-                'data': [{'Error': str(e)}]
-            })
-        
-        return preview_data
+            print(f"Error getting sample verification records: {str(e)}")
+            return []
+    
+    def _get_sample_cleaning_tasks(self, template, parameters):
+        """
+        Get sample cleaning tasks for preview.
+        """
+        try:
+            start_date = datetime.strptime(parameters.get('startDate'), '%Y-%m-%d').date()
+            end_date = datetime.strptime(parameters.get('endDate'), '%Y-%m-%d').date()
+            
+            # Get cleaning tasks for the specified date range and department
+            tasks = TaskInstance.objects.filter(
+                scheduled_date__gte=start_date,
+                scheduled_date__lte=end_date,
+                cleaning_item__department=template.department
+            ).select_related(
+                'cleaning_item',
+                'completed_by'
+            ).order_by('-scheduled_date')[:10]  # Limit to 10 tasks for preview
+            
+            # Format tasks for preview
+            formatted_tasks = []
+            for task in tasks:
+                formatted_task = {
+                    'date': task.scheduled_date.strftime('%Y-%m-%d'),
+                    'name': task.cleaning_item.name,
+                    'status': task.get_status_display(),
+                    'completed_by': task.completed_by.username if task.completed_by else "",
+                    'completed_at': task.completed_at.strftime('%Y-%m-%d %H:%M') if task.completed_at else ""
+                }
+                
+                formatted_tasks.append(formatted_task)
+            
+            return formatted_tasks
+        except Exception as e:
+            print(f"Error getting sample cleaning tasks: {str(e)}")
+            return []
 
 
 def generate_document_file(template, parameters, user):
     """
-    Generate a document file based on the template and parameters.
-    Returns a tuple of (file_content, filename, error_message).
+    Prepare data for a document file based on the template and parameters.
+    This version removes Excel generation and prepares data for future PDF output.
+    Returns a tuple of (file_content_bytes, filename, error_message).
     """
     try:
-        # Get the template file
-        template_file_path = template.template_file.path
+        start_date_str = parameters.get('startDate')
+        end_date_str = parameters.get('endDate')
+
+        if not start_date_str or not end_date_str:
+            return None, None, "Start date and end date are required parameters."
+
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
         
-        # Parse parameters
-        start_date = datetime.strptime(parameters.get('startDate'), '%Y-%m-%d').date()
-        end_date = datetime.strptime(parameters.get('endDate'), '%Y-%m-%d').date()
+        document_info = {
+            "document_title": template.name,
+            "template_type": template.template_type,
+            "department": template.department.name,
+            "generated_by": user.username,
+            "generation_datetime_utc": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            "date_range_str": f"{start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}",
+            "parameters_used": parameters, # Include for reference
+            "sections": []
+        }
+
+        # Section 1: Verification Records
+        if template.template_type == 'verification' and parameters.get('includeThermometerVerifications', True):
+            records = ThermometerVerificationRecord.objects.filter(
+                date_verified__gte=start_date,
+                date_verified__lte=end_date,
+                thermometer__department=template.department
+            ).order_by('-date_verified').select_related('thermometer', 'calibrated_by')
+            
+            verification_data = []
+            if records.exists():
+                for record in records:
+                    verification_data.append({
+                        'Date Verified': record.date_verified.strftime('%Y-%m-%d'),
+                        'Thermometer S/N': record.thermometer.serial_number,
+                        'Calibrated Instrument No': record.calibrated_instrument_no,
+                        'Reading After Verification': f"{record.reading_after_verification}°C",
+                        'Calibrated By': record.calibrated_by.username if record.calibrated_by else "Unknown",
+                        'Corrective Action': record.corrective_action or "None"
+                    })
+            document_info["sections"].append({
+                "title": "Thermometer Verification Records",
+                "type": "verification_records",
+                "data": verification_data,
+                "headers": ['Date Verified', 'Thermometer S/N', 'Calibrated Instrument No', 'Reading After Verification', 'Calibrated By', 'Corrective Action']
+            })
         
-        # Create a new workbook based on the template
-        try:
-            # Load the template workbook using openpyxl directly for more control
-            from openpyxl import load_workbook
-            wb = load_workbook(template_file_path)
+        # Section 2: Temperature Logs
+        if template.template_type == 'temperature' and parameters.get('includeTemperatureLogs', True):
+            date_format = parameters.get('dateFormat', '%Y-%m-%d') # Keep for potential display formatting
             
-            # Get verification records
-            if template.template_type == 'verification' and parameters.get('includeThermometerVerifications', True):
-                records = ThermometerVerificationRecord.objects.filter(
-                    date_verified__gte=start_date,
-                    date_verified__lte=end_date,
-                    thermometer__department=template.department
-                ).order_by('-date_verified')
-                
-                if records.exists():
-                    # Get the active worksheet (usually the first one)
-                    ws = wb.active
-                    
-                    # Add date range to the worksheet (typically in cell A1 or a header area)
-                    date_range_text = f"Date Range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
-                    if 'A1' in ws and not ws['A1'].value:
-                        ws['A1'] = date_range_text
-                    
-                    # Find the starting row for data (typically after headers)
-                    # This is a simplified approach - in a real implementation, you would
-                    # look for specific markers or headers in the template
-                    start_row = 5  # Assuming data starts at row 5
-                    
-                    # Populate the verification data
-                    for i, record in enumerate(records):
-                        row = start_row + i
-                        
-                        # Map data to columns - adjust column letters based on your template
-                        ws.cell(row=row, column=1, value=record.date_verified.strftime('%Y-%m-%d'))  # Date
-                        ws.cell(row=row, column=2, value=record.thermometer.serial_number)  # Thermometer
-                        ws.cell(row=row, column=3, value=record.calibrated_instrument_no)  # Calibrated Instrument
-                        ws.cell(row=row, column=4, value=f"{record.reading_after_verification}°C")  # Reading
-                        ws.cell(row=row, column=5, value=record.calibrated_by.username if record.calibrated_by else "Unknown")  # Verified By
-                        ws.cell(row=row, column=6, value=record.corrective_action or "None")  # Corrective Action
+            logs = TemperatureLog.objects.filter(
+                log_datetime__date__gte=start_date,
+                log_datetime__date__lte=end_date,
+                department=template.department
+            ).select_related(
+                'area_unit',
+                'thermometer_used',
+                'logged_by'
+            ).order_by('log_datetime')
             
-            # Save the workbook to a BytesIO object
-            output = io.BytesIO()
-            wb.save(output)
-            output.seek(0)
+            temperature_log_data = []
+            if logs.exists():
+                for log in logs:
+                    temperature_log_data.append({
+                        'Date': log.log_datetime.strftime(date_format), # Use specified date_format
+                        'Time': log.log_datetime.strftime('%H:%M:%S'),
+                        'Area/Unit': log.area_unit.name,
+                        'Time Period': log.get_time_period_display(),
+                        'Temperature': f"{float(log.temperature_reading):.1f}°C",
+                        'Target Range': f"{log.area_unit.target_temperature_min}°C - {log.area_unit.target_temperature_max}°C" if log.area_unit.target_temperature_min is not None and log.area_unit.target_temperature_max is not None else "N/A",
+                        'Status': 'Within Range' if log.is_within_target_range() else ('Out of Range' if log.is_within_target_range() is False else 'N/A'),
+                        'Thermometer S/N': log.thermometer_used.serial_number,
+                        'Logged By': log.logged_by.username,
+                        'Corrective Action': log.corrective_action or "None"
+                    })
+            document_info["sections"].append({
+                "title": "Temperature Logs",
+                "type": "temperature_logs",
+                "data": temperature_log_data,
+                "headers": ['Date', 'Time', 'Area/Unit', 'Time Period', 'Temperature', 'Target Range', 'Status', 'Thermometer S/N', 'Logged By', 'Corrective Action']
+            })
+
+
+        # Section 3: Cleaning Tasks
+        if template.template_type == 'cleaning' and parameters.get('includeCleaningTasks', True):
+            tasks = TaskInstance.objects.filter(
+                task_type__is_cleaning_task=True,
+                due_date__gte=start_date,
+                due_date__lte=end_date,
+                department=template.department
+            ).select_related('task_type', 'assigned_to', 'completed_by', 'area_unit').order_by('due_date', 'task_type__name')
+
+            cleaning_task_data = []
+            if tasks.exists():
+                for task in tasks:
+                    cleaning_task_data.append({
+                        'Due Date': task.due_date.strftime('%Y-%m-%d'),
+                        'Task Name': task.task_type.name,
+                        'Area/Unit': task.area_unit.name if task.area_unit else 'N/A',
+                        'Status': task.get_status_display(),
+                        'Assigned To': task.assigned_to.username if task.assigned_to else 'Unassigned',
+                        'Completed By': task.completed_by.username if task.completed_by else '',
+                        'Completion Date': task.completion_date.strftime('%Y-%m-%d %H:%M') if task.completion_date else '',
+                        'Notes': task.notes or ''
+                    })
+            document_info["sections"].append({
+                "title": "Cleaning Task Records",
+                "type": "cleaning_tasks",
+                "data": cleaning_task_data,
+                "headers": ['Due Date', 'Task Name', 'Area/Unit', 'Status', 'Assigned To', 'Completed By', 'Completion Date', 'Notes']
+            })
+
+        # --- PDF Generation using ReportLab ---
+        buffer = io.BytesIO()
+        # Adjust margins for header/footer
+        doc = SimpleDocTemplate(buffer, pagesize=letter,
+                                rightMargin=0.75*inch, leftMargin=0.75*inch,
+                                topMargin=1.25*inch, bottomMargin=1.0*inch) # Increased top/bottom margins
+        styles = getSampleStyleSheet()
+        # Custom style for red text
+        styles.add(ParagraphStyle(name='RedText', parent=styles['Normal'], textColor=colors.red))
+        story = []
+
+        # Title
+        story.append(Paragraph(document_info.get('document_title', 'Document'), styles['h1']))
+        story.append(Spacer(1, 0.2*inch))
+
+        # Metadata
+        meta_style = styles['Normal']
+        meta_fields = [
+            f"Department: {document_info.get('department', 'N/A')}",
+            f"Generated By: {document_info.get('generated_by', 'N/A')}",
+            f"Generation Date (UTC): {document_info.get('generation_datetime_utc', 'N/A')}",
+            f"Date Range: {document_info.get('date_range_str', 'N/A')}",
+        ]
+        for field_text in meta_fields:
+            story.append(Paragraph(field_text, meta_style))
+        story.append(Spacer(1, 0.2*inch))
+
+        # Sections - Basic Info
+        for section in document_info.get('sections', []):
+            story.append(Paragraph(section.get('title', 'Section'), styles['h2']))
+            section_data = section.get('data', [])
+            section_headers = section.get('headers', [])
+
+            if not section_data:
+                story.append(Paragraph('No data available for this section.', meta_style))
+            else:
+                # Prepare data for the table: headers + data rows
+                table_data = [section_headers] # Start with headers
+                for item_dict in section_data:
+                    # Ensure all values are strings and handle missing keys gracefully
+                    row = []
+                    for header in section_headers:
+                        value = item_dict.get(header, '')
+                        if section.get('type') == 'temperature_logs' and header == 'Status' and value == 'Out of Range':
+                            row.append(Paragraph(str(value), styles['RedText']))
+                        else:
+                            row.append(str(value))
+                    table_data.append(row)
+
+                # Create table and apply style
+                data_table = Table(table_data)
+                data_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.grey),
+                    ('TEXTCOLOR',(0,0),(-1,0),colors.whitesmoke),
+                    ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                    ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0,0), (-1,0), 10),
+                    ('BOTTOMPADDING', (0,0), (-1,0), 12),
+                    ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+                    ('TEXTCOLOR',(0,1),(-1,-1),colors.black),
+                    ('FONTSIZE', (0,1), (-1,-1), 8),
+                    ('GRID', (0,0), (-1,-1), 1, colors.black)
+                ]))
+                story.append(data_table)
+            story.append(Spacer(1, 0.2*inch))
+
+        company_name_for_header = "CleanTrac Solutions"
+        doc_title_for_header = document_info.get('document_title', 'Document')
+
+        def _draw_header_content(canvas, doc_obj, title, company):
+            canvas.saveState()
+            canvas.setFont('Helvetica', 9)
+            header_y_pos = doc_obj.height + doc_obj.topMargin - 0.5*inch # Position from top of page area
             
-            # Get the file content
-            file_content = output.getvalue()
+            # Company Name (left)
+            canvas.drawString(doc_obj.leftMargin, header_y_pos, company)
             
-            # Generate a filename
-            filename = f"{template.name}_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.xlsx"
+            # Document Title (right)
+            canvas.drawRightString(doc_obj.width + doc_obj.leftMargin, header_y_pos, title)
             
-            return file_content, filename, None
+            # Line below header
+            line_y = header_y_pos - 0.1*inch
+            canvas.line(doc_obj.leftMargin, line_y, doc_obj.width + doc_obj.leftMargin, line_y)
+            canvas.restoreState()
+
+        def _draw_footer_content(canvas, doc_obj):
+            canvas.saveState()
+            canvas.setFont('Helvetica', 9)
+            footer_y_pos = doc_obj.bottomMargin - 0.5*inch # Position from bottom of page area
             
-        except Exception as e:
-            return None, None, f"Error processing Excel template: {str(e)}"
+            # Page Number (center)
+            page_num_text = f"Page {doc_obj.page}"
+            canvas.drawCentredString(doc_obj.width/2 + doc_obj.leftMargin, footer_y_pos, page_num_text)
+            
+            # Line above footer
+            line_y = footer_y_pos + 0.15*inch 
+            canvas.line(doc_obj.leftMargin, line_y, doc_obj.width + doc_obj.leftMargin, line_y)
+            canvas.restoreState()
+
+        def _page_layout(canvas, doc_obj):
+            _draw_header_content(canvas, doc_obj, doc_title_for_header, company_name_for_header)
+            _draw_footer_content(canvas, doc_obj)
+
+        doc.build(story, onFirstPage=_page_layout, onLaterPages=_page_layout)
+        file_content_bytes = buffer.getvalue()
+        buffer.close()
         
+        # Construct filename with .pdf extension
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{template.name.replace(' ', '_')}_{timestamp}.pdf"
+        
+        return file_content_bytes, filename, None
+
     except Exception as e:
-        return None, None, f"Error generating document: {str(e)}"
+        # Log the detailed exception for server-side review
+        print(f"Critical error in generate_document_file for template {template.id if template else 'Unknown'} by user {user.username if user else 'Unknown'}:")
+        traceback.print_exc()
+        # Return a more generic error message to the caller (ViewSet)
+        error_message = "Failed to generate PDF content due to an internal error. The issue has been logged."
+        return None, None, error_message
 
 
 class GeneratedDocumentViewSet(viewsets.ModelViewSet):
@@ -491,9 +729,10 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             document.generated_file.save(filename, ContentFile(file_content))
             document.save()
             
-            # Serialize and return the document
-            serializer = self.get_serializer(document)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # Prepare and return the PDF response
+            response = HttpResponse(file_content, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
             
         except DocumentTemplate.DoesNotExist:
             return Response(

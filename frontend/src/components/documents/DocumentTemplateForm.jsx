@@ -19,7 +19,12 @@ const DocumentTemplateForm = ({ onCancel, onSuccess }) => {
     template_type: 'general',
     template_file: null
   });
-  const [templateTypes, setTemplateTypes] = useState({});
+  const [templateTypes, setTemplateTypes] = useState({
+    'temperature': 'Temperature Log',
+    'cleaning': 'Cleaning Schedule',
+    'verification': 'Thermometer Verification',
+    'general': 'General Purpose'
+  });
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
