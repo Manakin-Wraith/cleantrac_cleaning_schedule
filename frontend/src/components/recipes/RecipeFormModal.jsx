@@ -22,22 +22,15 @@ import {
   TableHead,
   TableRow,
   CircularProgress,
-  Alert,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Autocomplete
+  Alert
 } from '@mui/material';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
-  Close as CloseIcon,
-  Refresh as RefreshIcon
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import * as math from 'mathjs';
 
 const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmentColor }) => {
   const initialRecipeState = {
@@ -64,26 +57,7 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
     cost: ''
   });
   const [ingredientErrors, setIngredientErrors] = useState({});
-  const [inventoryItems, setInventoryItems] = useState([]);
-  const [loadingInventory, setLoadingInventory] = useState(false);
-  const [selectedInventoryItem, setSelectedInventoryItem] = useState(null);
   const { currentUser } = useAuth();
-  
-  // Common measurement units for recipes
-  const measurementUnits = [
-    { value: 'g', label: 'Grams (g)' },
-    { value: 'kg', label: 'Kilograms (kg)' },
-    { value: 'mg', label: 'Milligrams (mg)' },
-    { value: 'ml', label: 'Milliliters (ml)' },
-    { value: 'l', label: 'Liters (l)' },
-    { value: 'tsp', label: 'Teaspoon (tsp)' },
-    { value: 'Tbs', label: 'Tablespoon (Tbs)' },
-    { value: 'cup', label: 'Cup (cup)' },
-    { value: 'oz', label: 'Ounce (oz)' },
-    { value: 'lb', label: 'Pound (lb)' },
-    { value: 'ea', label: 'Each (ea)' },
-    { value: 'pcs', label: 'Pieces (pcs)' }
-  ];
 
   useEffect(() => {
     if (isEditing && recipe) {
@@ -91,7 +65,7 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
       const loadRecipeDetails = async () => {
         setLoading(true);
         try {
-          const response = await api.get(`/recipes/${recipe.id}/`);
+          const response = await api.get(`/api/recipes/${recipe.id}/`);
           const recipeData = response.data;
           
           // Get ingredients for this recipe
@@ -118,26 +92,6 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
       setFormData(initialRecipeState);
     }
   }, [isEditing, recipe, open]);
-
-  useEffect(() => {
-    const loadInventoryItems = async () => {
-      if (!currentUser?.profile?.department?.id) return;
-      
-      setLoadingInventory(true);
-      try {
-        const response = await api.get('/inventory-items/', {
-          params: { department: currentUser.profile.department.id }
-        });
-        setInventoryItems(response.data);
-      } catch (err) {
-        console.error('Error loading inventory items:', err);
-      } finally {
-        setLoadingInventory(false);
-      }
-    };
-    
-    loadInventoryItems();
-  }, [currentUser?.profile?.department?.id]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -170,158 +124,24 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
       });
     }
   };
-  
-  // Handle inventory item selection from autocomplete
-  const handleInventoryItemSelect = (event, item) => {
-    setSelectedInventoryItem(item);
-    if (item) {
-      setNewIngredient({
-        ...newIngredient,
-        ingredient_code: item.ingredient_code,
-        ingredient_name: item.ingredient_name,
-        unit: item.unit,
-        cost: item.unit_cost.toString()
-      });
-      
-      // Clear related errors
-      setIngredientErrors({
-        ...ingredientErrors,
-        ingredient_code: null,
-        ingredient_name: null,
-        cost: null
-      });
-    }
-  };
-  
-  // Refresh inventory items list
-  const refreshInventoryItems = async () => {
-    if (!currentUser?.profile?.department?.id) return;
-    
-    setLoadingInventory(true);
-    try {
-      const response = await api.get('/inventory-items/', {
-        params: { department: currentUser.profile.department.id }
-      });
-      setInventoryItems(response.data);
-    } catch (err) {
-      console.error('Error refreshing inventory items:', err);
-    } finally {
-      setLoadingInventory(false);
-    }
-  };
-  
-  // Convert units for ingredient quantity using Math.js
-  const convertUnits = (value, fromUnit, toUnit) => {
-    if (!value || isNaN(value) || !fromUnit || !toUnit) {
-      return value;
-    }
-    
-    // If units are the same, no conversion needed
-    if (fromUnit === toUnit) {
-      return value;
-    }
-    
-    try {
-      // Handle 'each' or 'pieces' units which aren't standard measurement units
-      if (fromUnit === 'ea' || fromUnit === 'pcs' || toUnit === 'ea' || toUnit === 'pcs') {
-        return value; // Can't convert to/from count units
-      }
-      
-      // Map common abbreviations to full unit names that Math.js understands
-      const unitMap = {
-        'g': 'g',
-        'kg': 'kg',
-        'mg': 'mg',
-        'ml': 'ml',
-        'l': 'l',
-        'tsp': 'teaspoon',
-        'tbsp': 'tablespoon',
-        'oz': 'oz',
-        'lb': 'lb'
-      };
-      
-      // Get the full unit names if available
-      const fromUnitFull = unitMap[fromUnit] || fromUnit;
-      const toUnitFull = unitMap[toUnit] || toUnit;
-      
-      // Create math.js unit objects and convert
-      const sourceValue = math.unit(parseFloat(value), fromUnitFull);
-      const result = math.number(sourceValue, toUnitFull);
-      return result;
-    } catch (error) {
-      console.error('Unit conversion error:', error);
-      return value; // Return original value if conversion fails
-    }
-  };
 
   const validateIngredient = () => {
     const newErrors = {};
-    
-    // Validate ingredient exists in inventory
-    if (!newIngredient.ingredient_code.trim()) {
-      newErrors.ingredient_code = 'Ingredient code is required';
-    } else {
-      // Check if ingredient exists in inventory
-      const inventoryItem = inventoryItems.find(
-        item => item.ingredient_code === newIngredient.ingredient_code
-      );
-      
-      if (!inventoryItem) {
-        newErrors.ingredient_code = 'Ingredient not found in inventory';
-      }
-    }
     
     if (!newIngredient.ingredient_name.trim()) {
       newErrors.ingredient_name = 'Ingredient name is required';
     }
     
-    // Validate quantity is positive
     if (!newIngredient.quantity) {
       newErrors.quantity = 'Quantity is required';
     } else if (isNaN(newIngredient.quantity) || Number(newIngredient.quantity) <= 0) {
       newErrors.quantity = 'Quantity must be a positive number';
     }
     
-    // Validate unit is selected
-    if (!newIngredient.unit) {
-      newErrors.unit = 'Unit is required';
-    }
-    
-    // Validate cost is non-negative
     if (!newIngredient.cost) {
       newErrors.cost = 'Cost is required';
     } else if (isNaN(newIngredient.cost) || Number(newIngredient.cost) < 0) {
       newErrors.cost = 'Cost must be a non-negative number';
-    }
-    
-    // Check if we have enough inventory (if the ingredient exists in inventory)
-    if (!newErrors.ingredient_code && !newErrors.quantity) {
-      const inventoryItem = inventoryItems.find(
-        item => item.ingredient_code === newIngredient.ingredient_code
-      );
-      
-      if (inventoryItem) {
-        // Convert units if necessary
-        let requiredQuantity = parseFloat(newIngredient.quantity);
-        if (newIngredient.unit !== inventoryItem.unit) {
-          try {
-            requiredQuantity = convertUnits(
-              requiredQuantity,
-              newIngredient.unit,
-              inventoryItem.unit
-            );
-          } catch (error) {
-            // If conversion fails, we'll use the original quantity
-            // but add a warning about unit mismatch
-            newErrors.unit = `Warning: Cannot convert from ${newIngredient.unit} to ${inventoryItem.unit}`;
-          }
-        }
-        
-        // Check if we have enough inventory
-        if (requiredQuantity > inventoryItem.current_stock) {
-          newErrors.quantity = `Warning: Required quantity exceeds available stock (${inventoryItem.current_stock} ${inventoryItem.unit})`;
-        }
-      }
     }
     
     setIngredientErrors(newErrors);
@@ -335,19 +155,9 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
       const cost = parseFloat(newIngredient.cost);
       const totalCost = quantity * cost;
       
-      // Find the inventory item to get additional details if available
-      const inventoryItem = inventoryItems.find(
-        item => item.ingredient_code === newIngredient.ingredient_code
-      );
-      
       const ingredientToAdd = {
         ...newIngredient,
-        total_cost: totalCost,
-        // Store the original inventory unit for reference
-        inventory_unit: inventoryItem ? inventoryItem.unit : newIngredient.unit,
-        // Store the converted quantity in inventory units for reference
-        inventory_quantity: inventoryItem && inventoryItem.unit !== newIngredient.unit ? 
-          convertUnits(quantity, newIngredient.unit, inventoryItem.unit) : quantity
+        total_cost: totalCost
       };
       
       setFormData({
@@ -355,7 +165,7 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
         ingredients: [...formData.ingredients, ingredientToAdd]
       });
       
-      // Reset new ingredient form and selected inventory item
+      // Reset new ingredient form
       setNewIngredient({
         ingredient_code: '',
         ingredient_name: '',
@@ -364,7 +174,6 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
         unit: 'g',
         cost: ''
       });
-      setSelectedInventoryItem(null);
     }
   };
 
@@ -594,157 +403,110 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
                   </Alert>
                 )}
                 
-                <Grid container spacing={2} sx={{ mt: 2 }}>
-                  <Grid item xs={12}>
-                    <Typography variant="h6">Add Ingredients</Typography>
-                  </Grid>
-                  
-                  <Grid item xs={12}>
-                    <Box display="flex" alignItems="center">
-                      <Autocomplete
-                        fullWidth
-                        options={inventoryItems}
-                        getOptionLabel={(option) => `${option.ingredient_code} - ${option.ingredient_name} (${option.current_stock} ${option.unit})`}
-                        value={selectedInventoryItem}
-                        onChange={handleInventoryItemSelect}
-                        loading={loadingInventory}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="Select from Inventory"
-                            variant="outlined"
-                            size="small"
-                            error={!!ingredientErrors.ingredient_code}
-                            helperText={ingredientErrors.ingredient_code}
-                            InputProps={{
-                              ...params.InputProps,
-                              endAdornment: (
-                                <>
-                                  {loadingInventory ? <CircularProgress color="inherit" size={20} /> : null}
-                                  {params.InputProps.endAdornment}
-                                </>
-                              ),
-                            }}
-                          />
-                        )}
-                      />
-                      <IconButton 
-                        onClick={refreshInventoryItems} 
-                        sx={{ ml: 1 }}
-                        color="primary"
-                        title="Refresh inventory items"
-                      >
-                        <RefreshIcon />
-                      </IconButton>
-                    </Box>
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6} md={3}>
-                    <TextField
-                      fullWidth
-                      label="Ingredient Code"
-                      name="ingredient_code"
-                      value={newIngredient.ingredient_code}
-                      onChange={handleIngredientChange}
-                      error={!!ingredientErrors.ingredient_code}
-                      helperText={ingredientErrors.ingredient_code}
-                      size="small"
-                      required
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6} md={3}>
-                    <TextField
-                      fullWidth
-                      label="Ingredient Name"
-                      name="ingredient_name"
-                      value={newIngredient.ingredient_name}
-                      onChange={handleIngredientChange}
-                      error={!!ingredientErrors.ingredient_name}
-                      helperText={ingredientErrors.ingredient_name}
-                      size="small"
-                      required
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6} md={2}>
-                    <TextField
-                      fullWidth
-                      label="Pack Size"
-                      name="pack_size"
-                      value={newIngredient.pack_size}
-                      onChange={handleIngredientChange}
-                      size="small"
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6} md={2}>
-                    <TextField
-                      fullWidth
-                      label="Quantity"
-                      name="quantity"
-                      type="number"
-                      value={newIngredient.quantity}
-                      onChange={handleIngredientChange}
-                      error={!!ingredientErrors.quantity}
-                      helperText={ingredientErrors.quantity}
-                      size="small"
-                      required
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6} md={2}>
-                    <FormControl fullWidth size="small" error={!!ingredientErrors.unit}>
-                      <InputLabel id="unit-select-label">Unit</InputLabel>
-                      <Select
-                        labelId="unit-select-label"
-                        name="unit"
-                        value={newIngredient.unit}
+                <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <TextField
+                        name="ingredient_code"
+                        label="Ingredient Code"
+                        value={newIngredient.ingredient_code}
                         onChange={handleIngredientChange}
-                        label="Unit"
+                        fullWidth
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <TextField
+                        name="ingredient_name"
+                        label="Ingredient Name"
+                        value={newIngredient.ingredient_name}
+                        onChange={handleIngredientChange}
+                        fullWidth
+                        required
+                        error={!!ingredientErrors.ingredient_name}
+                        helperText={ingredientErrors.ingredient_name}
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={2}>
+                      <TextField
+                        name="pack_size"
+                        label="Pack Size"
+                        value={newIngredient.pack_size}
+                        onChange={handleIngredientChange}
+                        fullWidth
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={2}>
+                      <TextField
+                        name="quantity"
+                        label="Quantity"
+                        type="number"
+                        value={newIngredient.quantity}
+                        onChange={handleIngredientChange}
+                        fullWidth
+                        required
+                        error={!!ingredientErrors.quantity}
+                        helperText={ingredientErrors.quantity}
+                        size="small"
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <TextField
+                                select
+                                name="unit"
+                                value={newIngredient.unit}
+                                onChange={handleIngredientChange}
+                                SelectProps={{
+                                  native: true,
+                                }}
+                                sx={{ width: '60px' }}
+                                size="small"
+                              >
+                                <option value="g">g</option>
+                                <option value="kg">kg</option>
+                                <option value="ml">ml</option>
+                                <option value="L">L</option>
+                                <option value="units">units</option>
+                              </TextField>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={2}>
+                      <TextField
+                        name="cost"
+                        label="Unit Cost (R)"
+                        type="number"
+                        value={newIngredient.cost}
+                        onChange={handleIngredientChange}
+                        fullWidth
+                        required
+                        error={!!ingredientErrors.cost}
+                        helperText={ingredientErrors.cost}
+                        size="small"
+                      />
+                    </Grid>
+                    <Grid item xs={12} display="flex" justifyContent="flex-end">
+                      <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={addIngredient}
+                        sx={{ 
+                          bgcolor: departmentColor,
+                          '&:hover': {
+                            bgcolor: departmentColor,
+                            opacity: 0.9
+                          }
+                        }}
                       >
-                        {measurementUnits.map((unit) => (
-                          <MenuItem key={unit.value} value={unit.value}>
-                            {unit.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {ingredientErrors.unit && (
-                        <Typography variant="caption" color="error">
-                          {ingredientErrors.unit}
-                        </Typography>
-                      )}
-                    </FormControl>
+                        Add Ingredient
+                      </Button>
+                    </Grid>
                   </Grid>
-                  
-                  <Grid item xs={12} sm={6} md={2}>
-                    <TextField
-                      fullWidth
-                      label="Cost per Unit"
-                      name="cost"
-                      type="number"
-                      value={newIngredient.cost}
-                      onChange={handleIngredientChange}
-                      error={!!ingredientErrors.cost}
-                      helperText={ingredientErrors.cost}
-                      size="small"
-                      required
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6} md={2}>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      startIcon={<AddIcon />}
-                      onClick={addIngredient}
-                      fullWidth
-                      sx={{ height: '40px' }}
-                    >
-                      Add
-                    </Button>
-                  </Grid>
-                </Grid>
+                </Paper>
                 
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
@@ -774,16 +536,9 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
                             <TableCell>{ingredient.ingredient_code || '-'}</TableCell>
                             <TableCell>{ingredient.ingredient_name}</TableCell>
                             <TableCell>{ingredient.pack_size || '-'}</TableCell>
-                            <TableCell>
-                              {ingredient.quantity} {ingredient.unit}
-                              {ingredient.unit !== ingredient.inventory_unit && ingredient.inventory_unit && (
-                                <Typography variant="caption" color="text.secondary" display="block">
-                                  ≈ {typeof ingredient.inventory_quantity === 'number' ? ingredient.inventory_quantity.toFixed(2) : ingredient.inventory_quantity} {ingredient.inventory_unit}
-                                </Typography>
-                              )}
-                            </TableCell>
-                            <TableCell>${typeof ingredient.cost === 'number' ? ingredient.cost.toFixed(2) : (parseFloat(ingredient.cost) || 0).toFixed(2)}</TableCell>
-                            <TableCell>${typeof ingredient.total_cost === 'number' ? ingredient.total_cost.toFixed(2) : (parseFloat(ingredient.total_cost) || 0).toFixed(2)}</TableCell>
+                            <TableCell>{`${ingredient.quantity} ${ingredient.unit}`}</TableCell>
+                            <TableCell>R {parseFloat(ingredient.cost).toFixed(2)}</TableCell>
+                            <TableCell>R {parseFloat(ingredient.total_cost).toFixed(2)}</TableCell>
                             <TableCell align="right">
                               <IconButton 
                                 size="small" 

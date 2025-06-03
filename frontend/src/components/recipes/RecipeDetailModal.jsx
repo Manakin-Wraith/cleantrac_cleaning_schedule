@@ -30,42 +30,12 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 
 const RecipeDetailModal = ({ open, onClose, recipe, departmentColor }) => {
-  const [recipeDetails, setRecipeDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { currentUser } = useAuth();
 
-  useEffect(() => {
-    if (open && recipe) {
-      fetchRecipeDetails();
-    }
-  }, [open, recipe]);
-
-  const fetchRecipeDetails = async () => {
-    if (!recipe) return;
-    
-    setLoading(true);
-    try {
-      const response = await api.get(`/api/recipes/${recipe.id}/`);
-      const recipeData = response.data;
-      
-      // Get ingredients for this recipe
-      const ingredientsResponse = await api.get('/recipe-ingredients/', {
-        params: { recipe: recipe.id }
-      });
-      
-      setRecipeDetails({
-        ...recipeData,
-        ingredients: ingredientsResponse.data || []
-      });
-      setError(null);
-    } catch (err) {
-      console.error('Error loading recipe details:', err);
-      setError('Failed to load recipe details. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use the recipe data directly from props
+  const recipeDetails = recipe;
 
   const handlePrint = () => {
     window.print();
@@ -104,11 +74,7 @@ const RecipeDetailModal = ({ open, onClose, recipe, departmentColor }) => {
       </DialogTitle>
       
       <DialogContent dividers>
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
+        {error ? (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
@@ -137,7 +103,7 @@ const RecipeDetailModal = ({ open, onClose, recipe, departmentColor }) => {
                       Yield
                     </Typography>
                     <Typography variant="body1" gutterBottom>
-                      {recipeDetails.yield} {recipeDetails.yield_unit}
+                      {recipeDetails.yield_quantity || recipeDetails.yield} {recipeDetails.yield_unit}
                     </Typography>
                     
                     <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
@@ -179,7 +145,7 @@ const RecipeDetailModal = ({ open, onClose, recipe, departmentColor }) => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {recipeDetails.ingredients.length === 0 ? (
+                  {!recipeDetails.ingredients || recipeDetails.ingredients.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} align="center">
                         <Typography variant="body2" sx={{ py: 2 }}>
@@ -194,8 +160,20 @@ const RecipeDetailModal = ({ open, onClose, recipe, departmentColor }) => {
                         <TableCell>{ingredient.ingredient_name}</TableCell>
                         <TableCell>{ingredient.pack_size || '-'}</TableCell>
                         <TableCell>{`${ingredient.quantity} ${ingredient.unit}`}</TableCell>
-                        <TableCell>R {parseFloat(ingredient.cost).toFixed(2)}</TableCell>
-                        <TableCell>R {parseFloat(ingredient.total_cost).toFixed(2)}</TableCell>
+                        <TableCell>
+                          R {typeof ingredient.unit_cost === 'number' 
+                              ? ingredient.unit_cost.toFixed(2) 
+                              : ingredient.unit_cost 
+                                ? parseFloat(ingredient.unit_cost).toFixed(2) 
+                                : '0.00'}
+                        </TableCell>
+                        <TableCell>
+                          R {typeof ingredient.total_cost === 'number' 
+                              ? ingredient.total_cost.toFixed(2) 
+                              : ingredient.total_cost 
+                                ? parseFloat(ingredient.total_cost).toFixed(2) 
+                                : '0.00'}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -206,7 +184,10 @@ const RecipeDetailModal = ({ open, onClose, recipe, departmentColor }) => {
                       </TableCell>
                       <TableCell sx={{ fontWeight: 'bold' }}>
                         R {recipeDetails.ingredients.reduce(
-                          (sum, ingredient) => sum + parseFloat(ingredient.total_cost || 0), 
+                          (sum, ingredient) => {
+                            const cost = ingredient.total_cost || 0;
+                            return sum + (typeof cost === 'number' ? cost : parseFloat(cost) || 0);
+                          }, 
                           0
                         ).toFixed(2)}
                       </TableCell>

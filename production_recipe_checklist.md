@@ -112,11 +112,10 @@
   - [x] InventoryItem, InventoryTransaction models
   - [x] WasteRecord model
 - [x] Improve recipe ingredient management:
-  - [x] Add validation for ingredient quantities:
-    - [x] Ensure quantities are positive numbers
-    - [x] Validate ingredients exist in inventory system
-    - [x] Implement unit conversion support for different measurement units
-    - [x] Add warning when required quantity exceeds available stock
+  - [x] Display ingredients in recipe detail view
+  - [x] Show ingredient count in recipe list
+  - [x] Implement proper cost calculations for ingredients
+  - [ ] Add validation for ingredient quantities
   - [ ] Implement inventory deduction on production
   - [ ] Add batch tracking for ingredients
 
@@ -130,6 +129,7 @@
   - [x] Import Bakery recipes
   - [x] Import Butchery recipes
   - [x] Import HMR recipes
+  - [x] Import recipe ingredients from JSON data
 
 ## Phase 2: Production Scheduling
 

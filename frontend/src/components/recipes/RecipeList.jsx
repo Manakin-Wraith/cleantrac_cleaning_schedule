@@ -33,6 +33,7 @@ import RecipeDetailModal from './RecipeDetailModal';
 import RecipeVersionHistoryModal from './RecipeVersionHistoryModal';
 import ConfirmDialog from '../modals/ConfirmDialog';
 import api from '../../services/api';
+import { fetchRecipeIngredients, enhanceRecipesWithIngredients } from '../../data/recipeIngredients';
 
 const RecipeList = ({ departmentColor }) => {
   const [recipes, setRecipes] = useState([]);
@@ -47,7 +48,18 @@ const RecipeList = ({ departmentColor }) => {
   const [openConfirmDelete, setOpenConfirmDelete] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [ingredientsMap, setIngredientsMap] = useState({});
   const { currentUser } = useAuth();
+
+  // Fetch recipe ingredients data from JSON file
+  const loadIngredientsData = async () => {
+    try {
+      const ingredients = await fetchRecipeIngredients();
+      setIngredientsMap(ingredients);
+    } catch (err) {
+      console.error('Error loading ingredients data:', err);
+    }
+  };
 
   const fetchRecipes = async () => {
     setLoading(true);
@@ -58,7 +70,10 @@ const RecipeList = ({ departmentColor }) => {
           search: searchTerm || undefined
         }
       });
-      setRecipes(response.data);
+      
+      // Enhance recipes with ingredients data
+      const enhancedRecipes = enhanceRecipesWithIngredients(response.data, ingredientsMap);
+      setRecipes(enhancedRecipes);
       setError(null);
     } catch (err) {
       console.error('Error fetching recipes:', err);
@@ -69,8 +84,12 @@ const RecipeList = ({ departmentColor }) => {
   };
 
   useEffect(() => {
+    loadIngredientsData();
+  }, []);
+
+  useEffect(() => {
     fetchRecipes();
-  }, [currentUser, searchTerm]);
+  }, [currentUser, searchTerm, ingredientsMap]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -199,6 +218,7 @@ const RecipeList = ({ departmentColor }) => {
               <TableCell>Recipe Name</TableCell>
               <TableCell>Product Code</TableCell>
               <TableCell>Yield</TableCell>
+              <TableCell>Ingredients</TableCell>
               <TableCell>Unit Cost</TableCell>
               <TableCell>Status</TableCell>
               <TableCell align="right">Actions</TableCell>
@@ -207,13 +227,13 @@ const RecipeList = ({ departmentColor }) => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                   <CircularProgress size={40} />
                 </TableCell>
               </TableRow>
             ) : recipes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
                   <Typography variant="body1">
                     {searchTerm ? 'No recipes match your search criteria.' : 'No recipes found. Add your first recipe!'}
                   </Typography>
@@ -226,7 +246,21 @@ const RecipeList = ({ departmentColor }) => {
                   <TableRow key={recipe.id} hover>
                     <TableCell>{recipe.name}</TableCell>
                     <TableCell>{recipe.product_code}</TableCell>
-                    <TableCell>{recipe.yield} {recipe.yield_unit}</TableCell>
+                    <TableCell>{recipe.yield_quantity} {recipe.yield_unit}</TableCell>
+                    <TableCell>
+                      {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                        <Tooltip title={recipe.ingredients.map(ing => `${ing.ingredient_name} (${ing.quantity} ${ing.unit})`).join('\n')}>
+                          <Chip 
+                            label={`${recipe.ingredients.length} ingredient${recipe.ingredients.length !== 1 ? 's' : ''}`}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                        </Tooltip>
+                      ) : (
+                        <Chip label="No ingredients" size="small" variant="outlined" />
+                      )}
+                    </TableCell>
                     <TableCell>R {typeof recipe.unit_cost === 'number' ? recipe.unit_cost.toFixed(2) : '0.00'}</TableCell>
                     <TableCell>
                       <Chip 
