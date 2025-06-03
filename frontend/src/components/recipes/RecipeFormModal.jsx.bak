@@ -1,0 +1,853 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Grid,
+  FormControlLabel,
+  Switch,
+  Typography,
+  Divider,
+  IconButton,
+  Box,
+  InputAdornment,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  CircularProgress,
+  Alert,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Autocomplete
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Close as CloseIcon,
+  Refresh as RefreshIcon
+} from '@mui/icons-material';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
+import * as math from 'mathjs';
+
+const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmentColor }) => {
+  const initialRecipeState = {
+    name: '',
+    product_code: '',
+    description: '',
+    yield: '',
+    yield_unit: 'g',
+    is_active: true,
+    ingredients: []
+  };
+
+  const [formData, setFormData] = useState(initialRecipeState);
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [newIngredient, setNewIngredient] = useState({
+    ingredient_code: '',
+    ingredient_name: '',
+    pack_size: '',
+    quantity: '',
+    unit: 'g',
+    cost: ''
+  });
+  const [ingredientErrors, setIngredientErrors] = useState({});
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [loadingInventory, setLoadingInventory] = useState(false);
+  const [selectedInventoryItem, setSelectedInventoryItem] = useState(null);
+  const { currentUser } = useAuth();
+  
+  // Common measurement units for recipes
+  const measurementUnits = [
+    { value: 'g', label: 'Grams (g)' },
+    { value: 'kg', label: 'Kilograms (kg)' },
+    { value: 'mg', label: 'Milligrams (mg)' },
+    { value: 'ml', label: 'Milliliters (ml)' },
+    { value: 'l', label: 'Liters (l)' },
+    { value: 'tsp', label: 'Teaspoon (tsp)' },
+    { value: 'Tbs', label: 'Tablespoon (Tbs)' },
+    { value: 'cup', label: 'Cup (cup)' },
+    { value: 'oz', label: 'Ounce (oz)' },
+    { value: 'lb', label: 'Pound (lb)' },
+    { value: 'ea', label: 'Each (ea)' },
+    { value: 'pcs', label: 'Pieces (pcs)' }
+  ];
+
+  useEffect(() => {
+    if (isEditing && recipe) {
+      // If editing, load recipe details including ingredients
+      const loadRecipeDetails = async () => {
+        setLoading(true);
+        try {
+          const response = await api.get(`/recipes/${recipe.id}/`);
+          const recipeData = response.data;
+          
+          // Get ingredients for this recipe
+          const ingredientsResponse = await api.get('/recipe-ingredients/', {
+            params: { recipe: recipe.id }
+          });
+          
+          setFormData({
+            ...recipeData,
+            ingredients: ingredientsResponse.data || []
+          });
+          setError(null);
+        } catch (err) {
+          console.error('Error loading recipe details:', err);
+          setError('Failed to load recipe details. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      loadRecipeDetails();
+    } else {
+      // If adding new recipe, reset form
+      setFormData(initialRecipeState);
+    }
+  }, [isEditing, recipe, open]);
+
+  useEffect(() => {
+    const loadInventoryItems = async () => {
+      if (!currentUser?.profile?.department?.id) return;
+      
+      setLoadingInventory(true);
+      try {
+        const response = await api.get('/inventory-items/', {
+          params: { department: currentUser.profile.department.id }
+        });
+        setInventoryItems(response.data);
+      } catch (err) {
+        console.error('Error loading inventory items:', err);
+      } finally {
+        setLoadingInventory(false);
+      }
+    };
+    
+    loadInventoryItems();
+  }, [currentUser?.profile?.department?.id]);
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value
+    });
+    
+    // Clear error for this field if it exists
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: null
+      });
+    }
+  };
+
+  const handleIngredientChange = (e) => {
+    const { name, value } = e.target;
+    setNewIngredient({
+      ...newIngredient,
+      [name]: value
+    });
+    
+    // Clear error for this field if it exists
+    if (ingredientErrors[name]) {
+      setIngredientErrors({
+        ...ingredientErrors,
+        [name]: null
+      });
+    }
+  };
+  
+  // Handle inventory item selection from autocomplete
+  const handleInventoryItemSelect = (event, item) => {
+    setSelectedInventoryItem(item);
+    if (item) {
+      setNewIngredient({
+        ...newIngredient,
+        ingredient_code: item.ingredient_code,
+        ingredient_name: item.ingredient_name,
+        unit: item.unit,
+        cost: item.unit_cost.toString()
+      });
+      
+      // Clear related errors
+      setIngredientErrors({
+        ...ingredientErrors,
+        ingredient_code: null,
+        ingredient_name: null,
+        cost: null
+      });
+    }
+  };
+  
+  // Refresh inventory items list
+  const refreshInventoryItems = async () => {
+    if (!currentUser?.profile?.department?.id) return;
+    
+    setLoadingInventory(true);
+    try {
+      const response = await api.get('/inventory-items/', {
+        params: { department: currentUser.profile.department.id }
+      });
+      setInventoryItems(response.data);
+    } catch (err) {
+      console.error('Error refreshing inventory items:', err);
+    } finally {
+      setLoadingInventory(false);
+    }
+  };
+  
+  // Convert units for ingredient quantity using Math.js
+  const convertUnits = (value, fromUnit, toUnit) => {
+    if (!value || isNaN(value) || !fromUnit || !toUnit) {
+      return value;
+    }
+    
+    // If units are the same, no conversion needed
+    if (fromUnit === toUnit) {
+      return value;
+    }
+    
+    try {
+      // Handle 'each' or 'pieces' units which aren't standard measurement units
+      if (fromUnit === 'ea' || fromUnit === 'pcs' || toUnit === 'ea' || toUnit === 'pcs') {
+        return value; // Can't convert to/from count units
+      }
+      
+      // Map common abbreviations to full unit names that Math.js understands
+      const unitMap = {
+        'g': 'g',
+        'kg': 'kg',
+        'mg': 'mg',
+        'ml': 'ml',
+        'l': 'l',
+        'tsp': 'teaspoon',
+        'tbsp': 'tablespoon',
+        'oz': 'oz',
+        'lb': 'lb'
+      };
+      
+      // Get the full unit names if available
+      const fromUnitFull = unitMap[fromUnit] || fromUnit;
+      const toUnitFull = unitMap[toUnit] || toUnit;
+      
+      // Create math.js unit objects and convert
+      const sourceValue = math.unit(parseFloat(value), fromUnitFull);
+      const result = math.number(sourceValue, toUnitFull);
+      return result;
+    } catch (error) {
+      console.error('Unit conversion error:', error);
+      return value; // Return original value if conversion fails
+    }
+  };
+
+  const validateIngredient = () => {
+    const newErrors = {};
+    
+    // Validate ingredient exists in inventory
+    if (!newIngredient.ingredient_code.trim()) {
+      newErrors.ingredient_code = 'Ingredient code is required';
+    } else {
+      // Check if ingredient exists in inventory
+      const inventoryItem = inventoryItems.find(
+        item => item.ingredient_code === newIngredient.ingredient_code
+      );
+      
+      if (!inventoryItem) {
+        newErrors.ingredient_code = 'Ingredient not found in inventory';
+      }
+    }
+    
+    if (!newIngredient.ingredient_name.trim()) {
+      newErrors.ingredient_name = 'Ingredient name is required';
+    }
+    
+    // Validate quantity is positive
+    if (!newIngredient.quantity) {
+      newErrors.quantity = 'Quantity is required';
+    } else if (isNaN(newIngredient.quantity) || Number(newIngredient.quantity) <= 0) {
+      newErrors.quantity = 'Quantity must be a positive number';
+    }
+    
+    // Validate unit is selected
+    if (!newIngredient.unit) {
+      newErrors.unit = 'Unit is required';
+    }
+    
+    // Validate cost is non-negative
+    if (!newIngredient.cost) {
+      newErrors.cost = 'Cost is required';
+    } else if (isNaN(newIngredient.cost) || Number(newIngredient.cost) < 0) {
+      newErrors.cost = 'Cost must be a non-negative number';
+    }
+    
+    // Check if we have enough inventory (if the ingredient exists in inventory)
+    if (!newErrors.ingredient_code && !newErrors.quantity) {
+      const inventoryItem = inventoryItems.find(
+        item => item.ingredient_code === newIngredient.ingredient_code
+      );
+      
+      if (inventoryItem) {
+        // Convert units if necessary
+        let requiredQuantity = parseFloat(newIngredient.quantity);
+        if (newIngredient.unit !== inventoryItem.unit) {
+          try {
+            requiredQuantity = convertUnits(
+              requiredQuantity,
+              newIngredient.unit,
+              inventoryItem.unit
+            );
+          } catch (error) {
+            // If conversion fails, we'll use the original quantity
+            // but add a warning about unit mismatch
+            newErrors.unit = `Warning: Cannot convert from ${newIngredient.unit} to ${inventoryItem.unit}`;
+          }
+        }
+        
+        // Check if we have enough inventory
+        if (requiredQuantity > inventoryItem.current_stock) {
+          newErrors.quantity = `Warning: Required quantity exceeds available stock (${inventoryItem.current_stock} ${inventoryItem.unit})`;
+        }
+      }
+    }
+    
+    setIngredientErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const addIngredient = () => {
+    if (validateIngredient()) {
+      // Calculate total cost for this ingredient
+      const quantity = parseFloat(newIngredient.quantity);
+      const cost = parseFloat(newIngredient.cost);
+      const totalCost = quantity * cost;
+      
+      // Find the inventory item to get additional details if available
+      const inventoryItem = inventoryItems.find(
+        item => item.ingredient_code === newIngredient.ingredient_code
+      );
+      
+      const ingredientToAdd = {
+        ...newIngredient,
+        total_cost: totalCost,
+        // Store the original inventory unit for reference
+        inventory_unit: inventoryItem ? inventoryItem.unit : newIngredient.unit,
+        // Store the converted quantity in inventory units for reference
+        inventory_quantity: inventoryItem && inventoryItem.unit !== newIngredient.unit ? 
+          convertUnits(quantity, newIngredient.unit, inventoryItem.unit) : quantity
+      };
+      
+      setFormData({
+        ...formData,
+        ingredients: [...formData.ingredients, ingredientToAdd]
+      });
+      
+      // Reset new ingredient form and selected inventory item
+      setNewIngredient({
+        ingredient_code: '',
+        ingredient_name: '',
+        pack_size: '',
+        quantity: '',
+        unit: 'g',
+        cost: ''
+      });
+      setSelectedInventoryItem(null);
+    }
+  };
+
+  const removeIngredient = (index) => {
+    const updatedIngredients = [...formData.ingredients];
+    updatedIngredients.splice(index, 1);
+    setFormData({
+      ...formData,
+      ingredients: updatedIngredients
+    });
+  };
+
+  const calculateTotalCost = () => {
+    if (!formData.ingredients.length) return 0;
+    
+    const totalCost = formData.ingredients.reduce(
+      (sum, ingredient) => sum + parseFloat(ingredient.total_cost || 0), 
+      0
+    );
+    
+    return totalCost;
+  };
+
+  const calculateUnitCost = () => {
+    const totalCost = calculateTotalCost();
+    const yield_amount = parseFloat(formData.yield) || 1;
+    return totalCost / yield_amount;
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'Recipe name is required';
+    }
+    
+    if (!formData.product_code.trim()) {
+      newErrors.product_code = 'Product code is required';
+    }
+    
+    if (!formData.yield) {
+      newErrors.yield = 'Yield is required';
+    } else if (isNaN(formData.yield) || Number(formData.yield) <= 0) {
+      newErrors.yield = 'Yield must be a positive number';
+    }
+    
+    if (formData.ingredients.length === 0) {
+      newErrors.ingredients = 'At least one ingredient is required';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+    
+    setSubmitting(true);
+    
+    try {
+      // Calculate unit cost
+      const unitCost = calculateUnitCost();
+      
+      // Prepare data for submission
+      const recipeData = {
+        ...formData,
+        unit_cost: unitCost,
+        department: currentUser?.profile?.department?.id
+      };
+      
+      // Handle ingredients separately if needed
+      const ingredients = [...formData.ingredients];
+      delete recipeData.ingredients;
+      
+      // Submit the recipe first
+      const success = await onSubmit(recipeData);
+      
+      if (success && !isEditing) {
+        // If this is a new recipe and it was saved successfully,
+        // we would need to handle ingredients in a separate call
+        // This would be handled by the parent component or API service
+      }
+      
+      onClose();
+    } catch (err) {
+      console.error('Error submitting recipe:', err);
+      setError('Failed to save recipe. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="md" 
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderTop: `4px solid ${departmentColor}`,
+          borderRadius: '4px'
+        }
+      }}
+    >
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+        <Box component="div">
+          {isEditing ? 'Edit Recipe' : 'Add New Recipe'}
+        </Box>
+        <IconButton onClick={onClose} size="small">
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      
+      <DialogContent dividers>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+            
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <Box>
+                <TextField
+                  name="name"
+                  label="Recipe Name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                  error={!!errors.name}
+                  helperText={errors.name}
+                  margin="normal"
+                />
+              </Box>
+              <Box sx={{ gridColumn: 'span 6' }}>
+                <TextField
+                  name="product_code"
+                  label="Product Code"
+                  value={formData.product_code}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                  error={!!errors.product_code}
+                  helperText={errors.product_code}
+                  margin="normal"
+                />
+              </Box>
+              <Box sx={{ gridColumn: '1 / -1' }}>
+                <TextField
+                  name="description"
+                  label="Description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  fullWidth
+                  multiline
+                  rows={2}
+                  margin="normal"
+                />
+              </Box>
+              <Box sx={{ gridColumn: 'span 6' }}>
+                <TextField
+                  name="yield"
+                  label="Yield"
+                  type="number"
+                  value={formData.yield}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                  error={!!errors.yield}
+                  helperText={errors.yield}
+                  margin="normal"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <TextField
+                          select
+                          name="yield_unit"
+                          value={formData.yield_unit}
+                          onChange={handleInputChange}
+                          SelectProps={{
+                            native: true,
+                          }}
+                          sx={{ width: '70px' }}
+                        >
+                          <option value="g">g</option>
+                          <option value="kg">kg</option>
+                          <option value="ml">ml</option>
+                          <option value="L">L</option>
+                          <option value="units">units</option>
+                        </TextField>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+              <Box sx={{ gridColumn: 'span 6' }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      name="is_active"
+                      checked={formData.is_active}
+                      onChange={handleInputChange}
+                      color="primary"
+                    />
+                  }
+                  label="Active Recipe"
+                  sx={{ mt: 2 }}
+                />
+              </Box>
+              
+              <Box sx={{ gridColumn: '1 / -1' }}>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" gutterBottom>
+                  Ingredients
+                </Typography>
+                
+                {errors.ingredients && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {errors.ingredients}
+                  </Alert>
+                )}
+                
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 2, mt: 2 }}>
+                  <Box sx={{ gridColumn: '1 / -1' }}>
+                    <Typography variant="h6">Add Ingredients</Typography>
+                  </Box>
+                  
+                  <Box sx={{ gridColumn: '1 / -1' }}>
+                    <Box display="flex" alignItems="center">
+                      <Autocomplete
+                        fullWidth
+                        options={inventoryItems}
+                        getOptionLabel={(option) => `${option.ingredient_code} - ${option.ingredient_name} (${option.current_stock} ${option.unit})`}
+                        value={selectedInventoryItem}
+                        onChange={handleInventoryItemSelect}
+                        loading={loadingInventory}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Select from Inventory"
+                            variant="outlined"
+                            size="small"
+                            error={!!ingredientErrors.ingredient_code}
+                            helperText={ingredientErrors.ingredient_code}
+                            InputProps={{
+                              ...params.InputProps,
+                              endAdornment: (
+                                <>
+                                  {loadingInventory ? <CircularProgress color="inherit" size={20} /> : null}
+                                  {params.InputProps.endAdornment}
+                                </>
+                              ),
+                            }}
+                          />
+                        )}
+                      />
+                      <IconButton 
+                        onClick={refreshInventoryItems} 
+                        sx={{ ml: 1 }}
+                        color="primary"
+                        title="Refresh inventory items"
+                      >
+                        <RefreshIcon />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                  
+                  <Grid item xs={12} sm={6} md={3}>
+                    <TextField
+                      fullWidth
+                      label="Ingredient Code"
+                      name="ingredient_code"
+                      value={newIngredient.ingredient_code}
+                      onChange={handleIngredientChange}
+                      error={!!ingredientErrors.ingredient_code}
+                      helperText={ingredientErrors.ingredient_code}
+                      size="small"
+                      required
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6} md={3}>
+                    <TextField
+                      fullWidth
+                      label="Ingredient Name"
+                      name="ingredient_name"
+                      value={newIngredient.ingredient_name}
+                      onChange={handleIngredientChange}
+                      error={!!ingredientErrors.ingredient_name}
+                      helperText={ingredientErrors.ingredient_name}
+                      size="small"
+                      required
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6} md={2}>
+                    <TextField
+                      fullWidth
+                      label="Pack Size"
+                      name="pack_size"
+                      value={newIngredient.pack_size}
+                      onChange={handleIngredientChange}
+                      size="small"
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6} md={2}>
+                    <TextField
+                      fullWidth
+                      label="Quantity"
+                      name="quantity"
+                      type="number"
+                      value={newIngredient.quantity}
+                      onChange={handleIngredientChange}
+                      error={!!ingredientErrors.quantity}
+                      helperText={ingredientErrors.quantity}
+                      size="small"
+                      required
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6} md={2}>
+                    <FormControl fullWidth size="small" error={!!ingredientErrors.unit}>
+                      <InputLabel id="unit-select-label">Unit</InputLabel>
+                      <Select
+                        labelId="unit-select-label"
+                        name="unit"
+                        value={newIngredient.unit}
+                        onChange={handleIngredientChange}
+                        label="Unit"
+                      >
+                        {measurementUnits.map((unit) => (
+                          <MenuItem key={unit.value} value={unit.value}>
+                            {unit.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {ingredientErrors.unit && (
+                        <Typography variant="caption" color="error">
+                          {ingredientErrors.unit}
+                        </Typography>
+                      )}
+                    </FormControl>
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6} md={2}>
+                    <TextField
+                      fullWidth
+                      label="Cost per Unit"
+                      name="cost"
+                      type="number"
+                      value={newIngredient.cost}
+                      onChange={handleIngredientChange}
+                      error={!!ingredientErrors.cost}
+                      helperText={ingredientErrors.cost}
+                      size="small"
+                      required
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={6} md={2}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<AddIcon />}
+                      onClick={addIngredient}
+                      fullWidth
+                      sx={{ height: '40px' }}
+                    >
+                      Add
+                    </Button>
+                  </Box>
+                </Box>
+                
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: 'rgba(0, 0, 0, 0.04)' }}>
+                        <TableCell>Code</TableCell>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Pack Size</TableCell>
+                        <TableCell>Quantity</TableCell>
+                        <TableCell>Unit Cost (R)</TableCell>
+                        <TableCell>Total Cost (R)</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {formData.ingredients.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center">
+                            <Typography variant="body2" sx={{ py: 2 }}>
+                              No ingredients added yet. Add ingredients above.
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        formData.ingredients.map((ingredient, index) => (
+                          <TableRow key={index}>
+                            <TableCell>{ingredient.ingredient_code || '-'}</TableCell>
+                            <TableCell>{ingredient.ingredient_name}</TableCell>
+                            <TableCell>{ingredient.pack_size || '-'}</TableCell>
+                            <TableCell>
+                              {ingredient.quantity} {ingredient.unit}
+                              {ingredient.unit !== ingredient.inventory_unit && ingredient.inventory_unit && (
+                                <Typography variant="caption" color="text.secondary" display="block">
+                                  ≈ {typeof ingredient.inventory_quantity === 'number' ? ingredient.inventory_quantity.toFixed(2) : ingredient.inventory_quantity} {ingredient.inventory_unit}
+                                </Typography>
+                              )}
+                            </TableCell>
+                            <TableCell>${typeof ingredient.cost === 'number' ? ingredient.cost.toFixed(2) : (isNaN(parseFloat(ingredient.cost)) ? '0.00' : parseFloat(ingredient.cost).toFixed(2))}</TableCell>
+                            <TableCell>${typeof ingredient.total_cost === 'number' ? ingredient.total_cost.toFixed(2) : (isNaN(parseFloat(ingredient.total_cost)) ? '0.00' : parseFloat(ingredient.total_cost).toFixed(2))}</TableCell>
+                            <TableCell align="right">
+                              <IconButton 
+                                size="small" 
+                                color="error" 
+                                onClick={() => removeIngredient(index)}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                      {formData.ingredients.length > 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} align="right" sx={{ fontWeight: 'bold' }}>
+                            Total Recipe Cost:
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>
+                            R {typeof calculateTotalCost() === 'number' ? calculateTotalCost().toFixed(2) : '0.00'}
+                          </TableCell>
+                          <TableCell />
+                        </TableRow>
+                      )}
+                      {formData.ingredients.length > 0 && formData.yield && (
+                        <TableRow>
+                          <TableCell colSpan={5} align="right" sx={{ fontWeight: 'bold' }}>
+                            Unit Cost (per {formData.yield_unit}):
+                          </TableCell>
+                          <TableCell sx={{ fontWeight: 'bold' }}>
+                            R {typeof calculateUnitCost() === 'number' ? calculateUnitCost().toFixed(2) : '0.00'}
+                          </TableCell>
+                          <TableCell />
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            </Box>
+          </>
+        )}
+      </DialogContent>
+      
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onClose} disabled={submitting}>
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSubmit} 
+          variant="contained" 
+          disabled={loading || submitting}
+          sx={{ 
+            bgcolor: departmentColor,
+            '&:hover': {
+              bgcolor: departmentColor,
+              opacity: 0.9
+            }
+          }}
+        >
+          {submitting ? <CircularProgress size={24} /> : (isEditing ? 'Update Recipe' : 'Save Recipe')}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export default RecipeFormModal;

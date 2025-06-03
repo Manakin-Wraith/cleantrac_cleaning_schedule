@@ -1,0 +1,674 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  Box,
+  Grid,
+  Paper,
+  Divider,
+  Chip,
+  IconButton,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tabs,
+  Tab,
+  Alert,
+  Tooltip,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+} from '@mui/material';
+import {
+  Close as CloseIcon,
+  Edit as EditIcon,
+  Info as InfoIcon,
+  Inventory as InventoryIcon,
+  History as HistoryIcon,
+  LocalShipping as LocalShippingIcon,
+  Warning as WarningIcon,
+} from '@mui/icons-material';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
+import * as math from 'mathjs';
+
+const RecipeDetailModal = ({ open, onClose, recipeId, departmentColor, onEdit }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [recipeDetails, setRecipeDetails] = useState(null);
+  const [tabValue, setTabValue] = useState(0);
+  const [inventoryStatus, setInventoryStatus] = useState(null);
+  const [productionHistory, setProductionHistory] = useState([]);
+  const [batchInfo, setBatchInfo] = useState([]);
+  const { currentUser } = useAuth();
+
+  const canManageRecipes = currentUser?.permissions?.includes('manage_recipes');
+
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+  };
+
+  useEffect(() => {
+    if (open && recipeId && recipeId !== 'undefined') {
+      fetchRecipeDetails();
+      fetchInventoryStatus();
+      fetchProductionHistory();
+      fetchBatchInfo();
+    }
+  }, [open, recipeId]);
+
+  const fetchRecipeDetails = async () => {
+    if (!recipeId || recipeId === 'undefined') return;
+
+    setLoading(true);
+    try {
+      const response = await api.get(`/recipes/${recipeId}/`);
+      const recipeData = response.data;
+
+      // Get ingredients for this recipe
+      const ingredientsResponse = await api.get('/recipe-ingredients/', {
+        params: { recipe: recipeId }
+      });
+      
+      // Process ingredients to add converted units
+      const processedIngredients = ingredientsResponse.data.map(ingredient => {
+        // Add standard unit conversion if possible
+        let standardQuantity = null;
+        let standardUnit = 'kg';
+        
+        try {
+          if (ingredient.unit && ingredient.unit !== 'ea' && ingredient.unit !== 'pcs') {
+            // Convert to standard unit (kg) for comparison
+            standardQuantity = convertUnits(ingredient.quantity, ingredient.unit, standardUnit);
+          }
+        } catch (err) {
+          console.warn(`Could not convert ${ingredient.unit} to ${standardUnit}`, err);
+        }
+        
+        return {
+          ...ingredient,
+          standardQuantity,
+          standardUnit: standardQuantity ? standardUnit : null
+        };
+      });
+
+      setRecipeDetails({
+        ...recipeData,
+        ingredients: processedIngredients || []
+      });
+      setError(null);
+    } catch (err) {
+      console.error('Error loading recipe details:', err);
+      setError('Failed to load recipe details. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const fetchInventoryStatus = async () => {
+    if (!recipeId || recipeId === 'undefined') return;
+    
+    try {
+      // Get all ingredients for this recipe
+      const ingredientsResponse = await api.get('/recipe-ingredients/', {
+        params: { recipe: recipeId }
+      });
+      
+      const ingredients = ingredientsResponse.data;
+      const inventoryStatuses = [];
+      
+      // Check inventory status for each ingredient
+      for (const ingredient of ingredients) {
+        try {
+          // Find the corresponding inventory item
+          const inventoryResponse = await api.get('/inventory-items/', {
+            params: { ingredient_code: ingredient.ingredient_code }
+          });
+          
+          if (inventoryResponse.data.length > 0) {
+            const inventoryItem = inventoryResponse.data[0];
+            const status = {
+              name: ingredient.ingredient_name,
+              code: ingredient.ingredient_code,
+              required: ingredient.quantity,
+              requiredUnit: ingredient.unit,
+              available: inventoryItem.current_stock,
+              availableUnit: inventoryItem.unit,
+              sufficient: inventoryItem.current_stock >= ingredient.quantity,
+              reorderLevel: inventoryItem.reorder_level || 0
+            };
+            
+            inventoryStatuses.push(status);
+          } else {
+            inventoryStatuses.push({
+              name: ingredient.ingredient_name,
+              code: ingredient.ingredient_code,
+              required: ingredient.quantity,
+              requiredUnit: ingredient.unit,
+              available: 0,
+              availableUnit: ingredient.unit,
+              sufficient: false,
+              notFound: true
+            });
+          }
+        } catch (err) {
+          console.error(`Error checking inventory for ${ingredient.ingredient_name}:`, err);
+        }
+      }
+      
+      setInventoryStatus(inventoryStatuses);
+    } catch (err) {
+      console.error('Error fetching inventory status:', err);
+    }
+  };
+  
+  const fetchProductionHistory = async () => {
+    if (!recipeId || recipeId === 'undefined') return;
+    
+    try {
+      // Get production history for this recipe
+      const response = await api.get('/production-records/', {
+        params: { recipe: recipeId }
+      });
+      
+      setProductionHistory(response.data);
+    } catch (err) {
+      console.error('Error fetching production history:', err);
+    }
+  };
+  
+  const fetchBatchInfo = async () => {
+    if (!recipeId || recipeId === 'undefined') return;
+    
+    try {
+      // Get batch information from inventory transactions
+      const response = await api.get('/inventory-transactions/', {
+        params: { transaction_type: 'production_use', recipe: recipeId }
+      });
+      
+      // Group by batch number
+      const batches = {};
+      
+      for (const transaction of response.data) {
+        if (transaction.batch_number) {
+          if (!batches[transaction.batch_number]) {
+            batches[transaction.batch_number] = {
+              batchNumber: transaction.batch_number,
+              date: transaction.transaction_date,
+              items: []
+            };
+          }
+          
+          batches[transaction.batch_number].items.push({
+            name: transaction.inventory_item.ingredient_name,
+            code: transaction.inventory_item.ingredient_code,
+            quantity: transaction.quantity,
+            unit: transaction.inventory_item.unit
+          });
+        }
+      }
+      
+      setBatchInfo(Object.values(batches));
+    } catch (err) {
+      console.error('Error fetching batch information:', err);
+    }
+  };
+  
+  // Convert units for ingredient quantity using Math.js
+  const convertUnits = (value, fromUnit, toUnit) => {
+    if (!value || isNaN(value) || !fromUnit || !toUnit) {
+      return value;
+    }
+    
+    // If units are the same, no conversion needed
+    if (fromUnit === toUnit) {
+      return value;
+    }
+    
+    try {
+      // Handle 'each' or 'pieces' units which aren't standard measurement units
+      if (fromUnit === 'ea' || fromUnit === 'pcs' || toUnit === 'ea' || toUnit === 'pcs') {
+        return value; // Can't convert to/from count units
+      }
+      
+      // Map common abbreviations to full unit names that Math.js understands
+      const unitMap = {
+        'g': 'g',
+        'kg': 'kg',
+        'mg': 'mg',
+        'ml': 'ml',
+        'l': 'l',
+        'tsp': 'teaspoon',
+        'tbsp': 'tablespoon',
+        'cup': 'cup',
+        'oz': 'oz',
+        'lb': 'lb',
+        'gal': 'gallon'
+      };
+      
+      const fromUnitMapped = unitMap[fromUnit] || fromUnit;
+      const toUnitMapped = unitMap[toUnit] || toUnit;
+      
+      // Use mathjs to convert
+      return math.number(math.unit(value, fromUnitMapped).to(toUnitMapped));
+    } catch (err) {
+      console.error(`Error converting ${value} from ${fromUnit} to ${toUnit}:`, err);
+      return value; // Return original value if conversion fails
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+  
+  const handleEditClick = () => {
+    // This would typically open the recipe edit modal
+    if (onEdit && typeof onEdit === 'function') {
+      onEdit(recipeId);
+    }
+  };
+
+  if (!recipeId || recipeId === 'undefined') return null;
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderTop: `4px solid ${departmentColor}`,
+          borderRadius: '4px'
+        }
+      }}
+    >
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+        <Box component="div">
+          Recipe Details: {recipeDetails?.name}
+        </Box>
+        <Box>
+          {canManageRecipes && (
+            <IconButton onClick={handleEditClick} size="small" sx={{ mr: 1 }}>
+              <EditIcon />
+            </IconButton>
+          )}
+          <IconButton onClick={onClose} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
+      </DialogTitle>
+
+      <DialogContent dividers>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        ) : recipeDetails && (
+          <div>
+            {/* Recipe Overview Section */}
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '2fr 1fr' }, gap: 2 }}>
+                <Box>
+                  <Typography variant="h5" gutterBottom sx={{ color: departmentColor, fontWeight: 'bold' }}>
+                    {recipeDetails.name}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" paragraph>
+                    {recipeDetails.description || 'No description provided.'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Paper variant="outlined" sx={{ p: 2 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Product Code
+                    </Typography>
+                    <Typography variant="body1" gutterBottom>
+                      {recipeDetails.product_code}
+                    </Typography>
+                    
+                    <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
+                      Yield
+                    </Typography>
+                    <Typography variant="body1" gutterBottom>
+                      {recipeDetails.yield_quantity} {recipeDetails.yield_unit}
+                    </Typography>
+                    
+                    <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
+                      Unit Cost
+                    </Typography>
+                    <Typography variant="body1" gutterBottom>
+                      R {typeof recipeDetails.unit_cost === 'number' ? recipeDetails.unit_cost.toFixed(2) : '0.00'}
+                    </Typography>
+                    
+                    <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>
+                      Status
+                    </Typography>
+                    <Chip 
+                      label={recipeDetails.is_active ? "Active" : "Inactive"} 
+                      color={recipeDetails.is_active ? "success" : "default"}
+                      size="small"
+                    />
+                  </Paper>
+                </Box>
+              </Box>
+            </Box>
+            
+            <Divider sx={{ my: 2 }} />
+            
+            {/* Tabs Navigation */}
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+              <Tabs 
+                value={tabValue} 
+                onChange={handleTabChange} 
+                aria-label="recipe detail tabs"
+                variant="scrollable"
+                scrollButtons="auto"
+              >
+                <Tab label="Ingredients" icon={<InventoryIcon />} iconPosition="start" />
+                <Tab label="Inventory Status" icon={<InfoIcon />} iconPosition="start" />
+                <Tab label="Production History" icon={<HistoryIcon />} iconPosition="start" />
+                <Tab label="Batch Tracking" icon={<LocalShippingIcon />} iconPosition="start" />
+              </Tabs>
+            </Box>
+            
+            {/* Ingredients Tab */}
+            {tabValue === 0 && (
+              <>
+            <Typography variant="h6" gutterBottom>
+              Ingredients
+            </Typography>
+            
+            <TableContainer component={Paper} variant="outlined">
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: 'rgba(0, 0, 0, 0.04)' }}>
+                    <TableCell>Code</TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Pack Size</TableCell>
+                    <TableCell>Quantity</TableCell>
+                    <TableCell>Unit Cost (R)</TableCell>
+                    <TableCell>Total Cost (R)</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {recipeDetails.ingredients.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">
+                        <Typography variant="body2" sx={{ py: 2 }}>
+                          No ingredients found for this recipe.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    recipeDetails.ingredients.map((ingredient, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{ingredient.ingredient_code || '-'}</TableCell>
+                        <TableCell>{ingredient.ingredient_name}</TableCell>
+                        <TableCell>{ingredient.pack_size || '-'}</TableCell>
+                        <TableCell>
+                          {`${ingredient.quantity} ${ingredient.unit}`}
+                          {ingredient.standardQuantity && (
+                            <Typography variant="caption" display="block" color="text.secondary">
+                              ({typeof ingredient.standardQuantity === 'number' ? ingredient.standardQuantity.toFixed(2) : ingredient.standardQuantity} {ingredient.standardUnit})
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {typeof ingredient.unit_cost === 'number' 
+                            ? `R ${ingredient.unit_cost.toFixed(2)}` 
+                            : `R ${isNaN(parseFloat(ingredient.unit_cost)) ? '0.00' : parseFloat(ingredient.unit_cost).toFixed(2)}`}
+                        </TableCell>
+                        <TableCell>
+                          {typeof ingredient.total_cost === 'number' 
+                            ? `R ${ingredient.total_cost.toFixed(2)}` 
+                            : `R ${isNaN(parseFloat(ingredient.total_cost)) ? '0.00' : parseFloat(ingredient.total_cost).toFixed(2)}`}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                  {recipeDetails.ingredients.length > 0 && (
+                    <TableRow>
+            </TableContainer>
+            
+              </>
+            )}
+            
+            {/* Inventory Status Tab */}
+            {tabValue === 1 && (
+              <>
+                <Typography variant="h6" gutterBottom>
+                  Inventory Status
+                </Typography>
+                
+                {!inventoryStatus ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : inventoryStatus.length === 0 ? (
+                  <Alert severity="info">
+                    No inventory information available for this recipe's ingredients.
+                  </Alert>
+                ) : (
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table>
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: 'rgba(0, 0, 0, 0.04)' }}>
+                          <TableCell>Ingredient</TableCell>
+                          <TableCell>Code</TableCell>
+                          <TableCell>Required</TableCell>
+                          <TableCell>Available</TableCell>
+                          <TableCell>Status</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {inventoryStatus.map((item, index) => (
+                          <TableRow key={index}>
+                            <TableCell>{item.name}</TableCell>
+                            <TableCell>{item.code}</TableCell>
+                            <TableCell>{`${item.required} ${item.requiredUnit}`}</TableCell>
+                            <TableCell>{`${item.available} ${item.availableUnit}`}</TableCell>
+                            <TableCell>
+                              {item.notFound ? (
+                                <Chip 
+                                  icon={<WarningIcon />}
+                                  label="Not in Inventory" 
+                                  color="error" 
+                                  size="small" 
+                                />
+                              ) : item.sufficient ? (
+                                <Chip 
+                                  label="Sufficient" 
+                                  color="success" 
+                                  size="small" 
+                                />
+                              ) : (
+                                <Chip 
+                                  icon={<WarningIcon />}
+                                  label="Low Stock" 
+                                  color="warning" 
+                                  size="small" 
+                                />
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </>
+            )}
+            
+            {/* Production History Tab */}
+            {tabValue === 2 && (
+              <>
+                <Typography variant="h6" gutterBottom>
+                  Production History
+                </Typography>
+                
+                {!productionHistory ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : productionHistory.length === 0 ? (
+                  <Alert severity="info">
+                    No production history available for this recipe.
+                  </Alert>
+                ) : (
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table>
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: 'rgba(0, 0, 0, 0.04)' }}>
+                          <TableCell>Date</TableCell>
+                          <TableCell>Quantity</TableCell>
+                          <TableCell>Yield</TableCell>
+                          <TableCell>Quality</TableCell>
+                          <TableCell>Completed By</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {productionHistory.map((record, index) => (
+                          <TableRow key={index}>
+                            <TableCell>{new Date(record.completed_at).toLocaleDateString()}</TableCell>
+                            <TableCell>{record.quantity} {record.unit}</TableCell>
+                            <TableCell>{record.actual_yield} {record.unit}</TableCell>
+                            <TableCell>
+                              <Chip 
+                                label={record.quality_check} 
+                                color={record.quality_check === 'pass' ? 'success' : 
+                                       record.quality_check === 'partial' ? 'warning' : 'error'} 
+                                size="small" 
+                              />
+                            </TableCell>
+                            <TableCell>{record.completed_by_name}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </>
+            )}
+            
+            {/* Batch Tracking Tab */}
+            {tabValue === 3 && (
+              <>
+                <Typography variant="h6" gutterBottom>
+                  Batch Tracking
+                </Typography>
+                
+                {!batchInfo ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : batchInfo.length === 0 ? (
+                  <Alert severity="info">
+                    No batch tracking information available for this recipe.
+                  </Alert>
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {batchInfo.map((batch, index) => (
+                      <Box key={index}>
+                        <Paper variant="outlined" sx={{ p: 2 }}>
+                          <Typography variant="subtitle1" gutterBottom>
+                            Batch: {batch.batchNumber}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Date: {new Date(batch.date).toLocaleString()}
+                          </Typography>
+                          
+                          <Divider sx={{ my: 1 }} />
+                          
+                          <Typography variant="subtitle2" gutterBottom>
+                            Ingredients Used:
+                          </Typography>
+                          
+                          <List dense>
+                            {batch.items.map((item, itemIndex) => (
+                              <ListItem key={itemIndex}>
+                                <ListItemIcon>
+                                  <InventoryIcon fontSize="small" />
+                                </ListItemIcon>
+                                <ListItemText 
+                                  primary={item.name} 
+                                  secondary={`${item.quantity} ${item.unit} (Code: ${item.code})`} 
+                                />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Paper>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </>
+            )}
+            
+            <Box sx={{ mt: 3 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                <Box>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Created By
+                  </Typography>
+                  <Typography variant="body2">
+                    {recipeDetails.created_by_name || 'Unknown'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {new Date(recipeDetails.created_at).toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Last Updated
+                  </Typography>
+                  <Typography variant="body2">
+                    {recipeDetails.updated_by_name || 'Unknown'}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {new Date(recipeDetails.updated_at).toLocaleString()}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </div>
+        )}
+      </DialogContent>
+      
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={onClose}>
+          Close
+        </Button>
+        {canManageRecipes && (
+          <Button 
+            startIcon={<EditIcon />}
+            variant="contained" 
+            sx={{ 
+              bgcolor: departmentColor,
+              '&:hover': {
+                bgcolor: departmentColor,
+                opacity: 0.9
+              }
+            }}
+          >
+            Edit Recipe
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export default React.memo(RecipeDetailModal);

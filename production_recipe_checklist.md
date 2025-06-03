@@ -111,7 +111,10 @@
   - [x] ProductionSchedule, ProductionRecord models
   - [x] InventoryItem, InventoryTransaction models
   - [x] WasteRecord model
-- [ ] Improve recipe ingredient management:
+- [x] Improve recipe ingredient management:
+  - [x] Display ingredients in recipe detail view
+  - [x] Show ingredient count in recipe list
+  - [x] Implement proper cost calculations for ingredients
   - [ ] Add validation for ingredient quantities
   - [ ] Implement inventory deduction on production
   - [ ] Add batch tracking for ingredients
@@ -126,6 +129,7 @@
   - [x] Import Bakery recipes
   - [x] Import Butchery recipes
   - [x] Import HMR recipes
+  - [x] Import recipe ingredients from JSON data
 
 ## Phase 2: Production Scheduling
 
