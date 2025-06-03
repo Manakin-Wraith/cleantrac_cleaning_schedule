@@ -145,11 +145,15 @@ admin.site.register(GeneratedDocument, GeneratedDocumentAdmin)
 
 # Supplier Admin Registration
 class SupplierAdmin(admin.ModelAdmin):
-    list_display = ('supplier_code', 'supplier_name', 'department', 'country_of_origin', 'created_at', 'updated_at')
-    list_filter = ('department', 'country_of_origin', 'created_at')
+    list_display = ('supplier_code', 'supplier_name', 'get_departments', 'country_of_origin', 'created_at', 'updated_at')
+    list_filter = ('departments', 'country_of_origin', 'created_at')
     search_fields = ('supplier_code', 'supplier_name', 'contact_info', 'address', 'country_of_origin')
     date_hierarchy = 'created_at'
     readonly_fields = ('created_at', 'updated_at')
+    
+    def get_departments(self, obj):
+        return ", ".join([d.name for d in obj.departments.all()])
+    get_departments.short_description = 'Departments'
 
 admin.site.register(Supplier, SupplierAdmin)
 

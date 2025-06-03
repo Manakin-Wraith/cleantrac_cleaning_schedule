@@ -49,16 +49,12 @@ const SupplierManagementPage = () => {
   const handleSaveSupplier = async (supplierData) => {
     try {
       console.log('Sending supplier data:', supplierData);
-      console.log('Supplier data type check:', {
-        supplier_code: typeof supplierData.supplier_code,
-        supplier_name: typeof supplierData.supplier_name,
-        department_id: typeof supplierData.department_id,
-        value: supplierData.department_id
-      });
       
-      // Ensure department_id is a number
-      if (typeof supplierData.department_id === 'string' && supplierData.department_id.trim() !== '') {
-        supplierData.department_id = parseInt(supplierData.department_id, 10);
+      // Ensure department_ids are numbers
+      if (supplierData.department_ids && Array.isArray(supplierData.department_ids)) {
+        supplierData.department_ids = supplierData.department_ids.map(id => 
+          typeof id === 'string' ? parseInt(id, 10) : id
+        );
       }
       
       let response;
@@ -67,13 +63,18 @@ const SupplierManagementPage = () => {
         console.log(`Updating supplier ${currentSupplier.id} with data:`, supplierData);
         response = await api.put(`/suppliers/${currentSupplier.id}/`, supplierData);
         console.log('Update response:', response.data);
+        
+        // Update the supplier in the local state
+        setSuppliers(suppliers.map(s => s.id === currentSupplier.id ? response.data : s));
       } else {
         // Create new supplier
         console.log('Creating new supplier with data:', supplierData);
         response = await api.post('/suppliers/', supplierData);
         console.log('Create response:', response.data);
+        
+        // Add the new supplier to the local state
+        setSuppliers([...suppliers, response.data]);
       }
-      fetchSuppliers();
       handleCloseModal();
     } catch (err) {
       console.error('Error saving supplier:', err);

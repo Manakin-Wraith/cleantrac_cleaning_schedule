@@ -689,27 +689,24 @@ class TemperatureLogSerializer(serializers.ModelSerializer):
 
 
 class SupplierSerializer(serializers.ModelSerializer):
-    department_id = serializers.PrimaryKeyRelatedField(
+    department_ids = serializers.PrimaryKeyRelatedField(
         queryset=Department.objects.all(),
-        source='department',
-        write_only=True,
-        required=True,
+        source='departments',
+        many=True,
+        required=False,
         error_messages={
-            'required': 'Department ID is required.',
             'does_not_exist': 'Invalid department ID provided.'
         }
     )
-    department_name = serializers.CharField(source='department.name', read_only=True)
+    department_names = serializers.SerializerMethodField()
     
-    def validate_department_id(self, value):
-        if not value:
-            raise serializers.ValidationError('Department ID cannot be empty.')
-        return value
+    def get_department_names(self, obj):
+        return [dept.name for dept in obj.departments.all()]
     
     class Meta:
         model = Supplier
         fields = [
             'id', 'supplier_code', 'supplier_name', 'contact_info', 'address',
-            'country_of_origin', 'department_id', 'department_name',
+            'country_of_origin', 'department_ids', 'department_names',
             'created_at', 'updated_at'
         ]
