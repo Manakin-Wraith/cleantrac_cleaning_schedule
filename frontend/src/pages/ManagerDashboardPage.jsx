@@ -803,6 +803,62 @@ function ManagerDashboardPage() {
         }
     };
 
+    const handleDateClick = (dateClickInfo) => {
+        console.log('Date clicked:', dateClickInfo);
+        
+        // Get the clicked date and resource (staff member)
+        const clickedDate = dateClickInfo.date;
+        const resourceId = dateClickInfo.resource ? dateClickInfo.resource.id : '';
+        
+        // Format date and time for the task creation modal
+        const dueDateStr = getTodayDateString(clickedDate);
+        const startTimeStr = formatTime(clickedDate);
+        
+        // Calculate end time (1 hour after start time)
+        let endTimeStr = null;
+        if (startTimeStr) {
+            const startDateObj = new Date(`${dueDateStr}T${startTimeStr}`);
+            const endDateObj = new Date(startDateObj.getTime() + 60 * 60 * 1000); // Add 1 hour
+            endTimeStr = formatTime(endDateObj);
+        }
+        
+        console.log(`Date click: due_date=${dueDateStr}, start_time=${startTimeStr}, end_time=${endTimeStr}, resource=${resourceId}`);
+        
+        // Set up the new task form with the clicked date and time
+        setNewTask(prev => ({
+            ...prev,
+            cleaning_item_id: '',
+            assigned_to_id: resourceId ? parseInt(resourceId, 10) : '',
+            due_date: dueDateStr,
+            start_time: startTimeStr,
+            end_time: endTimeStr,
+            status: 'pending',
+            department_id: user?.profile?.department_id || '',
+            notes: '',
+        }));
+        
+        // Create a placeholder event in the calendar
+        const tempId = `temp-${Date.now()}`;
+        if (calendarRef.current?.getApi) {
+            const calendarApi = calendarRef.current.getApi();
+            calendarApi.addEvent({
+                id: tempId,
+                title: 'New Task',
+                start: clickedDate,
+                end: endTimeStr ? new Date(`${dueDateStr}T${endTimeStr}`) : new Date(clickedDate.getTime() + 60 * 60 * 1000),
+                resourceId: resourceId || undefined,
+                allDay: false,
+                backgroundColor: '#9e9e9e',
+                borderColor: '#757575',
+                classNames: ['placeholder-event']
+            });
+            setPlaceholderEventId(tempId);
+        }
+        
+        // Open the create task modal
+        setIsCreateModalOpen(true);
+    };
+
     const handleEventReceive = (dropInfo) => {
         console.log('External event received (raw dropInfo):', dropInfo); 
         const newCalendarEvent = dropInfo.event; // This is the event instance created by FullCalendar
@@ -1104,6 +1160,7 @@ function ManagerDashboardPage() {
                                 onDateChange={(newDate) => setSelectedDate(newDate)} 
                                 resources={calendarResources} 
                                 onEventReceive={handleEventReceive}
+                                onDateClick={handleDateClick}
                             />
                         </Paper>
                     </>

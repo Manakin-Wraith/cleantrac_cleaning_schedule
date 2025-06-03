@@ -17,6 +17,7 @@ const TaskSchedulerCalendar = ({
     onEventClick, 
     eventResize,
     onEventReceive, // Added new prop for external event drops
+    onDateClick,    // New prop for handling date clicks
     calendarRef     // Ref to access calendar API from parent
 }) => {
     // Use ref from props if provided, otherwise create local ref
@@ -169,6 +170,7 @@ const TaskSchedulerCalendar = ({
                 eventReceive={onEventReceive} // Added eventReceive callback
                 datesSet={handleDatesSet} // Use datesSet to handle navigation and sync parent
                 eventContent={renderEventContent} // Added custom event rendering
+                dateClick={onDateClick} // Add dateClick handler to open create task modal
                 height="100%"
                 schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
             />

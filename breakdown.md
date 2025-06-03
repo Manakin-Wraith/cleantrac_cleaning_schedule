@@ -49,12 +49,19 @@ This section covers the interface primarily used by managers or supervisors for 
 
 **3. Manager Dashboard Page**
 
-*   **Purpose:** Provide a quick visual summary of cleaning status and key metrics *for the manager's specific department*.
+*   **Purpose:** Provide a quick visual summary of cleaning status and key metrics *for the manager's specific department* and enable efficient task scheduling.
 *   **Wireframe Description:**
     *   Main Content Area displays:
     *   Heading: "[Department Name] Dashboard" (e.g., "Butchery Dashboard").
     *   Arrangement of several dashboard widgets/cards (e.g., in a grid or two columns). Examples:
         *   **Widget 1: Overall Completion (Today/This Week)**
+*   **Calendar Interaction Enhancements:**
+    *   **Date Click Functionality:**
+        *   Clicking on any date in the calendar opens the "Create New Task" modal
+        *   Clicking on a staff member's row assigns them to the new task
+        *   The modal is pre-filled with the clicked date and time
+        *   Visual feedback is provided with a placeholder event
+        *   Handles timezone differences and edge cases
             *   Heading: "Today's Completion" or "Weekly Completion".
             *   Large Percentage Number.
             *   Simple visual (e.g., Progress Bar or Donut Chart).
