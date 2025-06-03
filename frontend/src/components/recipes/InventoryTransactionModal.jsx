@@ -59,7 +59,7 @@ const InventoryTransactionModal = ({
 
   const fetchRecipes = async () => {
     try {
-      const response = await api.get('/api/recipes/', {
+      const response = await api.get('/recipes/', {
         params: { department_id: currentUser?.profile?.department?.id }
       });
       setRecipes(response.data);

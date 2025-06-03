@@ -76,7 +76,7 @@ const InventoryList = ({ departmentColor }) => {
         params.stock_status = stockFilter;
       }
       
-      const response = await api.get('/api/inventory-items/', { params });
+      const response = await api.get('/inventory-items/', { params });
       setInventory(response.data);
       
       // Extract unique categories for filter
@@ -168,9 +168,9 @@ const InventoryList = ({ departmentColor }) => {
   const handleFormSubmit = async (itemData) => {
     try {
       if (isEditing) {
-        await api.put(`/api/inventory-items/${selectedItem.id}/`, itemData);
+        await api.put(`/inventory-items/${selectedItem.id}/`, itemData);
       } else {
-        await api.post('/api/inventory-items/', {
+        await api.post('/inventory-items/', {
           ...itemData,
           department: currentUser?.profile?.department?.id
         });
@@ -187,7 +187,7 @@ const InventoryList = ({ departmentColor }) => {
 
   const handleTransactionSubmit = async (transactionData) => {
     try {
-      await api.post('/api/inventory-transactions/', {
+      await api.post('/inventory-transactions/', {
         ...transactionData,
         inventory_item: selectedItem.id,
         transaction_type: transactionType,

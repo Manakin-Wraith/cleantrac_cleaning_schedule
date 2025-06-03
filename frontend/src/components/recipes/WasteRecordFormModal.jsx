@@ -118,7 +118,7 @@ const WasteRecordFormModal = ({
     setLoading(true);
     try {
       // Fetch recipes
-      const recipesResponse = await api.get('/api/recipes/', {
+      const recipesResponse = await api.get('/recipes/', {
         params: { department_id: currentUser?.profile?.department?.id }
       });
       setRecipes(recipesResponse.data.map(recipe => ({
@@ -129,7 +129,7 @@ const WasteRecordFormModal = ({
       })));
 
       // Fetch inventory items
-      const inventoryResponse = await api.get('/api/inventory-items/', {
+      const inventoryResponse = await api.get('/inventory-items/', {
         params: { department_id: currentUser?.profile?.department?.id }
       });
       setInventoryItems(inventoryResponse.data.map(item => ({

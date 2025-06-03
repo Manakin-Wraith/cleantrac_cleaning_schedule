@@ -52,7 +52,7 @@ const RecipeList = ({ departmentColor }) => {
   const fetchRecipes = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/recipes/', {
+      const response = await api.get('/recipes/', {
         params: {
           department_id: currentUser?.profile?.department?.id,
           search: searchTerm || undefined
@@ -115,7 +115,7 @@ const RecipeList = ({ departmentColor }) => {
 
   const handleDeleteConfirm = async () => {
     try {
-      await api.delete(`/api/recipes/${selectedRecipe.id}/`);
+      await api.delete(`/recipes/${selectedRecipe.id}/`);
       fetchRecipes();
       setOpenConfirmDelete(false);
     } catch (err) {
@@ -127,9 +127,9 @@ const RecipeList = ({ departmentColor }) => {
   const handleFormSubmit = async (recipeData) => {
     try {
       if (isEditing) {
-        await api.put(`/api/recipes/${selectedRecipe.id}/`, recipeData);
+        await api.put(`/recipes/${selectedRecipe.id}/`, recipeData);
       } else {
-        await api.post('/api/recipes/', {
+        await api.post('/recipes/', {
           ...recipeData,
           department: currentUser?.profile?.department?.id
         });
@@ -227,7 +227,7 @@ const RecipeList = ({ departmentColor }) => {
                     <TableCell>{recipe.name}</TableCell>
                     <TableCell>{recipe.product_code}</TableCell>
                     <TableCell>{recipe.yield} {recipe.yield_unit}</TableCell>
-                    <TableCell>R {recipe.unit_cost.toFixed(2)}</TableCell>
+                    <TableCell>R {typeof recipe.unit_cost === 'number' ? recipe.unit_cost.toFixed(2) : '0.00'}</TableCell>
                     <TableCell>
                       <Chip 
                         label={recipe.is_active ? "Active" : "Inactive"} 

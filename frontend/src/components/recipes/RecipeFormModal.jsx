@@ -69,7 +69,7 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
           const recipeData = response.data;
           
           // Get ingredients for this recipe
-          const ingredientsResponse = await api.get('/api/recipe-ingredients/', {
+          const ingredientsResponse = await api.get('/recipe-ingredients/', {
             params: { recipe: recipe.id }
           });
           

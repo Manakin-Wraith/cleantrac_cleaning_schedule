@@ -76,7 +76,7 @@ const ProductionScheduleFormModal = ({
     setLoading(true);
     try {
       // Fetch recipes for the department
-      const recipesResponse = await api.get('/api/recipes/', {
+      const recipesResponse = await api.get('/recipes/', {
         params: { 
           department_id: currentUser?.profile?.department?.id,
           is_active: true
@@ -85,7 +85,7 @@ const ProductionScheduleFormModal = ({
       setRecipes(recipesResponse.data);
 
       // Fetch staff for the department
-      const staffResponse = await api.get('/api/staff/', {
+      const staffResponse = await api.get('/staff/', {
         params: { department_id: currentUser?.profile?.department?.id }
       });
       setStaff(staffResponse.data);
@@ -246,7 +246,7 @@ const ProductionScheduleFormModal = ({
                         Unit Cost:
                       </Typography>
                       <Typography variant="body1">
-                        R {selectedRecipe.unit_cost.toFixed(2)}
+                        R {typeof selectedRecipe.unit_cost === 'number' ? selectedRecipe.unit_cost.toFixed(2) : '0.00'}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={4}>
@@ -254,7 +254,7 @@ const ProductionScheduleFormModal = ({
                         Total Cost (Estimated):
                       </Typography>
                       <Typography variant="body1">
-                        R {formData.quantity ? (selectedRecipe.unit_cost * parseFloat(formData.quantity)).toFixed(2) : '0.00'}
+                        R {formData.quantity && typeof selectedRecipe.unit_cost === 'number' ? (selectedRecipe.unit_cost * parseFloat(formData.quantity)).toFixed(2) : '0.00'}
                       </Typography>
                     </Grid>
                   </Grid>

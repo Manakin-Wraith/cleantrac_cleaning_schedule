@@ -111,7 +111,7 @@ const WasteAnalyticsModal = ({ open, onClose, departmentColor }) => {
         end_date: endDate.toISOString().split('T')[0]
       };
       
-      const response = await api.get('/api/waste-analytics/', { params });
+      const response = await api.get('/waste-analytics/', { params });
       setWasteData(response.data);
       setError(null);
     } catch (err) {

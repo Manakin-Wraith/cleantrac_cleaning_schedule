@@ -7,6 +7,10 @@ from .models import (
     ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog,
     DocumentTemplate, GeneratedDocument, Supplier
 )
+from .recipe_models import (
+    Recipe, RecipeIngredient, RecipeVersion, ProductionSchedule,
+    ProductionRecord, InventoryItem, InventoryTransaction, WasteRecord
+)
 
 # Basic registration
 admin.site.register(Department)
@@ -156,6 +160,73 @@ class SupplierAdmin(admin.ModelAdmin):
     get_departments.short_description = 'Departments'
 
 admin.site.register(Supplier, SupplierAdmin)
+
+# Recipe Management System Admin Registration
+class RecipeAdmin(admin.ModelAdmin):
+    list_display = ('product_code', 'name', 'department', 'yield_quantity', 'yield_unit', 'unit_cost', 'is_active', 'created_at')
+    list_filter = ('department', 'is_active', 'created_at')
+    search_fields = ('product_code', 'name', 'description')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('created_at', 'updated_at')
+
+admin.site.register(Recipe, RecipeAdmin)
+
+class RecipeIngredientAdmin(admin.ModelAdmin):
+    list_display = ('recipe', 'ingredient_code', 'ingredient_name', 'quantity', 'unit', 'unit_cost', 'total_cost')
+    list_filter = ('recipe__department',)
+    search_fields = ('recipe__name', 'ingredient_code', 'ingredient_name')
+
+admin.site.register(RecipeIngredient, RecipeIngredientAdmin)
+
+class RecipeVersionAdmin(admin.ModelAdmin):
+    list_display = ('recipe', 'version_number', 'changed_by', 'changed_at')
+    list_filter = ('recipe__department', 'changed_at')
+    search_fields = ('recipe__name', 'change_notes')
+    date_hierarchy = 'changed_at'
+    readonly_fields = ('previous_data',)
+
+admin.site.register(RecipeVersion, RecipeVersionAdmin)
+
+class ProductionScheduleAdmin(admin.ModelAdmin):
+    list_display = ('recipe', 'department', 'scheduled_date', 'status', 'batch_size', 'created_by')
+    list_filter = ('department', 'status', 'scheduled_date')
+    search_fields = ('recipe__name', 'notes')
+    date_hierarchy = 'scheduled_date'
+    filter_horizontal = ('assigned_staff',)
+
+admin.site.register(ProductionSchedule, ProductionScheduleAdmin)
+
+class ProductionRecordAdmin(admin.ModelAdmin):
+    list_display = ('schedule', 'actual_start_time', 'actual_end_time', 'actual_yield', 'quality_check', 'completed_by')
+    list_filter = ('quality_check', 'actual_start_time')
+    search_fields = ('schedule__recipe__name', 'quality_notes')
+    date_hierarchy = 'actual_start_time'
+
+admin.site.register(ProductionRecord, ProductionRecordAdmin)
+
+class InventoryItemAdmin(admin.ModelAdmin):
+    list_display = ('ingredient_code', 'ingredient_name', 'department', 'current_stock', 'unit', 'unit_cost', 'last_updated')
+    list_filter = ('department', 'last_updated')
+    search_fields = ('ingredient_code', 'ingredient_name')
+    date_hierarchy = 'last_updated'
+
+admin.site.register(InventoryItem, InventoryItemAdmin)
+
+class InventoryTransactionAdmin(admin.ModelAdmin):
+    list_display = ('inventory_item', 'transaction_type', 'quantity', 'transaction_date', 'recorded_by')
+    list_filter = ('transaction_type', 'transaction_date', 'inventory_item__department')
+    search_fields = ('inventory_item__ingredient_name', 'reference', 'notes')
+    date_hierarchy = 'transaction_date'
+
+admin.site.register(InventoryTransaction, InventoryTransactionAdmin)
+
+class WasteRecordAdmin(admin.ModelAdmin):
+    list_display = ('department', 'recipe', 'inventory_item', 'quantity', 'unit', 'reason', 'cost', 'recorded_at')
+    list_filter = ('department', 'reason', 'recorded_at')
+    search_fields = ('recipe__name', 'inventory_item__ingredient_name', 'notes')
+    date_hierarchy = 'recorded_at'
+
+admin.site.register(WasteRecord, WasteRecordAdmin)
 
 # You can create more customized ModelAdmin classes for other models as needed
 # For example, for TaskInstance:

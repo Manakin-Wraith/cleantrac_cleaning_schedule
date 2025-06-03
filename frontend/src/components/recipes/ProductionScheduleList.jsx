@@ -74,7 +74,7 @@ const ProductionScheduleList = ({ departmentColor }) => {
         params.scheduled_date = dateFilter.toISOString().split('T')[0];
       }
       
-      const response = await api.get('/api/production-schedules/', { params });
+      const response = await api.get('/production-schedules/', { params });
       setSchedules(response.data);
       setError(null);
     } catch (err) {
@@ -149,9 +149,9 @@ const ProductionScheduleList = ({ departmentColor }) => {
   const handleFormSubmit = async (scheduleData) => {
     try {
       if (isEditing) {
-        await api.put(`/api/production-schedules/${selectedSchedule.id}/`, scheduleData);
+        await api.put(`/production-schedules/${selectedSchedule.id}/`, scheduleData);
       } else {
-        await api.post('/api/production-schedules/', {
+        await api.post('/production-schedules/', {
           ...scheduleData,
           department: currentUser?.profile?.department?.id
         });
@@ -169,7 +169,7 @@ const ProductionScheduleList = ({ departmentColor }) => {
   const handleRecordSubmit = async (recordData) => {
     try {
       // Create production record
-      await api.post('/api/production-records/', {
+      await api.post('/production-records/', {
         ...recordData,
         production_schedule: selectedSchedule.id
       });
