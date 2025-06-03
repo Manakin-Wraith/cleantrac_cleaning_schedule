@@ -34,12 +34,18 @@
   - [x] Clear status indicators (e.g., color-coding based on 'pending', 'pending_review', 'completed').
   - [x] Prominently display start/end times if appropriate. (Current display is sufficient)
   - [x] Ensure readability and clarity. (Achieved with new styling)
-- **[ ] Calendar - Drag & Drop Functionality (Verification & Refinement)**
-    - [ ] Verify that dragging a cleaning item onto a staff member on a specific date/time opens the "Create New Task" modal.
-    - [ ] Confirm the modal is correctly pre-filled with: Cleaning Item, Assigned Staff, Due Date, Start Time, End Time (calculated).
-    - [ ] Test task creation via this drag-and-drop flow.
-    - [ ] Verify the task appears correctly on the calendar after creation.
-    - [ ] Test edge cases (dropping on day without time slot, items with/without durations, cancelling modal).
+- **[x] Calendar - Drag & Drop Functionality (Verification & Refinement)**
+    - [x] Verify that dragging a cleaning item onto a staff member on a specific date/time opens the "Create New Task" modal.
+    - [x] Confirm the modal is correctly pre-filled with: Cleaning Item, Assigned Staff, Due Date, Start Time, End Time (calculated).
+    - [x] Test task creation via this drag-and-drop flow.
+    - [x] Verify the task appears correctly on the calendar after creation.
+    - [x] Test edge cases (dropping on day without time slot, items with/without durations, cancelling modal).
+- **[x] Calendar - Date Click Functionality**
+    - [x] Implement date click handler to open "Create New Task" modal
+    - [x] Pre-fill modal with clicked date and time
+    - [x] Support staff assignment if clicking on a specific staff member's row
+    - [x] Create placeholder event for visual feedback
+    - [x] Handle edge cases (all day events, timezone handling)
 - **[ ] Calendar - General Issues & Refinements**
     - [ ] Investigate and fix any remaining "Unknown Item" or incorrect name displays for tasks/staff on the calendar.
         *   Sub-task: Verify `cleaning_item_id` is correctly populated in fetched tasks.
@@ -110,8 +116,12 @@
     - [ ] Verify manager can mark 'pending_review' tasks as 'completed' and UI updates correctly.
     - [ ] Test overall manager task list interactions (view, edit, mark complete) with new 'pending_review' status.
 
-## III. Item Management (Manager View)
+## III. Item Management
 
+- **[x] Supplier Management Page**
+  - [x] Optimize layout to better handle sidebar open/collapse states
+  - [x] Ensure consistent spacing and margins with other pages
+  - [x] Verify supplier list remains responsive during sidebar state changes
 - **[ ] Implement Item Management Page UI**
   - [ ] Page Heading: "[Department Name] Item Management".
   - [ ] Button: "+ Add New Master Item".

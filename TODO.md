@@ -37,9 +37,10 @@ This checklist is derived from `docs/breakdown.md` and outlines the development 
    - ✅ Add temperature logging status summary widget
 
 5. **Enhance Calendar View**
-   - Implement FullCalendar Resource View
-   - Improve task event rendering
-   - Add collapsible sidebar for enhanced controls
+   - [x] Implement FullCalendar Resource View
+   - [x] Improve task event rendering
+   - [x] Add collapsible sidebar for enhanced controls
+   - [x] Implement date click to create new tasks
 
 6. **Document Template System**
    - ✅ Create document template models and APIs

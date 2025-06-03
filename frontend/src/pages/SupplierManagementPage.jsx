@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Paper } from '@mui/material';
-import PageLayout from '../components/PageLayout';
+import { Box, Typography, Button, Paper, Container } from '@mui/material';
 import SuppliersList from '../components/suppliers/SuppliersList';
 import SupplierFormModal from '../components/suppliers/SupplierFormModal';
 import { useAuth } from '../context/AuthContext';
@@ -103,44 +102,42 @@ const SupplierManagementPage = () => {
   };
 
   return (
-    <PageLayout>
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1">
-            Supplier Management
-          </Typography>
-          {(currentUser?.is_superuser || currentUser?.profile?.role === 'manager') && (
-            <Button 
-              variant="contained" 
-              color="primary" 
-              onClick={handleAddSupplier}
-            >
-              Add New Supplier
-            </Button>
-          )}
-        </Box>
-
-        {error && (
-          <Paper sx={{ p: 2, mb: 3, bgcolor: 'error.light', color: 'error.contrastText' }}>
-            <Typography>{error}</Typography>
-          </Paper>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1">
+          {currentUser?.profile?.department_name ? `${currentUser.profile.department_name} - ` : ''}Supplier Management
+        </Typography>
+        {(currentUser?.is_superuser || currentUser?.profile?.role === 'manager') && (
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleAddSupplier}
+          >
+            Add New Supplier
+          </Button>
         )}
-
-        <SuppliersList 
-          suppliers={suppliers} 
-          loading={loading} 
-          onEdit={handleEditSupplier} 
-          onDelete={handleDeleteSupplier}
-        />
-
-        <SupplierFormModal 
-          open={openModal} 
-          onClose={handleCloseModal} 
-          onSave={handleSaveSupplier} 
-          supplier={currentSupplier}
-        />
       </Box>
-    </PageLayout>
+
+      {error && (
+        <Paper sx={{ p: 2, mb: 3, bgcolor: 'error.light', color: 'error.contrastText' }}>
+          <Typography>{error}</Typography>
+        </Paper>
+      )}
+
+      <SuppliersList 
+        suppliers={suppliers} 
+        loading={loading} 
+        onEdit={handleEditSupplier} 
+        onDelete={handleDeleteSupplier}
+      />
+
+      <SupplierFormModal 
+        open={openModal} 
+        onClose={handleCloseModal} 
+        onSave={handleSaveSupplier} 
+        supplier={currentSupplier}
+      />
+    </Container>
   );
 };
 
