@@ -673,47 +673,260 @@ class CanLogTemperatures(BasePermission):
     message = "You must use a verified thermometer to log temperatures."
     
     def has_permission(self, request, view):
-        # Must be authenticated for any access
         if not request.user or not request.user.is_authenticated:
             return False
-        
+
         # Superusers can do anything
         if request.user.is_superuser:
             return True
-        
-        # For read methods, allow any authenticated user (get_queryset will filter)
+
+        # For safe methods, allow access (filtering will be done in get_queryset)
         if request.method in SAFE_METHODS:
             return True
-        
-        # For POST (create), check if the thermometer is verified in the serializer
-        if request.method == 'POST':
-            return True
-        
-        # For other write methods, check if user is a manager
+
+        # For POST (creating logs), check if the user is staff or manager
         try:
-            return request.user.profile.role == UserProfile.ROLE_MANAGER
+            user_profile = request.user.profile
+            if user_profile.role not in [UserProfile.ROLE_STAFF, UserProfile.ROLE_MANAGER]:
+                return False
+
+            # For staff, we'll check if they're using a verified thermometer in the viewset
+            # This is just a basic permission check
+            return True
         except AttributeError:
             return False
-    
+
     def has_object_permission(self, request, view, obj):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
         # Superusers can do anything
         if request.user.is_superuser:
             return True
-        
-        # For read methods, allow any authenticated user (get_queryset will filter)
+
+        # For safe methods, allow access if the user is in the same department
+        if request.method in SAFE_METHODS:
+            try:
+                user_department = request.user.profile.department
+                return user_department == obj.thermometer.department
+            except AttributeError:
+                return False
+
+        # For write methods, only managers can update/delete logs in their department
+        try:
+            user_profile = request.user.profile
+            user_department = user_profile.department
+            
+            # Check if user is a manager and in the same department as the thermometer
+            if user_profile.role == UserProfile.ROLE_MANAGER:
+                return user_department == obj.thermometer.department
+            
+            # Staff can't update/delete logs
+            return False
+        except AttributeError:
+            return False
+
+
+# Recipe Management System Permissions
+
+class CanManageRecipes(BasePermission):
+    """Permission to manage recipes and recipe-related objects.
+    This permission allows:
+    - Superusers: Full access to all recipes and related objects
+    - Managers: Full access to their department's recipes and related objects
+    - Staff: Read-only access to their department's recipes and related objects
+    """
+    message = "You do not have permission to manage recipes in this department."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+
+        # For safe methods, allow access (filtering will be done in get_queryset)
         if request.method in SAFE_METHODS:
             return True
-        
-        # For write methods, check if user is a manager of the object's department
+
+        # For write methods, only managers can create/update/delete recipes
         try:
-            # Managers can only manage logs in their department
-            if request.user.profile.role == UserProfile.ROLE_MANAGER:
-                return obj.department == request.user.profile.department
-            
-            # Staff can only update/delete their own logs
-            if request.user.profile.role == UserProfile.ROLE_STAFF:
-                return obj.logged_by == request.user and obj.department == request.user.profile.department
-            
+            user_profile = request.user.profile
+            return user_profile.role == UserProfile.ROLE_MANAGER
+        except AttributeError:
             return False
+
+    def has_object_permission(self, request, view, obj):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+
+        # For safe methods, allow access if the user is in the same department
+        if request.method in SAFE_METHODS:
+            try:
+                user_department = request.user.profile.department
+                # Handle different object types with department relationships
+                if hasattr(obj, 'department'):
+                    return user_department == obj.department
+                elif hasattr(obj, 'recipe') and hasattr(obj.recipe, 'department'):
+                    return user_department == obj.recipe.department
+                return False
+            except AttributeError:
+                return False
+
+        # For write methods, only managers can update/delete in their department
+        try:
+            user_profile = request.user.profile
+            user_department = user_profile.department
+            
+            if user_profile.role != UserProfile.ROLE_MANAGER:
+                return False
+                
+            # Handle different object types with department relationships
+            if hasattr(obj, 'department'):
+                return user_department == obj.department
+            elif hasattr(obj, 'recipe') and hasattr(obj.recipe, 'department'):
+                return user_department == obj.recipe.department
+            return False
+        except AttributeError:
+            return False
+
+class CanManageInventory(BasePermission):
+    """Permission to manage inventory items and transactions.
+    This permission allows:
+    - Superusers: Full access to all inventory
+    - Managers: Full access to their department's inventory
+    - Staff: Can view inventory and create transactions, but cannot modify or delete
+    """
+    message = "You do not have permission to manage inventory in this department."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+
+        # For safe methods, allow access (filtering will be done in get_queryset)
+        if request.method in SAFE_METHODS:
+            return True
+            
+        # Staff can create inventory transactions but not modify inventory items directly
+        if request.method == 'POST' and view.__class__.__name__ == 'InventoryTransactionViewSet':
+            return True
+
+        # For other write methods, only managers can create/update/delete
+        try:
+            user_profile = request.user.profile
+            return user_profile.role == UserProfile.ROLE_MANAGER
+        except AttributeError:
+            return False
+
+    def has_object_permission(self, request, view, obj):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+
+        # For safe methods, allow access if the user is in the same department
+        if request.method in SAFE_METHODS:
+            try:
+                user_department = request.user.profile.department
+                return user_department == obj.department
+            except AttributeError:
+                return False
+
+        # Staff can only update their own transactions (not delete)
+        if request.method == 'PATCH' and view.__class__.__name__ == 'InventoryTransactionViewSet':
+            try:
+                return obj.created_by == request.user
+            except AttributeError:
+                return False
+
+        # For other write methods, only managers can update/delete in their department
+        try:
+            user_profile = request.user.profile
+            user_department = user_profile.department
+            
+            return user_profile.role == UserProfile.ROLE_MANAGER and user_department == obj.department
+        except AttributeError:
+            return False
+
+class CanManageProductionSchedule(BasePermission):
+    """Permission to manage production schedules and records.
+    This permission allows:
+    - Superusers: Full access
+    - Managers: Full access to their department's schedules
+    - Staff: Can view schedules and update status, but cannot create/delete
+    """
+    message = "You do not have permission to manage production schedules in this department."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+
+        # For safe methods, allow access (filtering will be done in get_queryset)
+        if request.method in SAFE_METHODS:
+            return True
+
+        # For creating schedules, only managers
+        if request.method == 'POST':
+            try:
+                user_profile = request.user.profile
+                return user_profile.role == UserProfile.ROLE_MANAGER
+            except AttributeError:
+                return False
+
+        # For updating (PATCH/PUT), both staff and managers can update status
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+
+        try:
+            user_profile = request.user.profile
+            user_department = user_profile.department
+            
+            # Check department match
+            obj_department = None
+            if hasattr(obj, 'department'):
+                obj_department = obj.department
+            elif hasattr(obj, 'recipe') and hasattr(obj.recipe, 'department'):
+                obj_department = obj.recipe.department
+                
+            if obj_department != user_department:
+                return False
+                
+            # For safe methods, allow access if department matches
+            if request.method in SAFE_METHODS:
+                return True
+                
+            # For DELETE, only managers
+            if request.method == 'DELETE':
+                return user_profile.role == UserProfile.ROLE_MANAGER
+                
+            # For PATCH/PUT, staff can only update status and notes
+            if request.method in ['PATCH', 'PUT'] and user_profile.role == UserProfile.ROLE_STAFF:
+                # In the viewset, we'll need to check that they're only updating allowed fields
+                return True
+                
+            # Managers can do anything within their department
+            return user_profile.role == UserProfile.ROLE_MANAGER
         except AttributeError:
             return False

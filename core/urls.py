@@ -24,6 +24,16 @@ from .document_template_views import (
     DocumentTemplateViewSet,
     GeneratedDocumentViewSet
 )
+# Recipe Management System ViewSets
+from .recipe_views import (
+    RecipeViewSet,
+    RecipeIngredientViewSet,
+    ProductionScheduleViewSet,
+    ProductionRecordViewSet,
+    InventoryItemViewSet,
+    InventoryTransactionViewSet,
+    WasteRecordViewSet
+)
 
 # Create a router and register our viewsets with it.
 router = DefaultRouter()
@@ -48,6 +58,15 @@ router.register(r'generated-documents', GeneratedDocumentViewSet, basename='gene
 
 # Register Supplier Management ViewSet
 router.register(r'suppliers', SupplierViewSet, basename='supplier')
+
+# Register Recipe Management System ViewSets
+router.register(r'recipes', RecipeViewSet, basename='recipe')
+router.register(r'recipe-ingredients', RecipeIngredientViewSet, basename='recipeingredient')
+router.register(r'production-schedules', ProductionScheduleViewSet, basename='productionschedule')
+router.register(r'production-records', ProductionRecordViewSet, basename='productionrecord')
+router.register(r'inventory-items', InventoryItemViewSet, basename='inventoryitem')
+router.register(r'inventory-transactions', InventoryTransactionViewSet, basename='inventorytransaction')
+router.register(r'waste-records', WasteRecordViewSet, basename='wasterecord')
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [
