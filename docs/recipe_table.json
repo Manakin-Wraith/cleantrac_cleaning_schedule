@@ -1,0 +1,3636 @@
+[
+  {
+    "department": "BAKERY",
+    "product_code": "26710",
+    "description": "WHITE BREAD",
+    "cost_excl_per_each_kg": "6.89",
+    "ingredients": [
+      {
+        "prod_code": "15736",
+        "description": "W/CAPE MILL  MIX WHT BRD",
+        "pack_size": "9.5KG",
+        "weight": "47.500",
+        "cost": "12.29",
+        "recipe_use": "47.500",
+        "total_cost": "584.00"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "34.25",
+        "recipe_use": "1.000",
+        "total_cost": "34.25"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "24.700",
+        "cost": "3.20",
+        "recipe_use": "24.700",
+        "total_cost": "79.04"
+      },
+      {
+        "prod_code": "28495",
+        "description": "SPAR WHITE BREAD BAG",
+        "pack_size": "600GR",
+        "weight": "",
+        "cost": "0.50",
+        "recipe_use": "122.000",
+        "total_cost": "60.98"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26711",
+    "description": "BROWN BREAD",
+    "cost_excl_per_each_kg": "6.35",
+    "ingredients": [
+      {
+        "prod_code": "15737",
+        "description": "W/CAPE MILL MIX BRWN BRD",
+        "pack_size": "9.5KG",
+        "weight": "47.500",
+        "cost": "11.22",
+        "recipe_use": "47.500",
+        "total_cost": "532.95"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "34.25",
+        "recipe_use": "1.000",
+        "total_cost": "34.25"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "26.000",
+        "cost": "3.20",
+        "recipe_use": "26.000",
+        "total_cost": "83.20"
+      },
+      {
+        "prod_code": "28495",
+        "description": "SPAR WHITE BREAD BAG",
+        "pack_size": "600GR",
+        "weight": "",
+        "cost": "0.50",
+        "recipe_use": "122.000",
+        "total_cost": "60.98"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "27320",
+    "description": "RAISIN LOAF",
+    "cost_excl_per_each_kg": "8.44",
+    "ingredients": [
+      {
+        "prod_code": "28667",
+        "description": "WC MILLING SOFT ROLL MIX",
+        "pack_size": "12.5K",
+        "weight": "12.500",
+        "cost": "13.49",
+        "recipe_use": "12.500",
+        "total_cost": "168.68"
+      },
+      {
+        "prod_code": "2520",
+        "description": "SMARTBAKER MIX",
+        "pack_size": "12.5K",
+        "weight": "3.500",
+        "cost": "322.41",
+        "recipe_use": "0.280",
+        "total_cost": "90.27"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "0.500",
+        "cost": "34.25",
+        "recipe_use": "0.500",
+        "total_cost": "17.13"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "6.000",
+        "cost": "3.20",
+        "recipe_use": "6.000",
+        "total_cost": "19.20"
+      },
+      {
+        "prod_code": "27691",
+        "description": "POLYPROP 250X400X30",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "1.87",
+        "recipe_use": "45.000",
+        "total_cost": "84.33"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26910",
+    "description": "TEA BUNS",
+    "cost_excl_per_each_kg": "5.81",
+    "ingredients": [
+      {
+        "prod_code": "28667",
+        "description": "WC MILLING SOFT ROLL MIX",
+        "pack_size": "12.5K",
+        "weight": "12.500",
+        "cost": "13.49",
+        "recipe_use": "12.500",
+        "total_cost": "168.68"
+      },
+      {
+        "prod_code": "2520",
+        "description": "SMARTBAKER MIX",
+        "pack_size": "12.5K",
+        "weight": "3.500",
+        "cost": "322.41",
+        "recipe_use": "0.280",
+        "total_cost": "90.27"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "0.500",
+        "cost": "34.25",
+        "recipe_use": "0.500",
+        "total_cost": "17.13"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "6.000",
+        "cost": "3.20",
+        "recipe_use": "6.000",
+        "total_cost": "19.20"
+      },
+      {
+        "prod_code": "27691",
+        "description": "POLYPROP 250X400X30",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "1.87",
+        "recipe_use": "75.000",
+        "total_cost": "140.55"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "27322",
+    "description": "MOSBOLLETJIES",
+    "cost_excl_per_each_kg": "11.05",
+    "ingredients": [
+      {
+        "prod_code": "28667",
+        "description": "WC MILLING SOFT ROLL MIX",
+        "pack_size": "12.5K",
+        "weight": "12.500",
+        "cost": "13.49",
+        "recipe_use": "12.500",
+        "total_cost": "168.68"
+      },
+      {
+        "prod_code": "27514",
+        "description": "ANISEED WHOLE",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "162.10",
+        "recipe_use": "1.000",
+        "total_cost": "162.10"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "0.500",
+        "cost": "34.25",
+        "recipe_use": "0.500",
+        "total_cost": "17.13"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "6.000",
+        "cost": "3.20",
+        "recipe_use": "6.000",
+        "total_cost": "19.20"
+      },
+      {
+        "prod_code": "27691",
+        "description": "POLYPROP 250X400X30",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "1.87",
+        "recipe_use": "40.000",
+        "total_cost": "74.96"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "27323",
+    "description": "SCHOOL BUN",
+    "cost_excl_per_each_kg": "7.06",
+    "ingredients": [
+      {
+        "prod_code": "28667",
+        "description": "WC MILLING SOFT ROLL MIX",
+        "pack_size": "12.5K",
+        "weight": "12.500",
+        "cost": "13.49",
+        "recipe_use": "12.500",
+        "total_cost": "168.68"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "0.500",
+        "cost": "34.25",
+        "recipe_use": "0.500",
+        "total_cost": "17.13"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "6.000",
+        "cost": "3.20",
+        "recipe_use": "6.000",
+        "total_cost": "19.20"
+      },
+      {
+        "prod_code": "27691",
+        "description": "POLYPROP 250X400X30",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "1.87",
+        "recipe_use": "52.000",
+        "total_cost": "97.45"
+      },
+      {
+        "prod_code": "26539",
+        "description": "4051 PER BOX ONLY HOTCROSS",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "0.95",
+        "recipe_use": "52.000",
+        "total_cost": "49.14"
+      },
+      {
+        "prod_code": "27494",
+        "description": "SYRUP BAKERY CHIPKINS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "30.84",
+        "recipe_use": "0.500",
+        "total_cost": "15.42"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26713",
+    "description": "SOFT ROUND ROLL",
+    "cost_excl_per_each_kg": "0.95",
+    "ingredients": [
+      {
+        "prod_code": "28667",
+        "description": "WC MILLING SOFT ROLL MIX",
+        "pack_size": "12.5K",
+        "weight": "12.500",
+        "cost": "13.49",
+        "recipe_use": "12.500",
+        "total_cost": "168.68"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "0.500",
+        "cost": "34.25",
+        "recipe_use": "0.500",
+        "total_cost": "17.13"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "6.000",
+        "cost": "3.20",
+        "recipe_use": "6.000",
+        "total_cost": "19.20"
+      },
+      {
+        "prod_code": "27751",
+        "description": "GREASE PROOF 2",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "0.19",
+        "recipe_use": "271.000",
+        "total_cost": "51.11"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26734",
+    "description": "SOFT HOTDOG  ROLLS",
+    "cost_excl_per_each_kg": "0.95",
+    "ingredients": [
+      {
+        "prod_code": "28667",
+        "description": "WC MILLING SOFT ROLL MIX",
+        "pack_size": "12.5K",
+        "weight": "12.500",
+        "cost": "13.49",
+        "recipe_use": "12.500",
+        "total_cost": "168.68"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "0.500",
+        "cost": "34.25",
+        "recipe_use": "0.500",
+        "total_cost": "17.13"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "6.000",
+        "cost": "3.20",
+        "recipe_use": "6.000",
+        "total_cost": "19.20"
+      },
+      {
+        "prod_code": "27751",
+        "description": "GREASE PROOF 2",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "0.19",
+        "recipe_use": "271.000",
+        "total_cost": "51.11"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "26665",
+    "description": "BABALAS BRAAI WORS",
+    "cost_excl_per_each_kg": "22.88",
+    "ingredients": [
+      {
+        "prod_code": "28743",
+        "description": "FROZEN MDM",
+        "pack_size": "P/KG",
+        "weight": "25.000",
+        "cost": "15.50",
+        "recipe_use": "25.000",
+        "total_cost": "387.50"
+      },
+      {
+        "prod_code": "28760",
+        "description": "BEEF KIDNEY FAT",
+        "pack_size": "P/KG",
+        "weight": "25.000",
+        "cost": "13.99",
+        "recipe_use": "25.000",
+        "total_cost": "349.75"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "30.000",
+        "cost": "3.20",
+        "recipe_use": "30.000",
+        "total_cost": "96.00"
+      },
+      {
+        "prod_code": "30590",
+        "description": "PRS PARTY BRAAIWORS",
+        "pack_size": "P/KG",
+        "weight": "15.000",
+        "cost": "59.99",
+        "recipe_use": "15.000",
+        "total_cost": "899.85"
+      },
+      {
+        "prod_code": "31923",
+        "description": "HOG CASINGS 28/32 LONGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "239.99",
+        "recipe_use": "1.357",
+        "total_cost": "325.70"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26751",
+    "description": "ZUKI'S SCONE",
+    "cost_excl_per_each_kg": "4.01",
+    "ingredients": [
+      {
+        "prod_code": "15732",
+        "description": "WC MILLING CAKE FLOUR",
+        "pack_size": "12.5K",
+        "weight": "8.000",
+        "cost": "11.40",
+        "recipe_use": "8.000",
+        "total_cost": "91.17"
+      },
+      {
+        "prod_code": "28222",
+        "description": "MILK FULL CREAM",
+        "pack_size": "20L",
+        "weight": "1.400",
+        "cost": "13.80",
+        "recipe_use": "1.400",
+        "total_cost": "19.32"
+      },
+      {
+        "prod_code": "29322",
+        "description": "OIL VEGETABLE CHIPKINS",
+        "pack_size": "20LT",
+        "weight": "1.400",
+        "cost": "43.50",
+        "recipe_use": "1.400",
+        "total_cost": "60.90"
+      },
+      {
+        "prod_code": "27492",
+        "description": "SUGAR WHITE HULETS",
+        "pack_size": "P/KG",
+        "weight": "1.400",
+        "cost": "23.44",
+        "recipe_use": "1.400",
+        "total_cost": "32.82"
+      },
+      {
+        "prod_code": "26370",
+        "description": "GOLDEN YOLK LOOSE BAKERY EGGS",
+        "pack_size": "30'S",
+        "weight": "1.400",
+        "cost": "59.00",
+        "recipe_use": "0.933",
+        "total_cost": "55.07"
+      },
+      {
+        "prod_code": "28313",
+        "description": "HERCULES BAKING POWDER",
+        "pack_size": "P/KG",
+        "weight": "0.400",
+        "cost": "53.05",
+        "recipe_use": "0.400",
+        "total_cost": "21.22"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26753",
+    "description": "ROCK BUNS",
+    "cost_excl_per_each_kg": "6.06",
+    "ingredients": [
+      {
+        "prod_code": "2520",
+        "description": "SMARTBAKER MIX",
+        "pack_size": "12.5K",
+        "weight": "0.160",
+        "cost": "322.41",
+        "recipe_use": "0.160",
+        "total_cost": "51.59"
+      },
+      {
+        "prod_code": "15732",
+        "description": "WC MILLING CAKE FLOUR",
+        "pack_size": "12.5K",
+        "weight": "8.000",
+        "cost": "11.40",
+        "recipe_use": "8.000",
+        "total_cost": "91.17"
+      },
+      {
+        "prod_code": "28222",
+        "description": "MILK FULL CREAM",
+        "pack_size": "20L",
+        "weight": "1.400",
+        "cost": "13.80",
+        "recipe_use": "1.400",
+        "total_cost": "19.32"
+      },
+      {
+        "prod_code": "29322",
+        "description": "OIL VEGETABLE CHIPKINS",
+        "pack_size": "20LT",
+        "weight": "1.400",
+        "cost": "43.50",
+        "recipe_use": "1.400",
+        "total_cost": "60.90"
+      },
+      {
+        "prod_code": "27492",
+        "description": "SUGAR WHITE HULETS",
+        "pack_size": "P/KG",
+        "weight": "1.400",
+        "cost": "23.44",
+        "recipe_use": "1.400",
+        "total_cost": "32.82"
+      },
+      {
+        "prod_code": "26370",
+        "description": "GOLDEN YOLK LOOSE BAKERY EGGS",
+        "pack_size": "30'S",
+        "weight": "0.933",
+        "cost": "59.00",
+        "recipe_use": "0.933",
+        "total_cost": "55.07"
+      },
+      {
+        "prod_code": "28313",
+        "description": "HERCULES BAKING POWDER",
+        "pack_size": "P/KG",
+        "weight": "0.400",
+        "cost": "53.05",
+        "recipe_use": "0.400",
+        "total_cost": "21.22"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26739",
+    "description": "PORTUGUESE  BREAD",
+    "cost_excl_per_each_kg": "5.09",
+    "ingredients": [
+      {
+        "prod_code": "28483",
+        "description": "WC MILLING CRISPY MIX",
+        "pack_size": "12.5K",
+        "weight": "13.500",
+        "cost": "12.66",
+        "recipe_use": "13.500",
+        "total_cost": "170.88"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "0.500",
+        "cost": "34.25",
+        "recipe_use": "0.500",
+        "total_cost": "17.13"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "6.500",
+        "cost": "3.20",
+        "recipe_use": "6.500",
+        "total_cost": "20.80"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26908",
+    "description": "MILK TART",
+    "cost_excl_per_each_kg": "21.18",
+    "ingredients": [
+      {
+        "prod_code": "27492",
+        "description": "SUGAR WHITE HULETS",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "23.44",
+        "recipe_use": "1.000",
+        "total_cost": "23.44"
+      },
+      {
+        "prod_code": "27498",
+        "description": "MARG YELLOW WOODEN SPOON",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "36.36",
+        "recipe_use": "1.000",
+        "total_cost": "36.36"
+      },
+      {
+        "prod_code": "28293",
+        "description": "BAVARIAN SUPREME",
+        "pack_size": "P/KG",
+        "weight": "0.600",
+        "cost": "77.42",
+        "recipe_use": "0.600",
+        "total_cost": "46.45"
+      },
+      {
+        "prod_code": "28222",
+        "description": "MILK FULL CREAM",
+        "pack_size": "20L",
+        "weight": "10.000",
+        "cost": "13.80",
+        "recipe_use": "10.000",
+        "total_cost": "138.00"
+      },
+      {
+        "prod_code": "28888",
+        "description": "CINNAMON GROUND",
+        "pack_size": "P/KG",
+        "weight": "0.010",
+        "cost": "96.60",
+        "recipe_use": "0.100",
+        "total_cost": "9.66"
+      },
+      {
+        "prod_code": "29737",
+        "description": "TART BASE SWEET",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "14.24",
+        "recipe_use": "40.000",
+        "total_cost": "569.78"
+      },
+      {
+        "prod_code": "26370",
+        "description": "GOLDEN YOLK LOOSE BAKERY EGGS",
+        "pack_size": "30'S",
+        "weight": "0.600",
+        "cost": "59.00",
+        "recipe_use": "0.400",
+        "total_cost": "23.60"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "28383",
+    "description": "BREAD DOUGH",
+    "cost_excl_per_each_kg": "5.81",
+    "ingredients": [
+      {
+        "prod_code": "15736",
+        "description": "W/CAPE MILL  MIX WHT BRD",
+        "pack_size": "9.5KG",
+        "weight": "47.500",
+        "cost": "12.29",
+        "recipe_use": "47.500",
+        "total_cost": "584.00"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "34.25",
+        "recipe_use": "1.000",
+        "total_cost": "34.25"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "24.700",
+        "cost": "3.20",
+        "recipe_use": "24.700",
+        "total_cost": "79.04"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "32161",
+    "description": "KOEKSISTERS",
+    "cost_excl_per_each_kg": "0.87",
+    "ingredients": [
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "3.000",
+        "cost": "3.20",
+        "recipe_use": "3.000",
+        "total_cost": "9.60"
+      },
+      {
+        "prod_code": "27499",
+        "description": "MIXED SPICE",
+        "pack_size": "P/KG",
+        "weight": "0.200",
+        "cost": "76.00",
+        "recipe_use": "0.200",
+        "total_cost": "15.20"
+      },
+      {
+        "prod_code": "29322",
+        "description": "OIL VEGETABLE CHIPKINS",
+        "pack_size": "20LT",
+        "weight": "0.700",
+        "cost": "43.50",
+        "recipe_use": "0.700",
+        "total_cost": "30.45"
+      },
+      {
+        "prod_code": "27492",
+        "description": "SUGAR WHITE HULETS",
+        "pack_size": "P/KG",
+        "weight": "0.300",
+        "cost": "23.44",
+        "recipe_use": "0.300",
+        "total_cost": "7.03"
+      },
+      {
+        "prod_code": "26370",
+        "description": "GOLDEN YOLK LOOSE BAKERY EGGS",
+        "pack_size": "30'S",
+        "weight": "0.400",
+        "cost": "59.00",
+        "recipe_use": "0.266",
+        "total_cost": "15.69"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "0.250",
+        "cost": "34.25",
+        "recipe_use": "0.250",
+        "total_cost": "8.56"
+      },
+      {
+        "prod_code": "28833",
+        "description": "DESI COCONUT",
+        "pack_size": "P/KG",
+        "weight": "2.000",
+        "cost": "82.40",
+        "recipe_use": "2.000",
+        "total_cost": "164.80"
+      },
+      {
+        "prod_code": "28667",
+        "description": "WC MILLING SOFT ROLL MIX",
+        "pack_size": "12.5K",
+        "weight": "6.000",
+        "cost": "13.49",
+        "recipe_use": "6.000",
+        "total_cost": "80.97"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26808",
+    "description": "SMALL MUFFIN",
+    "cost_excl_per_each_kg": "5.64",
+    "ingredients": [
+      {
+        "prod_code": "27267",
+        "description": "ASS MUFFIN BATTER",
+        "pack_size": "P/KG",
+        "weight": "0.850",
+        "cost": "53.05",
+        "recipe_use": "0.850",
+        "total_cost": "45.09"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26799",
+    "description": "APPLE SLICE",
+    "cost_excl_per_each_kg": "17.59",
+    "ingredients": [
+      {
+        "prod_code": "27492",
+        "description": "SUGAR WHITE HULETS",
+        "pack_size": "P/KG",
+        "weight": "0.500",
+        "cost": "23.44",
+        "recipe_use": "0.500",
+        "total_cost": "11.72"
+      },
+      {
+        "prod_code": "28058",
+        "description": "PIE APPLES BAKELS CHOICE GRADE",
+        "pack_size": "KG",
+        "weight": "2.700",
+        "cost": "57.11",
+        "recipe_use": "2.700",
+        "total_cost": "154.20"
+      },
+      {
+        "prod_code": "28291",
+        "description": "INSTANT THICKENER",
+        "pack_size": "P/KG",
+        "weight": "0.300",
+        "cost": "117.29",
+        "recipe_use": "0.300",
+        "total_cost": "35.19"
+      },
+      {
+        "prod_code": "28888",
+        "description": "CINNAMON GROUND",
+        "pack_size": "P/KG",
+        "weight": "0.050",
+        "cost": "96.60",
+        "recipe_use": "0.050",
+        "total_cost": "4.83"
+      },
+      {
+        "prod_code": "28564",
+        "description": "PUFF PASTRY",
+        "pack_size": "EAC",
+        "weight": "2.000",
+        "cost": "75.49",
+        "recipe_use": "1.000",
+        "total_cost": "75.49"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "28820",
+    "description": "FOOTLONG CHEESE GRILLER + CHIPS",
+    "cost_excl_per_each_kg": "18.65",
+    "ingredients": [
+      {
+        "prod_code": "22585",
+        "description": "SPAR SC CHS GRILLR F/LONG",
+        "pack_size": "1'S",
+        "weight": "1.000",
+        "cost": "9.80",
+        "recipe_use": "1.000",
+        "total_cost": "9.80"
+      },
+      {
+        "prod_code": "26734",
+        "description": "SOFT HOTDOG  ROLLS",
+        "pack_size": "EACH",
+        "weight": "1.000",
+        "cost": "0.87",
+        "recipe_use": "1.000",
+        "total_cost": "0.87"
+      },
+      {
+        "prod_code": "28442",
+        "description": "GARLIC MAYO",
+        "pack_size": "5LT",
+        "weight": "0.020",
+        "cost": "71.00",
+        "recipe_use": "0.020",
+        "total_cost": "1.42"
+      },
+      {
+        "prod_code": "26221",
+        "description": "SPAR SC RUSTIC ST/H CHIPS",
+        "pack_size": "2.5KG",
+        "weight": "0.060",
+        "cost": "109.47",
+        "recipe_use": "0.060",
+        "total_cost": "6.57"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "27312",
+    "description": "BUTTER BREAD",
+    "cost_excl_per_each_kg": "7.45",
+    "ingredients": [
+      {
+        "prod_code": "27987",
+        "description": "10% BUTTER BREAD",
+        "pack_size": "P/KG",
+        "weight": "5.000",
+        "cost": "33.46",
+        "recipe_use": "5.000",
+        "total_cost": "167.30"
+      },
+      {
+        "prod_code": "15732",
+        "description": "WC MILLING CAKE FLOUR",
+        "pack_size": "12.5K",
+        "weight": "25.000",
+        "cost": "11.40",
+        "recipe_use": "25.000",
+        "total_cost": "284.92"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "0.800",
+        "cost": "34.25",
+        "recipe_use": "0.800",
+        "total_cost": "27.40"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "13.000",
+        "cost": "3.20",
+        "recipe_use": "13.000",
+        "total_cost": "41.60"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "26659",
+    "description": "SIPHO'S BRAAIWORS",
+    "cost_excl_per_each_kg": "19.32",
+    "ingredients": [
+      {
+        "prod_code": "28743",
+        "description": "FROZEN MDM",
+        "pack_size": "P/KG",
+        "weight": "40.000",
+        "cost": "15.50",
+        "recipe_use": "40.000",
+        "total_cost": "620.00"
+      },
+      {
+        "prod_code": "29245",
+        "description": "SOYA MINCE NATURAL",
+        "pack_size": "20KG",
+        "weight": "7.000",
+        "cost": "19.95",
+        "recipe_use": "7.000",
+        "total_cost": "139.65"
+      },
+      {
+        "prod_code": "28760",
+        "description": "BEEF KIDNEY FAT",
+        "pack_size": "P/KG",
+        "weight": "20.000",
+        "cost": "13.99",
+        "recipe_use": "20.000",
+        "total_cost": "279.80"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "20.000",
+        "cost": "3.30",
+        "recipe_use": "20.000",
+        "total_cost": "66.00"
+      },
+      {
+        "prod_code": "28444",
+        "description": "SPECIAL DHANIA SAUSAGE",
+        "pack_size": "P/KG",
+        "weight": "0.700",
+        "cost": "99.99",
+        "recipe_use": "0.700",
+        "total_cost": "69.99"
+      },
+      {
+        "prod_code": "27142",
+        "description": "BRAAI SUPREME",
+        "pack_size": "3KG",
+        "weight": "3.000",
+        "cost": "60.76",
+        "recipe_use": "3.000",
+        "total_cost": "182.28"
+      },
+      {
+        "prod_code": "28688",
+        "description": "GARLIC POWDER",
+        "pack_size": "1KG",
+        "weight": "0.125",
+        "cost": "123.50",
+        "recipe_use": "0.125",
+        "total_cost": "15.44"
+      },
+      {
+        "prod_code": "31548",
+        "description": "BBQ SIX GUN GRILL",
+        "pack_size": "8KG",
+        "weight": "0.200",
+        "cost": "74.89",
+        "recipe_use": "0.200",
+        "total_cost": "14.98"
+      },
+      {
+        "prod_code": "31923",
+        "description": "HOG CASINGS 28/32 LONGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "239.99",
+        "recipe_use": "1.300",
+        "total_cost": "312.07"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "32168",
+    "description": "C/N TOM & ONION FLAV GROUND BEEF",
+    "cost_excl_per_each_kg": "53.75",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "9.000",
+        "cost": "69.99",
+        "recipe_use": "9.000",
+        "total_cost": "629.91"
+      },
+      {
+        "prod_code": "28760",
+        "description": "BEEF KIDNEY FAT",
+        "pack_size": "P/KG",
+        "weight": "2.300",
+        "cost": "13.99",
+        "recipe_use": "2.300",
+        "total_cost": "32.18"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "2.700",
+        "cost": "3.30",
+        "recipe_use": "2.700",
+        "total_cost": "8.91"
+      },
+      {
+        "prod_code": "32163",
+        "description": "GROUND BEEF TOM/ONIO FLAV",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "81.46",
+        "recipe_use": "1.000",
+        "total_cost": "81.46"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "32952",
+    "description": "MZANSI RUSSIAN WORS",
+    "cost_excl_per_each_kg": "32.17",
+    "ingredients": [
+      {
+        "prod_code": "26707",
+        "description": "SHEEP SKIRTS",
+        "pack_size": "P/KG",
+        "weight": "7.000",
+        "cost": "42.99",
+        "recipe_use": "7.000",
+        "total_cost": "300.93"
+      },
+      {
+        "prod_code": "28760",
+        "description": "BEEF KIDNEY FAT",
+        "pack_size": "P/KG",
+        "weight": "4.300",
+        "cost": "13.99",
+        "recipe_use": "4.300",
+        "total_cost": "60.16"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "7.700",
+        "cost": "3.30",
+        "recipe_use": "7.700",
+        "total_cost": "25.41"
+      },
+      {
+        "prod_code": "32988",
+        "description": "MZANSI RUSSIAN GRILLER",
+        "pack_size": "3KG",
+        "weight": "3.000",
+        "cost": "2.85",
+        "recipe_use": "3.000",
+        "total_cost": "8.54"
+      },
+      {
+        "prod_code": "31353",
+        "description": "PORK TRIMMINGS 70%",
+        "pack_size": "P/KG",
+        "weight": "4.300",
+        "cost": "40.95",
+        "recipe_use": "4.300",
+        "total_cost": "176.09"
+      },
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "3.700",
+        "cost": "69.99",
+        "recipe_use": "3.700",
+        "total_cost": "258.96"
+      },
+      {
+        "prod_code": "31923",
+        "description": "HOG CASINGS 28/32 LONGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "239.99",
+        "recipe_use": "0.429",
+        "total_cost": "102.85"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "26670",
+    "description": "EXIM SPICY MUTTON SAUSAGE",
+    "cost_excl_per_each_kg": "46.46",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "4.500",
+        "cost": "69.99",
+        "recipe_use": "4.500",
+        "total_cost": "314.96"
+      },
+      {
+        "prod_code": "28760",
+        "description": "BEEF KIDNEY FAT",
+        "pack_size": "P/KG",
+        "weight": "3.000",
+        "cost": "13.99",
+        "recipe_use": "3.000",
+        "total_cost": "41.97"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "3.000",
+        "cost": "3.30",
+        "recipe_use": "3.000",
+        "total_cost": "9.90"
+      },
+      {
+        "prod_code": "26707",
+        "description": "SHEEP SKIRTS",
+        "pack_size": "P/KG",
+        "weight": "4.500",
+        "cost": "42.99",
+        "recipe_use": "4.500",
+        "total_cost": "193.46"
+      },
+      {
+        "prod_code": "29013",
+        "description": "GRILL CLUB SPICY MUTTON SAUGE",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "56.57",
+        "recipe_use": "1.000",
+        "total_cost": "56.57"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.400",
+        "total_cost": "80.00"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "29708",
+    "description": "OUKRAAL WORS",
+    "cost_excl_per_each_kg": "48.86",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "8.300",
+        "cost": "69.99",
+        "recipe_use": "8.300",
+        "total_cost": "580.92"
+      },
+      {
+        "prod_code": "28760",
+        "description": "BEEF KIDNEY FAT",
+        "pack_size": "P/KG",
+        "weight": "2.100",
+        "cost": "13.99",
+        "recipe_use": "2.100",
+        "total_cost": "29.38"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "5.300",
+        "cost": "3.30",
+        "recipe_use": "5.300",
+        "total_cost": "17.49"
+      },
+      {
+        "prod_code": "29729",
+        "description": "OUKRAAL WORS",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "63.11",
+        "recipe_use": "1.000",
+        "total_cost": "63.11"
+      },
+      {
+        "prod_code": "26707",
+        "description": "SHEEP SKIRTS",
+        "pack_size": "P/KG",
+        "weight": "8.300",
+        "cost": "42.99",
+        "recipe_use": "8.300",
+        "total_cost": "356.82"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.625",
+        "total_cost": "124.99"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "28553",
+    "description": "OUMA'SBOEREWORS",
+    "cost_excl_per_each_kg": "67.85",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "20.000",
+        "cost": "69.99",
+        "recipe_use": "20.000",
+        "total_cost": "1,399.80"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "2.000",
+        "cost": "3.30",
+        "recipe_use": "2.000",
+        "total_cost": "6.60"
+      },
+      {
+        "prod_code": "30425",
+        "description": "B/WORS OUMA'S",
+        "pack_size": "P/KG",
+        "weight": "1.100",
+        "cost": "135.98",
+        "recipe_use": "1.100",
+        "total_cost": "149.58"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.828",
+        "total_cost": "165.49"
+      },
+      {
+        "prod_code": "21477",
+        "description": "WLP PORK TRIMMINGS 70/30",
+        "pack_size": "P/KG",
+        "weight": "10.000",
+        "cost": "44.98",
+        "recipe_use": "10.000",
+        "total_cost": "449.84"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "26687",
+    "description": "PRS OUTYDSE BOEREWORS",
+    "cost_excl_per_each_kg": "70.07",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "20.000",
+        "cost": "69.99",
+        "recipe_use": "20.000",
+        "total_cost": "1,399.80"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "3.30",
+        "recipe_use": "1.000",
+        "total_cost": "3.30"
+      },
+      {
+        "prod_code": "24654",
+        "description": "SAUCE ON TAP VINEGAR BRWN",
+        "pack_size": "10LT",
+        "weight": "0.300",
+        "cost": "100.50",
+        "recipe_use": "0.300",
+        "total_cost": "30.15"
+      },
+      {
+        "prod_code": "29669",
+        "description": "WORCESTER SAUCE 5 LITRES",
+        "pack_size": "5LT",
+        "weight": "0.300",
+        "cost": "9.87",
+        "recipe_use": "0.300",
+        "total_cost": "2.96"
+      },
+      {
+        "prod_code": "31545",
+        "description": "OUTYDSE BOERWORS",
+        "pack_size": "550G",
+        "weight": "0.550",
+        "cost": "63.50",
+        "recipe_use": "0.550",
+        "total_cost": "34.93"
+      },
+      {
+        "prod_code": "26707",
+        "description": "SHEEP SKIRTS",
+        "pack_size": "P/KG",
+        "weight": "5.000",
+        "cost": "42.99",
+        "recipe_use": "5.000",
+        "total_cost": "214.95"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.679",
+        "total_cost": "135.74"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "27872",
+    "description": "PRS TOMATO CKT GRILLER",
+    "cost_excl_per_each_kg": "58.45",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "9.000",
+        "cost": "69.99",
+        "recipe_use": "9.000",
+        "total_cost": "629.91"
+      },
+      {
+        "prod_code": "28760",
+        "description": "BEEF KIDNEY FAT",
+        "pack_size": "P/KG",
+        "weight": "3.000",
+        "cost": "13.99",
+        "recipe_use": "3.000",
+        "total_cost": "41.97"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "3.000",
+        "cost": "3.30",
+        "recipe_use": "3.000",
+        "total_cost": "9.90"
+      },
+      {
+        "prod_code": "27233",
+        "description": "PRS TOMATO GRILLER",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "115.00",
+        "recipe_use": "1.000",
+        "total_cost": "115.00"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.400",
+        "total_cost": "80.00"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "26943",
+    "description": "C/N KAMPVUUR WORS",
+    "cost_excl_per_each_kg": "49.00",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "8.300",
+        "cost": "69.99",
+        "recipe_use": "8.300",
+        "total_cost": "580.92"
+      },
+      {
+        "prod_code": "28760",
+        "description": "BEEF KIDNEY FAT",
+        "pack_size": "P/KG",
+        "weight": "2.100",
+        "cost": "13.99",
+        "recipe_use": "2.100",
+        "total_cost": "29.38"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "5.300",
+        "cost": "3.30",
+        "recipe_use": "5.300",
+        "total_cost": "17.49"
+      },
+      {
+        "prod_code": "27275",
+        "description": "WORS KAMPVUUR",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "66.48",
+        "recipe_use": "1.000",
+        "total_cost": "66.48"
+      },
+      {
+        "prod_code": "26707",
+        "description": "SHEEP SKIRTS",
+        "pack_size": "P/KG",
+        "weight": "8.300",
+        "cost": "42.99",
+        "recipe_use": "8.300",
+        "total_cost": "356.82"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.625",
+        "total_cost": "124.99"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "26679",
+    "description": "SPAR Y/B GROUND BEEF",
+    "cost_excl_per_each_kg": "60.96",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "12.550",
+        "cost": "69.99",
+        "recipe_use": "12.550",
+        "total_cost": "878.37"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "3.150",
+        "cost": "3.30",
+        "recipe_use": "3.150",
+        "total_cost": "10.40"
+      },
+      {
+        "prod_code": "29730",
+        "description": "EC GROUND BEEF",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "56.16",
+        "recipe_use": "1.000",
+        "total_cost": "56.16"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "26695",
+    "description": "SPAR DHANYA GRILLER.",
+    "cost_excl_per_each_kg": "60.69",
+    "ingredients": [
+      {
+        "prod_code": "28444",
+        "description": "SPECIAL DHANIA SAUSAGE",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "99.99",
+        "recipe_use": "1.000",
+        "total_cost": "99.99"
+      },
+      {
+        "prod_code": "28760",
+        "description": "BEEF KIDNEY FAT",
+        "pack_size": "P/KG",
+        "weight": "2.000",
+        "cost": "13.99",
+        "recipe_use": "2.000",
+        "total_cost": "27.98"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "2.500",
+        "cost": "3.30",
+        "recipe_use": "2.500",
+        "total_cost": "8.25"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.313",
+        "total_cost": "62.50"
+      },
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "8.000",
+        "cost": "69.99",
+        "recipe_use": "8.000",
+        "total_cost": "559.92"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "26673",
+    "description": "PRS KALAHARI BOEREWORS",
+    "cost_excl_per_each_kg": "65.96",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "12.000",
+        "cost": "69.99",
+        "recipe_use": "12.000",
+        "total_cost": "839.88"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "0.700",
+        "cost": "3.30",
+        "recipe_use": "0.700",
+        "total_cost": "2.31"
+      },
+      {
+        "prod_code": "24654",
+        "description": "SAUCE ON TAP VINEGAR BRWN",
+        "pack_size": "10LT",
+        "weight": "0.700",
+        "cost": "100.50",
+        "recipe_use": "0.700",
+        "total_cost": "70.35"
+      },
+      {
+        "prod_code": "27227",
+        "description": "KALAHARI BOEREWORS",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "125.00",
+        "recipe_use": "1.000",
+        "total_cost": "125.00"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.610",
+        "total_cost": "121.99"
+      },
+      {
+        "prod_code": "21477",
+        "description": "WLP PORK TRIMMINGS 70/30",
+        "pack_size": "P/KG",
+        "weight": "10.000",
+        "cost": "44.98",
+        "recipe_use": "10.000",
+        "total_cost": "449.84"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "32231",
+    "description": "SHERIFF BOEREWORS",
+    "cost_excl_per_each_kg": "62.44",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "17.000",
+        "cost": "69.99",
+        "recipe_use": "17.000",
+        "total_cost": "1,189.83"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "3.000",
+        "cost": "3.30",
+        "recipe_use": "3.000",
+        "total_cost": "9.90"
+      },
+      {
+        "prod_code": "32191",
+        "description": "SHERIFF BOEREWORS SPICES",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "68.69",
+        "recipe_use": "1.000",
+        "total_cost": "68.69"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.775",
+        "total_cost": "154.99"
+      },
+      {
+        "prod_code": "21477",
+        "description": "WLP PORK TRIMMINGS 70/30",
+        "pack_size": "P/KG",
+        "weight": "10.000",
+        "cost": "44.98",
+        "recipe_use": "10.000",
+        "total_cost": "449.84"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "31396",
+    "description": "LEGACY BOEREWORS",
+    "cost_excl_per_each_kg": "67.49",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "20.000",
+        "cost": "69.99",
+        "recipe_use": "20.000",
+        "total_cost": "1,399.80"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "1.100",
+        "cost": "3.30",
+        "recipe_use": "1.100",
+        "total_cost": "3.63"
+      },
+      {
+        "prod_code": "31438",
+        "description": "OOM REDDYS BWS",
+        "pack_size": "1.2KG",
+        "weight": "1.200",
+        "cost": "84.59",
+        "recipe_use": "1.200",
+        "total_cost": "101.51"
+      },
+      {
+        "prod_code": "24654",
+        "description": "SAUCE ON TAP VINEGAR BRWN",
+        "pack_size": "10LT",
+        "weight": "1.100",
+        "cost": "100.50",
+        "recipe_use": "1.100",
+        "total_cost": "110.55"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.900",
+        "total_cost": "179.99"
+      },
+      {
+        "prod_code": "21477",
+        "description": "WLP PORK TRIMMINGS 70/30",
+        "pack_size": "P/KG",
+        "weight": "12.600",
+        "cost": "44.98",
+        "recipe_use": "12.600",
+        "total_cost": "566.80"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "26678",
+    "description": "SAVOURY MINCE",
+    "cost_excl_per_each_kg": "60.40",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "11.700",
+        "cost": "69.99",
+        "recipe_use": "11.700",
+        "total_cost": "818.88"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "4.000",
+        "cost": "3.30",
+        "recipe_use": "4.000",
+        "total_cost": "13.20"
+      },
+      {
+        "prod_code": "29666",
+        "description": "SAVOURY MINCE",
+        "pack_size": "1.6LT",
+        "weight": "1.600",
+        "cost": "83.95",
+        "recipe_use": "1.600",
+        "total_cost": "134.32"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "28867",
+    "description": "SIX GUN BEEF BURGER",
+    "cost_excl_per_each_kg": "63.64",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "12.000",
+        "cost": "69.99",
+        "recipe_use": "12.000",
+        "total_cost": "839.88"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "2.000",
+        "cost": "3.30",
+        "recipe_use": "2.000",
+        "total_cost": "6.60"
+      },
+      {
+        "prod_code": "32162",
+        "description": "BURGER SIX GUN GRILL",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "76.24",
+        "recipe_use": "1.000",
+        "total_cost": "76.24"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "30357",
+    "description": "IZOSO SHISA NYAMA BRAAIWORS",
+    "cost_excl_per_each_kg": "50.34",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "30.000",
+        "cost": "69.99",
+        "recipe_use": "30.000",
+        "total_cost": "2,099.70"
+      },
+      {
+        "prod_code": "28760",
+        "description": "BEEF KIDNEY FAT",
+        "pack_size": "P/KG",
+        "weight": "10.000",
+        "cost": "13.99",
+        "recipe_use": "10.000",
+        "total_cost": "139.90"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "11.450",
+        "cost": "3.30",
+        "recipe_use": "11.450",
+        "total_cost": "37.79"
+      },
+      {
+        "prod_code": "30786",
+        "description": "IZOSO SHISA NYAMA BRAAIWORS",
+        "pack_size": "P/KG",
+        "weight": "1.900",
+        "cost": "38.82",
+        "recipe_use": "1.900",
+        "total_cost": "73.76"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "1.334",
+        "total_cost": "266.74"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "33168",
+    "description": "SWEET CHILLI BEEF SAUSAGE",
+    "cost_excl_per_each_kg": "70.98",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "11.500",
+        "cost": "69.99",
+        "recipe_use": "11.500",
+        "total_cost": "804.89"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "2.500",
+        "cost": "3.30",
+        "recipe_use": "2.500",
+        "total_cost": "8.25"
+      },
+      {
+        "prod_code": "31965",
+        "description": "SUASAGE SW/CHILLIE M/CLUB",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "105.52",
+        "recipe_use": "1.000",
+        "total_cost": "105.52"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.375",
+        "total_cost": "75.00"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "33937",
+    "description": "DHL STORMERS BOEREWORS",
+    "cost_excl_per_each_kg": "62.02",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "20.000",
+        "cost": "69.99",
+        "recipe_use": "20.000",
+        "total_cost": "1,399.80"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "2.000",
+        "cost": "3.30",
+        "recipe_use": "2.000",
+        "total_cost": "6.60"
+      },
+      {
+        "prod_code": "21477",
+        "description": "WLP PORK TRIMMINGS 70/30",
+        "pack_size": "P/KG",
+        "weight": "10.000",
+        "cost": "44.98",
+        "recipe_use": "10.000",
+        "total_cost": "449.84"
+      },
+      {
+        "prod_code": "33934",
+        "description": "B/WORS STORMERS",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "25.55",
+        "recipe_use": "1.000",
+        "total_cost": "25.55"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.825",
+        "total_cost": "164.99"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "33938",
+    "description": "SAFARI BOEREWORS",
+    "cost_excl_per_each_kg": "63.84",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "12.000",
+        "cost": "69.99",
+        "recipe_use": "12.000",
+        "total_cost": "839.88"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "3.30",
+        "recipe_use": "1.000",
+        "total_cost": "3.30"
+      },
+      {
+        "prod_code": "24654",
+        "description": "SAUCE ON TAP VINEGAR BRWN",
+        "pack_size": "10LT",
+        "weight": "0.250",
+        "cost": "100.50",
+        "recipe_use": "0.250",
+        "total_cost": "25.13"
+      },
+      {
+        "prod_code": "21477",
+        "description": "WLP PORK TRIMMINGS 70/30",
+        "pack_size": "P/KG",
+        "weight": "8.000",
+        "cost": "44.98",
+        "recipe_use": "8.000",
+        "total_cost": "359.87"
+      },
+      {
+        "prod_code": "33932",
+        "description": "B/WORS SAFARI",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "80.97",
+        "recipe_use": "1.000",
+        "total_cost": "80.97"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.556",
+        "total_cost": "111.24"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "31942",
+    "description": "MARGHERITA PIZZA SLICE",
+    "cost_excl_per_each_kg": "14.44",
+    "ingredients": [
+      {
+        "prod_code": "33926",
+        "description": "PARBKD PIZZA SHT MARGR",
+        "pack_size": "870G",
+        "weight": "1.000",
+        "cost": "86.66",
+        "recipe_use": "1.000",
+        "total_cost": "86.66"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26712",
+    "description": "PANINI ROLLS",
+    "cost_excl_per_each_kg": "3.08",
+    "ingredients": [
+      {
+        "prod_code": "32007",
+        "description": "BAG CIABATTA",
+        "pack_size": "10KG",
+        "weight": "2.500",
+        "cost": "40.10",
+        "recipe_use": "2.500",
+        "total_cost": "100.25"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "0.300",
+        "cost": "34.25",
+        "recipe_use": "0.300",
+        "total_cost": "10.28"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "8.000",
+        "cost": "3.20",
+        "recipe_use": "8.000",
+        "total_cost": "25.60"
+      },
+      {
+        "prod_code": "15732",
+        "description": "WC MILLING CAKE FLOUR",
+        "pack_size": "12.5K",
+        "weight": "12.500",
+        "cost": "11.40",
+        "recipe_use": "12.500",
+        "total_cost": "142.46"
+      },
+      {
+        "prod_code": "29322",
+        "description": "OIL VEGETABLE CHIPKINS",
+        "pack_size": "20LT",
+        "weight": "0.250",
+        "cost": "43.50",
+        "recipe_use": "0.250",
+        "total_cost": "10.88"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "34039",
+    "description": "VHFS SOSATIE SAUSAGE",
+    "cost_excl_per_each_kg": null,
+    "ingredients": [
+      {
+        "prod_code": "28951",
+        "description": "TRIMMINGS B/M 90VL V/P",
+        "pack_size": "P/KG",
+        "weight": "6.000",
+        "cost": "48.99",
+        "recipe_use": "6.000",
+        "total_cost": "293.94"
+      },
+      {
+        "prod_code": "28760",
+        "description": "BEEF KIDNEY FAT",
+        "pack_size": "P/KG",
+        "weight": "0.950",
+        "cost": "13.99",
+        "recipe_use": "0.950",
+        "total_cost": "13.29"
+      },
+      {
+        "prod_code": "34037",
+        "description": "SPICES VHFS SOSATIE WORS",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "62.99",
+        "recipe_use": "1.000",
+        "total_cost": "62.99"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "2.500",
+        "cost": "3.30",
+        "recipe_use": "2.500",
+        "total_cost": "8.25"
+      },
+      {
+        "prod_code": "2842",
+        "description": "SPAR CHUTNEY FRT MILD",
+        "pack_size": "460G",
+        "weight": "0.500",
+        "cost": "21.59",
+        "recipe_use": "0.500",
+        "total_cost": "10.80"
+      },
+      {
+        "prod_code": "29669",
+        "description": "WORCESTER SAUCE 5 LITRES",
+        "pack_size": "5LT",
+        "weight": "0.050",
+        "cost": "9.87",
+        "recipe_use": "0.050",
+        "total_cost": "0.49"
+      },
+      {
+        "prod_code": "28695",
+        "description": "HALAAL SHEEP CASINGS",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "199.99",
+        "recipe_use": "0.275",
+        "total_cost": "55.00"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "26917",
+    "description": "COOKED SAMP&BEANS",
+    "cost_excl_per_each_kg": "27.13",
+    "ingredients": [
+      {
+        "prod_code": "10245",
+        "description": "SPAR SAMP",
+        "pack_size": "10KG",
+        "weight": "10.000",
+        "cost": "123.92",
+        "recipe_use": "10.000",
+        "total_cost": "1,239.20"
+      },
+      {
+        "prod_code": "33807",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "20.000",
+        "cost": "3.20",
+        "recipe_use": "20.000",
+        "total_cost": "64.00"
+      },
+      {
+        "prod_code": "10246",
+        "description": "SPAR RED SPECKLED BEANS",
+        "pack_size": "500GR",
+        "weight": "12.000",
+        "cost": "27.05",
+        "recipe_use": "12.000",
+        "total_cost": "324.57"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "26966",
+    "description": "PLAIN RICE",
+    "cost_excl_per_each_kg": "7.85",
+    "ingredients": [
+      {
+        "prod_code": "2813",
+        "description": "SPAR RICE PARBOILED",
+        "pack_size": "10KG",
+        "weight": "10.000",
+        "cost": "171.49",
+        "recipe_use": "1.000",
+        "total_cost": "171.49"
+      },
+      {
+        "prod_code": "33807",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "20.000",
+        "cost": "3.20",
+        "recipe_use": "20.000",
+        "total_cost": "64.00"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "26905",
+    "description": "CHAKALAKA BEANS SALAD",
+    "cost_excl_per_each_kg": null,
+    "ingredients": [
+      {
+        "prod_code": "28825",
+        "description": "BEANS IN T/S RHODES",
+        "pack_size": "P/KG",
+        "weight": "3.000",
+        "cost": "27.13",
+        "recipe_use": "3.000",
+        "total_cost": "81.38"
+      },
+      {
+        "prod_code": "26530",
+        "description": "CURRY MED RAJAH",
+        "pack_size": "800G",
+        "weight": "0.050",
+        "cost": "85.44",
+        "recipe_use": "0.050",
+        "total_cost": "4.27"
+      },
+      {
+        "prod_code": "30381",
+        "description": "CURRY HOT RAJAH",
+        "pack_size": "800GR",
+        "weight": "0.050",
+        "cost": "136.70",
+        "recipe_use": "0.050",
+        "total_cost": "6.84"
+      },
+      {
+        "prod_code": "30723",
+        "description": "TOMATO SAUCE",
+        "pack_size": "5LT",
+        "weight": "2.000",
+        "cost": "47.00",
+        "recipe_use": "2.000",
+        "total_cost": "94.00"
+      },
+      {
+        "prod_code": "27893",
+        "description": "PEPPERS YELLOW",
+        "pack_size": "P/KG",
+        "weight": "2.000",
+        "cost": "36.67",
+        "recipe_use": "2.000",
+        "total_cost": "73.33"
+      },
+      {
+        "prod_code": "28558",
+        "description": "PEPPERS GREEN",
+        "pack_size": "P/KG",
+        "weight": "2.000",
+        "cost": "24.24",
+        "recipe_use": "2.000",
+        "total_cost": "48.48"
+      },
+      {
+        "prod_code": "27892",
+        "description": "PEPPERS RED",
+        "pack_size": "P/KG",
+        "weight": "2.000",
+        "cost": "38.76",
+        "recipe_use": "2.000",
+        "total_cost": "77.52"
+      },
+      {
+        "prod_code": "27888",
+        "description": "ONIONS010-HF",
+        "pack_size": "P/KG",
+        "weight": "2.000",
+        "cost": "8.20",
+        "recipe_use": "2.000",
+        "total_cost": "16.40"
+      },
+      {
+        "prod_code": "27887",
+        "description": "CARROTS",
+        "pack_size": "P/KG",
+        "weight": "10.000",
+        "cost": "7.50",
+        "recipe_use": "10.000",
+        "total_cost": "75.00"
+      },
+      {
+        "prod_code": "26528",
+        "description": "SPICE AROMAT",
+        "pack_size": "1KG",
+        "weight": "0.100",
+        "cost": "129.26",
+        "recipe_use": "0.100",
+        "total_cost": "12.93"
+      },
+      {
+        "prod_code": "27220",
+        "description": "SWEET CHILLI SAUCE",
+        "pack_size": "5LT",
+        "weight": "2.000",
+        "cost": "55.00",
+        "recipe_use": "2.000",
+        "total_cost": "110.00"
+      },
+      {
+        "prod_code": "26518",
+        "description": "OIL PURE EXCELLA",
+        "pack_size": "20LT",
+        "weight": "2.000",
+        "cost": "32.98",
+        "recipe_use": "2.000",
+        "total_cost": "65.96"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "29171",
+    "description": "SPAR Y/B BEEF & PORK MINCE",
+    "cost_excl_per_each_kg": "48.49",
+    "ingredients": [
+      {
+        "prod_code": "28951",
+        "description": "TRIMMINGS B/M 90VL V/P",
+        "pack_size": "P/KG",
+        "weight": "10.000",
+        "cost": "48.99",
+        "recipe_use": "10.000",
+        "total_cost": "489.90"
+      },
+      {
+        "prod_code": "29378",
+        "description": "PORK TRIMMINGS 90/10",
+        "pack_size": "P/KG",
+        "weight": "10.000",
+        "cost": "47.99",
+        "recipe_use": "10.000",
+        "total_cost": "479.90"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "27131",
+    "description": "CHOC SPONGE SHEETS",
+    "cost_excl_per_each_kg": "82.88",
+    "ingredients": [
+      {
+        "prod_code": "28292",
+        "description": "PETTINA INST CHOC SPONGE",
+        "pack_size": "P/KG",
+        "weight": "6.000",
+        "cost": "34.84",
+        "recipe_use": "6.000",
+        "total_cost": "209.04"
+      },
+      {
+        "prod_code": "26370",
+        "description": "GOLDEN YOLK LOOSE BAKERY EGGS",
+        "pack_size": "30'S",
+        "weight": "2.700",
+        "cost": "59.00",
+        "recipe_use": "2.000",
+        "total_cost": "118.00"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "1.400",
+        "cost": "3.20",
+        "recipe_use": "1.400",
+        "total_cost": "4.48"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "27204",
+    "description": "RAINBOW CAKE",
+    "cost_excl_per_each_kg": "18.07",
+    "ingredients": [
+      {
+        "prod_code": "27131",
+        "description": "CHOC SPONGE SHEETS",
+        "pack_size": "EACH",
+        "weight": "3.000",
+        "cost": "103.86",
+        "recipe_use": "3.000",
+        "total_cost": "311.58"
+      },
+      {
+        "prod_code": "28061",
+        "description": "SUGAR ICING CHIPKIN",
+        "pack_size": "P/KG",
+        "weight": "0.600",
+        "cost": "25.32",
+        "recipe_use": "0.600",
+        "total_cost": "15.19"
+      },
+      {
+        "prod_code": "27498",
+        "description": "MARG YELLOW WOODEN SPOON",
+        "pack_size": "P/KG",
+        "weight": "0.600",
+        "cost": "36.36",
+        "recipe_use": "0.600",
+        "total_cost": "21.82"
+      },
+      {
+        "prod_code": "28622",
+        "description": "VERMICELLI R/BOW CHIPKINS",
+        "pack_size": "P/KG",
+        "weight": "0.200",
+        "cost": "64.40",
+        "recipe_use": "0.200",
+        "total_cost": "12.88"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "29161",
+    "description": "RAINBOW SLAB",
+    "cost_excl_per_each_kg": "9.04",
+    "ingredients": [
+      {
+        "prod_code": "27131",
+        "description": "CHOC SPONGE SHEETS",
+        "pack_size": "EACH",
+        "weight": "3.000",
+        "cost": "103.86",
+        "recipe_use": "3.000",
+        "total_cost": "311.58"
+      },
+      {
+        "prod_code": "28061",
+        "description": "SUGAR ICING CHIPKIN",
+        "pack_size": "P/KG",
+        "weight": "0.600",
+        "cost": "25.32",
+        "recipe_use": "0.600",
+        "total_cost": "15.19"
+      },
+      {
+        "prod_code": "27498",
+        "description": "MARG YELLOW WOODEN SPOON",
+        "pack_size": "P/KG",
+        "weight": "0.600",
+        "cost": "36.36",
+        "recipe_use": "0.600",
+        "total_cost": "21.82"
+      },
+      {
+        "prod_code": "28622",
+        "description": "VERMICELLI R/BOW CHIPKINS",
+        "pack_size": "P/KG",
+        "weight": "0.200",
+        "cost": "64.40",
+        "recipe_use": "0.200",
+        "total_cost": "12.88"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "27144",
+    "description": "VANILLA SPONGE SHEETS",
+    "cost_excl_per_each_kg": "78.20",
+    "ingredients": [
+      {
+        "prod_code": "27989",
+        "description": "PETTINA SPONGE INSTANT",
+        "pack_size": "P/KG",
+        "weight": "6.000",
+        "cost": "31.72",
+        "recipe_use": "6.000",
+        "total_cost": "190.32"
+      },
+      {
+        "prod_code": "26370",
+        "description": "GOLDEN YOLK LOOSE BAKERY EGGS",
+        "pack_size": "30'S",
+        "weight": "2.700",
+        "cost": "59.00",
+        "recipe_use": "2.000",
+        "total_cost": "118.00"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "1.400",
+        "cost": "3.20",
+        "recipe_use": "1.400",
+        "total_cost": "4.48"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "29067",
+    "description": "PEPPERMINT CAKE",
+    "cost_excl_per_each_kg": "75.27",
+    "ingredients": [
+      {
+        "prod_code": "27970",
+        "description": "CHOCOLATE BETTERCREME",
+        "pack_size": "P/KG",
+        "weight": "0.300",
+        "cost": "68.37",
+        "recipe_use": "0.300",
+        "total_cost": "20.51"
+      },
+      {
+        "prod_code": "30618",
+        "description": "RICH'S CHOCOLATE SIGNATURE",
+        "pack_size": "EA",
+        "weight": "0.678",
+        "cost": "26.95",
+        "recipe_use": "1.500",
+        "total_cost": "40.43"
+      },
+      {
+        "prod_code": "28298",
+        "description": "CHOC MINT CRUMBLE",
+        "pack_size": "P/KG",
+        "weight": "0.008",
+        "cost": "163.81",
+        "recipe_use": "0.008",
+        "total_cost": "1.31"
+      },
+      {
+        "prod_code": "27993",
+        "description": "CHOCKEX CHIPS",
+        "pack_size": "P/KG",
+        "weight": "0.040",
+        "cost": "66.67",
+        "recipe_use": "0.040",
+        "total_cost": "2.67"
+      },
+      {
+        "prod_code": "27485",
+        "description": "AMBIANTE TOPPING INT",
+        "pack_size": "1LT",
+        "weight": "0.040",
+        "cost": "59.21",
+        "recipe_use": "0.040",
+        "total_cost": "2.37"
+      },
+      {
+        "prod_code": "30778",
+        "description": "B471 SCREW LOCK BASE",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "2.67",
+        "recipe_use": "1.000",
+        "total_cost": "2.67"
+      },
+      {
+        "prod_code": "30779",
+        "description": "B562 SCREW LOCK DOME",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "5.31",
+        "recipe_use": "1.000",
+        "total_cost": "5.31"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "27300",
+    "description": "IMITATION CREAM CAKE",
+    "cost_excl_per_each_kg": "59.79",
+    "ingredients": [
+      {
+        "prod_code": "28330",
+        "description": "SPONGE ROUND PLAIN",
+        "pack_size": "EA",
+        "weight": "0.450",
+        "cost": "31.98",
+        "recipe_use": "1.000",
+        "total_cost": "31.98"
+      },
+      {
+        "prod_code": "28042",
+        "description": "CARAMEL PREMIUM",
+        "pack_size": "3KG",
+        "weight": "0.066",
+        "cost": "121.00",
+        "recipe_use": "0.066",
+        "total_cost": "7.99"
+      },
+      {
+        "prod_code": "27485",
+        "description": "AMBIANTE TOPPING INT",
+        "pack_size": "1LT",
+        "weight": "0.200",
+        "cost": "59.21",
+        "recipe_use": "0.200",
+        "total_cost": "11.84"
+      },
+      {
+        "prod_code": "30778",
+        "description": "B471 SCREW LOCK BASE",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "2.67",
+        "recipe_use": "1.000",
+        "total_cost": "2.67"
+      },
+      {
+        "prod_code": "30779",
+        "description": "B562 SCREW LOCK DOME",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "5.31",
+        "recipe_use": "1.000",
+        "total_cost": "5.31"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "26981",
+    "description": "GRILLED BACON",
+    "cost_excl_per_each_kg": "166.58",
+    "ingredients": [
+      {
+        "prod_code": "30462",
+        "description": "D.C BACK BACON",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "99.95",
+        "recipe_use": "1.000",
+        "total_cost": "99.95"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "27770",
+    "description": "RUSSIAN LONG",
+    "cost_excl_per_each_kg": "10.58",
+    "ingredients": [
+      {
+        "prod_code": "31903",
+        "description": "SMOKED RUSSIANS VP",
+        "pack_size": "P/KG",
+        "weight": "0.294",
+        "cost": "35.99",
+        "recipe_use": "0.294",
+        "total_cost": "10.58"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "26982",
+    "description": "SUNNY SIDE UP EGGS",
+    "cost_excl_per_each_kg": "1.97",
+    "ingredients": [
+      {
+        "prod_code": "26371",
+        "description": "GOLDEN YOLK LOOSE H/FOODS EGGS",
+        "pack_size": "30'S",
+        "weight": "1.500",
+        "cost": "59.00",
+        "recipe_use": "1.000",
+        "total_cost": "59.00"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "30024",
+    "description": "SPAR TFS GRILLER FRZ BBQ 1'S",
+    "cost_excl_per_each_kg": "58.83",
+    "ingredients": [
+      {
+        "prod_code": "28460",
+        "description": "ROASTED W/ CHICKEN",
+        "pack_size": "EA",
+        "weight": "1.000",
+        "cost": "58.83",
+        "recipe_use": "1.000",
+        "total_cost": "58.83"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "28750",
+    "description": "BBQ  CHICKEN",
+    "cost_excl_per_each_kg": "67.05",
+    "ingredients": [
+      {
+        "prod_code": "28361",
+        "description": "FRESH 5PCE BRAAIPACK",
+        "pack_size": "P/KG",
+        "weight": "2.000",
+        "cost": "45.50",
+        "recipe_use": "2.000",
+        "total_cost": "91.00"
+      },
+      {
+        "prod_code": "32308",
+        "description": "PRS BBQ FIESTA",
+        "pack_size": "P/KG",
+        "weight": "0.030",
+        "cost": "95.50",
+        "recipe_use": "0.030",
+        "total_cost": "2.87"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "29457",
+    "description": "JELLY",
+    "cost_excl_per_each_kg": "22.67",
+    "ingredients": [
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "5.000",
+        "cost": "3.20",
+        "recipe_use": "5.000",
+        "total_cost": "16.00"
+      },
+      {
+        "prod_code": "27510",
+        "description": "CARTE DOR STRAWBERRY JELLY",
+        "pack_size": "500GR",
+        "weight": "1.000",
+        "cost": "60.00",
+        "recipe_use": "2.000",
+        "total_cost": "120.00"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26958",
+    "description": "JELLY & CUSTARD CUP",
+    "cost_excl_per_each_kg": null,
+    "ingredients": [
+      {
+        "prod_code": "26371",
+        "description": "GOLDEN YOLK LOOSE H/FOODS EGGS",
+        "pack_size": "30'S",
+        "weight": "1.500",
+        "cost": "59.00",
+        "recipe_use": "1.000",
+        "total_cost": "59.00"
+      },
+      {
+        "prod_code": "26529",
+        "description": "MAYONAISE TANGY",
+        "pack_size": "P/KG",
+        "weight": "",
+        "cost": "49.60",
+        "recipe_use": "",
+        "total_cost": "-"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "34121",
+    "description": "CUSTARD INSTANT",
+    "cost_excl_per_each_kg": "20.05",
+    "ingredients": [
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "3.20",
+        "recipe_use": "1.000",
+        "total_cost": "3.20"
+      },
+      {
+        "prod_code": "28303",
+        "description": "INSTANT KRAMESS",
+        "pack_size": "KG",
+        "weight": "0.300",
+        "cost": "76.20",
+        "recipe_use": "0.300",
+        "total_cost": "22.86"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "29037",
+    "description": "EGG SALAD",
+    "cost_excl_per_each_kg": "41.20",
+    "ingredients": [
+      {
+        "prod_code": "26371",
+        "description": "GOLDEN YOLK LOOSE H/FOODS EGGS",
+        "pack_size": "30'S",
+        "weight": "4.500",
+        "cost": "59.00",
+        "recipe_use": "3.000",
+        "total_cost": "177.00"
+      },
+      {
+        "prod_code": "26529",
+        "description": "MAYONAISE TANGY",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "49.60",
+        "recipe_use": "1.000",
+        "total_cost": "49.60"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "28567",
+    "description": "SLUSH PUPPIE ASSORTED",
+    "cost_excl_per_each_kg": "7.26",
+    "ingredients": [
+      {
+        "prod_code": "33807",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "15.000",
+        "cost": "3.20",
+        "recipe_use": "15.000",
+        "total_cost": "48.00"
+      },
+      {
+        "prod_code": "28268",
+        "description": "SLO JO MANGO FRUIT TEAZER",
+        "pack_size": "KG",
+        "weight": "1.000",
+        "cost": "117.47",
+        "recipe_use": "1.000",
+        "total_cost": "117.47"
+      },
+      {
+        "prod_code": "27515",
+        "description": "BEAN TREE COLD BEV CUP LID",
+        "pack_size": "350ML",
+        "weight": "",
+        "cost": "3.13",
+        "recipe_use": "40.000",
+        "total_cost": "125.02"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "34221",
+    "description": "STETSON BEEF BOERIE BURGER",
+    "cost_excl_per_each_kg": "61.60",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "7.500",
+        "cost": "69.99",
+        "recipe_use": "7.500",
+        "total_cost": "524.93"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "1.500",
+        "cost": "3.30",
+        "recipe_use": "1.500",
+        "total_cost": "4.95"
+      },
+      {
+        "prod_code": "34180",
+        "description": "BURGER STETSON BOERIE",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "86.15",
+        "recipe_use": "1.000",
+        "total_cost": "86.15"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "34222",
+    "description": "STETSON BEEF PEPPER BURGER.",
+    "cost_excl_per_each_kg": "62.43",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "7.500",
+        "cost": "69.99",
+        "recipe_use": "7.500",
+        "total_cost": "524.93"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "1.500",
+        "cost": "3.30",
+        "recipe_use": "1.500",
+        "total_cost": "4.95"
+      },
+      {
+        "prod_code": "34179",
+        "description": "BURGER PEPPER STETSON",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "94.43",
+        "recipe_use": "1.000",
+        "total_cost": "94.43"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "34223",
+    "description": "STETSON TEXAS VALUE BURGER",
+    "cost_excl_per_each_kg": "56.33",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "20.000",
+        "cost": "69.99",
+        "recipe_use": "20.000",
+        "total_cost": "1,399.80"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "5.000",
+        "cost": "3.30",
+        "recipe_use": "5.000",
+        "total_cost": "16.50"
+      },
+      {
+        "prod_code": "34184",
+        "description": "VALUE BURGER TEXAS STETSON",
+        "pack_size": "2KG",
+        "weight": "2.000",
+        "cost": "52.35",
+        "recipe_use": "2.000",
+        "total_cost": "104.70"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "27125",
+    "description": "SIPHO'S BUDGET BURGERS",
+    "cost_excl_per_each_kg": "15.94",
+    "ingredients": [
+      {
+        "prod_code": "28743",
+        "description": "FROZEN MDM",
+        "pack_size": "P/KG",
+        "weight": "40.000",
+        "cost": "15.50",
+        "recipe_use": "40.000",
+        "total_cost": "620.00"
+      },
+      {
+        "prod_code": "29245",
+        "description": "SOYA MINCE NATURAL",
+        "pack_size": "20KG",
+        "weight": "7.000",
+        "cost": "19.95",
+        "recipe_use": "7.000",
+        "total_cost": "139.65"
+      },
+      {
+        "prod_code": "28760",
+        "description": "BEEF KIDNEY FAT",
+        "pack_size": "P/KG",
+        "weight": "20.000",
+        "cost": "13.99",
+        "recipe_use": "20.000",
+        "total_cost": "279.80"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "15.000",
+        "cost": "3.30",
+        "recipe_use": "15.000",
+        "total_cost": "49.50"
+      },
+      {
+        "prod_code": "28444",
+        "description": "SPECIAL DHANIA SAUSAGE",
+        "pack_size": "P/KG",
+        "weight": "0.700",
+        "cost": "99.99",
+        "recipe_use": "0.700",
+        "total_cost": "69.99"
+      },
+      {
+        "prod_code": "27142",
+        "description": "BRAAI SUPREME",
+        "pack_size": "3KG",
+        "weight": "3.000",
+        "cost": "60.76",
+        "recipe_use": "3.000",
+        "total_cost": "182.28"
+      },
+      {
+        "prod_code": "28688",
+        "description": "GARLIC POWDER",
+        "pack_size": "1KG",
+        "weight": "0.125",
+        "cost": "123.50",
+        "recipe_use": "0.125",
+        "total_cost": "15.44"
+      },
+      {
+        "prod_code": "31548",
+        "description": "BBQ SIX GUN GRILL",
+        "pack_size": "8KG",
+        "weight": "0.200",
+        "cost": "74.89",
+        "recipe_use": "0.200",
+        "total_cost": "14.98"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "29303",
+    "description": "SIPHO'S BUDGET BURGERS 24S",
+    "cost_excl_per_each_kg": "39.41",
+    "ingredients": [
+      {
+        "prod_code": "27125",
+        "description": "SIPHO'S BUDGET BURGERS",
+        "pack_size": "KG",
+        "weight": "2.400",
+        "cost": "16.42",
+        "recipe_use": "2.400",
+        "total_cost": "39.41"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "26956",
+    "description": "CHICKEN STEWS",
+    "cost_excl_per_each_kg": "45.05",
+    "ingredients": [
+      {
+        "prod_code": "28361",
+        "description": "FRESH 5PCE BRAAIPACK",
+        "pack_size": "P/KG",
+        "weight": "3.000",
+        "cost": "45.50",
+        "recipe_use": "3.000",
+        "total_cost": "136.50"
+      },
+      {
+        "prod_code": "22942",
+        "description": "SAVEMOR VEGETABLES MIXED",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "32.49",
+        "recipe_use": "1.000",
+        "total_cost": "32.49"
+      },
+      {
+        "prod_code": "33807",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "1.500",
+        "cost": "3.20",
+        "recipe_use": "1.500",
+        "total_cost": "4.80"
+      },
+      {
+        "prod_code": "30095",
+        "description": "STEW CHICKEN SO GOOD",
+        "pack_size": "P/KG",
+        "weight": "0.150",
+        "cost": "127.49",
+        "recipe_use": "0.150",
+        "total_cost": "19.12"
+      },
+      {
+        "prod_code": "26518",
+        "description": "OIL PURE EXCELLA",
+        "pack_size": "20LT",
+        "weight": "0.100",
+        "cost": "32.98",
+        "recipe_use": "0.100",
+        "total_cost": "3.30"
+      },
+      {
+        "prod_code": "27888",
+        "description": "ONIONS010-HF",
+        "pack_size": "P/KG",
+        "weight": "0.100",
+        "cost": "8.20",
+        "recipe_use": "0.100",
+        "total_cost": "0.82"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "30818",
+    "description": "BEEF STEWS",
+    "cost_excl_per_each_kg": "42.08",
+    "ingredients": [
+      {
+        "prod_code": "27095",
+        "description": "SPAR BEEF STEW BONE IN",
+        "pack_size": "KG",
+        "weight": "4.000",
+        "cost": "61.59",
+        "recipe_use": "4.000",
+        "total_cost": "246.36"
+      },
+      {
+        "prod_code": "27888",
+        "description": "ONIONS010-HF",
+        "pack_size": "P/KG",
+        "weight": "0.100",
+        "cost": "8.20",
+        "recipe_use": "0.100",
+        "total_cost": "0.82"
+      },
+      {
+        "prod_code": "27887",
+        "description": "CARROTS",
+        "pack_size": "P/KG",
+        "weight": "1.000",
+        "cost": "7.50",
+        "recipe_use": "1.000",
+        "total_cost": "7.50"
+      },
+      {
+        "prod_code": "33807",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "4.000",
+        "cost": "3.20",
+        "recipe_use": "4.000",
+        "total_cost": "12.80"
+      },
+      {
+        "prod_code": "30094",
+        "description": "STEW BEEF SO GOOD",
+        "pack_size": "P/KG",
+        "weight": "0.150",
+        "cost": "134.34",
+        "recipe_use": "0.150",
+        "total_cost": "20.15"
+      },
+      {
+        "prod_code": "26518",
+        "description": "OIL PURE EXCELLA",
+        "pack_size": "20LT",
+        "weight": "0.100",
+        "cost": "32.98",
+        "recipe_use": "0.100",
+        "total_cost": "3.30"
+      },
+      {
+        "prod_code": "30249",
+        "description": "POTATOES  BAG",
+        "pack_size": "P/KG",
+        "weight": "1.500",
+        "cost": "16.43",
+        "recipe_use": "1.500",
+        "total_cost": "24.64"
+      }
+    ]
+  },
+  {
+    "department": "BUTCHERY",
+    "product_code": "28092",
+    "description": "BEEF STEAK BURGER",
+    "cost_excl_per_each_kg": "64.89",
+    "ingredients": [
+      {
+        "prod_code": "28863",
+        "description": "VAC CROPS 90/10",
+        "pack_size": "P/KG",
+        "weight": "7.500",
+        "cost": "69.99",
+        "recipe_use": "7.500",
+        "total_cost": "524.93"
+      },
+      {
+        "prod_code": "33696",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "1.500",
+        "cost": "3.30",
+        "recipe_use": "1.500",
+        "total_cost": "4.95"
+      },
+      {
+        "prod_code": "27234",
+        "description": "PRS STEAK BURGER",
+        "pack_size": "1KG",
+        "weight": "1.000",
+        "cost": "119.00",
+        "recipe_use": "1.000",
+        "total_cost": "119.00"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "26801",
+    "description": "RING DOUGHUT",
+    "cost_excl_per_each_kg": "1.91",
+    "ingredients": [
+      {
+        "prod_code": "15732",
+        "description": "WC MILLING CAKE FLOUR",
+        "pack_size": "12.5K",
+        "weight": "12.500",
+        "cost": "11.40",
+        "recipe_use": "12.500",
+        "total_cost": "142.46"
+      },
+      {
+        "prod_code": "28779",
+        "description": "YEAST WET",
+        "pack_size": "P/KG",
+        "weight": "0.800",
+        "cost": "34.25",
+        "recipe_use": "0.800",
+        "total_cost": "27.40"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "6.000",
+        "cost": "3.20",
+        "recipe_use": "6.000",
+        "total_cost": "19.20"
+      },
+      {
+        "prod_code": "26370",
+        "description": "GOLDEN YOLK LOOSE BAKERY EGGS",
+        "pack_size": "30'S",
+        "weight": "1.500",
+        "cost": "59.00",
+        "recipe_use": "1.000",
+        "total_cost": "59.00"
+      },
+      {
+        "prod_code": "30200",
+        "description": "SOFTROLL MIX 20%",
+        "pack_size": "P-KG",
+        "weight": "2.500",
+        "cost": "39.76",
+        "recipe_use": "2.500",
+        "total_cost": "99.40"
+      },
+      {
+        "prod_code": "28296",
+        "description": "CHOC DIPPING ICING",
+        "pack_size": "P/KG",
+        "weight": "3.080",
+        "cost": "78.91",
+        "recipe_use": "3.080",
+        "total_cost": "243.04"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "28093",
+    "description": "ICED CARROT LOAF",
+    "cost_excl_per_each_kg": "17.31",
+    "ingredients": [
+      {
+        "prod_code": "28326",
+        "description": "CARROT CAKE MIX",
+        "pack_size": "P/KG",
+        "weight": "9.000",
+        "cost": "34.02",
+        "recipe_use": "9.000",
+        "total_cost": "306.18"
+      },
+      {
+        "prod_code": "15732",
+        "description": "WC MILLING CAKE FLOUR",
+        "pack_size": "12.5K",
+        "weight": "9.000",
+        "cost": "11.40",
+        "recipe_use": "9.000",
+        "total_cost": "102.57"
+      },
+      {
+        "prod_code": "28222",
+        "description": "MILK FULL CREAM",
+        "pack_size": "20L",
+        "weight": "1.400",
+        "cost": "13.80",
+        "recipe_use": "1.400",
+        "total_cost": "19.32"
+      },
+      {
+        "prod_code": "29322",
+        "description": "OIL VEGETABLE CHIPKINS",
+        "pack_size": "20LT",
+        "weight": "6.400",
+        "cost": "43.50",
+        "recipe_use": "6.400",
+        "total_cost": "278.40"
+      },
+      {
+        "prod_code": "27492",
+        "description": "SUGAR WHITE HULETS",
+        "pack_size": "P/KG",
+        "weight": "6.000",
+        "cost": "23.44",
+        "recipe_use": "6.000",
+        "total_cost": "140.64"
+      },
+      {
+        "prod_code": "26370",
+        "description": "GOLDEN YOLK LOOSE BAKERY EGGS",
+        "pack_size": "30'S",
+        "weight": "7.200",
+        "cost": "59.00",
+        "recipe_use": "5.000",
+        "total_cost": "295.00"
+      },
+      {
+        "prod_code": "28313",
+        "description": "HERCULES BAKING POWDER",
+        "pack_size": "P/KG",
+        "weight": "0.540",
+        "cost": "53.05",
+        "recipe_use": "0.540",
+        "total_cost": "28.65"
+      },
+      {
+        "prod_code": "28320",
+        "description": "SOD BICARBONATE",
+        "pack_size": "P/KG",
+        "weight": "0.080",
+        "cost": "26.47",
+        "recipe_use": "0.080",
+        "total_cost": "2.12"
+      },
+      {
+        "prod_code": "28888",
+        "description": "CINNAMON GROUND",
+        "pack_size": "P/KG",
+        "weight": "0.140",
+        "cost": "96.60",
+        "recipe_use": "0.140",
+        "total_cost": "13.52"
+      },
+      {
+        "prod_code": "28227",
+        "description": "CARROTS",
+        "pack_size": "P/KG",
+        "weight": "10.500",
+        "cost": "20.00",
+        "recipe_use": "10.500",
+        "total_cost": "210.00"
+      },
+      {
+        "prod_code": "27756",
+        "description": "MADEIRA LINERS WHITE/BLCK",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "0.34",
+        "recipe_use": "100.000",
+        "total_cost": "33.84"
+      },
+      {
+        "prod_code": "27734",
+        "description": "4191P SMALL MADEIRA",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "1.31",
+        "recipe_use": "-",
+        "total_cost": "-"
+      },
+      {
+        "prod_code": "27687",
+        "description": "L336 LOG DOME",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "2.37",
+        "recipe_use": "100.000",
+        "total_cost": "237.20"
+      },
+      {
+        "prod_code": "29073",
+        "description": "MAIN 75 BLACK",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "0.63",
+        "recipe_use": "100.000",
+        "total_cost": "63.43"
+      }
+    ]
+  },
+  {
+    "department": "BAKERY",
+    "product_code": "27871",
+    "description": "JAM SWISSROLLS",
+    "cost_excl_per_each_kg": "13.55",
+    "ingredients": [
+      {
+        "prod_code": "15732",
+        "description": "WC MILLING CAKE FLOUR",
+        "pack_size": "12.5K",
+        "weight": "3.000",
+        "cost": "11.40",
+        "recipe_use": "3.000",
+        "total_cost": "34.19"
+      },
+      {
+        "prod_code": "27492",
+        "description": "SUGAR WHITE HULETS",
+        "pack_size": "P/KG",
+        "weight": "3.000",
+        "cost": "23.44",
+        "recipe_use": "3.000",
+        "total_cost": "70.32"
+      },
+      {
+        "prod_code": "26370",
+        "description": "GOLDEN YOLK LOOSE BAKERY EGGS",
+        "pack_size": "30'S",
+        "weight": "3.000",
+        "cost": "59.00",
+        "recipe_use": "2.000",
+        "total_cost": "118.00"
+      },
+      {
+        "prod_code": "28313",
+        "description": "HERCULES BAKING POWDER",
+        "pack_size": "P/KG",
+        "weight": "0.150",
+        "cost": "53.05",
+        "recipe_use": "0.150",
+        "total_cost": "7.96"
+      },
+      {
+        "prod_code": "29030",
+        "description": "SPAR WATER",
+        "pack_size": "P/KG",
+        "weight": "0.500",
+        "cost": "3.20",
+        "recipe_use": "0.500",
+        "total_cost": "1.60"
+      },
+      {
+        "prod_code": "30245",
+        "description": "B196T SWISS ROLL T279",
+        "pack_size": "EA",
+        "weight": "",
+        "cost": "1.95",
+        "recipe_use": "20.000",
+        "total_cost": "38.99"
+      }
+    ]
+  },
+  {
+    "department": "HMR",
+    "product_code": "28609",
+    "description": "TUNA MAYO SAMI.",
+    "cost_excl_per_each_kg": "11.41",
+    "ingredients": [
+      {
+        "prod_code": "27889",
+        "description": "TOMATOES LOOSE",
+        "pack_size": "P/KG",
+        "weight": "0.160",
+        "cost": "16.51",
+        "recipe_use": "0.160",
+        "total_cost": "2.64"
+      },
+      {
+        "prod_code": "28072",
+        "description": "LETTUCE ICEBURG PUNNET",
+        "pack_size": "EA",
+        "weight": "1.000",
+        "cost": "20.00",
+        "recipe_use": "1.000",
+        "total_cost": "20.00"
+      },
+      {
+        "prod_code": "27886",
+        "description": "CUCUMBER LOOSE",
+        "pack_size": "EA",
+        "weight": "1.000",
+        "cost": "15.20",
+        "recipe_use": "1.000",
+        "total_cost": "15.20"
+      },
+      {
+        "prod_code": "15868",
+        "description": "B/RIBBON BREAD BROWN W/W",
+        "pack_size": "800GR",
+        "weight": "2.000",
+        "cost": "16.69",
+        "recipe_use": "2.000",
+        "total_cost": "33.38"
+      },
+      {
+        "prod_code": "28429",
+        "description": "TUNA SHREDDED",
+        "pack_size": "1.7KG",
+        "weight": "0.600",
+        "cost": "122.03",
+        "recipe_use": "0.600",
+        "total_cost": "73.22"
+      },
+      {
+        "prod_code": "26529",
+        "description": "MAYONAISE TANGY",
+        "pack_size": "P/KG",
+        "weight": "0.300",
+        "cost": "49.60",
+        "recipe_use": "0.300",
+        "total_cost": "14.88"
+      },
+      {
+        "prod_code": "27799",
+        "description": "T280 MEDIUM SANDWICH",
+        "pack_size": "EA",
+        "weight": "16.000",
+        "cost": "1.46",
+        "recipe_use": "16.000",
+        "total_cost": "23.32"
+      }
+    ]
+  }
+]

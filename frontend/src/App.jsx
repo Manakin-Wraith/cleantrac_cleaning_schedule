@@ -17,6 +17,7 @@ import ThermometerVerificationPage from './pages/ThermometerVerificationPage';
 import TemperatureChecksPage from './pages/TemperatureChecksPage';
 import DocumentTemplateManagementPage from './pages/DocumentTemplateManagementPage';
 import SupplierManagementPage from './pages/SupplierManagementPage';
+import RecipeManagementPage from './pages/RecipeManagementPage';
 
 // Helper component to apply theme based on auth context
 const ThemedApp = () => {
@@ -55,6 +56,7 @@ const ThemedApp = () => {
         <Route element={<PrivateRoute allowedRoles={['manager', 'staff']} />}>
           <Route path="/manager-dashboard" element={<PageLayout><ManagerDashboardPage /></PageLayout>} />
           <Route path="/staff-tasks" element={<PageLayout><StaffTasksPage /></PageLayout>} />
+          <Route path="/recipe-management" element={<PageLayout><RecipeManagementPage /></PageLayout>} />
         </Route>
 
         <Route element={<PrivateRoute allowedRoles={['manager']} />}>

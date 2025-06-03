@@ -19,6 +19,7 @@ import TuneIcon from '@mui/icons-material/Tune'; // For Management group
 import DescriptionIcon from '@mui/icons-material/Description'; // For Document Templates
 import AccessTimeIcon from '@mui/icons-material/AccessTime'; // Added missing import
 import LocalShippingIcon from '@mui/icons-material/LocalShipping'; // For Suppliers
+import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu'; // For Recipe Management
 
 export const drawerWidth = 240;
 const collapsedDrawerWidth = (theme) => theme.spacing(7); 
@@ -108,11 +109,13 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
     { text: 'Thermometers', icon: <DeviceThermostatIcon />, path: '/manager-thermometers' },
     { text: 'Temperature Checks', icon: <AccessTimeIcon />, path: '/manager-temperature-checks' },
     { text: 'Document Templates', icon: <DescriptionIcon />, path: '/manager-documents' },
+    { text: 'Recipe Management', icon: <RestaurantMenuIcon />, path: '/recipe-management' },
     { text: 'Coming SOON!', icon: <CalendarMonthIcon />, path: '/manager-schedule' }, // Example: can be top-level or nested
   ];
 
   const staffLinks = [
     { text: 'My Tasks', icon: <AssignmentIcon />, path: '/staff-tasks' },
+    { text: 'Recipe Management', icon: <RestaurantMenuIcon />, path: '/recipe-management' },
   ];
 
   let determinedLinks = [];
