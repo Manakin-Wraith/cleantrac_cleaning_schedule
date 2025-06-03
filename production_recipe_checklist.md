@@ -111,8 +111,12 @@
   - [x] ProductionSchedule, ProductionRecord models
   - [x] InventoryItem, InventoryTransaction models
   - [x] WasteRecord model
-- [ ] Improve recipe ingredient management:
-  - [ ] Add validation for ingredient quantities
+- [x] Improve recipe ingredient management:
+  - [x] Add validation for ingredient quantities:
+    - [x] Ensure quantities are positive numbers
+    - [x] Validate ingredients exist in inventory system
+    - [x] Implement unit conversion support for different measurement units
+    - [x] Add warning when required quantity exceeds available stock
   - [ ] Implement inventory deduction on production
   - [ ] Add batch tracking for ingredients
 

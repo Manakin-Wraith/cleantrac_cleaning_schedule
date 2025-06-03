@@ -23,6 +23,7 @@
     "@mui/x-date-pickers": "^8.3.1",
     "@reduxjs/toolkit": "^2.8.2",
     "axios": "^1.9.0",
+    "convert-units": "^2.3.4",
     "date-fns": "^4.1.0",
     "exceljs": "^4.4.0",
     "notistack": "^3.0.2",
