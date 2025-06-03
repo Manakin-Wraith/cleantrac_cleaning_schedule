@@ -116,8 +116,12 @@
     - [ ] Verify manager can mark 'pending_review' tasks as 'completed' and UI updates correctly.
     - [ ] Test overall manager task list interactions (view, edit, mark complete) with new 'pending_review' status.
 
-## III. Item Management (Manager View)
+## III. Item Management
 
+- **[x] Supplier Management Page**
+  - [x] Optimize layout to better handle sidebar open/collapse states
+  - [x] Ensure consistent spacing and margins with other pages
+  - [x] Verify supplier list remains responsive during sidebar state changes
 - **[ ] Implement Item Management Page UI**
   - [ ] Page Heading: "[Department Name] Item Management".
   - [ ] Button: "+ Add New Master Item".
