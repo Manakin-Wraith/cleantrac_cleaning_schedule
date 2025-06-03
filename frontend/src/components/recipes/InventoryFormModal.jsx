@@ -83,7 +83,7 @@ const InventoryFormModal = ({
 
   const fetchSuppliers = async () => {
     try {
-      const response = await api.get('/api/suppliers/', {
+      const response = await api.get('/suppliers/', {
         params: { department_id: currentUser?.profile?.department?.id }
       });
       setSuppliers(response.data);
@@ -96,7 +96,7 @@ const InventoryFormModal = ({
   const fetchCategories = async () => {
     try {
       // This could be a dedicated endpoint or we can extract from existing inventory items
-      const response = await api.get('/api/inventory-categories/');
+      const response = await api.get('/inventory-categories/');
       setCategories(response.data || []);
     } catch (err) {
       console.error('Error fetching categories:', err);

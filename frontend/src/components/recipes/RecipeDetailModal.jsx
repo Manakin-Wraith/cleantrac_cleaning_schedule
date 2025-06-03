@@ -50,7 +50,7 @@ const RecipeDetailModal = ({ open, onClose, recipe, departmentColor }) => {
       const recipeData = response.data;
       
       // Get ingredients for this recipe
-      const ingredientsResponse = await api.get('/api/recipe-ingredients/', {
+      const ingredientsResponse = await api.get('/recipe-ingredients/', {
         params: { recipe: recipe.id }
       });
       
@@ -144,7 +144,7 @@ const RecipeDetailModal = ({ open, onClose, recipe, departmentColor }) => {
                       Unit Cost
                     </Typography>
                     <Typography variant="body1" gutterBottom>
-                      R {recipeDetails.unit_cost.toFixed(2)}
+                      R {typeof recipeDetails.unit_cost === 'number' ? recipeDetails.unit_cost.toFixed(2) : '0.00'}
                     </Typography>
                     
                     <Typography variant="subtitle2" gutterBottom sx={{ mt: 1 }}>

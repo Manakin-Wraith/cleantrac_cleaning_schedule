@@ -74,7 +74,7 @@ const WasteRecordList = ({ departmentColor }) => {
         params.date = dateFilter.toISOString().split('T')[0];
       }
       
-      const response = await api.get('/api/waste-records/', { params });
+      const response = await api.get('/waste-records/', { params });
       setWasteRecords(response.data);
       
       // Extract unique reasons for filter
@@ -149,9 +149,9 @@ const WasteRecordList = ({ departmentColor }) => {
   const handleFormSubmit = async (recordData) => {
     try {
       if (isEditing) {
-        await api.put(`/api/waste-records/${selectedRecord.id}/`, recordData);
+        await api.put(`/waste-records/${selectedRecord.id}/`, recordData);
       } else {
-        await api.post('/api/waste-records/', {
+        await api.post('/waste-records/', {
           ...recordData,
           department: currentUser?.profile?.department?.id,
           recorded_by: currentUser.id

@@ -86,7 +86,7 @@ const InventoryHistoryModal = ({ open, onClose, item, departmentColor }) => {
         params.search = filters.search;
       }
       
-      const response = await api.get('/api/inventory-transactions/', { params });
+      const response = await api.get('/inventory-transactions/', { params });
       setTransactions(response.data);
       setError(null);
     } catch (err) {
