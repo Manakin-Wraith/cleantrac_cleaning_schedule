@@ -37,7 +37,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import convert from 'convert-units';
+import * as math from 'mathjs';
 
 const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmentColor }) => {
   const initialRecipeState = {
@@ -210,7 +210,7 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
     }
   };
   
-  // Convert units for ingredient quantity
+  // Convert units for ingredient quantity using Math.js
   const convertUnits = (value, fromUnit, toUnit) => {
     if (!value || isNaN(value) || !fromUnit || !toUnit) {
       return value;
@@ -222,13 +222,32 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
     }
     
     try {
-      // Handle 'each' or 'pieces' units which aren't in convert-units
+      // Handle 'each' or 'pieces' units which aren't standard measurement units
       if (fromUnit === 'ea' || fromUnit === 'pcs' || toUnit === 'ea' || toUnit === 'pcs') {
         return value; // Can't convert to/from count units
       }
       
-      // Try to convert using convert-units
-      return convert(parseFloat(value)).from(fromUnit).to(toUnit);
+      // Map common abbreviations to full unit names that Math.js understands
+      const unitMap = {
+        'g': 'g',
+        'kg': 'kg',
+        'mg': 'mg',
+        'ml': 'ml',
+        'l': 'l',
+        'tsp': 'teaspoon',
+        'tbsp': 'tablespoon',
+        'oz': 'oz',
+        'lb': 'lb'
+      };
+      
+      // Get the full unit names if available
+      const fromUnitFull = unitMap[fromUnit] || fromUnit;
+      const toUnitFull = unitMap[toUnit] || toUnit;
+      
+      // Create math.js unit objects and convert
+      const sourceValue = math.unit(parseFloat(value), fromUnitFull);
+      const result = math.number(sourceValue, toUnitFull);
+      return result;
     } catch (error) {
       console.error('Unit conversion error:', error);
       return value; // Return original value if conversion fails
