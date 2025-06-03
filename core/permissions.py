@@ -63,9 +63,20 @@ class IsManagerForWriteOrAuthenticatedReadOnly(BasePermission):
 
             # Check if the manager's department matches the object's department
             # This needs to be flexible based on how 'obj' relates to a department.
+            # For models with a single department (ForeignKey):
             # For CleaningItem, obj.department should work.
             # For TaskInstance, obj.cleaning_item.department.
             # For CompletionLog, obj.task_instance.cleaning_item.department.
+            
+            # For models with multiple departments (ManyToManyField):
+            # For Supplier, check if user's department is in obj.departments.all()
+            
+            # Handle Supplier model with ManyToManyField for departments
+            if hasattr(obj, 'departments') and hasattr(obj.departments, 'all'):
+                # For Supplier model with ManyToManyField
+                return user_department in obj.departments.all() or request.user.is_superuser
+                
+            # Handle models with direct department ForeignKey
             obj_department = None
             if hasattr(obj, 'department'):
                 obj_department = obj.department
@@ -74,7 +85,7 @@ class IsManagerForWriteOrAuthenticatedReadOnly(BasePermission):
             elif hasattr(obj, 'task_instance') and hasattr(obj.task_instance, 'cleaning_item') and hasattr(obj.task_instance.cleaning_item, 'department'):
                 obj_department = obj.task_instance.cleaning_item.department
             
-            return obj_department == user_department
+            return obj_department == user_department or request.user.is_superuser
 
         except AttributeError:
             return False # User has no profile, or object structure is unexpected

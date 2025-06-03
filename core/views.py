@@ -1064,24 +1064,27 @@ class SupplierViewSet(viewsets.ModelViewSet):
         if user.is_superuser:
             return Supplier.objects.all()
         elif hasattr(user, 'profile') and user.profile.department:
-            return Supplier.objects.filter(department=user.profile.department)
+            # Filter suppliers that have the user's department
+            return Supplier.objects.filter(departments=user.profile.department)
         return Supplier.objects.none()
     
     def perform_create(self, serializer):
-        # Debug logging
-        print("Request data:", self.request.data)
-        print("Validated data:", serializer.validated_data)
-        print("Department in validated data:", 'department' in serializer.validated_data)
-        print("Department value:", serializer.validated_data.get('department', 'Not provided'))
+        # Save the supplier first
+        supplier = serializer.save()
         
-        # If department_id is not provided, use the user's department
-        if 'department' not in serializer.validated_data and hasattr(self.request.user, 'profile'):
-            print("Using user's department:", self.request.user.profile.department)
-            serializer.save(department=self.request.user.profile.department)
-        else:
-            print("Using provided department")
-            serializer.save()
-            
+        # If no departments were specified, add the user's department
+        if not supplier.departments.exists() and hasattr(self.request.user, 'profile'):
+            if self.request.user.profile.department:
+                supplier.departments.add(self.request.user.profile.department)
+                
+    def perform_update(self, serializer):
+        # Save the supplier
+        supplier = serializer.save()
+        
+        # If no departments were specified, ensure the user's department is included
+        if not supplier.departments.exists() and hasattr(self.request.user, 'profile'):
+            if self.request.user.profile.department:
+                supplier.departments.add(self.request.user.profile.department)
     def create(self, request, *args, **kwargs):
         print("\n==== SUPPLIER CREATE REQUEST =====")
         print("Raw request data:", request.data)

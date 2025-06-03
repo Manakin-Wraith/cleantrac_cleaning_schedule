@@ -14,7 +14,9 @@ import {
   CircularProgress,
   Box,
   Typography,
-  Autocomplete
+  Autocomplete,
+  Checkbox,
+  Chip
 } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -26,7 +28,7 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
     contact_info: '',
     address: '',
     country_of_origin: 'South Africa',
-    department_id: ''
+    department_ids: []
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -38,9 +40,9 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
   
   const { currentUser } = useAuth();
   
-  // Fetch departments for superusers who can assign to any department
+  // Fetch all departments when the modal opens
   useEffect(() => {
-    if (open && currentUser?.is_superuser) {
+    if (open) {
       const fetchDepartments = async () => {
         try {
           const response = await api.get('/departments/');
@@ -51,21 +53,17 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
       };
       fetchDepartments();
     }
-  }, [open, currentUser]);
+  }, [open]);
   
   // Set form data when editing an existing supplier
   useEffect(() => {
     // Get the department ID from the user's profile
-    // The department information is directly in the profile object, not nested under department
     const userDepartmentId = currentUser?.profile?.department_id;
-    console.log('User department ID (from profile.department_id):', userDepartmentId);
-    console.log('User department name (from profile.department_name):', currentUser?.profile?.department_name);
-    console.log('Full user profile:', currentUser?.profile);
     
     if (supplier) {
       // Editing an existing supplier
-      const departmentId = supplier.department_id || userDepartmentId || '';
-      console.log('Setting department_id for existing supplier:', departmentId);
+      const departmentIds = supplier.department_ids || [];
+      console.log('Setting department_ids for existing supplier:', departmentIds);
       
       setFormData({
         supplier_code: supplier.supplier_code || '',
@@ -73,11 +71,13 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
         contact_info: supplier.contact_info || '',
         address: supplier.address || '',
         country_of_origin: supplier.country_of_origin || 'South Africa',
-        department_id: departmentId
+        department_ids: departmentIds
       });
     } else {
       // Creating a new supplier
-      console.log('Setting department_id for new supplier:', userDepartmentId);
+      // For new suppliers, pre-select the user's department if they're not a superuser
+      const initialDepartmentIds = userDepartmentId && !currentUser?.is_superuser ? [userDepartmentId] : [];
+      console.log('Setting department_ids for new supplier:', initialDepartmentIds);
       
       setFormData({
         supplier_code: '',
@@ -85,7 +85,7 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
         contact_info: '',
         address: '',
         country_of_origin: 'South Africa',
-        department_id: userDepartmentId || ''
+        department_ids: initialDepartmentIds
       });
     }
     setErrors({});
@@ -125,10 +125,9 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
       newErrors.supplier_name = 'Supplier name is required';
     }
     
-    // Department is required for all users
-    // Check if department_id is available either in form data or from user profile
-    if (!formData.department_id && !currentUser?.profile?.department_id) {
-      newErrors.department_id = 'Department is required';
+    // At least one department is required
+    if (!formData.department_ids || formData.department_ids.length === 0) {
+      newErrors.department_ids = 'At least one department must be selected';
     }
     
     setErrors(newErrors);
@@ -141,32 +140,30 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
     setLoading(true);
     try {
       // Prepare data for API
-      // Get department_id from form or from user profile
-      const departmentId = formData.department_id || currentUser?.profile?.department_id;
+      // If user is not a superuser and no departments are selected, add their department
+      let departmentIds = [...formData.department_ids];
+      if (departmentIds.length === 0 && !currentUser?.is_superuser && currentUser?.profile?.department_id) {
+        departmentIds = [currentUser.profile.department_id];
+      }
       
-      // Log detailed information about department ID
-      console.log('Department ID from form:', formData.department_id);
-      console.log('Department ID from user profile:', currentUser?.profile?.department_id);
-      console.log('Department name from user profile:', currentUser?.profile?.department_name);
-      console.log('Selected department ID:', departmentId);
+      console.log('Selected department IDs:', departmentIds);
       
       const supplierData = {
         ...formData,
-        department_id: departmentId
+        department_ids: departmentIds
       };
       
-      // Convert department_id to number if it's a string
-      if (supplierData.department_id && typeof supplierData.department_id === 'string') {
-        supplierData.department_id = parseInt(supplierData.department_id, 10);
-      }
+      // Convert any string department IDs to numbers
+      supplierData.department_ids = supplierData.department_ids.map(id => 
+        typeof id === 'string' ? parseInt(id, 10) : id
+      );
       
-      // Ensure department_id is included and is a number
-      if (!supplierData.department_id) {
-        throw new Error('Department ID is required but not available');
+      // Ensure at least one department is selected
+      if (supplierData.department_ids.length === 0) {
+        throw new Error('At least one department must be selected');
       }
       
       console.log('Final supplier data being sent to API:', supplierData);
-      console.log('department_id type:', typeof supplierData.department_id);
       
       await onSave(supplierData);
       onClose();
@@ -276,33 +273,44 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
             </Grid>
             
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth error={!!errors.department_id}>
-                <InputLabel id="department-label">Department</InputLabel>
+              <FormControl fullWidth error={!!errors.department_ids}>
+                <InputLabel id="departments-label">Departments</InputLabel>
                 <Select
-                  labelId="department-label"
-                  name="department_id"
-                  value={formData.department_id || ''}
+                  labelId="departments-label"
+                  name="department_ids"
+                  multiple
+                  value={formData.department_ids || []}
                   onChange={handleChange}
-                  label="Department"
-                  disabled={!currentUser?.is_superuser} // Only superusers can change department
+                  label="Departments"
+                  disabled={!currentUser?.is_superuser && !currentUser?.profile?.is_manager}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((value) => {
+                        const dept = departments.find(d => d.id === value);
+                        return <Chip key={value} label={dept ? dept.name : value} />
+                      })}
+                    </Box>
+                  )}
                 >
-                  {/* For regular managers, show only their department */}
-                  {!currentUser?.is_superuser && currentUser?.profile?.department_id && (
+                  {/* For regular managers, show only their department if no departments are loaded */}
+                  {departments.length === 0 && !currentUser?.is_superuser && currentUser?.profile?.department_id && (
                     <MenuItem value={currentUser.profile.department_id}>
+                      <Checkbox checked={formData.department_ids.indexOf(currentUser.profile.department_id) > -1} />
                       {currentUser.profile.department_name || `Department ${currentUser.profile.department_id}`}
                     </MenuItem>
                   )}
                   
-                  {/* For superusers, show all departments */}
-                  {currentUser?.is_superuser && departments.map(dept => (
+                  {/* Show all available departments */}
+                  {departments.map(dept => (
                     <MenuItem key={dept.id} value={dept.id}>
+                      <Checkbox checked={formData.department_ids.indexOf(dept.id) > -1} />
                       {dept.name}
                     </MenuItem>
                   ))}
                 </Select>
-                {errors.department_id && (
+                {errors.department_ids && (
                   <Typography variant="caption" color="error">
-                    {errors.department_id}
+                    {errors.department_ids}
                   </Typography>
                 )}
               </FormControl>

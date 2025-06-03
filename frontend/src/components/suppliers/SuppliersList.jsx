@@ -14,7 +14,8 @@ import {
   CircularProgress,
   Typography,
   TextField,
-  InputAdornment
+  InputAdornment,
+  Chip
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -93,7 +94,7 @@ const SuppliersList = ({ suppliers, loading, onEdit, onDelete }) => {
               <TableCell>Contact Info</TableCell>
               <TableCell>Address</TableCell>
               <TableCell>Country of Origin</TableCell>
-              <TableCell>Department</TableCell>
+              <TableCell>Departments</TableCell>
               {isManagerOrSuperuser && <TableCell align="right">Actions</TableCell>}
             </TableRow>
           </TableHead>
@@ -107,7 +108,17 @@ const SuppliersList = ({ suppliers, loading, onEdit, onDelete }) => {
                   <TableCell>{supplier.contact_info || '-'}</TableCell>
                   <TableCell>{supplier.address || '-'}</TableCell>
                   <TableCell>{supplier.country_of_origin || 'South Africa'}</TableCell>
-                  <TableCell>{supplier.department_name}</TableCell>
+                  <TableCell>
+                    {supplier.department_names && supplier.department_names.length > 0 ? (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {supplier.department_names.map((dept, index) => (
+                          <Chip key={index} label={dept} size="small" />
+                        ))}
+                      </Box>
+                    ) : (
+                      'No departments'
+                    )}
+                  </TableCell>
                   {isManagerOrSuperuser && (
                     <TableCell align="right">
                       <Tooltip title="Edit">
