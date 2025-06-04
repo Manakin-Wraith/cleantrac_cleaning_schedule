@@ -221,11 +221,18 @@ const TemperatureLoggingSection = ({
       const now = new Date();
       const formattedDateTime = now.toISOString();
       
+      // Ensure we have the auth token from localStorage
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) {
+        setError('Authentication token not found. Please log in again.');
+        setSubmitLoading(false);
+        return;
+      }
+      
       const response = await createTemperatureLog({
         thermometer_used_id: selectedThermometer.id,
         area_unit_id: selectedAreaUnit.id,
         log_datetime: formattedDateTime,
-        // staff_id: staffId, // Backend uses request.user for logged_by_id
         department_id: departmentId, // Include departmentId if your backend expects it
         ...formData
       });
@@ -308,7 +315,30 @@ const TemperatureLoggingSection = ({
       handleNext();
     } catch (err) {
       console.error("Failed to submit temperature log:", err);
-      setError(err.response?.data?.detail || err.message || 'Failed to submit temperature log. Please try again.');
+      
+      // Handle specific error cases
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        if (err.response.status === 401) {
+          setError('Your session has expired. Please log in again.');
+          // Could redirect to login page here
+        } else if (err.response.status === 400) {
+          // Extract detailed error message if available
+          const errorDetail = err.response.data?.detail || 
+                            (typeof err.response.data === 'string' ? err.response.data : 
+                            Object.values(err.response.data || {}).flat().join(', '));
+          setError(`Invalid data: ${errorDetail || 'Please check your input and try again.'}`);
+        } else {
+          setError(`Server error (${err.response.status}): ${err.response.data?.detail || 'Please try again later.'}`);
+        }
+      } else if (err.request) {
+        // The request was made but no response was received
+        setError('No response from server. Please check your connection and try again.');
+      } else {
+        // Something happened in setting up the request
+        setError(err.message || 'Failed to submit temperature log. Please try again.');
+      }
     } finally {
       setSubmitLoading(false);
     }

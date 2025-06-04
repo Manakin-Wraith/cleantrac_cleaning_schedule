@@ -110,12 +110,14 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
     { text: 'Temperature Checks', icon: <AccessTimeIcon />, path: '/manager-temperature-checks' },
     { text: 'Document Templates', icon: <DescriptionIcon />, path: '/manager-documents' },
     { text: 'Recipe Management', icon: <RestaurantMenuIcon />, path: '/recipe-management' },
+    { text: 'Production Dashboard', icon: <CalendarMonthIcon />, path: '/manager/production-dashboard' }, // Manager version
     { text: 'Coming SOON!', icon: <CalendarMonthIcon />, path: '/manager-schedule' }, // Example: can be top-level or nested
   ];
 
   const staffLinks = [
     { text: 'My Tasks', icon: <AssignmentIcon />, path: '/staff-tasks' },
     { text: 'Recipe Management', icon: <RestaurantMenuIcon />, path: '/recipe-management' },
+    { text: 'Production Dashboard', icon: <CalendarMonthIcon />, path: '/staff/production-dashboard' }, // Staff version
   ];
 
   let determinedLinks = [];

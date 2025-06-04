@@ -9,7 +9,8 @@ from .models import (
 )
 from .recipe_models import (
     Recipe, RecipeIngredient, RecipeVersion, ProductionSchedule,
-    ProductionRecord, InventoryItem, InventoryTransaction, WasteRecord
+    ProductionRecord, InventoryItem, InventoryTransaction, WasteRecord,
+    RecipeProductionTask, ProductionIngredientUsage, ProductionOutput
 )
 
 # Basic registration
@@ -227,6 +228,64 @@ class WasteRecordAdmin(admin.ModelAdmin):
     date_hierarchy = 'recorded_at'
 
 admin.site.register(WasteRecord, WasteRecordAdmin)
+
+# Recipe Production Task Admin Registration
+class RecipeProductionTaskAdmin(admin.ModelAdmin):
+    list_display = ('recipe', 'recipe_version', 'scheduled_start_time', 'scheduled_end_time', 
+                   'scheduled_quantity', 'status', 'department', 'is_recurring', 'created_by')
+    list_filter = ('status', 'department', 'is_recurring', 'scheduled_start_time')
+    search_fields = ('recipe__name', 'notes', 'created_by__username')
+    date_hierarchy = 'scheduled_start_time'
+    readonly_fields = ('created_at', 'updated_at')
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        # Add select_related to optimize queries
+        return qs.select_related('recipe', 'recipe_version', 'department', 'created_by')
+
+admin.site.register(RecipeProductionTask, RecipeProductionTaskAdmin)
+
+class ProductionIngredientUsageAdmin(admin.ModelAdmin):
+    list_display = ('production_task', 'get_ingredient_code', 'get_ingredient_name', 
+                   'quantity_used', 'get_unit', 'recorded_by', 'recorded_at')
+    list_filter = ('recorded_at', 'production_task__department')
+    search_fields = ('production_task__recipe__name', 'ingredient__ingredient_code', 'ingredient__ingredient_name')
+    date_hierarchy = 'recorded_at'
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('production_task', 'ingredient', 'recorded_by')
+        
+    def get_ingredient_code(self, obj):
+        return obj.ingredient.ingredient_code
+    get_ingredient_code.short_description = 'Ingredient Code'
+    
+    def get_ingredient_name(self, obj):
+        return obj.ingredient.ingredient_name
+    get_ingredient_name.short_description = 'Ingredient Name'
+    
+    def get_unit(self, obj):
+        return obj.ingredient.unit
+    get_unit.short_description = 'Unit'
+
+admin.site.register(ProductionIngredientUsage, ProductionIngredientUsageAdmin)
+
+class ProductionOutputAdmin(admin.ModelAdmin):
+    list_display = ('production_task', 'actual_quantity', 'get_output_unit', 
+                   'quality_rating', 'recorded_by', 'recorded_at')
+    list_filter = ('quality_rating', 'recorded_at', 'production_task__department')
+    search_fields = ('production_task__recipe__name', 'notes')
+    date_hierarchy = 'recorded_at'
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('production_task', 'recorded_by')
+        
+    def get_output_unit(self, obj):
+        return obj.production_task.recipe.yield_unit
+    get_output_unit.short_description = 'Unit'
+
+admin.site.register(ProductionOutput, ProductionOutputAdmin)
 
 # You can create more customized ModelAdmin classes for other models as needed
 # For example, for TaskInstance:

@@ -18,6 +18,9 @@ import TemperatureChecksPage from './pages/TemperatureChecksPage';
 import DocumentTemplateManagementPage from './pages/DocumentTemplateManagementPage';
 import SupplierManagementPage from './pages/SupplierManagementPage';
 import RecipeManagementPage from './pages/RecipeManagementPage';
+// import ProductionDashboardPage from './pages/ProductionDashboardPage'; // Original generic dashboard - REMOVED
+import ManagerProductionDashboardPage from './pages/ManagerProductionDashboardPage'; // Manager-specific
+import StaffProductionDashboardPage from './pages/StaffProductionDashboardPage'; // Staff-specific
 
 // Helper component to apply theme based on auth context
 const ThemedApp = () => {
@@ -53,10 +56,24 @@ const ThemedApp = () => {
         <Route path="/login" element={<PageLayout showSidebar={false}><LoginPage /></PageLayout>} />
         
         {/* Protected Routes */}
+        {/* Routes accessible by 'manager' or 'staff' */}
         <Route element={<PrivateRoute allowedRoles={['manager', 'staff']} />}>
           <Route path="/manager-dashboard" element={<PageLayout><ManagerDashboardPage /></PageLayout>} />
           <Route path="/staff-tasks" element={<PageLayout><StaffTasksPage /></PageLayout>} />
-          <Route path="/recipe-management" element={<PageLayout><RecipeManagementPage /></PageLayout>} />
+          <Route path="/recipe-management" element={<PageLayout><RecipeManagementPage /></PageLayout>} /> {/* Added back Recipe Management */}
+          {/* Original /production-dashboard route removed, replaced by role-specific ones below */}
+        </Route>
+
+        {/* Routes accessible by 'staff' */}
+        <Route element={<PrivateRoute allowedRoles={['staff']} />}>
+          <Route path="/staff/production-dashboard" element={<PageLayout><StaffProductionDashboardPage /></PageLayout>} /> {/* Staff Production Dashboard */}
+        </Route>
+
+        {/* Routes accessible by 'manager' or 'superuser' */}
+        <Route element={<PrivateRoute allowedRoles={['manager', 'superuser']} />}>
+          <Route path="/manager-dashboard" element={<PageLayout><ManagerDashboardPage /></PageLayout>} /> {/* Moved from manager,staff to ensure distinct access if needed */}
+          <Route path="/manager/production-dashboard" element={<PageLayout><ManagerProductionDashboardPage /></PageLayout>} /> {/* Manager Production Dashboard */}
+          <Route path="/admin/user-management" element={<PageLayout><UserManagementPage /></PageLayout>} /> {/* Moved from manager,staff as it's admin/manager functionality */}
         </Route>
 
         <Route element={<PrivateRoute allowedRoles={['manager']} />}>

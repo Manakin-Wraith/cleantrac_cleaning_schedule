@@ -69,9 +69,35 @@ export const getTodayTemperatureLogs = async () => {
   return response.data;
 };
 
+/**
+ * Creates a new temperature log entry
+ * @param {Object} logData - The temperature log data to submit
+ * @returns {Promise<Object>} The created temperature log data
+ */
 export const createTemperatureLog = async (logData) => {
-  const response = await api.post('/temperature-logs/', logData);
-  return response.data;
+  try {
+    // Check if auth token exists before making the request
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication token not found. Please log in again.');
+    }
+    
+    const response = await api.post('/temperature-logs/', logData);
+    return response.data;
+  } catch (error) {
+    // Log the detailed error for debugging
+    if (error.response) {
+      console.error('Temperature log submission error:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    } else {
+      console.error('Temperature log submission error:', error.message);
+    }
+    throw error; // Re-throw to be handled by the component
+  }
 };
 
 export const updateTemperatureLog = async (id, logData) => {
@@ -221,12 +247,24 @@ export const getAllCurrentTemperatureCheckAssignments = async () => {
  */
 export const getMyTemperatureCheckAssignments = async () => {
   try {
+    // Check if auth token exists before making the request
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      console.warn('No auth token found when fetching temperature check assignments');
+      return { am_assignment: null, pm_assignment: null };
+    }
+    
+    // Use the correct endpoint - ensure it matches your backend API
     const response = await api.get('/temperature-check-assignments/my-assignments/');
     return response.data && typeof response.data === 'object' ? response.data : { am_assignment: null, pm_assignment: null };
   } catch (error) {
     // 404 means the user is not assigned to temperature checks
     if (error.response && error.response.status === 404) {
       console.info('User is not assigned to temperature checks');
+      return { am_assignment: null, pm_assignment: null };
+    } else if (error.response && error.response.status === 401) {
+      console.warn('Authentication failed when fetching temperature check assignments');
+      // Consider redirecting to login page or refreshing token here
       return { am_assignment: null, pm_assignment: null };
     }
     console.warn('Error fetching temperature check assignments:', error);

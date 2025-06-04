@@ -32,7 +32,10 @@ from .recipe_views import (
     ProductionRecordViewSet,
     InventoryItemViewSet,
     InventoryTransactionViewSet,
-    WasteRecordViewSet
+    WasteRecordViewSet,
+    RecipeProductionTaskViewSet,
+    ProductionIngredientUsageViewSet,
+    ProductionOutputViewSet
 )
 
 # Create a router and register our viewsets with it.
@@ -67,6 +70,9 @@ router.register(r'production-records', ProductionRecordViewSet, basename='produc
 router.register(r'inventory-items', InventoryItemViewSet, basename='inventoryitem')
 router.register(r'inventory-transactions', InventoryTransactionViewSet, basename='inventorytransaction')
 router.register(r'waste-records', WasteRecordViewSet, basename='wasterecord')
+router.register(r'production-tasks', RecipeProductionTaskViewSet, basename='productiontask')
+router.register(r'production-ingredients', ProductionIngredientUsageViewSet, basename='productioningredient')
+router.register(r'production-outputs', ProductionOutputViewSet, basename='productionoutput')
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [
