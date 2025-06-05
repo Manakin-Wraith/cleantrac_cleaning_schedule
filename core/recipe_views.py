@@ -9,20 +9,17 @@ from django.contrib.auth.models import User
 from .models import Department
 from .recipe_models import (
     Recipe, RecipeIngredient, RecipeVersion, ProductionSchedule,
-    ProductionRecord, InventoryItem, InventoryTransaction, WasteRecord,
-    RecipeProductionTask, ProductionIngredientUsage, ProductionOutput
+    ProductionRecord, InventoryItem, InventoryTransaction, WasteRecord
 )
-from .recipe_version_integration import RecipeScalingService, ProductionTaskService
 from .recipe_serializers import (
     RecipeSerializer, RecipeDetailSerializer, RecipeIngredientSerializer,
     RecipeVersionSerializer, ProductionScheduleSerializer, ProductionRecordSerializer,
     InventoryItemSerializer, InventoryTransactionSerializer, WasteRecordSerializer,
-    RecipeProductionTaskSerializer, ProductionIngredientUsageSerializer, ProductionOutputSerializer
+    RecipeProductionTaskSerializer
 )
 from .permissions import (
     IsManagerForWriteOrAuthenticatedReadOnly, IsSuperUser, 
     IsSuperUserWriteOrManagerRead, CanManageRecipes, CanManageInventory,
-    CanManageProductionTasks, CanExecuteProductionTasks,
     CanManageProductionSchedule
 )
 
@@ -568,11 +565,9 @@ class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
     ViewSet for managing recipe production tasks.
     Managers can create, update, or delete production tasks in their department.
     Staff can view and update status of production tasks in their department.
-    
-    Supports recipe versioning and scaling for different batch sizes.
     """
     serializer_class = RecipeProductionTaskSerializer
-    permission_classes = [CanManageProductionTasks]
+    permission_classes = [CanManageProductionSchedule]
     
     def get_queryset(self):
         """
@@ -622,16 +617,18 @@ class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
             is_recurring_bool = is_recurring.lower() == 'true'
             queryset = queryset.filter(is_recurring=is_recurring_bool)
         
-        # Apply department-based filtering for non-superusers
+        # If user is not superuser, restrict to their department
         if not user.is_superuser:
             try:
                 user_profile = user.profile
-                user_department = user_profile.department
-                queryset = queryset.filter(department=user_department)
-            except AttributeError:
+                if user_profile.department:
+                    queryset = queryset.filter(department=user_profile.department)
+                else:
+                    return RecipeProductionTask.objects.none()
+            except:
                 return RecipeProductionTask.objects.none()
         
-        return queryset
+        return queryset.order_by('scheduled_start_time')
     
     def perform_create(self, serializer):
         """Set created_by to current user when creating a production task"""
@@ -682,49 +679,6 @@ class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
             scheduled_end_time__lt=now,
             status__in=['scheduled', 'in_progress']
         )
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-        
-    @action(detail=False, methods=['get'])
-    def my_tasks(self, request):
-        """Get tasks assigned to the current user"""
-        if not request.user.is_authenticated:
-            return Response(
-                {"error": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-            
-        queryset = self.get_queryset().filter(assigned_staff=request.user)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-        
-    @action(detail=False, methods=['get'])
-    def by_department(self, request, department_id=None):
-        """Get tasks for a specific department"""
-        if department_id is None:
-            department_id = request.query_params.get('department_id')
-            if department_id is None:
-                return Response(
-                    {"error": "Department ID is required"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-        
-        # Check if user has permission to view this department's tasks
-        if not request.user.is_superuser:
-            try:
-                user_profile = request.user.profile
-                if user_profile.department_id != int(department_id):
-                    return Response(
-                        {"error": "You do not have permission to view tasks in this department"},
-                        status=status.HTTP_403_FORBIDDEN
-                    )
-            except:
-                return Response(
-                    {"error": "Permission denied"},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-        
-        queryset = self.get_queryset().filter(department_id=department_id)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
@@ -798,389 +752,4 @@ class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
         return Response({
             "message": f"Generated {created_count} recurring task instances",
             "count": created_count
-        })
-    
-    @action(detail=True, methods=['get'])
-    def ingredient_requirements(self, request, pk=None):
-        """
-        Calculate ingredient requirements for a production task based on the recipe version and quantity.
-        """
-        task = self.get_object()
-        requirements = RecipeScalingService.calculate_ingredient_requirements(task)
-        return Response(requirements)
-    
-    @action(detail=False, methods=['post'])
-    def scale_recipe(self, request):
-        """
-        Scale a recipe to a target quantity without creating a production task.
-        
-        Required parameters:
-        - recipe_id: ID of the recipe to scale
-        - target_quantity: Quantity to produce
-        - recipe_version_id: (Optional) Specific version to use, defaults to latest
-        """
-        recipe_id = request.data.get('recipe_id')
-        target_quantity = request.data.get('target_quantity')
-        recipe_version_id = request.data.get('recipe_version_id')
-        
-        if not recipe_id or not target_quantity:
-            return Response(
-                {'error': 'recipe_id and target_quantity are required'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            recipe = Recipe.objects.get(pk=recipe_id)
-            
-            # Check if user has permission to access this recipe
-            if not request.user.is_superuser:
-                user_profile = request.user.profile
-                if recipe.department != user_profile.department:
-                    return Response(
-                        {'error': 'You do not have permission to access this recipe'}, 
-                        status=status.HTTP_403_FORBIDDEN
-                    )
-            
-            # Get specific version or latest
-            if recipe_version_id:
-                recipe_version = RecipeVersion.objects.get(pk=recipe_version_id, recipe=recipe)
-            else:
-                recipe_version = RecipeVersion.objects.filter(recipe=recipe).order_by('-version_number').first()
-                
-            if not recipe_version:
-                return Response(
-                    {'error': 'No recipe version found'}, 
-                    status=status.HTTP_404_NOT_FOUND
-                )
-                
-            # Scale the recipe
-            scaled_recipe = RecipeScalingService.scale_recipe(recipe_version, target_quantity)
-            return Response(scaled_recipe)
-            
-        except Recipe.DoesNotExist:
-            return Response(
-                {'error': 'Recipe not found'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except RecipeVersion.DoesNotExist:
-            return Response(
-                {'error': 'Recipe version not found'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response(
-                {'error': str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-            
-    @action(detail=False, methods=['post'])
-    def create_with_version(self, request):
-        """
-        Create a production task with a specific recipe version.
-        
-        If recipe_version_id is not provided, the latest version will be used.
-        """
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        recipe_version_id = request.data.get('recipe_version_id')
-        recipe = serializer.validated_data.get('recipe')
-        
-        try:
-            # Get specific version if provided, otherwise use latest
-            recipe_version = None
-            if recipe_version_id:
-                recipe_version = RecipeVersion.objects.get(pk=recipe_version_id, recipe=recipe)
-            else:
-                recipe_version = RecipeVersion.objects.filter(recipe=recipe).order_by('-version_number').first()
-                
-            if not recipe_version:
-                return Response(
-                    {'error': 'No recipe version found'}, 
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            
-            # Create the task with the recipe version
-            serializer.save(created_by=request.user, recipe_version=recipe_version)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
-        except RecipeVersion.DoesNotExist:
-            return Response(
-                {'error': 'Recipe version not found'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response(
-                {'error': str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-class ProductionIngredientUsageViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing production ingredient usage.
-    Managers can create, update, or delete ingredient usage records in their department.
-    Staff can create and view ingredient usage records in their department.
-    """
-    serializer_class = ProductionIngredientUsageSerializer
-    permission_classes = [CanExecuteProductionTasks]
-    
-    def get_queryset(self):
-        """
-        Filter ingredient usage records based on user's department and query parameters.
-        Supports filtering by production task, ingredient, and supplier.
-        """
-        user = self.request.user
-        if not user.is_authenticated:
-            return ProductionIngredientUsage.objects.none()
-        
-        # Start with all records
-        queryset = ProductionIngredientUsage.objects.all()
-        
-        # Apply filters from query parameters
-        production_task_id = self.request.query_params.get('production_task_id')
-        ingredient_id = self.request.query_params.get('ingredient_id')
-        supplier_id = self.request.query_params.get('supplier_id')
-        batch_code = self.request.query_params.get('batch_code')
-        
-        # Filter by production task
-        if production_task_id:
-            queryset = queryset.filter(production_task_id=production_task_id)
-        
-        # Filter by ingredient
-        if ingredient_id:
-            queryset = queryset.filter(ingredient_id=ingredient_id)
-        
-        # Filter by supplier
-        if supplier_id:
-            queryset = queryset.filter(supplier_id=supplier_id)
-        
-        # Filter by batch code
-        if batch_code:
-            queryset = queryset.filter(batch_code__icontains=batch_code)
-        
-        # If user is not superuser, restrict to their department
-        if not user.is_superuser:
-            try:
-                user_profile = user.profile
-                if user_profile.department:
-                    queryset = queryset.filter(production_task__department=user_profile.department)
-                else:
-                    return ProductionIngredientUsage.objects.none()
-            except:
-                return ProductionIngredientUsage.objects.none()
-        
-        return queryset.order_by('-recorded_at')
-    
-    def perform_create(self, serializer):
-        """Set recorded_by to current user when creating an ingredient usage record"""
-        serializer.save(recorded_by=self.request.user)
-    
-    @action(detail=False, methods=['get'])
-    def by_task(self, request):
-        """Get ingredient usage records for a specific production task"""
-        task_id = request.query_params.get('task_id')
-        if not task_id:
-            return Response(
-                {"error": "Task ID is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        queryset = self.get_queryset().filter(production_task_id=task_id)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def by_ingredient(self, request):
-        """Get usage records for a specific ingredient"""
-        ingredient_id = request.query_params.get('ingredient_id')
-        if not ingredient_id:
-            return Response(
-                {"error": "Ingredient ID is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        queryset = self.get_queryset().filter(ingredient_id=ingredient_id)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def recent(self, request):
-        """Get recent ingredient usage records (last 7 days)"""
-        days = int(request.query_params.get('days', 7))
-        if days < 1 or days > 90:
-            return Response(
-                {"error": "Days parameter must be between 1 and 90"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        start_date = timezone.now() - timezone.timedelta(days=days)
-        queryset = self.get_queryset().filter(recorded_at__gte=start_date)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
-
-class ProductionOutputViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing production outputs.
-    Managers can create, update, or delete production outputs in their department.
-    Staff can create and view production outputs in their department.
-    """
-    serializer_class = ProductionOutputSerializer
-    permission_classes = [CanExecuteProductionTasks]
-    
-    def get_queryset(self):
-        """
-        Filter production outputs based on user's department and query parameters.
-        Supports filtering by production task, date range, and quality rating.
-        """
-        user = self.request.user
-        if not user.is_authenticated:
-            return ProductionOutput.objects.none()
-        
-        # Start with all records
-        queryset = ProductionOutput.objects.all()
-        
-        # Apply filters from query parameters
-        production_task_id = self.request.query_params.get('production_task_id')
-        min_quality = self.request.query_params.get('min_quality')
-        max_quality = self.request.query_params.get('max_quality')
-        start_date = self.request.query_params.get('start_date')
-        end_date = self.request.query_params.get('end_date')
-        batch_code = self.request.query_params.get('batch_code')
-        
-        # Filter by production task
-        if production_task_id:
-            queryset = queryset.filter(production_task_id=production_task_id)
-        
-        # Filter by quality rating range
-        if min_quality:
-            queryset = queryset.filter(quality_rating__gte=min_quality)
-        if max_quality:
-            queryset = queryset.filter(quality_rating__lte=max_quality)
-        
-        # Filter by production date range
-        if start_date:
-            queryset = queryset.filter(production_date__gte=start_date)
-        if end_date:
-            queryset = queryset.filter(production_date__lte=end_date)
-        
-        # Filter by batch code
-        if batch_code:
-            queryset = queryset.filter(batch_code__icontains=batch_code)
-        
-        # If user is not superuser, restrict to their department
-        if not user.is_superuser:
-            try:
-                user_profile = user.profile
-                if user_profile.department:
-                    queryset = queryset.filter(production_task__department=user_profile.department)
-                else:
-                    return ProductionOutput.objects.none()
-            except:
-                return ProductionOutput.objects.none()
-        
-        return queryset.order_by('-recorded_at')
-    
-    def perform_create(self, serializer):
-        """Set recorded_by to current user when creating a production output"""
-        serializer.save(recorded_by=self.request.user)
-    
-    @action(detail=False, methods=['get'])
-    def by_task(self, request):
-        """Get production outputs for a specific task"""
-        task_id = request.query_params.get('task_id')
-        if not task_id:
-            return Response(
-                {"error": "Task ID is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        queryset = self.get_queryset().filter(production_task_id=task_id)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def recent(self, request):
-        """Get recent production outputs (last 7 days)"""
-        days = int(request.query_params.get('days', 7))
-        if days < 1 or days > 90:
-            return Response(
-                {"error": "Days parameter must be between 1 and 90"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        start_date = timezone.now() - timezone.timedelta(days=days)
-        queryset = self.get_queryset().filter(recorded_at__gte=start_date)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def yield_analysis(self, request):
-        """Get yield analysis data for production outputs"""
-        # Get date range parameters
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
-        recipe_id = request.query_params.get('recipe_id')
-        
-        # Start with filtered queryset
-        queryset = self.get_queryset()
-        
-        # Apply additional filters
-        if start_date:
-            queryset = queryset.filter(production_date__gte=start_date)
-        if end_date:
-            queryset = queryset.filter(production_date__lte=end_date)
-        if recipe_id:
-            queryset = queryset.filter(production_task__recipe_id=recipe_id)
-        
-        # Calculate yield statistics
-        outputs = queryset.all()
-        
-        if not outputs:
-            return Response({
-                "message": "No production outputs found for the specified filters",
-                "count": 0
-            })
-        
-        total_outputs = len(outputs)
-        total_expected = sum(output.expected_quantity for output in outputs)
-        total_actual = sum(output.actual_quantity for output in outputs)
-        average_yield = sum(output.yield_percentage for output in outputs) / total_outputs if total_outputs > 0 else 0
-        
-        # Group by recipe for detailed analysis
-        recipe_data = {}
-        for output in outputs:
-            recipe_id = output.production_task.recipe.recipe_id
-            recipe_name = output.production_task.recipe.name
-            
-            if recipe_id not in recipe_data:
-                recipe_data[recipe_id] = {
-                    'recipe_id': recipe_id,
-                    'recipe_name': recipe_name,
-                    'count': 0,
-                    'total_expected': 0,
-                    'total_actual': 0,
-                    'average_yield': 0
-                }
-            
-            recipe_data[recipe_id]['count'] += 1
-            recipe_data[recipe_id]['total_expected'] += output.expected_quantity
-            recipe_data[recipe_id]['total_actual'] += output.actual_quantity
-        
-        # Calculate average yield for each recipe
-        for recipe_id in recipe_data:
-            if recipe_data[recipe_id]['total_expected'] > 0:
-                recipe_data[recipe_id]['average_yield'] = (
-                    recipe_data[recipe_id]['total_actual'] / recipe_data[recipe_id]['total_expected']
-                ) * 100
-        
-        return Response({
-            "summary": {
-                "total_outputs": total_outputs,
-                "total_expected_quantity": total_expected,
-                "total_actual_quantity": total_actual,
-                "overall_yield_percentage": (total_actual / total_expected) * 100 if total_expected > 0 else 0,
-                "average_yield_percentage": average_yield
-            },
-            "by_recipe": list(recipe_data.values())
         })

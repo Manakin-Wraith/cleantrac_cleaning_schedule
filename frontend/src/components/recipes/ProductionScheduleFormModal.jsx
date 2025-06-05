@@ -27,7 +27,6 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import { getUsersByDepartment } from '../../services/userService'; // Import getUsersByDepartment
 
 const ProductionScheduleFormModal = ({ 
   open, 
@@ -86,13 +85,10 @@ const ProductionScheduleFormModal = ({
       setRecipes(recipesResponse.data);
 
       // Fetch staff for the department
-      if (currentUser?.profile?.department?.id) {
-        const staffData = await getUsersByDepartment(currentUser.profile.department.id);
-        setStaff(staffData);
-      } else {
-        console.warn('No department ID found for current user, cannot fetch staff.');
-        setStaff([]); // Set to empty array if no department ID
-      }
+      const staffResponse = await api.get('/staff/', {
+        params: { department_id: currentUser?.profile?.department?.id }
+      });
+      setStaff(staffResponse.data);
       
       setFetchError(null);
     } catch (err) {

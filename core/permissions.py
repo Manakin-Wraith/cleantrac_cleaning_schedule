@@ -1,7 +1,6 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 from django.utils import timezone
 from .models import UserProfile
-from .recipe_models import RecipeProductionTask
 
 class IsSuperUser(BasePermission):
     """Allows access only to superusers."""
