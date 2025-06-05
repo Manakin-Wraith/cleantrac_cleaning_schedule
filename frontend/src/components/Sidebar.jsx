@@ -20,6 +20,7 @@ import DescriptionIcon from '@mui/icons-material/Description'; // For Document T
 import AccessTimeIcon from '@mui/icons-material/AccessTime'; // Added missing import
 import LocalShippingIcon from '@mui/icons-material/LocalShipping'; // For Suppliers
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu'; // For Recipe Management
+import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits'; // For Production Scheduler
 
 export const drawerWidth = 240;
 const collapsedDrawerWidth = (theme) => theme.spacing(7); 
@@ -110,12 +111,14 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
     { text: 'Temperature Checks', icon: <AccessTimeIcon />, path: '/manager-temperature-checks' },
     { text: 'Document Templates', icon: <DescriptionIcon />, path: '/manager-documents' },
     { text: 'Recipe Management', icon: <RestaurantMenuIcon />, path: '/recipe-management' },
-    { text: 'Coming SOON!', icon: <CalendarMonthIcon />, path: '/manager-schedule' }, // Example: can be top-level or nested
+    { text: 'Production Scheduler', icon: <CalendarMonthIcon />, path: '/production-scheduler' },
+    { text: 'Task Scheduler', icon: <CalendarMonthIcon />, path: '/manager-schedule' },
   ];
 
   const staffLinks = [
     { text: 'My Tasks', icon: <AssignmentIcon />, path: '/staff-tasks' },
     { text: 'Recipe Management', icon: <RestaurantMenuIcon />, path: '/recipe-management' },
+    { text: 'Production Scheduler', icon: <ProductionQuantityLimitsIcon />, path: '/production-scheduler' },
   ];
 
   let determinedLinks = [];

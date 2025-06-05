@@ -251,4 +251,69 @@ class WasteRecord(models.Model):
 
     def __str__(self):
         waste_source = self.recipe.name if self.recipe else self.inventory_item.ingredient_name
-        return f"Waste of {self.quantity} {self.unit} {waste_source} on {self.recorded_at.date()}"
+        return f"{self.quantity} {self.unit} of {waste_source} - {self.reason}"
+
+
+class RecipeProductionTask(models.Model):
+    """
+    Represents a specific task in the production workflow for a recipe.
+    Tasks can be assigned to staff members and tracked through the production process.
+    """
+    STATUS_CHOICES = [
+        ('scheduled', 'Scheduled'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+        ('pending_review', 'Pending Review'),
+        ('on_hold', 'On Hold'),
+    ]
+    
+    RECURRENCE_TYPE_CHOICES = [
+        ('none', 'No Recurrence'),
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
+        ('custom', 'Custom'),
+    ]
+    
+    # Fields from the original migration
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='production_tasks')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='recipe_production_tasks')
+    scheduled_start_time = models.DateTimeField()
+    scheduled_end_time = models.DateTimeField()
+    scheduled_quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    is_recurring = models.BooleanField(default=False)
+    recurrence_type = models.CharField(max_length=10, choices=RECURRENCE_TYPE_CHOICES, default='none')
+    recurrence_pattern = models.JSONField(null=True, blank=True, help_text="JSON object defining the recurrence pattern")
+    notes = models.TextField(blank=True, null=True)
+    assigned_staff = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_production_tasks')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_production_tasks')
+    parent_task = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='child_tasks')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # New fields for enhanced functionality
+    task_type = models.CharField(max_length=20, choices=[
+        ('prep', 'Preparation'),
+        ('production', 'Production'),
+        ('post_production', 'Post-Production'),
+        ('quality_check', 'Quality Check'),
+        ('packaging', 'Packaging'),
+        ('cleanup', 'Cleanup'),
+    ], default='production')
+    description = models.TextField(default='Production task', help_text='Description of the production task')
+    duration_minutes = models.PositiveIntegerField(null=True, blank=True, help_text="Estimated duration in minutes")
+    
+    class Meta:
+        verbose_name = "Recipe Production Task"
+        verbose_name_plural = "Recipe Production Tasks"
+        ordering = ['scheduled_start_time']
+        indexes = [
+            models.Index(fields=['department', 'status']),
+            models.Index(fields=['assigned_staff']),
+            models.Index(fields=['scheduled_start_time']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_task_type_display()} for {self.recipe.name} on {self.scheduled_start_time.date()}"

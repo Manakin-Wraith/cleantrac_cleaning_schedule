@@ -930,3 +930,153 @@ class CanManageProductionSchedule(BasePermission):
             return user_profile.role == UserProfile.ROLE_MANAGER
         except AttributeError:
             return False
+
+class CanManageProductionTasks(BasePermission):
+    """Permission to manage production tasks.
+    This permission allows:
+    - Superusers: Full access
+    - Managers: Full access to their department's tasks
+    - Staff: Can view tasks and update specific fields, but cannot create/delete
+    """
+    message = "You do not have permission to manage production tasks in this department."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+
+        # For safe methods, allow access (filtering will be done in get_queryset)
+        if request.method in SAFE_METHODS:
+            return True
+
+        # For creating tasks, only managers
+        if request.method == 'POST':
+            try:
+                user_profile = request.user.profile
+                return user_profile.role == UserProfile.ROLE_MANAGER
+            except AttributeError:
+                return False
+
+        # For updating (PATCH/PUT), both staff and managers can update
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+
+        try:
+            user_profile = request.user.profile
+            user_department = user_profile.department
+            
+            # Check department match
+            obj_department = None
+            if hasattr(obj, 'department'):
+                obj_department = obj.department
+            elif hasattr(obj, 'production_task') and hasattr(obj.production_task, 'department'):
+                obj_department = obj.production_task.department
+                
+            if obj_department != user_department:
+                return False
+                
+            # For safe methods, allow access if department matches
+            if request.method in SAFE_METHODS:
+                return True
+                
+            # For DELETE, only managers
+            if request.method == 'DELETE':
+                return user_profile.role == UserProfile.ROLE_MANAGER
+                
+            # For PATCH/PUT, staff can only update specific fields
+            if request.method in ['PATCH', 'PUT'] and user_profile.role == UserProfile.ROLE_STAFF:
+                # Check if they're only updating allowed fields
+                allowed_fields = {'status', 'notes'}
+                requested_fields = set(request.data.keys())
+                
+                # Staff can only update allowed fields
+                return allowed_fields.issuperset(requested_fields)
+                
+            # Managers can do anything within their department
+            return user_profile.role == UserProfile.ROLE_MANAGER
+        except AttributeError:
+            return False
+
+
+class CanExecuteProductionTasks(BasePermission):
+    """Permission to execute production tasks.
+    This permission allows:
+    - Superusers: Full access
+    - Managers: Full access to their department's tasks
+    - Staff: Can execute tasks (update status, add ingredients, record outputs) in their department
+    """
+    message = "You do not have permission to execute production tasks in this department."
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+
+        # For safe methods, allow access (filtering will be done in get_queryset)
+        if request.method in SAFE_METHODS:
+            return True
+
+        # For POST/PUT/PATCH, staff and managers can execute tasks
+        return True
+
+    def has_object_permission(self, request, view, obj):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Superusers can do anything
+        if request.user.is_superuser:
+            return True
+
+        try:
+            user_profile = request.user.profile
+            user_department = user_profile.department
+            
+            # Check department match
+            obj_department = None
+            if hasattr(obj, 'department'):
+                obj_department = obj.department
+            elif hasattr(obj, 'production_task') and hasattr(obj.production_task, 'department'):
+                obj_department = obj.production_task.department
+                
+            if obj_department != user_department:
+                return False
+                
+            # For safe methods, allow access if department matches
+            if request.method in SAFE_METHODS:
+                return True
+                
+            # For DELETE, only managers
+            if request.method == 'DELETE':
+                return user_profile.role == UserProfile.ROLE_MANAGER
+            
+            # For POST, staff can create ingredient usage and outputs
+            if request.method == 'POST':
+                return True
+                
+            # For PATCH/PUT, staff can update execution-related fields
+            if request.method in ['PATCH', 'PUT']:
+                # Staff can update execution-related fields
+                if isinstance(obj, RecipeProductionTask):
+                    allowed_fields = {'status', 'notes', 'actual_start_time', 'actual_end_time'}
+                    requested_fields = set(request.data.keys())
+                    return allowed_fields.issuperset(requested_fields)
+                
+                # For ingredient usage and outputs, staff can update all fields
+                return True
+                
+            return user_profile.role == UserProfile.ROLE_MANAGER
+        except AttributeError:
+            return False

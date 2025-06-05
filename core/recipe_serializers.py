@@ -3,7 +3,8 @@ from django.contrib.auth.models import User
 from .models import Department
 from .recipe_models import (
     Recipe, RecipeIngredient, RecipeVersion, ProductionSchedule,
-    ProductionRecord, InventoryItem, InventoryTransaction, WasteRecord
+    ProductionRecord, InventoryItem, InventoryTransaction, WasteRecord,
+    RecipeProductionTask
 )
 from .serializers import UserSerializer, DepartmentSerializer
 
@@ -293,4 +294,85 @@ class WasteRecordSerializer(serializers.ModelSerializer):
                 {"non_field_errors": "Cannot specify both recipe and inventory item"}
             )
         
+        return data
+
+
+class RecipeProductionTaskSerializer(serializers.ModelSerializer):
+    """Serializer for recipe production tasks"""
+    recipe_id = serializers.PrimaryKeyRelatedField(
+        queryset=Recipe.objects.all(),
+        source='recipe',
+        write_only=True
+    )
+    recipe_details = serializers.SerializerMethodField(read_only=True)
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True
+    )
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    assigned_staff_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='assigned_staff',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    assigned_staff_details = serializers.SerializerMethodField(read_only=True)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True, allow_null=True)
+    task_type_display = serializers.CharField(source='get_task_type_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    recurrence_type_display = serializers.CharField(source='get_recurrence_type_display', read_only=True)
+    parent_task_id = serializers.PrimaryKeyRelatedField(
+        queryset=RecipeProductionTask.objects.all(),
+        source='parent_task',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    
+    class Meta:
+        model = RecipeProductionTask
+        fields = [
+            'id', 'recipe_id', 'recipe_details', 'department_id', 'department_name',
+            'scheduled_start_time', 'scheduled_end_time', 'scheduled_quantity',
+            'task_type', 'task_type_display', 'description',
+            'status', 'status_display', 'assigned_staff_id', 'assigned_staff_details',
+            'is_recurring', 'recurrence_type', 'recurrence_type_display', 'recurrence_pattern',
+            'parent_task_id', 'duration_minutes',
+            'notes', 'created_by', 'created_by_username',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+    
+    def get_recipe_details(self, obj):
+        """Get basic recipe details"""
+        return {
+            'id': obj.recipe.recipe_id,
+            'name': obj.recipe.name,
+            'product_code': obj.recipe.product_code,
+            'yield_quantity': obj.recipe.yield_quantity,
+            'yield_unit': obj.recipe.yield_unit
+        }
+    
+    def get_assigned_staff_details(self, obj):
+        """Get details of assigned staff member"""
+        if not obj.assigned_staff:
+            return None
+        return {
+            'id': obj.assigned_staff.id,
+            'username': obj.assigned_staff.username,
+            'first_name': obj.assigned_staff.first_name,
+            'last_name': obj.assigned_staff.last_name,
+            'email': obj.assigned_staff.email
+        }
+    
+    def validate(self, data):
+        """Validate that scheduled_end_time is after scheduled_start_time"""
+        start_time = data.get('scheduled_start_time')
+        end_time = data.get('scheduled_end_time')
+        
+        if start_time and end_time and end_time <= start_time:
+            raise serializers.ValidationError("End time must be after start time")
+            
         return data

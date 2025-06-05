@@ -14,7 +14,8 @@ from .recipe_models import (
 from .recipe_serializers import (
     RecipeSerializer, RecipeDetailSerializer, RecipeIngredientSerializer,
     RecipeVersionSerializer, ProductionScheduleSerializer, ProductionRecordSerializer,
-    InventoryItemSerializer, InventoryTransactionSerializer, WasteRecordSerializer
+    InventoryItemSerializer, InventoryTransactionSerializer, WasteRecordSerializer,
+    RecipeProductionTaskSerializer
 )
 from .permissions import (
     IsManagerForWriteOrAuthenticatedReadOnly, IsSuperUser, 
@@ -557,4 +558,198 @@ class WasteRecordViewSet(viewsets.ModelViewSet):
             'start_date': start_date,
             'end_date': end_date,
             'departments': summary
+        })
+
+class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing recipe production tasks.
+    Managers can create, update, or delete production tasks in their department.
+    Staff can view and update status of production tasks in their department.
+    """
+    serializer_class = RecipeProductionTaskSerializer
+    permission_classes = [CanManageProductionSchedule]
+    
+    def get_queryset(self):
+        """
+        Filter tasks based on user's department and query parameters.
+        Supports filtering by date range, status, department, and recipe.
+        """
+        user = self.request.user
+        if not user.is_authenticated:
+            return RecipeProductionTask.objects.none()
+        
+        # Start with all tasks
+        queryset = RecipeProductionTask.objects.all()
+        
+        # Apply filters from query parameters
+        department_id = self.request.query_params.get('department_id')
+        status = self.request.query_params.get('status')
+        recipe_id = self.request.query_params.get('recipe_id')
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        assigned_staff_id = self.request.query_params.get('assigned_staff_id')
+        is_recurring = self.request.query_params.get('is_recurring')
+        
+        # Filter by department
+        if department_id:
+            queryset = queryset.filter(department_id=department_id)
+        
+        # Filter by status
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        # Filter by recipe
+        if recipe_id:
+            queryset = queryset.filter(recipe_id=recipe_id)
+        
+        # Filter by date range
+        if start_date:
+            queryset = queryset.filter(scheduled_start_time__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(scheduled_start_time__date__lte=end_date)
+        
+        # Filter by assigned staff
+        if assigned_staff_id:
+            queryset = queryset.filter(assigned_staff_id=assigned_staff_id)
+        
+        # Filter by recurrence
+        if is_recurring is not None:
+            is_recurring_bool = is_recurring.lower() == 'true'
+            queryset = queryset.filter(is_recurring=is_recurring_bool)
+        
+        # If user is not superuser, restrict to their department
+        if not user.is_superuser:
+            try:
+                user_profile = user.profile
+                if user_profile.department:
+                    queryset = queryset.filter(department=user_profile.department)
+                else:
+                    return RecipeProductionTask.objects.none()
+            except:
+                return RecipeProductionTask.objects.none()
+        
+        return queryset.order_by('scheduled_start_time')
+    
+    def perform_create(self, serializer):
+        """Set created_by to current user when creating a production task"""
+        serializer.save(created_by=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def today(self, request):
+        """Get production tasks scheduled for today"""
+        today = timezone.localdate()
+        queryset = self.get_queryset().filter(
+            scheduled_start_time__date=today
+        )
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def upcoming(self, request):
+        """Get upcoming production tasks (next 7 days)"""
+        today = timezone.localdate()
+        next_week = today + timezone.timedelta(days=7)
+        queryset = self.get_queryset().filter(
+            scheduled_start_time__date__gte=today,
+            scheduled_start_time__date__lte=next_week
+        )
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def by_staff(self, request, staff_id=None):
+        """Get production tasks assigned to a specific staff member"""
+        if staff_id is None:
+            staff_id = request.query_params.get('staff_id')
+            if staff_id is None:
+                return Response(
+                    {"error": "Staff ID is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        queryset = self.get_queryset().filter(assigned_staff_id=staff_id)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def overdue(self, request):
+        """Get overdue production tasks"""
+        now = timezone.now()
+        queryset = self.get_queryset().filter(
+            scheduled_end_time__lt=now,
+            status__in=['scheduled', 'in_progress']
+        )
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def create_recurring_instance(self, request, pk=None):
+        """Create a new instance of a recurring task"""
+        parent_task = self.get_object()
+        
+        if not parent_task.is_recurring:
+            return Response(
+                {"error": "This is not a recurring task"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Generate the next occurrence
+        next_instance = parent_task.generate_next_occurrence()
+        if not next_instance:
+            return Response(
+                {"error": "Failed to generate next occurrence"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = self.get_serializer(next_instance)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=False, methods=['post'])
+    def generate_recurring_tasks(self, request):
+        """
+        Generate upcoming instances of recurring tasks.
+        By default, generates tasks for the next 30 days.
+        """
+        days = int(request.data.get('days', 30))
+        if days < 1 or days > 365:
+            return Response(
+                {"error": "Days parameter must be between 1 and 365"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get all recurring tasks
+        recurring_tasks = self.get_queryset().filter(
+            is_recurring=True,
+            parent_task__isnull=True  # Only get parent tasks
+        )
+        
+        created_count = 0
+        for task in recurring_tasks:
+            # For each recurring task, generate instances for the specified period
+            end_date = timezone.now() + timezone.timedelta(days=days)
+            current_date = timezone.now()
+            
+            while current_date < end_date:
+                # Try to generate the next occurrence
+                next_instance = task.generate_next_occurrence(from_date=current_date)
+                if next_instance:
+                    created_count += 1
+                    # Move to the next potential date
+                    if task.recurrence_type == 'daily':
+                        current_date += timezone.timedelta(days=1)
+                    elif task.recurrence_type == 'weekly':
+                        current_date += timezone.timedelta(days=7)
+                    elif task.recurrence_type == 'monthly':
+                        # Approximate a month
+                        current_date += timezone.timedelta(days=30)
+                    else:
+                        # For custom recurrence, move forward a day at a time
+                        current_date += timezone.timedelta(days=1)
+                else:
+                    # If we couldn't generate an instance, move forward to avoid infinite loop
+                    current_date += timezone.timedelta(days=1)
+        
+        return Response({
+            "message": f"Generated {created_count} recurring task instances",
+            "count": created_count
         })
