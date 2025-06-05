@@ -130,6 +130,7 @@ const ProductionSchedulerCalendar = ({
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
+                            textDecoration: status === 'completed' ? 'line-through' : 'none',
                         }}
                     >
                         {taskTypeIcon} {eventInfo.event.title}
@@ -141,6 +142,7 @@ const ProductionSchedulerCalendar = ({
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
+                                textDecoration: status === 'completed' ? 'line-through' : 'none',
                             }}
                         >
                             {eventInfo.timeText}
@@ -152,50 +154,48 @@ const ProductionSchedulerCalendar = ({
     };
 
     return (
-        <FullCalendar
-            key={currentView} // Force re-render when view changes
-            ref={effectiveRef}
-            plugins={[dayGridPlugin, timeGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, interactionPlugin]}
-            view={currentView || 'resourceTimeGridDay'} // Control the view via prop
-            headerToolbar={{
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,resourceTimeGridDay,resourceTimelineWeek'
-            }}
-            views={{
-                resourceTimelineWeek: {
-                    type: 'resourceTimeline',
-                    duration: { days: 7 },
-                    buttonText: 'Timeline'
-                }
-            }}
-            editable={true}
-            selectable={true}
-            selectMirror={true}
-            dayMaxEvents={true}
-            weekends={true}
-            nowIndicator={true}
-            droppable={true} // Enable dropping external elements onto the calendar
-            initialDate={currentDate}
-            events={events}
-            resources={resources}
-            eventContent={renderEventContent}
-            eventClick={(info) => onEventClick && onEventClick(info)}
-            eventDrop={(info) => onEventDrop && onEventDrop(info)}
-            eventResize={(info) => eventResize && eventResize(info)}
-            dateClick={(info) => onDateClick && onDateClick(info)}
-            datesSet={handleDatesSet} // This now handles date and view changes
-            eventReceive={(info) => onEventReceive && onEventReceive(info)}
-            height="auto"
-            allDaySlot={false}
-            slotMinTime="06:00:00"
-            slotMaxTime="22:00:00"
-            resourceAreaHeaderContent="Staff"
-            resourceLabelDidMount={(info) => {
-                // Custom rendering for resource labels if needed
-            }}
-            schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
-        />
+        <Box sx={{ position: 'relative', zIndex: 0 }}>
+            <FullCalendar
+                ref={calendarRef} // Attach the ref here
+                plugins={[dayGridPlugin, timeGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, interactionPlugin]}
+                initialView={currentView || 'resourceTimeGridDay'} // Set initial view
+                headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,resourceTimeGridDay,resourceTimelineWeek'
+                }}
+                views={{
+                    resourceTimelineWeek: {
+                        type: 'resourceTimeline',
+                        duration: { days: 7 },
+                        buttonText: 'Timeline'
+                    }
+                }}
+                editable={true}
+                selectable={true}
+                selectMirror={true}
+                dayMaxEvents={true}
+                weekends={true}
+                nowIndicator={true}
+                droppable={true} // Enable dropping external elements onto the calendar
+                initialDate={currentDate}
+                events={events}
+                resources={resources}
+                eventContent={renderEventContent}
+                eventClick={(info) => onEventClick && onEventClick(info)}
+                eventDrop={(info) => onEventDrop && onEventDrop(info)}
+                eventResize={(info) => eventResize && eventResize(info)}
+                dateClick={(info) => onDateClick && onDateClick(info)}
+                datesSet={handleDatesSet} // This now handles date and view changes
+                eventReceive={(info) => onEventReceive && onEventReceive(info)}
+                height="auto"
+                allDaySlot={false}
+                slotMinTime="06:00:00"
+                slotMaxTime="22:00:00"
+                resourceAreaHeaderContent="Staff"
+                schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
+            />
+        </Box>
     );
 };
 

@@ -42,9 +42,9 @@
   - [x] Custom event rendering for production tasks
   - [x] Resource view for staff assignment
   - [x] Timeline view for production schedule
-  - [x] Implement controlled view management (view prop, onViewChange, datesSet)
-  - [x] Ensure stable view switching without flickering (e.g., using key prop on FullCalendar)
-  - [x] Refine calendar state management in ProductionSchedulerPage (view, date, data fetching)
+  - [x] Implement controlled view management (initialView prop, onViewChange, datesSet) - *Key props removed for stability*
+  - [x] Ensure stable view switching without flickering - *Achieved by removing key props and stabilizing useEffect dependencies*
+  - [x] Refine calendar state management in ProductionSchedulerPage (view, date, data fetching) - *Stabilized data fetching on date/view changes*
 - [x] ProductionAssignmentModal component
   - [x] Recipe selection
   - [x] Quantity input
