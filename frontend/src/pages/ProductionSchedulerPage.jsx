@@ -115,48 +115,22 @@ const ProductionSchedulerPage = () => {
       // Handle both array responses and paginated responses with results property
       const userData = Array.isArray(response.data) ? response.data : 
                       (response.data?.results || []);
-      
+      console.log('Raw userData from /api/users/:', userData);
+
       const resources = userData
-        .filter(user => user.is_active && 
-                (user.profile?.role === 'staff' || user.profile?.role === 'manager' || 
-                 user.user_role === 'staff' || user.user_role === 'manager')) // Handle different API formats
+        .filter(user => user.profile?.role === 'staff' || user.profile?.role === 'manager' || 
+                 user.user_role === 'staff' || user.user_role === 'manager')
         .map(user => ({
           id: user.id.toString(),
           title: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Staff Member',
         }));
-      setStaffResources([{ id: 'unassigned', title: 'Unassigned' }, ...resources]);
+      console.log('Filtered and mapped staff resources:', resources);
+      setStaffResources(resources);
     } catch (err) {
       console.error('Error fetching staff resources:', err);
       // setError('Failed to load staff resources.'); // Optional: can be non-critical
     }
   }, []);
-
-  useEffect(() => {
-    fetchDepartments();
-    fetchStaffResources();
-    fetchProductionTasks(selectedDate);
-    fetchRecipes();
-  }, [fetchDepartments, fetchStaffResources, fetchProductionTasks, selectedDate]);
-
-  useEffect(() => {
-    fetchProductionTasks(selectedDate);
-  }, [selectedDate, fetchProductionTasks]);
-
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-    fetchProductionTasks(date);
-  };
-
-  // Handle calendar view changes (month, week, day, timeline)
-  const handleViewChange = (newViewType) => {
-    if (newViewType !== calendarView) {
-      setCalendarView(newViewType);
-    }
-    // The datesSet handler in the calendar component is responsible for fetching data
-    // if the date range changes. We don't need to call fetchProductionTasks here
-    // explicitly for view changes, as datesSet will cover it if the view change
-    // also implies a date range change (e.g., month to week).
-  };
 
   // Fetch available recipes for drag-and-drop
   const fetchRecipes = useCallback(async () => {
@@ -168,7 +142,7 @@ const ProductionSchedulerPage = () => {
       };
       const response = await apiClient.get('/recipes/', { params });
       // Handle both array responses and paginated responses with results property
-      const recipesData = Array.isArray(response.data) ? response.data : 
+      const recipesData = Array.isArray(response.data) ? response.data :
                        (response.data?.results || []);
       setRecipes(recipesData);
     } catch (err) {
@@ -178,6 +152,37 @@ const ProductionSchedulerPage = () => {
       setLoadingRecipes(false);
     }
   }, [departmentFilter]);
+
+  useEffect(() => {
+    fetchDepartments();
+    fetchStaffResources();
+    // fetchProductionTasks(selectedDate); // Handled by its own useEffect
+    fetchRecipes();
+  }, [fetchDepartments, fetchStaffResources, fetchRecipes]);
+
+  // Create a stable string representation of selectedDate for the useEffect dependency array
+  const selectedDateString = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
+
+  useEffect(() => {
+    if (selectedDate) { // Ensure selectedDate is not null/undefined before fetching
+      fetchProductionTasks(selectedDate);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps 
+  }, [selectedDateString, fetchProductionTasks]); // fetchProductionTasks is already a useCallback
+
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+    // The useEffect hook listening to selectedDate will handle calling fetchProductionTasks.
+  };
+
+  // Handle calendar view changes (month, week, day, timeline)
+  const handleViewChange = (newView) => {
+    // Update the calendarView state. The key prop on ProductionSchedulerCalendar
+    // will handle re-initializing FullCalendar with the new view.
+    if (calendarView !== newView) {
+      setCalendarView(newView);
+    }
+  };
 
   // Initialize draggable recipe items
   useEffect(() => {
@@ -533,7 +538,7 @@ const ProductionSchedulerPage = () => {
             </Paper>
             
             <Paper sx={{ p: 2 }}>
-              <ProductionSchedulerCalendar
+              <ProductionSchedulerCalendar 
               calendarRef={calendarRef}
               events={productionTasks}
               resources={staffResources}

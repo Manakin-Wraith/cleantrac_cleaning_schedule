@@ -101,25 +101,25 @@ const TaskSchedulerCalendar = ({
                     sx={{ 
                         fontWeight: 'bold', 
                         textDecoration: isCompleted ? 'line-through' : 'none',
-                        fontSize: '0.75rem', // Smaller font for time
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                    }}
-                >
-                    {eventInfo.timeText}
-                </Typography>
-                <Typography 
-                    variant="caption" 
-                    sx={{ 
-                        textDecoration: isCompleted ? 'line-through' : 'none',
-                        fontSize: '0.8rem', // Slightly larger for title
+                        // fontSize: '0.8rem', // Keep or adjust as needed for body2
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                     }}
                 >
                     {eventInfo.event.title}
+                </Typography>
+                <Typography 
+                    variant="caption" 
+                    sx={{ 
+                        textDecoration: isCompleted ? 'line-through' : 'none',
+                        // fontSize: '0.75rem', // Keep or adjust as needed for caption
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                    }}
+                >
+                    {eventInfo.timeText}
                 </Typography>
                 {priority && (
                     <Typography variant="caption" sx={{ fontSize: '0.65rem', opacity: 0.8 }}>
