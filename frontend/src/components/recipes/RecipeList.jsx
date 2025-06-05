@@ -249,7 +249,15 @@ const RecipeList = ({ departmentColor }) => {
                     <TableCell>{recipe.yield_quantity} {recipe.yield_unit}</TableCell>
                     <TableCell>
                       {recipe.ingredients && recipe.ingredients.length > 0 ? (
-                        <Tooltip title={recipe.ingredients.map(ing => `${ing.ingredient_name} (${ing.quantity} ${ing.unit})`).join('\n')}>
+                        <Tooltip title={
+                          <>
+                            {recipe.ingredients.map(ing => (
+                              <div key={`${recipe.id}-${ing.ingredient_name}`}>
+                                {`${ing.ingredient_name} (${ing.quantity} ${ing.unit})`}
+                              </div>
+                            ))}
+                          </>
+                        }>
                           <Chip 
                             label={`${recipe.ingredients.length} ingredient${recipe.ingredients.length !== 1 ? 's' : ''}`}
                             size="small"

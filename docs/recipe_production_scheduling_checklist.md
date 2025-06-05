@@ -7,9 +7,10 @@
 - [x] RecipeIngredient model (already implemented)
 - [x] ProductionSchedule model (already implemented)
 - [x] ProductionRecord model (already implemented)
-- [ ] ProductionTask model (for tracking production workflow steps)
-  - [ ] Define fields (task_type, status, start_time, end_time, notes, etc.)
-  - [ ] Create migrations
+- [x] RecipeProductionTask model (for tracking production workflow steps)
+  - [x] Define fields (task_type, status, scheduled_start_time, scheduled_end_time, notes, etc.)
+  - [x] Create migrations
+  - [x] Add support for recurrence and parent-child task relationships
 - [ ] ProductionCheckpoint model (for tracking specific stages in production)
   - [ ] Define fields (checkpoint_type, completed, completion_time, notes, etc.)
   - [ ] Create migrations
@@ -18,9 +19,10 @@
 - [x] Recipe CRUD endpoints (already implemented)
 - [x] ProductionSchedule CRUD endpoints (already implemented)
 - [x] ProductionRecord CRUD endpoints (already implemented)
-- [ ] ProductionTask endpoints
-  - [ ] List/Create/Retrieve/Update/Delete endpoints
-  - [ ] Filtering by date, staff, status
+- [x] RecipeProductionTask endpoints
+  - [x] List/Create/Retrieve/Update/Delete endpoints
+  - [x] Filtering by date, staff, status, department, recipe, and recurrence
+  - [x] Custom actions for today's and upcoming tasks
 - [ ] ProductionCheckpoint endpoints
   - [ ] List/Create/Retrieve/Update/Delete endpoints
   - [ ] Bulk update endpoint for completing multiple checkpoints
@@ -28,31 +30,36 @@
 ### Permissions
 - [x] CanManageRecipes permission (already implemented)
 - [x] CanManageProductionSchedule permission (already implemented)
-- [ ] CanUpdateProductionTask permission
-  - [ ] Allow staff to update their assigned tasks
-  - [ ] Allow managers to update any task
+- [x] CanUpdateProductionTask permission
+  - [x] Allow staff to update their assigned tasks
+  - [x] Allow managers to update any task
 
 ## II. Frontend Implementation
 
 ### Calendar and Scheduling Components
-- [ ] ProductionSchedulerCalendar component
-  - [ ] Adapt TaskSchedulerCalendar for recipe production
-  - [ ] Custom event rendering for production tasks
-  - [ ] Resource view for staff assignment
-  - [ ] Timeline view for production schedule
-- [ ] ProductionAssignmentModal component
-  - [ ] Recipe selection
-  - [ ] Quantity input
-  - [ ] Staff assignment
-  - [ ] Date and time selection
-  - [ ] Notes field
+- [x] ProductionSchedulerCalendar component
+  - [x] Adapt TaskSchedulerCalendar for recipe production
+  - [x] Custom event rendering for production tasks
+  - [x] Resource view for staff assignment
+  - [x] Timeline view for production schedule
+  - [x] Implement controlled view management (view prop, onViewChange, datesSet)
+  - [x] Ensure stable view switching without flickering (e.g., using key prop on FullCalendar)
+  - [x] Refine calendar state management in ProductionSchedulerPage (view, date, data fetching)
+- [x] ProductionAssignmentModal component
+  - [x] Recipe selection
+  - [x] Quantity input
+  - [x] Staff assignment
+  - [x] Date and time selection
+  - [x] Notes field
+  - [x] Recurrence options
 
 ### Production Workflow Components
-- [ ] ProductionTaskDetailModal component
-  - [ ] Display recipe details
-  - [ ] Show production steps
-  - [ ] Status update controls
-  - [ ] Notes and feedback input
+- [x] ProductionTaskDetailModal component
+  - [x] Display recipe details
+  - [x] Show production steps
+  - [x] Status update controls
+  - [x] Notes and feedback input
+  - [x] Workflow stepper for task progression
 - [ ] ProductionProcessTracker component
   - [ ] Step-by-step workflow visualization
   - [ ] Checkpoint completion tracking
@@ -60,6 +67,10 @@
   - [ ] Quality control inputs
 
 ### Staff Dashboard Components
+- [x] Production tasks integrated in ProductionSchedulerPage
+  - [x] Calendar view of assigned production tasks
+  - [x] Filtering by date, status, department, recipe
+  - [x] Quick status update via modals
 - [ ] StaffProductionTasksList component
   - [ ] List view of assigned production tasks
   - [ ] Filtering by date, status
@@ -70,6 +81,11 @@
   - [ ] Checkpoints and quality control fields
 
 ### Manager Dashboard Components
+- [x] ProductionSchedulerPage component
+  - [x] Comprehensive production scheduling interface
+  - [x] Calendar and modal integration
+  - [x] CRUD operations for production tasks
+  - [x] Filtering and staff assignment
 - [ ] ProductionScheduleOverview component
   - [ ] Summary of scheduled productions
   - [ ] Status indicators
