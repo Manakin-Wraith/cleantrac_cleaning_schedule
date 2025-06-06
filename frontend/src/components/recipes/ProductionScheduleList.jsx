@@ -336,11 +336,37 @@ const ProductionScheduleList = ({ departmentColor }) => {
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((schedule) => (
                   <TableRow key={schedule.id} hover>
-                    <TableCell>{schedule.recipe_name}</TableCell>
-                    <TableCell>{formatDate(schedule.scheduled_date)}</TableCell>
-                    <TableCell>{schedule.quantity} {schedule.recipe_yield_unit}</TableCell>
-                    <TableCell>{schedule.assigned_to_name || 'Unassigned'}</TableCell>
-                    <TableCell>{getStatusChip(schedule.status)}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight="medium">
+                        {schedule.recipe_details?.name || schedule.recipe_name || 'Unnamed Recipe'}
+                      </Typography>
+                      {schedule.description && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {schedule.description}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {formatDate(schedule.scheduled_date)}
+                      {schedule.scheduled_start_time && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {new Date(schedule.scheduled_start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
+                          {new Date(schedule.scheduled_end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {schedule.batch_size || schedule.quantity || '0'} 
+                        {schedule.recipe_details?.yield_unit || schedule.recipe_yield_unit || ''}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      {schedule.assigned_staff_names?.join(', ') || 
+                       schedule.assigned_to_name || 
+                       (schedule.assigned_staff_ids?.length > 0 ? 'Staff #' + schedule.assigned_staff_ids[0] : 'Unassigned')}
+                    </TableCell>
+                    <TableCell>{getStatusChip(schedule.status || 'scheduled')}</TableCell>
                     <TableCell align="right">
                       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                         {schedule.status !== 'completed' && schedule.status !== 'cancelled' && (
