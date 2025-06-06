@@ -18,11 +18,12 @@ import AddIcon from '@mui/icons-material/Add';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import apiClient from '../services/api';
+import axios from 'axios';
 import { Draggable } from '@fullcalendar/interaction';
 import ProductionSchedulerCalendar from '../components/recipes/ProductionSchedulerCalendar';
 import ProductionAssignmentModal from '../components/recipes/ProductionAssignmentModal';
 import ProductionTaskDetailModal from '../components/recipes/ProductionTaskDetailModal';
-import { format, startOfMonth, endOfMonth, addHours } from 'date-fns';
+import { format, addHours } from 'date-fns';
 import { useTheme } from '@mui/material/styles';
 
 const ProductionSchedulerPage = () => {
@@ -37,7 +38,7 @@ const ProductionSchedulerPage = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [canEdit, setCanEdit] = useState(true); // This would typically come from user roles/permissions
+  const [canEdit] = useState(true); // This would typically come from user roles/permissions
 
   const calendarRef = useRef(null);
 
@@ -86,21 +87,91 @@ const ProductionSchedulerPage = () => {
       const tasksData = Array.isArray(response.data) ? response.data : 
                        (response.data?.results || []);
       
-      const tasks = tasksData.map(task => ({
-        id: task.id,
-        resourceId: task.assigned_staff_id || 'unassigned',
-        title: `${task.recipe_details?.name || 'Task'} (${task.task_type_display || task.task_type})`,
-        start: new Date(task.scheduled_start_time),
-        end: new Date(task.scheduled_end_time),
-        extendedProps: {
-          ...task,
-          recipe_name: task.recipe_details?.name,
-          batch_size: task.scheduled_quantity,
-          yield_unit: task.recipe_details?.yield_unit,
-          description: task.description,
-        },
-        // Add color based on status if needed, or handle in calendar component
-      }));
+      console.log('Raw production tasks data:', tasksData);
+      
+      // Helper function to get color based on task status
+      const getTaskColor = (status, isBorder = false) => {
+        const theme = {
+          palette: {
+            primary: { main: '#1976d2', light: '#42a5f5', dark: '#1565c0' },
+            success: { main: '#2e7d32', light: '#4caf50', dark: '#1b5e20' },
+            error: { main: '#d32f2f', light: '#ef5350', dark: '#c62828' },
+            warning: { main: '#ed6c02', light: '#ff9800', dark: '#e65100' },
+            info: { main: '#0288d1', light: '#03a9f4', dark: '#01579b' },
+            grey: { 400: '#bdbdbd', 500: '#9e9e9e', 600: '#757575' }
+          }
+        };
+        
+        switch (status) {
+          case 'completed':
+            return isBorder ? theme.palette.success.dark : theme.palette.success.main;
+          case 'in_progress':
+            return isBorder ? theme.palette.info.dark : theme.palette.info.main;
+          case 'scheduled':
+            return isBorder ? theme.palette.primary.dark : theme.palette.primary.main;
+          case 'cancelled':
+            return isBorder ? theme.palette.error.dark : theme.palette.error.main;
+          case 'pending_review':
+            return isBorder ? theme.palette.warning.dark : theme.palette.warning.main;
+          case 'on_hold':
+            return isBorder ? theme.palette.grey[600] : theme.palette.grey[500];
+          default:
+            return isBorder ? theme.palette.primary.dark : theme.palette.primary.main;
+        }
+      };
+      
+      const tasks = tasksData.map(task => {
+        // Ensure we have valid start and end times
+        let startTime = task.scheduled_start_time ? new Date(task.scheduled_start_time) : null;
+        let endTime = task.scheduled_end_time ? new Date(task.scheduled_end_time) : null;
+        
+        // If we don't have valid times but have a scheduled date, create default times
+        if (task.scheduled_date && (!startTime || !endTime)) {
+          const scheduledDate = new Date(task.scheduled_date);
+          if (!startTime) {
+            startTime = new Date(scheduledDate);
+            startTime.setHours(9, 0, 0); // Default to 9:00 AM
+          }
+          if (!endTime) {
+            endTime = new Date(scheduledDate);
+            endTime.setHours(11, 0, 0); // Default to 11:00 AM (2 hour duration)
+          }
+        }
+        
+        // Get recipe name from either recipe_details or directly from recipe_name field
+        const recipeName = task.recipe_details?.name || task.recipe_name || 'Unnamed Recipe';
+        
+        // Get batch size from either scheduled_quantity or batch_size field
+        const batchSize = task.scheduled_quantity || task.batch_size || '';
+        
+        // Get assigned staff IDs - handle both single ID and array formats
+        const staffIds = task.assigned_staff_ids || 
+                        (task.assigned_staff_id ? [task.assigned_staff_id] : []);
+        
+        // Use the first staff ID as the resourceId for calendar display
+        const resourceId = staffIds.length > 0 ? staffIds[0].toString() : 'unassigned';
+        
+        return {
+          id: task.id.toString(),
+          resourceId: resourceId,
+          title: `${recipeName} (${batchSize}${task.recipe_details?.yield_unit || ''})`,
+          start: startTime,
+          end: endTime,
+          extendedProps: {
+            ...task,
+            recipe_name: recipeName,
+            batch_size: batchSize,
+            yield_unit: task.recipe_details?.yield_unit || '',
+            description: task.description || `Production of ${recipeName}`,
+            status: task.status || 'scheduled',
+            task_type: task.task_type || 'production',
+            assigned_staff_ids: staffIds
+          },
+          backgroundColor: getTaskColor(task.status || 'scheduled'),
+          borderColor: getTaskColor(task.status || 'scheduled', true),
+          textColor: '#ffffff'
+        };
+      });
       setProductionTasks(tasks);
     } catch (err) {
       console.error('Error fetching production tasks:', err);
@@ -212,7 +283,45 @@ const ProductionSchedulerPage = () => {
           return {}; 
         }
       });
+      
+      // Re-initialize draggable after a short delay to ensure DOM is fully updated
+      const reInitTimeout = setTimeout(() => {
+        if (draggable) {
+          draggable.destroy();
+          draggable = new Draggable(externalEventsRef.current, {
+            itemSelector: '.draggable-recipe-item',
+            eventData: function(eventEl) {
+              const eventDataString = eventEl.getAttribute('data-event');
+              if (eventDataString) {
+                try {
+                  const parsedData = JSON.parse(eventDataString);
+                  return {
+                    title: parsedData.title,
+                    duration: parsedData.duration || '02:00',
+                    extendedProps: { 
+                      recipe_id: parsedData.recipe_id,
+                      isExternal: true 
+                    },
+                  };
+                } catch (e) {
+                  console.error("Failed to parse event data from draggable item:", e);
+                  return {};
+                }
+              }
+              return {}; 
+            }
+          });
+        }
+      }, 500);
+      
+      return () => {
+        clearTimeout(reInitTimeout);
+        if (draggable) {
+          draggable.destroy();
+        }
+      };
     }
+    
     return () => {
       if (draggable) {
         draggable.destroy();
@@ -226,27 +335,87 @@ const ProductionSchedulerPage = () => {
     const extendedProps = event.extendedProps;
     
     if (extendedProps.isExternal) {
+      console.log('External recipe event received:', event);
+      
       // Store the placeholder event ID
       setPlaceholderEventId(event.id);
       
-      // Open the assignment modal with pre-filled data
+      // Get the start and end time from where the event was dropped
       const startTime = event.start;
       const endTime = event.end || addHours(startTime, 2); // Default 2 hours if no end time
       
+      // Get the staff resource where the event was dropped
+      const resource = event.getResources()[0];
+      const staffId = resource?.id !== 'unassigned' ? resource?.id : null;
+      
+      // Find the recipe details from our recipes array
+      const recipeDetails = recipes.find(r => {
+        return r.id === extendedProps.recipe_id || r.recipe_id === extendedProps.recipe_id;
+      });
+      
+      if (!recipeDetails) {
+        console.warn('Recipe details not found for ID:', extendedProps.recipe_id);
+      } else {
+        console.log('Found recipe details:', recipeDetails);
+      }
+      
+      // Find staff details
+      const staffDetails = staffId ? staffResources.find(s => s.id === staffId) : null;
+      if (staffId && !staffDetails) {
+        console.warn('Staff details not found for ID:', staffId);
+      } else if (staffDetails) {
+        console.log('Found staff details:', staffDetails);
+      }
+      
+      // Create a comprehensive task data object with all necessary information
       const taskData = {
+        id: null, // New task
+        recipe: recipeDetails, // Full recipe object
         recipe_id: extendedProps.recipe_id,
-        recipe_name: extendedProps.recipe_name,
-        yield_unit: extendedProps.yield_unit,
+        recipe_name: recipeDetails?.name || extendedProps.title,
+        yield_unit: recipeDetails?.yield_unit || 'units',
         scheduled_start_time: startTime,
         scheduled_end_time: endTime,
-        assigned_staff_id: event.getResources()[0]?.id === 'unassigned' ? null : event.getResources()[0]?.id,
+        assigned_staff_id: staffId,
+        assigned_staff: staffDetails ? [staffDetails] : [], // Array for Autocomplete
         task_type: 'production', // Default task type
         scheduled_quantity: 1, // Default quantity
-        status: 'scheduled' // Default status
+        status: 'scheduled', // Default status
+        department_id: recipeDetails?.department_id || null,
+        description: `Production of ${recipeDetails?.name || extendedProps.title}`,
+        notes: ''
       };
       
-      setSelectedTask(taskData);
-      setEditMode(false); // This is a new task
+      console.log('Recipe dropped - Task data for modal:', taskData);
+
+      // Create a placeholder event directly in the calendar
+      const tempId = `placeholder-${Date.now()}`;
+      if (calendarRef.current?.getApi()) {
+        const calendarApi = calendarRef.current.getApi();
+        calendarApi.addEvent({
+          id: tempId,
+          title: taskData.recipe_name || 'New Production Task',
+          start: taskData.scheduled_start_time,
+          end: taskData.scheduled_end_time,
+          resourceId: taskData.assigned_staff_id || undefined,
+          allDay: false, // Assuming production tasks are not all-day
+          extendedProps: {
+            ...taskData, // Spread all taskData into extendedProps
+            isPlaceholder: true // Flag to identify this as a placeholder
+          },
+          backgroundColor: theme.palette.grey[300], // Distinct styling for placeholder
+          borderColor: theme.palette.grey[500],
+          textColor: theme.palette.grey[700],
+          classNames: ['placeholder-production-event']
+        });
+        setPlaceholderEventId(tempId); // Store the ID of the placeholder event
+        console.log(`Added placeholder event ${tempId} to calendar.`);
+      } else {
+        console.warn('Calendar API not available to add placeholder event.');
+      }
+      
+      setSelectedTask(taskData); // This will be used to populate the modal
+      setEditMode(false); // This is a new task, not an edit
       setAssignmentModalOpen(true);
     }
   };
@@ -261,7 +430,7 @@ const ProductionSchedulerPage = () => {
     setSelectedTask(null); // Clear previous task for new assignment
     setEditMode(false);
     // If staffId is provided (e.g., clicking on a resource column), pre-select staff
-    const staff = staffResources.find(s => s.id === staffId);
+    // const staff = staffResources.find(s => s.id === staffId);
     // Pass staff object to modal if found
     setAssignmentModalOpen(true);
   };
@@ -275,14 +444,31 @@ const ProductionSchedulerPage = () => {
     }
   };
 
+  const handleCloseAssignmentModal = () => {
+    if (placeholderEventId && calendarRef.current?.getApi) {
+      const calendarApi = calendarRef.current.getApi();
+      const placeholderEvent = calendarApi.getEventById(placeholderEventId);
+      if (placeholderEvent) {
+        placeholderEvent.remove();
+        console.log(`Placeholder event ${placeholderEventId} removed on modal cancel.`);
+      }
+      setPlaceholderEventId(null); // Clear the placeholder ID
+    }
+    setAssignmentModalOpen(false);
+    setEditMode(false); // Reset edit mode
+    setSelectedTask(null); // Clear any selected task
+  };
+
   const handleSaveProductionTask = async (taskData) => {
     setLoading(true);
     try {
       let response;
       if (editMode && selectedTask && selectedTask.id) {
         response = await apiClient.put(`/production-schedules/${selectedTask.id}/`, taskData);
+        console.log('Updated production task:', response.data);
       } else {
         response = await apiClient.post('/production-schedules/', taskData);
+        console.log('Created new production task:', response.data);
       }
       
       // Remove placeholder event if it exists
@@ -296,7 +482,21 @@ const ProductionSchedulerPage = () => {
         setPlaceholderEventId(null);
       }
       
-      fetchProductionTasks(selectedDate); // Refresh tasks
+      // Ensure calendar is refreshed with the latest data
+      await fetchProductionTasks(selectedDate);
+      
+      // Force calendar to re-render
+      if (calendarRef.current?.getApi) {
+        const calendarApi = calendarRef.current.getApi();
+        calendarApi.refetchEvents();
+        
+        // If we saved a new task, navigate to its date to ensure visibility
+        if (!editMode && taskData.scheduled_date) {
+          const taskDate = new Date(taskData.scheduled_date);
+          calendarApi.gotoDate(taskDate);
+        }
+      }
+      
       setAssignmentModalOpen(false);
       setEditMode(false);
       setSelectedTask(null);
@@ -493,7 +693,10 @@ const ProductionSchedulerPage = () => {
                   flexWrap: 'wrap', 
                   gap: 1, 
                   mb: 2,
-                  minHeight: '50px' 
+                  minHeight: '50px',
+                  overflow: 'visible', // Important for drag operations
+                  position: 'relative', // Establish positioning context
+                  zIndex: 100 // Ensure draggable items appear above other elements
                 }}
               >
                 {loadingRecipes ? (
@@ -512,14 +715,22 @@ const ProductionSchedulerPage = () => {
                         backgroundColor: theme.palette.primary.light,
                         color: theme.palette.primary.contrastText,
                         padding: '8px 12px',
+                        margin: '4px 0',
                         borderRadius: '4px',
                         cursor: 'grab',
                         userSelect: 'none',
                         display: 'flex',
                         alignItems: 'center',
+                        position: 'relative',
+                        zIndex: 1,
+                        touchAction: 'none',
                         '&:hover': {
                           backgroundColor: theme.palette.primary.main,
                           boxShadow: theme.shadows[2]
+                        },
+                        '&:active': {
+                          cursor: 'grabbing',
+                          opacity: 0.8
                         }
                       }}
                     >
@@ -554,32 +765,33 @@ const ProductionSchedulerPage = () => {
             />
           </Paper>
         </>
-        )}
+       )}
 
-        {assignmentModalOpen && (
-          <ProductionAssignmentModal
-            open={assignmentModalOpen}
-            onClose={() => {
-              setAssignmentModalOpen(false);
-              setSelectedTask(null);
-            }}
-          />
-        )}
+      {/* Modals rendered outside the main conditional content block */}
+      <ProductionAssignmentModal
+        open={assignmentModalOpen}
+        onClose={handleCloseAssignmentModal} // Use the new handler
+        productionTask={selectedTask}
+        editMode={editMode}
+        onSave={handleSaveProductionTask}
+        recipes={recipes} // Pass recipes
+        staffOptions={staffResources} // Pass staff options
+        departmentOptions={departmentOptions} // Pass department options
+        // Add any other props your modal needs, e.g., isLoading
+      />
 
-        {detailModalOpen && selectedTask && (
-          <ProductionTaskDetailModal
-            open={detailModalOpen}
-            onClose={() => {
-              setDetailModalOpen(false);
-              setSelectedTask(null);
-            }}
-            productionTask={selectedTask}
-            onEdit={handleEditTask}
-            onDelete={handleDeleteTask}
-            onStatusUpdate={handleStatusUpdate}
-            canEdit={canEdit} // Pass permission flag
-          />
-        )}
+      <ProductionTaskDetailModal
+        open={detailModalOpen}
+        onClose={() => {
+          setDetailModalOpen(false);
+          setSelectedTask(null);
+        }}
+        productionTask={selectedTask}
+        onEdit={handleEditTask}
+        onDelete={handleDeleteTask}
+        onStatusUpdate={handleStatusUpdate}
+        canEdit={canEdit} // Pass permission flag
+      />
       </Container>
     </LocalizationProvider>
   );

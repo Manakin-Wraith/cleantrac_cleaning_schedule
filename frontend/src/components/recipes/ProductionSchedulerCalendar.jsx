@@ -37,75 +37,94 @@ const ProductionSchedulerCalendar = ({
 
     // Custom event rendering function for production tasks
     const renderEventContent = (eventInfo) => {
-        const { status, task_type, recipe_name, batch_size, yield_unit } = eventInfo.event.extendedProps;
+        const { status, task_type, recipe_name, batch_size, yield_unit, isPlaceholder, description } = eventInfo.event.extendedProps;
         
-        let backgroundColor = theme.palette.grey[200];
-        let textColor = theme.palette.getContrastText(backgroundColor);
-        let borderColor = theme.palette.grey[400];
+        let backgroundColor, textColor, borderColor, effectiveStatus;
 
-        // Color coding based on production task status
-        switch (status) {
-            case 'completed':
-                backgroundColor = theme.palette.success.light;
-                textColor = theme.palette.success.contrastText;
-                borderColor = theme.palette.success.main;
-                break;
-            case 'in_progress':
-                backgroundColor = theme.palette.info.light;
-                textColor = theme.palette.info.contrastText;
-                borderColor = theme.palette.info.main;
-                break;
-            case 'scheduled':
-                backgroundColor = theme.palette.primary.light;
-                textColor = theme.palette.primary.contrastText;
-                borderColor = theme.palette.primary.main;
-                break;
-            case 'cancelled':
-                backgroundColor = theme.palette.error.light;
-                textColor = theme.palette.error.contrastText;
-                borderColor = theme.palette.error.main;
-                break;
-            case 'pending_review':
-                backgroundColor = theme.palette.warning.light;
-                textColor = theme.palette.warning.contrastText;
-                borderColor = theme.palette.warning.main;
-                break;
-            case 'on_hold':
-                backgroundColor = theme.palette.grey[400];
-                textColor = theme.palette.getContrastText(theme.palette.grey[400]);
-                borderColor = theme.palette.grey[600];
-                break;
-            default:
-                break;
+        if (isPlaceholder) {
+            backgroundColor = eventInfo.event.backgroundColor || theme.palette.grey[300];
+            textColor = eventInfo.event.textColor || theme.palette.getContrastText(backgroundColor);
+            borderColor = eventInfo.event.borderColor || theme.palette.grey[500];
+            effectiveStatus = 'placeholder'; // Use a distinct status for styling if needed
+        } else {
+            effectiveStatus = status;
+            // Default colors, will be overridden by status
+            backgroundColor = theme.palette.grey[200];
+            textColor = theme.palette.getContrastText(backgroundColor);
+            borderColor = theme.palette.grey[400];
+
+            // Color coding based on production task status
+            switch (effectiveStatus) {
+                case 'completed':
+                    backgroundColor = theme.palette.success.light;
+                    textColor = theme.palette.success.contrastText;
+                    borderColor = theme.palette.success.main;
+                    break;
+                case 'in_progress':
+                    backgroundColor = theme.palette.info.light;
+                    textColor = theme.palette.info.contrastText;
+                    borderColor = theme.palette.info.main;
+                    break;
+                case 'scheduled':
+                    backgroundColor = theme.palette.primary.light;
+                    textColor = theme.palette.primary.contrastText;
+                    borderColor = theme.palette.primary.main;
+                    break;
+                case 'cancelled':
+                    backgroundColor = theme.palette.error.light;
+                    textColor = theme.palette.error.contrastText;
+                    borderColor = theme.palette.error.main;
+                    break;
+                case 'pending_review':
+                    backgroundColor = theme.palette.warning.light;
+                    textColor = theme.palette.warning.contrastText;
+                    borderColor = theme.palette.warning.main;
+                    break;
+                case 'on_hold':
+                    backgroundColor = theme.palette.grey[400];
+                    textColor = theme.palette.getContrastText(theme.palette.grey[400]);
+                    borderColor = theme.palette.grey[600];
+                    break;
+                default:
+                    // Keep default grey for unknown statuses
+                    break;
+            }
         }
 
         // Additional styling based on task type
         let taskTypeIcon = '📋'; // Default icon
-        switch (task_type) {
-            case 'prep':
-                taskTypeIcon = '🔪';
-                break;
-            case 'production':
-                taskTypeIcon = '👨‍🍳';
-                break;
-            case 'post_production':
-                taskTypeIcon = '🧹';
-                break;
-            case 'quality_check':
-                taskTypeIcon = '✓';
-                break;
-            case 'packaging':
-                taskTypeIcon = '📦';
-                break;
-            case 'cleanup':
-                taskTypeIcon = '🧼';
-                break;
-            default:
-                break;
+        if (task_type) { // Only show icon if task_type is defined
+            switch (task_type) {
+                case 'prep':
+                    taskTypeIcon = '🔪';
+                    break;
+                case 'production':
+                    taskTypeIcon = '👨‍🍳';
+                    break;
+                case 'post_production':
+                    taskTypeIcon = '🧹';
+                    break;
+                case 'quality_check':
+                    taskTypeIcon = '✓';
+                    break;
+                case 'packaging':
+                    taskTypeIcon = '📦';
+                    break;
+                case 'cleanup':
+                    taskTypeIcon = '🧼';
+                    break;
+                default:
+                    break;
+            }
+        } else if (isPlaceholder) {
+            taskTypeIcon = '⏳'; // Placeholder icon
         }
+        
+        const displayTitle = isPlaceholder ? `(Pending) ${eventInfo.event.title}` : eventInfo.event.title;
+        const tooltipTitle = `${recipe_name || eventInfo.event.title} - ${batch_size || ''} ${yield_unit || ''} - ${description || ''}`.trim().replace(/^- - $/, '');
 
         return (
-            <Tooltip title={`${recipe_name} - ${batch_size} ${yield_unit} - ${eventInfo.event.extendedProps.description || ''}`}>
+            <Tooltip title={tooltipTitle}>
                 <Box
                     sx={{
                         backgroundColor,
@@ -120,7 +139,8 @@ const ProductionSchedulerCalendar = ({
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'center',
-                        boxShadow: theme.shadows[1]
+                        boxShadow: theme.shadows[1],
+                        opacity: isPlaceholder ? 0.7 : 1,
                     }}
                 >
                     <Typography 
@@ -130,10 +150,10 @@ const ProductionSchedulerCalendar = ({
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            textDecoration: status === 'completed' ? 'line-through' : 'none',
+                            textDecoration: effectiveStatus === 'completed' ? 'line-through' : 'none',
                         }}
                     >
-                        {taskTypeIcon} {eventInfo.event.title}
+                        {taskTypeIcon} {displayTitle}
                     </Typography>
                     {eventInfo.timeText && (
                         <Typography 
@@ -142,7 +162,7 @@ const ProductionSchedulerCalendar = ({
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
-                                textDecoration: status === 'completed' ? 'line-through' : 'none',
+                                textDecoration: effectiveStatus === 'completed' ? 'line-through' : 'none',
                             }}
                         >
                             {eventInfo.timeText}

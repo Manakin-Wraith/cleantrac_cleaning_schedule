@@ -142,7 +142,13 @@ const ProductionTaskDetailModal = ({
           
           // Fetch ingredients
           const ingredientsResponse = await axios.get(`/api/recipes/${productionTask.recipe_id}/ingredients/`);
-          setIngredients(ingredientsResponse.data);
+          // Ensure ingredientsResponse.data is an array before setting state
+          const fetchedIngredients = Array.isArray(ingredientsResponse.data) 
+            ? ingredientsResponse.data 
+            : (ingredientsResponse.data && Array.isArray(ingredientsResponse.data.results)) 
+              ? ingredientsResponse.data.results // Handle paginated response like DRF
+              : [];
+          setIngredients(fetchedIngredients);
           
           setLoading(false);
         } catch (error) {

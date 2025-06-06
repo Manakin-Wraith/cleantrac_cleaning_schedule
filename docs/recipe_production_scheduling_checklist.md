@@ -45,6 +45,11 @@
   - [x] Implement controlled view management (initialView prop, onViewChange, datesSet) - *Key props removed for stability*
   - [x] Ensure stable view switching without flickering - *Achieved by removing key props and stabilizing useEffect dependencies*
   - [x] Refine calendar state management in ProductionSchedulerPage (view, date, data fetching) - *Stabilized data fetching on date/view changes*
+- [x] Recipe Drag-and-Drop Functionality
+  - [x] Enhanced `handleEventReceive` to extract complete recipe information
+  - [x] Improved staff assignment from drop location
+  - [x] Added accurate time range extraction from drop location
+  - [x] Implemented comprehensive task data creation for modal
 - [x] ProductionAssignmentModal component
   - [x] Recipe selection
   - [x] Quantity input
@@ -52,6 +57,10 @@
   - [x] Date and time selection
   - [x] Notes field
   - [x] Recurrence options
+  - [x] Enhanced modal data population from drag-and-drop events
+  - [x] Fixed form submission data format to match backend expectations
+  - [x] Resolved React hydration error with nested heading elements
+  - [x] Improved modal design consistency and accessibility
 
 ### Production Workflow Components
 - [x] ProductionTaskDetailModal component
@@ -71,10 +80,14 @@
   - [x] Calendar view of assigned production tasks
   - [x] Filtering by date, status, department, recipe
   - [x] Quick status update via modals
-- [ ] StaffProductionTasksList component
-  - [ ] List view of assigned production tasks
-  - [ ] Filtering by date, status
-  - [ ] Quick status update buttons
+  - [x] Improved calendar refresh logic after saving production tasks
+  - [x] Enhanced task visibility across all calendar views
+- [x] ProductionScheduleList component
+  - [x] List view of production tasks with comprehensive information
+  - [x] Enhanced display of recipe name, batch size, and assigned staff
+  - [x] Improved date and time display with visual hierarchy
+  - [x] Status indicators with color-coded chips
+  - [x] Action buttons for task management
 - [ ] ProductionTaskSheetPrintView component
   - [ ] Printable view of production tasks
   - [ ] Recipe details and instructions
@@ -86,6 +99,9 @@
   - [x] Calendar and modal integration
   - [x] CRUD operations for production tasks
   - [x] Filtering and staff assignment
+  - [x] Improved task data handling for consistent display
+  - [x] Enhanced event rendering with proper color coding
+  - [x] Fixed syntax errors and linting issues for code quality
 - [ ] ProductionScheduleOverview component
   - [ ] Summary of scheduled productions
   - [ ] Status indicators
@@ -127,6 +143,28 @@
   - [ ] Feedback collection
 
 ## IV. User Experience Enhancements
+
+### UI/UX Modernization Recommendations
+- [ ] Modal Layout Redesign
+  - [ ] Implement React Hook Form for improved form handling and validation
+  - [ ] Replace current form structure with more efficient controlled components
+  - [ ] Add form validation with visual feedback using Zod or Yup schema validation
+  - [ ] Implement stepped form layout for complex forms to reduce cognitive load
+- [ ] Component Library Upgrades
+  - [ ] Consider upgrading to Material UI v5 with the new styled API for consistent theming
+  - [ ] Evaluate Chakra UI as an alternative for more accessible and customizable components
+  - [ ] Implement responsive dialog components with improved mobile experience
+  - [ ] Add skeleton loaders for better loading states
+- [ ] User Interaction Improvements
+  - [ ] Add drag handle indicators to draggable recipe chips
+  - [ ] Implement visual feedback during drag operations
+  - [ ] Add tooltips to show recipe details on hover
+  - [ ] Implement keyboard navigation for accessibility
+- [ ] Visual Design Enhancements
+  - [ ] Create a consistent color system for task statuses and types
+  - [ ] Improve typography hierarchy for better readability
+  - [ ] Add subtle animations for state transitions
+  - [ ] Implement responsive spacing system
 
 ### Mobile Responsiveness
 - [ ] Optimize calendar view for mobile
