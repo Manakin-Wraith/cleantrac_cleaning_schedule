@@ -521,7 +521,7 @@ const ProductionAssignmentModal = ({
           pb: 2 
         }}
       >
-        <span>{editMode ? 'Edit Production Task' : 'Schedule New Production Task'}</span>
+        {editMode ? 'Edit Production Task' : 'Schedule New Production Task'}
         <IconButton onClick={onClose} size="small" aria-label="close">
           <CloseIcon />
         </IconButton>
