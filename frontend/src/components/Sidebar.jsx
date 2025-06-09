@@ -6,8 +6,9 @@ import appLogo from '../assets/box_icon.png';
 
 // Import icons
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import ListAltIcon from '@mui/icons-material/ListAlt';
+import AcUnitIcon from '@mui/icons-material/AcUnit';
 import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import LogoutIcon from '@mui/icons-material/Logout'; 
@@ -101,16 +102,16 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
       text: 'Management',
       icon: <TuneIcon />,
       children: [
-        { text: 'Item Management', icon: <ListAltIcon />, path: '/manager-items' },
+        { text: 'Recipe Management', icon: <RestaurantMenuIcon />, path: '/recipe-management' },
+        { text: 'Cleaning Item Management', icon: <CleaningServicesIcon />, path: '/manager-items' },
         { text: 'Staff', icon: <PeopleIcon />, path: '/manager-users' },
         { text: 'Suppliers', icon: <LocalShippingIcon />, path: '/manager-suppliers' },
         // departmentManagementLink will be added here conditionally
       ],
     },
     { text: 'Thermometers', icon: <DeviceThermostatIcon />, path: '/manager-thermometers' },
-    { text: 'Temperature Checks', icon: <AccessTimeIcon />, path: '/manager-temperature-checks' },
+    { text: 'Temperature Checks', icon: <AcUnitIcon />, path: '/manager-temperature-checks' },
     { text: 'Document Templates', icon: <DescriptionIcon />, path: '/manager-documents' },
-    { text: 'Recipe Management', icon: <RestaurantMenuIcon />, path: '/recipe-management' },
     { text: 'Production Scheduler', icon: <CalendarMonthIcon />, path: '/production-scheduler' },
     { text: 'Task Scheduler', icon: <CalendarMonthIcon />, path: '/manager-schedule' },
   ];

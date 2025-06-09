@@ -611,33 +611,100 @@ const ProductionSchedulerPage = () => {
   };
 
   const handleEventDrop = async (dropInfo) => {
-    const { event, oldResource, newResource } = dropInfo;
+    // Prevent the default revert behavior
+    dropInfo.preventDefault();
+    const { event, oldEvent, revert } = dropInfo;
     const taskId = event.id;
-    const newStartTime = event.start;
-    const newEndTime = event.end;
-    const newAssignedStaffId = newResource ? newResource.id : (oldResource ? oldResource.id : null);
-
-    const taskToUpdate = productionTasks.find(t => t.id.toString() === taskId.toString())?.extendedProps;
-
+    let updatedFields = {};
+    const changeDescription = [];
+    
+    // Get the task to update from our local state
+    const taskToUpdate = productionTasks.find(t => t.id.toString() === taskId.toString());
+    
     if (!taskToUpdate) {
       setError('Failed to find task for update.');
-      dropInfo.revert();
+      revert();
       return;
     }
-
-    const updateData = {
-      scheduled_start_time: format(newStartTime, "yyyy-MM-dd'T'HH:mm:ss"),
-      scheduled_end_time: newEndTime ? format(newEndTime, "yyyy-MM-dd'T'HH:mm:ss") : undefined,
-      assigned_staff_id: newAssignedStaffId === 'unassigned' ? null : newAssignedStaffId,
-    };
-
+    
+    // Handle date changes
+    const newScheduledDate = format(event.start, "yyyy-MM-dd");
+    const oldScheduledDate = oldEvent ? format(oldEvent.start, "yyyy-MM-dd") : null;
+    
+    if (newScheduledDate !== oldScheduledDate) {
+      updatedFields.scheduled_date = newScheduledDate;
+      changeDescription.push(`date to ${newScheduledDate}`);
+    }
+    
+    // Handle resource (staff) changes
+    const newResourceId = event.getResources()?.[0]?.id;
+    const oldResourceId = oldEvent ? oldEvent.getResources()?.[0]?.id : null;
+    
+    if (newResourceId !== oldResourceId) {
+      updatedFields.assigned_staff_id = newResourceId === 'unassigned' ? null : newResourceId;
+      const newStaffName = newResourceId && newResourceId !== 'unassigned' ? 
+        staffResources.find(s => s.id.toString() === newResourceId.toString())?.title || 'Unknown' : 'Unassigned';
+      changeDescription.push(`staff to ${newStaffName}`);
+    }
+    
+    // Handle time changes - always include timezone info
+    const newStartTime = format(event.start, "yyyy-MM-dd'T'HH:mm:ssxxx");
+    const oldStartTime = oldEvent ? format(oldEvent.start, "yyyy-MM-dd'T'HH:mm:ssxxx") : null;
+    
+    if (newStartTime !== oldStartTime) {
+      updatedFields.scheduled_start_time = newStartTime;
+      changeDescription.push(`start time to ${format(event.start, "HH:mm")}`);
+    }
+    
+    if (event.end) {
+      const newEndTime = format(event.end, "yyyy-MM-dd'T'HH:mm:ssxxx");
+      const oldEndTime = (oldEvent && oldEvent.end) ? format(oldEvent.end, "yyyy-MM-dd'T'HH:mm:ssxxx") : null;
+      
+      if (newEndTime !== oldEndTime) {
+        updatedFields.scheduled_end_time = newEndTime;
+        changeDescription.push(`end time to ${format(event.end, "HH:mm")}`);
+      }
+    }
+    
+    if (Object.keys(updatedFields).length === 0) {
+      console.log('No significant change detected during drop.');
+      return;
+    }
+    
+    console.log(`Updating production task ${taskId} with:`, updatedFields, "Description:", changeDescription.join(', '));
+    
     try {
-      await axios.patch(`/api/recipe-production-tasks/${taskId}/`, updateData);
-      fetchProductionTasks(selectedDate); // Refresh tasks
+      // Update the task on the server
+      await apiClient.patch(`/production-schedules/${taskId}/`, updatedFields);
+      
+      // Update the task in our local state for immediate feedback
+      if (taskToUpdate) {
+        const updatedTask = {
+          ...taskToUpdate,
+          ...updatedFields
+        };
+        
+        // Update in productionTasks for immediate display
+        setProductionTasks(prev => 
+          prev.map(t => t.id.toString() === taskId.toString() ? {
+            ...t,
+            extendedProps: {
+              ...t.extendedProps,
+              ...updatedFields
+            }
+          } : t)
+        );
+      }
+      
+      // Show success message
+      setSuccessMessage(`Task updated: ${changeDescription.join(', ')}`);
+      
+      // Fetch from server to ensure data consistency
+      fetchProductionTasks(selectedDate);
     } catch (err) {
-      console.error('Error updating task (drag & drop):', err);
-      setError('Failed to update task schedule.');
-      dropInfo.revert(); // Revert calendar event on error
+      console.error('Error updating task on drop:', err.response?.data || err.message);
+      setError(`Failed to update task: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
+      revert(); // Revert calendar event on error
     }
   };
 
@@ -671,90 +738,22 @@ const ProductionSchedulerPage = () => {
             <Tab label="Calendar View" id="tab-0" />
             <Tab label="List View" id="tab-1" />
           </Tabs>
-          <Grid container spacing={2} alignItems="center" justifyContent="space-between">
-            <Grid size={{ xs: 12, md: 4 }}>
-              <Typography variant="h4" gutterBottom>
-                Recipe Production Scheduler
-              </Typography>
-            </Grid>
-            <Grid size={{ xs: 12, md: 8 }} container spacing={2} justifyContent="flex-end">
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <DatePicker
-                        label="Selected Month"
-                        value={selectedDate}
-                        onChange={handleDateChange}
-                        views={['year', 'month']}
-                        slotProps={{
-                          textField: {
-                            fullWidth: true,
-                            helperText: "View tasks for month"
-                          }
-                        }}
-                    />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleOpenAssignmentModal(selectedDate)}
-                        fullWidth
-                        sx={{ height: '100%' }}
-                    >
-                        New Production Task
-                    </Button>
-                </Grid>
-            </Grid>
-          </Grid>
-          
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={4} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Department</InputLabel>
-                <Select
-                  value={departmentFilter}
-                  label="Department"
-                  onChange={(e) => setDepartmentFilter(e.target.value)}
-                >
-                  <MenuItem value=""><em>All Departments</em></MenuItem>
-                  {Array.isArray(departmentOptions) ? departmentOptions.map(dept => (
-                    <MenuItem key={dept.id} value={dept.id}>{dept.name}</MenuItem>
-                  )) : <MenuItem value=""><em>Loading...</em></MenuItem>}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value=""><em>All Statuses</em></MenuItem>
-                  <MenuItem value="scheduled">Scheduled</MenuItem>
-                  <MenuItem value="in_progress">In Progress</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="pending_review">Pending Review</MenuItem>
-                  <MenuItem value="on_hold">On Hold</MenuItem>
-                  <MenuItem value="cancelled">Cancelled</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4} md={3}>
-              <TextField 
-                label="Recipe Name/Code"
-                variant="outlined"
-                fullWidth
-                value={recipeFilter}
-                onChange={(e) => setRecipeFilter(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} sm={12} md={3} sx={{ display: 'flex', alignItems: 'flex-end' }}>
-                <Button variant="outlined" onClick={() => fetchProductionTasks(selectedDate)} fullWidth>
-                    Apply Filters
-                </Button>
-            </Grid>
-          </Grid>
+          {tabValue === 0 && (
+            <Grid container spacing={2} alignItems="center" justifyContent="flex-end">
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                      <Button
+                          variant="contained"
+                          startIcon={<AddIcon />}
+                          onClick={() => handleOpenAssignmentModal(selectedDate)}
+                          fullWidth
+                          sx={{ height: '100%' }}
+                      >
+                          New Production Task
+                      </Button>
+                  </Grid>
+              </Grid>
+          )}
+
         </Paper>
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -765,8 +764,9 @@ const ProductionSchedulerPage = () => {
           </Box>
         ) : (
           <>
-            {/* Available Recipes for Drag and Drop */}
-            <Paper sx={{ p: 2, mb: 3 }}>
+            {/* Available Recipes for Drag and Drop - Only show in Calendar View */}
+            {tabValue === 0 && (
+              <Paper sx={{ p: 2, mb: 3 }}>
               <Typography variant="h6" gutterBottom>
                 Available Recipes (Drag to Schedule)
               </Typography>
@@ -832,6 +832,7 @@ const ProductionSchedulerPage = () => {
                 Drag recipes to the calendar to schedule production tasks
               </Typography>
             </Paper>
+            )}
             
             {tabValue === 0 ? (
               <Paper sx={{ p: 2 }}>

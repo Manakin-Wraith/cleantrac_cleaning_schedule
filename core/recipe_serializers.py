@@ -104,20 +104,43 @@ class ProductionScheduleSerializer(serializers.ModelSerializer):
     )
     assigned_staff_details = serializers.SerializerMethodField(read_only=True)
     created_by_username = serializers.CharField(source='created_by.username', read_only=True, allow_null=True)
-    
+
+    # Fields to accept full datetime strings from payload
+    scheduled_start_time_payload = serializers.DateTimeField(
+        write_only=True,
+        required=False,
+        allow_null=True,
+        source='scheduled_start_time'  # Maps to 'scheduled_start_time' key in input data
+    )
+    scheduled_end_time_payload = serializers.DateTimeField(
+        write_only=True,
+        required=False,
+        allow_null=True,
+        source='scheduled_end_time'  # Maps to 'scheduled_end_time' key in input data
+    )
+
     class Meta:
         model = ProductionSchedule
         fields = [
             'id', 'recipe_id', 'recipe_details', 'department_id', 'department_name',
-            'scheduled_date', 'start_time', 'end_time', 'batch_size',
+            'scheduled_date',  # Model's DateField (for output, populated by create/update)
+            'start_time',      # Model's TimeField (for output, populated by create/update)
+            'end_time',        # Model's TimeField (for output, populated by create/update)
+            'batch_size',
             'status', 'assigned_staff_ids', 'assigned_staff_details',
             'notes', 'created_by', 'created_by_username',
-            'created_at', 'updated_at'
+            'created_at', 'updated_at',
+            # Add the new source fields for input processing
+            'scheduled_start_time_payload',
+            'scheduled_end_time_payload',
         ]
-        read_only_fields = ['created_at', 'updated_at']
-    
+        read_only_fields = ['created_at', 'updated_at'] # Original read_only_fields
+
+    # Preserving existing get_recipe_details method
     def get_recipe_details(self, obj):
         """Get basic recipe details"""
+        if not obj.recipe:
+            return None
         return {
             'id': obj.recipe.recipe_id,
             'name': obj.recipe.name,
@@ -125,7 +148,8 @@ class ProductionScheduleSerializer(serializers.ModelSerializer):
             'unit_cost': obj.recipe.unit_cost,
             'yield_unit': obj.recipe.yield_unit
         }
-    
+
+    # Preserving existing get_assigned_staff_details method
     def get_assigned_staff_details(self, obj):
         """Get details of assigned staff"""
         return [
@@ -136,14 +160,187 @@ class ProductionScheduleSerializer(serializers.ModelSerializer):
             }
             for user in obj.assigned_staff.all()
         ]
-    
-    def validate(self, data):
-        """Validate that end_time is after start_time if both are provided"""
-        start_time = data.get('start_time')
-        end_time = data.get('end_time')
         
-        if start_time and end_time and end_time <= start_time:
-            raise serializers.ValidationError({"end_time": "End time must be after start time"})
+    def to_representation(self, instance):
+        """Add scheduled_start_time and scheduled_end_time to the representation."""
+        # Get the default representation
+        representation = super().to_representation(instance)
+        
+        # Only proceed if we have both date and time
+        if instance.scheduled_date and instance.start_time:
+            # Import datetime and timezone utilities
+            from datetime import datetime
+            from django.utils import timezone
+            import pytz
+            
+            # Get the timezone from settings or use UTC
+            try:
+                from django.conf import settings
+                tz = pytz.timezone(settings.TIME_ZONE)
+                # Get the local timezone for the frontend (assuming SAST/UTC+2)
+                local_tz = pytz.timezone('Africa/Johannesburg')  # SAST timezone
+            except (ImportError, AttributeError):
+                tz = pytz.UTC
+                local_tz = pytz.timezone('Africa/Johannesburg')  # SAST timezone
+            
+            # Create a datetime object by combining date and time
+            start_datetime = datetime.combine(instance.scheduled_date, instance.start_time)
+            # Make it timezone-aware in the server timezone
+            start_datetime = timezone.make_aware(start_datetime, timezone=tz)
+            # Convert to the local timezone for the frontend
+            local_start_datetime = start_datetime.astimezone(local_tz)
+            # Add to representation as ISO format
+            representation['scheduled_start_time'] = local_start_datetime.isoformat()
+            
+            # Do the same for end time if it exists
+            if instance.end_time:
+                end_datetime = datetime.combine(instance.scheduled_date, instance.end_time)
+                end_datetime = timezone.make_aware(end_datetime, timezone=tz)
+                local_end_datetime = end_datetime.astimezone(local_tz)
+                representation['scheduled_end_time'] = local_end_datetime.isoformat()
+        
+        return representation
+
+    def create(self, validated_data):
+        # Import timezone utilities
+        from django.utils import timezone
+        import pytz
+        
+        # Pop the datetime objects that were parsed from the payload via source mapping
+        start_dt_obj = validated_data.pop('scheduled_start_time', None)
+        end_dt_obj = validated_data.pop('scheduled_end_time', None)
+        
+        # Get the timezone from settings or use UTC
+        try:
+            from django.conf import settings
+            tz = pytz.timezone(settings.TIME_ZONE)
+        except (ImportError, AttributeError):
+            tz = pytz.UTC
+        
+        if start_dt_obj:
+            # Make sure datetime is timezone-aware
+            if timezone.is_naive(start_dt_obj):
+                start_dt_obj = timezone.make_aware(start_dt_obj, timezone=tz)
+            
+            # Convert to the local timezone for storage
+            local_dt = start_dt_obj.astimezone(tz)
+            
+            # Store the date and time components
+            validated_data['scheduled_date'] = local_dt.date()
+            validated_data['start_time'] = local_dt.time()
+        
+        if end_dt_obj:
+            # Make sure datetime is timezone-aware
+            if timezone.is_naive(end_dt_obj):
+                end_dt_obj = timezone.make_aware(end_dt_obj, timezone=tz)
+            
+            # Convert to the local timezone for storage
+            local_dt = end_dt_obj.astimezone(tz)
+            
+            # Store the time component
+            validated_data['end_time'] = local_dt.time()
+            
+            # If scheduled_date wasn't set by start_dt_obj, set it from end_dt_obj
+            if 'scheduled_date' not in validated_data or validated_data.get('scheduled_date') is None:
+                if start_dt_obj is None:  # only set if start_dt_obj didn't already set it
+                    validated_data['scheduled_date'] = local_dt.date()
+        
+        # Set created_by to current user if not provided and user is authenticated
+        request = self.context.get('request', None)
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            if 'created_by' not in validated_data or validated_data.get('created_by') is None:
+                validated_data['created_by'] = request.user
+        
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # Import timezone utilities
+        from django.utils import timezone
+        import pytz
+        
+        start_dt_obj = validated_data.pop('scheduled_start_time', None)
+        end_dt_obj = validated_data.pop('scheduled_end_time', None)
+        
+        # Get the timezone from settings or use UTC
+        try:
+            from django.conf import settings
+            tz = pytz.timezone(settings.TIME_ZONE)
+        except (ImportError, AttributeError):
+            tz = pytz.UTC
+        
+        if start_dt_obj:
+            # Make sure datetime is timezone-aware
+            if timezone.is_naive(start_dt_obj):
+                start_dt_obj = timezone.make_aware(start_dt_obj, timezone=tz)
+            
+            # Convert to the local timezone for storage
+            local_dt = start_dt_obj.astimezone(tz)
+            
+            # Update the instance with date and time components
+            instance.scheduled_date = local_dt.date()
+            instance.start_time = local_dt.time()
+        
+        if end_dt_obj:
+            # Make sure datetime is timezone-aware
+            if timezone.is_naive(end_dt_obj):
+                end_dt_obj = timezone.make_aware(end_dt_obj, timezone=tz)
+            
+            # Convert to the local timezone for storage
+            local_dt = end_dt_obj.astimezone(tz)
+            
+            # Update the instance with time component
+            instance.end_time = local_dt.time()
+            
+            # If scheduled_date wasn't set by start_dt_obj, set it from end_dt_obj
+            if start_dt_obj is None:  # only update date from end_dt_obj if start_dt_obj didn't set it
+                instance.scheduled_date = local_dt.date()
+        
+        return super().update(instance, validated_data)
+
+    def validate(self, data):
+        """Validate that scheduled_end_time is after scheduled_start_time if both are provided from payload."""
+        # Import timezone utilities
+        from django.utils import timezone
+        import pytz
+        
+        # Get the timezone from settings or use UTC
+        try:
+            from django.conf import settings
+            tz = pytz.timezone(settings.TIME_ZONE)
+        except (ImportError, AttributeError):
+            tz = pytz.UTC
+        
+        # 'data' contains 'scheduled_start_time' and 'scheduled_end_time' as datetime objects
+        # if they were in the payload, due to source mapping on DateTimeField.
+        start_datetime = data.get('scheduled_start_time')
+        end_datetime = data.get('scheduled_end_time')
+        
+        if start_datetime and end_datetime:
+            # Make sure both datetimes are timezone-aware and in the same timezone before comparing
+            if timezone.is_naive(start_datetime):
+                start_datetime = timezone.make_aware(start_datetime, timezone=tz)
+            if timezone.is_naive(end_datetime):
+                end_datetime = timezone.make_aware(end_datetime, timezone=tz)
+                
+            # Convert both to the same timezone for comparison
+            start_datetime = start_datetime.astimezone(tz)
+            end_datetime = end_datetime.astimezone(tz)
+            
+            if end_datetime <= start_datetime:
+                raise serializers.ValidationError(
+                    {"scheduled_end_time": "Scheduled end time must be after scheduled start time."}
+                )
+        
+        # The original validation for model's start_time and end_time fields might still be relevant
+        # if these fields could be set directly through other means (not current frontend path).
+        model_start_time = data.get('start_time')  # Direct TimeField from model if sent
+        model_end_time = data.get('end_time')      # Direct TimeField from model if sent
+        
+        if model_start_time and model_end_time and model_start_time >= model_end_time:
+            # This check is for the case where only time fields are provided for the same day.
+            # If full datetimes were provided, the check above is more comprehensive.
+            if not (start_datetime and end_datetime):  # Avoid redundant error if already caught
+                raise serializers.ValidationError({"end_time": "End time must be after start time (for model time fields on the same day)."})
         
         return data
 
@@ -356,16 +553,51 @@ class RecipeProductionTaskSerializer(serializers.ModelSerializer):
         }
     
     def get_assigned_staff_details(self, obj):
-        """Get details of assigned staff member"""
-        if not obj.assigned_staff:
-            return None
-        return {
-            'id': obj.assigned_staff.id,
-            'username': obj.assigned_staff.username,
-            'first_name': obj.assigned_staff.first_name,
-            'last_name': obj.assigned_staff.last_name,
-            'email': obj.assigned_staff.email
-        }
+        """Get details of assigned staff"""
+        staff_details = []
+        for staff in obj.assigned_staff.all():
+            staff_details.append({
+                'id': staff.id,
+                'username': staff.username,
+                'first_name': staff.first_name,
+                'last_name': staff.last_name,
+                'title': f"{staff.first_name} {staff.last_name}".strip() or staff.username
+            })
+        return staff_details
+        
+    def to_representation(self, instance):
+        """Add scheduled_start_time and scheduled_end_time to the representation."""
+        # Get the default representation
+        representation = super().to_representation(instance)
+        
+        # Only proceed if we have both date and time
+        if instance.scheduled_date and instance.start_time:
+            # Import datetime and timezone utilities
+            from datetime import datetime, time
+            from django.utils import timezone
+            import pytz
+            
+            # Get the timezone from settings or use UTC
+            try:
+                from django.conf import settings
+                tz = pytz.timezone(settings.TIME_ZONE)
+            except (ImportError, AttributeError):
+                tz = pytz.UTC
+            
+            # Create a datetime object by combining date and time
+            start_datetime = datetime.combine(instance.scheduled_date, instance.start_time)
+            # Make it timezone-aware
+            start_datetime = timezone.make_aware(start_datetime, timezone=tz)
+            # Add to representation as ISO format
+            representation['scheduled_start_time'] = start_datetime.isoformat()
+            
+            # Do the same for end time if it exists
+            if instance.end_time:
+                end_datetime = datetime.combine(instance.scheduled_date, instance.end_time)
+                end_datetime = timezone.make_aware(end_datetime, timezone=tz)
+                representation['scheduled_end_time'] = end_datetime.isoformat()
+        
+        return representation
     
     def validate(self, data):
         """Validate that scheduled_end_time is after scheduled_start_time"""
