@@ -83,10 +83,23 @@ const ProductionAssignmentModal = ({
         setRecipeOptions(recipeData);
         
         // Fetch staff
+        console.log('[Modal fetchData] Fetching staff...');
         const staffResponse = await apiClient.get('/users/');
+        console.log('[Modal fetchData] Raw staffResponse:', staffResponse);
         const staffData = Array.isArray(staffResponse.data) ? staffResponse.data : 
                          (staffResponse.data?.results || []);
-        setStaffOptions(staffData.filter(user => user.is_active));
+        console.log('[Modal fetchData] Parsed staffData:', staffData);
+        if (staffData.length > 0) {
+          console.log('[Modal fetchData] First user object in staffData:', staffData[0]);
+        }
+        const schedulableStaff = staffData.filter(user => 
+          user.profile?.role === 'staff' || 
+          user.profile?.role === 'manager' ||
+          user.user_role === 'staff' || // Fallback for different structures
+          user.user_role === 'manager'   // Fallback for different structures
+        );
+        console.log('[Modal fetchData] Filtered schedulableStaff:', schedulableStaff);
+        setStaffOptions(schedulableStaff);
         
         setLoading(false);
       } catch (error) {
@@ -97,6 +110,10 @@ const ProductionAssignmentModal = ({
     
     fetchData();
   }, []);
+
+  useEffect(() => {
+    console.log('Staff Options:', staffOptions);
+  }, [staffOptions]);
 
 
 
@@ -112,35 +129,72 @@ const ProductionAssignmentModal = ({
       return;
     }
 
-    // Determine Department ID and Name
+    // --- START OF RESTORED/CORRECTED Department and Recipe LOGIC ---
     let newDepartmentId = '';
+    let derivedDeptName = '';
+    console.log('[FormInit Dep/Recipe] Determining department. EditMode:', editMode, 'Task:', productionTask, 'User:', currentUser, 'Recipe on Task:', productionTask?.recipe, 'DeptOptions:', departmentOptions.length);
+
     if (editMode && productionTask?.department_id) {
       newDepartmentId = String(productionTask.department_id);
-    } else if (!editMode && productionTask?.recipe?.department_id) { // New task from drag-drop, recipe has a department
-      newDepartmentId = String(productionTask.recipe.department_id);
-    } else if (currentUser?.department_id) { // Fallback to user's department for new tasks
+      console.log('[FormInit Dep/Recipe] Department from task (edit mode):', newDepartmentId);
+    } else if (productionTask?.recipe) { // Task from drag-drop usually has recipe object
+      if (productionTask.recipe.department_id) {
+        newDepartmentId = String(productionTask.recipe.department_id);
+        console.log('[FormInit Dep/Recipe] Department ID directly from productionTask.recipe.department_id:', newDepartmentId);
+      } else if (productionTask.recipe.department_name && departmentOptions.length > 0) {
+        const deptFromRecipeName = departmentOptions.find(opt => opt.name === productionTask.recipe.department_name);
+        if (deptFromRecipeName) {
+          newDepartmentId = String(deptFromRecipeName.id);
+          derivedDeptName = deptFromRecipeName.name;
+          console.log('[FormInit Dep/Recipe] Department ID derived from productionTask.recipe.department_name:', newDepartmentId);
+        } else {
+          console.warn('[FormInit Dep/Recipe] Recipe department_name from task not found in departmentOptions:', productionTask.recipe.department_name);
+        }
+      } else if (productionTask.recipe.department_name) {
+          console.log('[FormInit Dep/Recipe] Recipe has department_name, but departmentOptions not ready. Will attempt to set name later.');
+      }
+    } else if (!editMode && currentUser?.department_id) { // Fallback to user's department for new blank task
       newDepartmentId = String(currentUser.department_id);
+      console.log('[FormInit Dep/Recipe] Department from current user (new blank task):', newDepartmentId);
     }
     setDepartment(newDepartmentId);
 
-    if (newDepartmentId && departmentOptions.length > 0) {
+    if (derivedDeptName) {
+        setDepartmentName(derivedDeptName);
+        console.log('[FormInit Dep/Recipe] Department name set from derivedDeptName:', derivedDeptName);
+    } else if (newDepartmentId && departmentOptions.length > 0) {
       const dept = departmentOptions.find(d => String(d.id) === newDepartmentId);
-      setDepartmentName(dept ? dept.name : 'Department not found');
-    } else if (newDepartmentId) {
-      setDepartmentName('Loading department info...');
+      setDepartmentName(dept ? dept.name : 'Department ID not found');
+      console.log('[FormInit Dep/Recipe] Department name set from options:', dept ? dept.name : 'ID not found');
+    } else if (newDepartmentId) { 
+      setDepartmentName('Loading dept info...'); 
+      console.log('[FormInit Dep/Recipe] Department ID present, but options not ready or ID not found yet for name.');
+    } else if (productionTask?.recipe?.department_name) { // Fallback if ID couldn't be found but name exists on recipe
+        setDepartmentName(productionTask.recipe.department_name);
+        console.log('[FormInit Dep/Recipe] Department name set directly from productionTask.recipe.department_name as fallback:', productionTask.recipe.department_name);
     } else {
-      setDepartmentName('');
+      setDepartmentName('N/A');
+      console.log('[FormInit Dep/Recipe] No department ID or name could be determined.');
     }
 
-    // Populate Recipe
-    if (productionTask?.recipe) { // Direct recipe object from drag-and-drop
-      setRecipe(productionTask.recipe);
+    console.log('[FormInit Dep/Recipe] Populating recipe. Task recipe:', productionTask?.recipe, 'Task recipe_id:', productionTask?.recipe_id, 'RecipeOptions:', recipeOptions.length);
+    if (productionTask?.recipe && typeof productionTask.recipe === 'object' && (productionTask.recipe.recipe_id || productionTask.recipe.id)) { 
+      const fullRecipeFromOptions = recipeOptions.find(r => r.id === (productionTask.recipe.recipe_id || productionTask.recipe.id));
+      const recipeToSet = fullRecipeFromOptions || productionTask.recipe;
+      console.log('[FormInit Dep/Recipe] Setting recipe (from task.recipe, matched/fallback):', recipeToSet);
+      setRecipe(recipeToSet);
     } else if (productionTask?.recipe_id && recipeOptions.length > 0) {
-      const matchedRecipe = recipeOptions.find(r => r.id === productionTask.recipe_id);
+      const matchedRecipe = recipeOptions.find(r => r.id === productionTask.recipe_id || r.recipe_id === productionTask.recipe_id);
       setRecipe(matchedRecipe || null);
-    } else if (!editMode) {
-      setRecipe(null); // Clear recipe for new non-drag-drop tasks
+      console.log('[FormInit Dep/Recipe] Recipe set from productionTask.recipe_id and recipeOptions:', matchedRecipe);
+    } else if (productionTask?.recipe_id) {
+        console.log('[FormInit Dep/Recipe] productionTask.recipe_id present, but recipeOptions not ready. Setting recipe to null for now.');
+        setRecipe(null);
+    } else if (!editMode) { // For new tasks not from drag-drop, or if no recipe info on task
+      setRecipe(null);
+      console.log('[FormInit Dep/Recipe] New task or no recipe info on task. Setting recipe to null.');
     }
+    // --- END OF RESTORED/CORRECTED Department and Recipe LOGIC ---
 
     // Populate other fields
     if (productionTask) {
@@ -166,126 +220,6 @@ const ProductionAssignmentModal = ({
         setAssignedStaff(staff ? [staff] : []);
       } else if (!editMode && selectedStaff) {
         setAssignedStaff([selectedStaff]);
-      } else if (!editMode) {
-        setAssignedStaff([]);
-      }
-      
-      setNotes(productionTask.notes || '');
-      setIsRecurring(productionTask.is_recurring || false);
-      setRecurrenceType(productionTask.recurrence_type || 'none');
-      setRecurrencePattern(productionTask.recurrence_pattern || {});
-      setTaskType(productionTask.task_type || 'production');
-      setDescription(productionTask.description || (productionTask.recipe_name ? `Production of ${productionTask.recipe_name}` : ''));
-      setDurationMinutes(productionTask.duration_minutes || 120);
-    } else { // New task, not from drag-drop, not edit mode
-      setScheduledDate(selectedDate || new Date());
-      setStartTime(new Date(new Date().setHours(9, 0, 0, 0)));
-      setEndTime(new Date(new Date().setHours(11, 0, 0, 0)));
-      setBatchSize(1);
-      setTaskType('production');
-      setNotes('');
-      setDescription('');
-      setDurationMinutes(120);
-      setIsRecurring(false);
-      setRecurrenceType('none');
-      setRecurrencePattern({});
-      if (selectedStaff) {
-        setAssignedStaff([selectedStaff]);
-      } else {
-        setAssignedStaff([]);
-      }
-    }
-  }, [open, productionTask, currentUser, departmentOptions, recipeOptions, staffOptions, editMode, selectedDate, selectedStaff]);
-
-  // Effect to initialize and update form based on open, productionTask, currentUser, and data options
-  useEffect(() => {
-    if (!open) {
-      setErrors({});
-      // Reset more fields if they shouldn't persist for new tasks
-      // setRecipe(null); 
-      // setAssignedStaff([]); 
-      // setBatchSize(1);
-      // setDepartment(''); 
-      // setDepartmentName('');
-      // setScheduledDate(null);
-      // setStartTime(null);
-      // setEndTime(null);
-      // setNotes('');
-      // setDescription('');
-      // setDurationMinutes(120);
-      // setIsRecurring(false);
-      // setRecurrenceType('none');
-      // setRecurrencePattern({});
-      return;
-    }
-
-    // Determine Department ID and Name
-    let newDepartmentId = '';
-    let derivedDeptName = '';
-    console.log('Determining department. EditMode:', editMode, 'Task:', productionTask, 'User:', currentUser, 'Recipe on Task:', productionTask?.recipe);
-
-    if (editMode && productionTask?.department_id) {
-      newDepartmentId = String(productionTask.department_id);
-      console.log('Department from task (edit mode):', newDepartmentId);
-    } else if (!editMode && productionTask?.recipe) {
-      if (productionTask.recipe.department_id) {
-        newDepartmentId = String(productionTask.recipe.department_id);
-        console.log('Department ID from recipe object:', newDepartmentId);
-      } else if (productionTask.recipe.department_name && departmentOptions.length > 0) {
-        // If recipe has department_name but not id, try to find id from departmentOptions
-        const deptFromRecipeName = departmentOptions.find(opt => opt.name === productionTask.recipe.department_name);
-        if (deptFromRecipeName) {
-          newDepartmentId = String(deptFromRecipeName.id);
-          derivedDeptName = deptFromRecipeName.name; // Already have the name
-          console.log('Department ID derived from recipe department_name:', newDepartmentId);
-        } else {
-          console.warn('Recipe department_name not found in departmentOptions:', productionTask.recipe.department_name);
-        }
-      }
-    }
-    
-    // Fallback to user's department if no department determined yet for new tasks
-    if (!newDepartmentId && !editMode && currentUser?.department_id) {
-      newDepartmentId = String(currentUser.department_id);
-      console.log('Department from current user:', newDepartmentId);
-    }
-    setDepartment(newDepartmentId);
-
-    // Set Department Name
-    if (derivedDeptName) { // If name was already derived while finding ID
-        setDepartmentName(derivedDeptName);
-    } else if (newDepartmentId && departmentOptions.length > 0) {
-      const dept = departmentOptions.find(d => String(d.id) === newDepartmentId);
-      setDepartmentName(dept ? dept.name : 'Department ID not found in options');
-      console.log('Department name set from options:', dept ? dept.name : 'not found');
-    } else if (newDepartmentId) {
-      setDepartmentName('Loading department info...'); 
-      console.log('Department ID present, but options not ready or ID not found yet.');
-    } else {
-      setDepartmentName('N/A'); // Default if no department could be set
-      console.log('No department ID could be determined.');
-    }
-
-    // Populate Recipe
-    if (productionTask?.recipe) { // Direct recipe object from drag-and-drop
-      setRecipe(productionTask.recipe);
-    } else if (productionTask?.recipe_id && recipeOptions.length > 0) {
-      const matchedRecipe = recipeOptions.find(r => r.id === productionTask.recipe_id || r.recipe_id === productionTask.recipe_id);
-      setRecipe(matchedRecipe || null);
-    } else if (!editMode) { // For new tasks not from drag-drop
-      setRecipe(null);
-    }
-    
-    // Populate other fields
-    if (productionTask) {
-      console.log('Populating form with productionTask data:', productionTask);
-      setBatchSize(productionTask.scheduled_quantity || 1);
-      if (productionTask.scheduled_start_time) {
-        const startDate = new Date(productionTask.scheduled_start_time);
-        setScheduledDate(startDate);
-        setStartTime(startDate);
-      } else if (!editMode) { // Default for new tasks
-        setScheduledDate(selectedDate || new Date());
         setStartTime(new Date(new Date().setHours(9,0,0,0)));
       }
 
@@ -296,13 +230,50 @@ const ProductionAssignmentModal = ({
       }
 
       if (productionTask.assigned_staff && productionTask.assigned_staff.length > 0) {
-        setAssignedStaff(productionTask.assigned_staff);
-      } else if (productionTask.assigned_staff_id && staffOptions.length > 0) {
-        const staff = staffOptions.find(s => s.id === productionTask.assigned_staff_id);
-        setAssignedStaff(staff ? [staff] : []);
-      } else if (!editMode && selectedStaff) {
-          setAssignedStaff([selectedStaff]);
-      } else if (!editMode) {
+        // This case handles when productionTask.assigned_staff is an array (e.g., from calendar drop: [{id, title}])
+        console.log('[FormInit pt.assigned_staff] Processing productionTask.assigned_staff:', JSON.stringify(productionTask.assigned_staff));
+        console.log('[FormInit pt.assigned_staff] staffOptions available:', staffOptions.length > 0);
+        
+        const mappedStaffToSet = productionTask.assigned_staff.map(s_minimal => {
+          if (s_minimal.id && staffOptions.length > 0) {
+            const fullStaffObj = staffOptions.find(opt => opt.id.toString() === s_minimal.id.toString());
+            if (fullStaffObj) {
+              console.log(`[FormInit pt.assigned_staff] Mapped ID ${s_minimal.id} to FULL object:`, JSON.stringify(fullStaffObj));
+              return fullStaffObj;
+            }
+            console.warn(`[FormInit pt.assigned_staff] Mapped ID ${s_minimal.id} NOT FOUND in staffOptions. Returning minimal:`, JSON.stringify(s_minimal));
+            return s_minimal; // Fallback to minimal if not found in options
+          }
+          console.log(`[FormInit pt.assigned_staff] Minimal staff object ${s_minimal.id} processed (no staffOptions or no id). Returning minimal:`, JSON.stringify(s_minimal));
+          return s_minimal; // Fallback if no ID or staffOptions not ready
+        });
+        console.log('[FormInit pt.assigned_staff] Setting assignedStaff to (mapped):', JSON.stringify(mappedStaffToSet));
+        setAssignedStaff(mappedStaffToSet);
+
+      } else if (productionTask.assigned_staff_id) { // If only assigned_staff_id is present
+        console.log('[FormInit pt.assigned_staff_id] Processing productionTask.assigned_staff_id:', productionTask.assigned_staff_id);
+        console.log('[FormInit pt.assigned_staff_id] staffOptions available:', staffOptions.length > 0);
+        let staffToSetById = [];
+        if (staffOptions.length > 0) {
+          const fullStaffObject = staffOptions.find(staff => staff.id.toString() === productionTask.assigned_staff_id.toString());
+          if (fullStaffObject) {
+            console.log('[FormInit pt.assigned_staff_id] Found full staffObject for ID:', JSON.stringify(fullStaffObject));
+            staffToSetById = [fullStaffObject];
+          } else {
+            console.warn(`[FormInit pt.assigned_staff_id] Staff ID ${productionTask.assigned_staff_id} NOT FOUND in staffOptions.`);
+            // Fallback: create a temporary object that might display the ID or a placeholder name
+            staffToSetById = [{ id: productionTask.assigned_staff_id.toString(), first_name: `Staff ID ${productionTask.assigned_staff_id}`, last_name: '(Not found)' }];
+          }
+        } else {
+          // staffOptions not yet loaded. Store minimal info. The effect will re-run when staffOptions loads.
+          console.log('[FormInit pt.assigned_staff_id] staffOptions NOT YET READY. Storing temporary minimal assignedStaff.');
+          staffToSetById = [{ id: productionTask.assigned_staff_id.toString(), first_name: 'Loading staff...', last_name: '' }]; 
+        }
+        console.log('[FormInit pt.assigned_staff_id] Setting assignedStaff to:', JSON.stringify(staffToSetById));
+        setAssignedStaff(staffToSetById);
+
+      } else {
+        console.log('[FormInit productionTask] No assigned_staff info in productionTask. Setting empty assignedStaff.');
         setAssignedStaff([]);
       }
       
@@ -312,55 +283,68 @@ const ProductionAssignmentModal = ({
       setRecurrencePattern(productionTask.recurrence_pattern || {});
       setTaskType(productionTask.task_type || 'production');
       // Set description carefully, considering if recipe is loaded yet
-      const currentRecipeName = recipe?.name || productionTask?.recipe_name;
+      const currentRecipeName = recipe?.name || productionTask?.recipe_name; // Use recipe state here
       setDescription(productionTask.description || (currentRecipeName ? `Production of ${currentRecipeName}`: 'New Production Task'));
       setDurationMinutes(productionTask.duration_minutes || 120); // Default duration if not set
 
     } else { // New task, not from drag-drop, not edit mode
+      // Department and Recipe are handled by the restored logic above for new tasks
       setScheduledDate(selectedDate || new Date());
       setStartTime(new Date(new Date().setHours(9,0,0,0)));
       setEndTime(new Date(new Date().setHours(11,0,0,0)));
       setBatchSize(1);
       setTaskType('production');
       setNotes('');
-      setDescription('');
+      setDescription(recipe?.name ? `Production of ${recipe.name}` : 'New Production Task'); // Use recipe state here
       setDurationMinutes(120);
       setIsRecurring(false);
       setRecurrenceType('none');
       setRecurrencePattern({});
       if (selectedStaff) { // If staff was selected on calendar
-          setAssignedStaff([selectedStaff]);
-      } else {
-          setAssignedStaff([]);
-      }
-      // Department and Recipe are handled above or should be reset if necessary
-      // setRecipe(null); // Already handled by logic above for !editMode
+          // Ensure selectedStaff is mapped to a full object if possible
+          if (staffOptions.length > 0) {
+            const fullSelectedStaff = staffOptions.find(opt => opt.id.toString() === selectedStaff.id.toString());
+            if (fullSelectedStaff) {
+              console.log('[FormInit NewTask] Setting selectedStaff (full object):', JSON.stringify(fullSelectedStaff));
+              setAssignedStaff([fullSelectedStaff]);
+            } else {
+              console.warn('[FormInit NewTask] SelectedStaff ID not found in staffOptions. Using minimal:', JSON.stringify(selectedStaff));
+              setAssignedStaff([selectedStaff]); // Fallback
+            }
+          } else {
+            console.log('[FormInit NewTask] Setting selectedStaff (staffOptions not ready, using minimal):', JSON.stringify(selectedStaff));
+            setAssignedStaff([selectedStaff]); // Fallback
+    }
+      } // Closes if (selectedStaff)
+    } // Closes main else block (for !productionTask)
+
+    if (productionTask && productionTask.scheduled_end_time) {
+      setEndTime(new Date(productionTask.scheduled_end_time));
+    } else if (!productionTask && !editMode) { // More explicit: for new tasks if productionTask is null
+       setEndTime(new Date(new Date().setHours(11,0,0,0)));
     }
 
-  }, [open, productionTask, currentUser, departmentOptions, recipeOptions, staffOptions, editMode, selectedDate, selectedStaff, recipe]); // Added recipe to dependency array for description update
-
-  // Debug logging for form state
-  useEffect(() => {
-    if (open) {
-      console.log('Current form state (debug):', {
-        recipe,
-        department,
-        departmentName,
-        batchSize,
-        scheduledDate: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
-        startTime: startTime ? format(startTime, 'HH:mm:ss') : null,
-        endTime: endTime ? format(endTime, 'HH:mm:ss') : null,
-        assignedStaff,
-        taskType,
-        description,
-        notes,
-        isRecurring,
-        recurrenceType,
-        recurrencePattern,
-        durationMinutes
+    if (productionTask && productionTask.assigned_staff && productionTask.assigned_staff.length > 0) {
+      // This case handles when productionTask.assigned_staff is an array (e.g., from calendar drop: [{id, title}])
+      console.log('[FormInit pt.assigned_staff] Processing productionTask.assigned_staff:', JSON.stringify(productionTask.assigned_staff));
+      console.log('[FormInit pt.assigned_staff] staffOptions available:', staffOptions.length > 0);
+      
+      const mappedStaffToSet = productionTask.assigned_staff.map(s_minimal => {
+        if (s_minimal.id && staffOptions.length > 0) {
+          const fullStaffObj = staffOptions.find(opt => opt.id.toString() === s_minimal.id.toString());
+          if (fullStaffObj) {
+            console.log(`[FormInit pt.assigned_staff] Mapped ID ${s_minimal.id} to FULL object:`, JSON.stringify(fullStaffObj));
+            return fullStaffObj;
+          }
+          console.warn(`[FormInit pt.assigned_staff] Mapped ID ${s_minimal.id} NOT FOUND in staffOptions. Returning minimal:`, JSON.stringify(s_minimal));
+          return s_minimal; // Fallback to minimal if not found in options
+        }
+        console.log(`[FormInit pt.assigned_staff] Minimal staff object ${s_minimal.id} processed (no staffOptions or no id). Returning minimal:`, JSON.stringify(s_minimal));
+        return s_minimal; // Fallback if no ID or staffOptions not ready
       });
+      setAssignedStaff(mappedStaffToSet);
     }
-  }, [open, recipe, department, departmentName, batchSize, scheduledDate, startTime, endTime, assignedStaff, taskType, description, notes, isRecurring, recurrenceType, recurrencePattern, durationMinutes]);
+  }, [open, productionTask, currentUser, departmentOptions, recipeOptions, staffOptions, editMode, selectedDate, selectedStaff]);
   
   // Inline validation for individual fields
   const validateField = (field, value) => {
@@ -537,7 +521,7 @@ const ProductionAssignmentModal = ({
           pb: 2 
         }}
       >
-        {editMode ? 'Edit Production Task' : 'Schedule New Production Task'}
+        <span>{editMode ? 'Edit Production Task' : 'Schedule New Production Task'}</span>
         <IconButton onClick={onClose} size="small" aria-label="close">
           <CloseIcon />
         </IconButton>
@@ -549,9 +533,9 @@ const ProductionAssignmentModal = ({
               Task Information
             </Typography>
             <Divider sx={{ mb: 2 }} />
-            <Grid container spacing={{ xs: 2, md: 3 }}>
+            <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={{ xs: 2, md: 3 }}>
               {/* Recipe Selection */}
-              <Grid item xs={12} md={6}>
+              <Box>
                 <Autocomplete
                   id="recipe-select"
                   options={recipeOptions.filter(option => !department || option.department_id === parseInt(department) || option.department_name === departmentName )}
@@ -572,14 +556,14 @@ const ProductionAssignmentModal = ({
                     </Box>
                   )}
                   renderInput={(params) => (
-                    <TextField 
-                      {...params} 
-                      label="Recipe" 
-                      variant="outlined" 
-                      fullWidth 
-                      error={!!errors.recipe} 
-                      helperText={errors.recipe || " "} 
-                      required 
+                    <TextField
+                      {...params}
+                      label="Recipe"
+                      variant="outlined"
+                      fullWidth
+                      error={!!errors.recipe}
+                      helperText={errors.recipe || " "}
+                      required
                       onBlur={() => validateField('recipe', recipe)}
                       InputProps={{
                         ...params.InputProps,
@@ -587,6 +571,20 @@ const ProductionAssignmentModal = ({
                       }}
                     />
                   )}
+                  slotProps={{
+                    textField: {
+                      label: "Recipe",
+                      variant: "outlined",
+                      fullWidth: true,
+                      error: !!errors.recipe,
+                      helperText: errors.recipe || " ",
+                      required: true,
+                      onBlur: () => validateField('recipe', recipe),
+                      InputProps: {
+                        style: { overflow: 'hidden', textOverflow: 'ellipsis' }
+                      }
+                    }
+                  }}
                   isOptionEqualToValue={(option, value) => option?.id === value?.id}
                   ListboxProps={{
                     sx: { maxHeight: '200px' }
@@ -596,10 +594,10 @@ const ProductionAssignmentModal = ({
                   clearOnBlur={false}
                   openOnFocus
                 />
-              </Grid>
+              </Box>
 
               {/* Department Display */}
-              <Grid item xs={12} md={6}>
+              <Box>
                 <TextField
                   label="Department"
                   value={departmentName || 'N/A'}
@@ -613,10 +611,10 @@ const ProductionAssignmentModal = ({
                   helperText={errors.department || " "}
                   required
                 />
-              </Grid>
+              </Box>
 
               {/* Batch Size */}
-              <Grid item xs={12} sm={6} md={4}>
+              <Box>
                 <TextField
                   label="Batch Size"
                   type="number"
@@ -647,10 +645,10 @@ const ProductionAssignmentModal = ({
                   }}
                   sx={{ '& .MuiInputBase-input': { fontWeight: 500 } }}
                 />
-              </Grid>
+              </Box>
               
               {/* Task Type */}
-              <Grid item xs={12} sm={6} md={4}>
+              <Box>
                 <FormControl fullWidth>
                   <InputLabel id="task-type-label">Task Type</InputLabel>
                   <Select
@@ -680,10 +678,10 @@ const ProductionAssignmentModal = ({
                   </Select>
                   <FormHelperText error={!!errors.taskType}>{errors.taskType || " "}</FormHelperText>
                 </FormControl>
-              </Grid>
+              </Box>
             
             {/* Duration */}
-            <Grid item xs={12} sm={6} md={4}>
+            <Box>
               <TextField
                 label="Duration (minutes)"
                 type="number"
@@ -711,8 +709,8 @@ const ProductionAssignmentModal = ({
                 }}
                 sx={{ '& .MuiInputBase-input': { fontWeight: 500 } }}
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Box>
 
         {/* Scheduling Section */}
@@ -721,9 +719,9 @@ const ProductionAssignmentModal = ({
             Scheduling
           </Typography>
           <Divider sx={{ mb: 2 }} />
-          <Grid container spacing={{ xs: 2, md: 3 }}>
+          <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={{ xs: 2, md: 3 }}>
             {/* Date Picker */}
-            <Grid item xs={12} sm={6} md={4}>
+            <Box>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DatePicker
                   label="Scheduled Date"
@@ -747,10 +745,10 @@ const ProductionAssignmentModal = ({
                   }}
                 />
               </LocalizationProvider>
-            </Grid>
+            </Box>
 
             {/* Start Time Picker */}
-            <Grid item xs={12} sm={6} md={4}>
+            <Box>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <TimePicker
                   label="Start Time"
@@ -774,10 +772,10 @@ const ProductionAssignmentModal = ({
                   }}
                 />
               </LocalizationProvider>
-            </Grid>
+            </Box>
 
             {/* End Time Picker */}
-            <Grid item xs={12} sm={6} md={4}>
+            <Box>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <TimePicker
                   label="End Time"
@@ -801,10 +799,10 @@ const ProductionAssignmentModal = ({
                   }}
                 />
               </LocalizationProvider>
-            </Grid>
+            </Box>
             
             {/* Staff Assignment */}
-            <Grid item xs={12}>
+            <Box>
               <Autocomplete
                 id="assigned-staff"
                 multiple
@@ -817,12 +815,28 @@ const ProductionAssignmentModal = ({
                 }}
                 isOptionEqualToValue={(option, value) => option?.id === value?.id}
                 renderOption={(props, option) => (
-                  <Box component="li" {...props}>
+                  <Box component="li" {...props} key={option.id}>
                     <Typography>
                       {`${option.first_name || ''} ${option.last_name || ''}`.trim()}
                     </Typography>
                   </Box>
                 )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      {...getTagProps({ index })}
+                      key={option.id}
+                      label={`${option.first_name || ''} ${option.last_name || ''}`.trim()}
+                      /* Simplified sx for debugging */
+                      sx={{
+                        margin: '2px',
+                        // Ensure basic visibility
+                        backgroundColor: 'lightgray',
+                        color: 'black',
+                      }}
+                    />
+                  ))
+                }
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -831,8 +845,8 @@ const ProductionAssignmentModal = ({
                     fullWidth
                     error={!!errors.assignedStaff}
                     helperText={errors.assignedStaff || " "}
-                    onBlur={() => validateField('assignedStaff', assignedStaff)}
                     required
+                    onBlur={() => validateField('assignedStaff', assignedStaff)}
                     InputProps={{
                       ...params.InputProps,
                       style: { overflow: 'visible' }
@@ -847,11 +861,21 @@ const ProductionAssignmentModal = ({
                 popupIcon={<ArrowDropDownIcon />}
                 clearOnBlur={false}
                 openOnFocus
-                limitTags={2}
-                sx={{ minHeight: '80px' }}
+                sx={{ 
+                  minHeight: '80px',
+                  '& .MuiOutlinedInput-root': {
+                    padding: '8px 8px 8px 12px',
+                  },
+                  '& .MuiAutocomplete-endAdornment': {
+                    right: '8px',
+                  },
+                  '& .MuiChip-root': {
+                    margin: '2px',
+                  }
+                }}
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Box>
 
         {/* Additional Details Section */}
@@ -860,9 +884,9 @@ const ProductionAssignmentModal = ({
             Additional Details
           </Typography>
           <Divider sx={{ mb: 2 }} />
-          <Grid container spacing={{ xs: 2, md: 3 }}>
+          <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={{ xs: 2, md: 3 }}>
             {/* Description Text Area */}
-            <Grid item xs={12} md={6}>
+            <Box>
               <TextField
                 label="Description"
                 multiline
@@ -876,10 +900,10 @@ const ProductionAssignmentModal = ({
                   'aria-label': 'Task description'
                 }}
               />
-            </Grid>
+            </Box>
 
             {/* Notes Text Area */}
-            <Grid item xs={12} md={6}>
+            <Box>
               <TextField
                 label="Notes"
                 multiline
@@ -893,8 +917,8 @@ const ProductionAssignmentModal = ({
                   'aria-label': 'Additional notes'
                 }}
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Box>
           
           {/* Recurrence Options */}

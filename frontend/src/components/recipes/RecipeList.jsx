@@ -250,13 +250,13 @@ const RecipeList = ({ departmentColor }) => {
                     <TableCell>
                       {recipe.ingredients && recipe.ingredients.length > 0 ? (
                         <Tooltip title={
-                          <>
+                          <React.Fragment key={`tooltip-${recipe.id}`}>
                             {recipe.ingredients.map(ing => (
                               <div key={`${recipe.id}-${ing.ingredient_name}`}>
                                 {`${ing.ingredient_name} (${ing.quantity} ${ing.unit})`}
                               </div>
                             ))}
-                          </>
+                          </React.Fragment>
                         }>
                           <Chip 
                             label={`${recipe.ingredients.length} ingredient${recipe.ingredients.length !== 1 ? 's' : ''}`}
@@ -290,7 +290,7 @@ const RecipeList = ({ departmentColor }) => {
                           </IconButton>
                         </Tooltip>
                         {canManageRecipes && (
-                          <>
+                          <React.Fragment key={`actions-${recipe.id}`}>
                             <Tooltip title="Edit Recipe">
                               <IconButton onClick={() => handleEditRecipe(recipe)} size="small">
                                 <EditIcon />
@@ -301,7 +301,7 @@ const RecipeList = ({ departmentColor }) => {
                                 <DeleteIcon />
                               </IconButton>
                             </Tooltip>
-                          </>
+                          </React.Fragment>
                         )}
                       </Box>
                     </TableCell>

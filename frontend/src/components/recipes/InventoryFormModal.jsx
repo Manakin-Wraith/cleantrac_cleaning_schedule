@@ -266,15 +266,14 @@ const InventoryFormModal = ({
               onChange={(event, newValue) => {
                 handleAutocompleteChange('category', newValue);
               }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Category"
-                  required
-                  error={!!errors.category}
-                  helperText={errors.category}
-                />
-              )}
+              slotProps={{
+                textField: {
+                  label: "Category",
+                  required: true,
+                  error: !!errors.category,
+                  helperText: errors.category
+                }
+              }}
             />
           </Grid>
           
@@ -308,15 +307,14 @@ const InventoryFormModal = ({
               onChange={(event, newValue) => {
                 handleAutocompleteChange('unit', newValue);
               }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Unit"
-                  required
-                  error={!!errors.unit}
-                  helperText={errors.unit}
-                />
-              )}
+              slotProps={{
+                textField: {
+                  label: "Unit",
+                  required: true,
+                  error: !!errors.unit,
+                  helperText: errors.unit
+                }
+              }}
             />
           </Grid>
           

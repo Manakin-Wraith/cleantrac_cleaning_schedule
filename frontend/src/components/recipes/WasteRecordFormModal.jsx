@@ -381,15 +381,14 @@ const WasteRecordFormModal = ({
               options={getSourceOptions()}
               getOptionLabel={(option) => `${option.name} (${option.unit})`}
               isOptionEqualToValue={(option, value) => option.id === value.id}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label={formData.source_type === 'recipe' ? "Recipe" : "Inventory Item"}
-                  error={!!(errors.recipe || errors.inventory_item)}
-                  helperText={errors.recipe || errors.inventory_item}
-                  required
-                />
-              )}
+              slotProps={{
+                textField: {
+                  label: formData.source_type === 'recipe' ? "Recipe" : "Inventory Item",
+                  error: !!(errors.recipe || errors.inventory_item),
+                  helperText: errors.recipe || errors.inventory_item,
+                  required: true,
+                }
+              }}
               loading={loading}
               loadingText="Loading options..."
             />

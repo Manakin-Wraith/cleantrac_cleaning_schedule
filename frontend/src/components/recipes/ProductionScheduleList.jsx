@@ -58,6 +58,28 @@ const ProductionScheduleList = ({ departmentColor }) => {
   const [isEditing, setIsEditing] = useState(false);
   const { currentUser } = useAuth();
 
+  // Fetch staff data to map IDs to names
+  const [staffMembers, setStaffMembers] = useState({});
+
+  const fetchStaffData = async () => {
+    try {
+      const response = await api.get('/users/');
+      const userData = Array.isArray(response.data) ? response.data : 
+                      (response.data?.results || []);
+      
+      // Create a map of staff IDs to names
+      const staffMap = {};
+      userData.forEach(user => {
+        staffMap[user.id] = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Staff Member';
+      });
+      
+      setStaffMembers(staffMap);
+      console.log('Staff data loaded:', staffMap);
+    } catch (err) {
+      console.error('Error fetching staff data:', err);
+    }
+  };
+
   const fetchSchedules = async () => {
     setLoading(true);
     try {
@@ -75,7 +97,49 @@ const ProductionScheduleList = ({ departmentColor }) => {
       }
       
       const response = await api.get('/production-schedules/', { params });
-      setSchedules(response.data);
+      
+      // Process the schedules to add staff names
+      const processedSchedules = Array.isArray(response.data) ? response.data : 
+                               (response.data?.results || []);
+      
+      // Enhance schedules with staff names
+      processedSchedules.forEach(schedule => {
+        schedule.assigned_staff_names = []; // Initialize
+        schedule.assigned_staff_name = undefined; // Initialize
+
+        if (schedule.assigned_staff_details && Array.isArray(schedule.assigned_staff_details) && schedule.assigned_staff_details.length > 0) {
+          schedule.assigned_staff_names = schedule.assigned_staff_details.map(staffDetail => {
+            // Prefer the name directly from assigned_staff_details if available
+            // Otherwise, fall back to looking up by ID in staffMembers (though API sends name directly here)
+            return staffDetail.name || staffMembers[staffDetail.id] || `Staff ID: ${staffDetail.id}`; 
+          }).filter(name => name); // Filter out any undefined/null names
+
+          // If only one staff member, also populate assigned_staff_name for simpler display cases or single assignment scenarios
+          if (schedule.assigned_staff_names.length === 1) {
+            schedule.assigned_staff_name = schedule.assigned_staff_names[0];
+          }
+        } else {
+          // Fallback for older data structures if necessary, or if API might send these fields
+          if (schedule.assigned_staff_id) { 
+            schedule.assigned_staff_name = staffMembers[schedule.assigned_staff_id] || 'Unknown Staff';
+            if (schedule.assigned_staff_name !== 'Unknown Staff') {
+              schedule.assigned_staff_names = [schedule.assigned_staff_name];
+            }
+          }
+          
+          if (schedule.assigned_staff_ids && Array.isArray(schedule.assigned_staff_ids) && schedule.assigned_staff_ids.length > 0 && schedule.assigned_staff_names.length === 0) { 
+            schedule.assigned_staff_names = schedule.assigned_staff_ids
+              .map(id => staffMembers[id] || `Staff ID: ${id}`)
+              .filter(name => name);
+            if (schedule.assigned_staff_names.length === 1 && !schedule.assigned_staff_name) {
+              schedule.assigned_staff_name = schedule.assigned_staff_names[0];
+            }
+          }
+        }
+      });
+      
+      console.log('Processed schedules with staff names:', JSON.parse(JSON.stringify(processedSchedules))); // DEBUGGING: Log a deep copy
+      setSchedules(processedSchedules);
       setError(null);
     } catch (err) {
       console.error('Error fetching production schedules:', err);
@@ -85,9 +149,21 @@ const ProductionScheduleList = ({ departmentColor }) => {
     }
   };
 
+  // Fetch staff data when component mounts or user changes
   useEffect(() => {
-    fetchSchedules();
-  }, [currentUser, searchTerm, statusFilter, dateFilter]);
+    fetchStaffData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
+  
+  // Fetch schedules when filters change or after staff data is loaded
+  useEffect(() => {
+    // Only fetch schedules if currentUser is loaded (for department_id) 
+    // and staffMembers has been populated.
+    if (currentUser && Object.keys(staffMembers).length > 0) {
+      fetchSchedules();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, searchTerm, statusFilter, dateFilter, staffMembers]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -282,7 +358,6 @@ const ProductionScheduleList = ({ departmentColor }) => {
                 label="Filter by Date"
                 value={dateFilter}
                 onChange={handleDateFilterChange}
-                renderInput={(params) => <TextField {...params} fullWidth size="small" />}
                 slotProps={{
                   textField: { 
                     fullWidth: true, 
@@ -362,9 +437,14 @@ const ProductionScheduleList = ({ departmentColor }) => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      {schedule.assigned_staff_names?.join(', ') || 
-                       schedule.assigned_to_name || 
-                       (schedule.assigned_staff_ids?.length > 0 ? 'Staff #' + schedule.assigned_staff_ids[0] : 'Unassigned')}
+                      <Typography variant="body2">
+                        {schedule.assigned_staff_names?.join(', ') || 
+                         schedule.assigned_staff_name || 
+                         schedule.assigned_to_name || 
+                         (schedule.assigned_staff_ids?.length > 0 ? 
+                           (staffMembers[schedule.assigned_staff_ids[0]] || 'Staff #' + schedule.assigned_staff_ids[0]) : 
+                           'Unassigned')}
+                      </Typography>
                     </TableCell>
                     <TableCell>{getStatusChip(schedule.status || 'scheduled')}</TableCell>
                     <TableCell align="right">

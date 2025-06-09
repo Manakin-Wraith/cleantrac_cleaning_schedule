@@ -85,7 +85,7 @@ const ProductionScheduleFormModal = ({
       setRecipes(recipesResponse.data);
 
       // Fetch staff for the department
-      const staffResponse = await api.get('/staff/', {
+      const staffResponse = await api.get('/users/', {
         params: { department_id: currentUser?.profile?.department?.id }
       });
       setStaff(staffResponse.data);
@@ -204,8 +204,8 @@ const ProductionScheduleFormModal = ({
             {fetchError}
           </Alert>
         ) : (
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={3}>
+            <Box sx={{ gridColumn: 'span 2' }}>
               <FormControl fullWidth error={!!errors.recipe}>
                 <InputLabel id="recipe-select-label">Recipe</InputLabel>
                 <Select
@@ -224,58 +224,50 @@ const ProductionScheduleFormModal = ({
                 </Select>
                 {errors.recipe && <FormHelperText>{errors.recipe}</FormHelperText>}
               </FormControl>
-            </Grid>
+            </Box>
             
             {selectedRecipe && (
-              <Grid item xs={12}>
+              <Box sx={{ gridColumn: 'span 2' }}>
                 <Box sx={{ p: 2, bgcolor: 'rgba(0, 0, 0, 0.04)', borderRadius: 1 }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Recipe Details
                   </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4}>
+                  <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr 1fr' }} gap={2}>
+                    <Box>
                       <Typography variant="body2" color="text.secondary">
                         Yield:
                       </Typography>
                       <Typography variant="body1">
                         {selectedRecipe.yield} {selectedRecipe.yield_unit}
                       </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
+                    </Box>
+                    <Box>
                       <Typography variant="body2" color="text.secondary">
                         Unit Cost:
                       </Typography>
                       <Typography variant="body1">
                         R {typeof selectedRecipe.unit_cost === 'number' ? selectedRecipe.unit_cost.toFixed(2) : '0.00'}
                       </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
+                    </Box>
+                    <Box>
                       <Typography variant="body2" color="text.secondary">
                         Total Cost (Estimated):
                       </Typography>
                       <Typography variant="body1">
                         R {formData.quantity && typeof selectedRecipe.unit_cost === 'number' ? (selectedRecipe.unit_cost * parseFloat(formData.quantity)).toFixed(2) : '0.00'}
                       </Typography>
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
                 </Box>
-              </Grid>
+              </Box>
             )}
             
-            <Grid item xs={12} sm={6}>
+            <Box>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DatePicker
                   label="Scheduled Date"
                   value={formData.scheduled_date}
                   onChange={handleDateChange}
-                  renderInput={(params) => (
-                    <TextField 
-                      {...params} 
-                      fullWidth 
-                      error={!!errors.scheduled_date}
-                      helperText={errors.scheduled_date}
-                    />
-                  )}
                   slotProps={{
                     textField: { 
                       fullWidth: true,
@@ -285,9 +277,9 @@ const ProductionScheduleFormModal = ({
                   }}
                 />
               </LocalizationProvider>
-            </Grid>
+            </Box>
             
-            <Grid item xs={12} sm={6}>
+            <Box>
               <TextField
                 fullWidth
                 label="Quantity"
@@ -299,9 +291,9 @@ const ProductionScheduleFormModal = ({
                 error={!!errors.quantity}
                 helperText={errors.quantity}
               />
-            </Grid>
+            </Box>
             
-            <Grid item xs={12} sm={6}>
+            <Box>
               <FormControl fullWidth>
                 <InputLabel id="assigned-to-label">Assigned To</InputLabel>
                 <Select
@@ -321,9 +313,9 @@ const ProductionScheduleFormModal = ({
                   ))}
                 </Select>
               </FormControl>
-            </Grid>
+            </Box>
             
-            <Grid item xs={12} sm={6}>
+            <Box>
               <FormControl fullWidth>
                 <InputLabel id="status-label">Status</InputLabel>
                 <Select
@@ -339,9 +331,9 @@ const ProductionScheduleFormModal = ({
                   <MenuItem value="cancelled">Cancelled</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
+            </Box>
             
-            <Grid item xs={12}>
+            <Box sx={{ gridColumn: 'span 2' }}>
               <TextField
                 fullWidth
                 label="Notes"
@@ -352,8 +344,8 @@ const ProductionScheduleFormModal = ({
                 rows={3}
                 placeholder="Add any special instructions or notes about this production run..."
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         )}
       </DialogContent>
       

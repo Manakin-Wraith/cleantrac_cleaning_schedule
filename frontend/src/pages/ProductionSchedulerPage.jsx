@@ -144,12 +144,18 @@ const ProductionSchedulerPage = () => {
         // Get batch size from either scheduled_quantity or batch_size field
         const batchSize = task.scheduled_quantity || task.batch_size || '';
         
-        // Get assigned staff IDs - handle both single ID and array formats
-        const staffIds = task.assigned_staff_ids || 
-                        (task.assigned_staff_id ? [task.assigned_staff_id] : []);
+        // Get assigned staff IDs
+        let staffIds = [];
+        if (task.assigned_staff_details && task.assigned_staff_details.length > 0) {
+          staffIds = task.assigned_staff_details.map(staff => staff.id.toString());
+        } else if (task.assigned_staff_ids) { // Fallback for older format if needed
+          staffIds = Array.isArray(task.assigned_staff_ids) ? task.assigned_staff_ids.map(id => id.toString()) : [task.assigned_staff_ids.toString()];
+        } else if (task.assigned_staff_id) { // Fallback for single ID format
+          staffIds = [task.assigned_staff_id.toString()];
+        }
         
         // Use the first staff ID as the resourceId for calendar display
-        const resourceId = staffIds.length > 0 ? staffIds[0].toString() : 'unassigned';
+        const resourceId = staffIds.length > 0 ? staffIds[0] : 'unassigned'; // staffIds are already strings
         
         return {
           id: task.id.toString(),
@@ -172,6 +178,7 @@ const ProductionSchedulerPage = () => {
           textColor: '#ffffff'
         };
       });
+      console.log('[ProductionSchedulerPage] Mapped tasks for calendar:', JSON.stringify(tasks.map(t => ({id: t.id, title: t.title, start: t.start, end: t.end, resourceId: t.resourceId, recipe_name: t.extendedProps.recipe_name})), null, 2));
       setProductionTasks(tasks);
     } catch (err) {
       console.error('Error fetching production tasks:', err);
@@ -272,6 +279,7 @@ const ProductionSchedulerPage = () => {
                 duration: parsedData.duration || '02:00', // Default 2 hour duration
                 extendedProps: { 
                   recipe_id: parsedData.recipe_id,
+                  recipe_name: parsedData.title, // Added recipe_name
                   isExternal: true 
                 },
               };
@@ -300,6 +308,7 @@ const ProductionSchedulerPage = () => {
                     duration: parsedData.duration || '02:00',
                     extendedProps: { 
                       recipe_id: parsedData.recipe_id,
+                      recipe_name: parsedData.title, // Added recipe_name
                       isExternal: true 
                     },
                   };
@@ -331,94 +340,121 @@ const ProductionSchedulerPage = () => {
 
   // Handle receiving an external event (dropped recipe)
   const handleEventReceive = (receiveInfo) => {
-    const event = receiveInfo.event;
-    const extendedProps = event.extendedProps;
-    
-    if (extendedProps.isExternal) {
-      console.log('External recipe event received:', event);
-      
-      // Store the placeholder event ID
-      setPlaceholderEventId(event.id);
-      
-      // Get the start and end time from where the event was dropped
-      const startTime = event.start;
-      const endTime = event.end || addHours(startTime, 2); // Default 2 hours if no end time
-      
-      // Get the staff resource where the event was dropped
-      const resource = event.getResources()[0];
-      const staffId = resource?.id !== 'unassigned' ? resource?.id : null;
-      
-      // Find the recipe details from our recipes array
-      const recipeDetails = recipes.find(r => {
-        return r.id === extendedProps.recipe_id || r.recipe_id === extendedProps.recipe_id;
-      });
-      
-      if (!recipeDetails) {
-        console.warn('Recipe details not found for ID:', extendedProps.recipe_id);
-      } else {
-        console.log('Found recipe details:', recipeDetails);
-      }
-      
-      // Find staff details
-      const staffDetails = staffId ? staffResources.find(s => s.id === staffId) : null;
-      if (staffId && !staffDetails) {
-        console.warn('Staff details not found for ID:', staffId);
-      } else if (staffDetails) {
-        console.log('Found staff details:', staffDetails);
-      }
-      
-      // Create a comprehensive task data object with all necessary information
-      const taskData = {
-        id: null, // New task
-        recipe: recipeDetails, // Full recipe object
-        recipe_id: extendedProps.recipe_id,
-        recipe_name: recipeDetails?.name || extendedProps.title,
-        yield_unit: recipeDetails?.yield_unit || 'units',
-        scheduled_start_time: startTime,
-        scheduled_end_time: endTime,
-        assigned_staff_id: staffId,
-        assigned_staff: staffDetails ? [staffDetails] : [], // Array for Autocomplete
-        task_type: 'production', // Default task type
-        scheduled_quantity: 1, // Default quantity
-        status: 'scheduled', // Default status
-        department_id: recipeDetails?.department_id || null,
-        description: `Production of ${recipeDetails?.name || extendedProps.title}`,
-        notes: ''
-      };
-      
-      console.log('Recipe dropped - Task data for modal:', taskData);
+    const droppedEventData = receiveInfo.event; // Data of the event FullCalendar proposes
+    const initialExtendedProps = droppedEventData.extendedProps;
 
-      // Create a placeholder event directly in the calendar
-      const tempId = `placeholder-${Date.now()}`;
-      if (calendarRef.current?.getApi()) {
-        const calendarApi = calendarRef.current.getApi();
-        calendarApi.addEvent({
-          id: tempId,
-          title: taskData.recipe_name || 'New Production Task',
-          start: taskData.scheduled_start_time,
-          end: taskData.scheduled_end_time,
-          resourceId: taskData.assigned_staff_id || undefined,
-          allDay: false, // Assuming production tasks are not all-day
-          extendedProps: {
-            ...taskData, // Spread all taskData into extendedProps
-            isPlaceholder: true // Flag to identify this as a placeholder
-          },
-          backgroundColor: theme.palette.grey[300], // Distinct styling for placeholder
-          borderColor: theme.palette.grey[500],
-          textColor: theme.palette.grey[700],
-          classNames: ['placeholder-production-event']
-        });
-        setPlaceholderEventId(tempId); // Store the ID of the placeholder event
-        console.log(`Added placeholder event ${tempId} to calendar.`);
-      } else {
-        console.warn('Calendar API not available to add placeholder event.');
-      }
-      
-      setSelectedTask(taskData); // This will be used to populate the modal
-      setEditMode(false); // This is a new task, not an edit
-      setAssignmentModalOpen(true);
+    if (initialExtendedProps && initialExtendedProps.isExternal) {
+        console.log('External recipe event drop detected:', droppedEventData);
+
+        // CRITICAL: Revert FullCalendar's default processing for this drop.
+        // We will handle adding our own styled and detailed placeholder.
+        if (receiveInfo.revert) {
+            receiveInfo.revert();
+        } else {
+            console.error('Could not revert FullCalendar drop, revert function missing.');
+            // Potentially remove the event if it somehow got added without an ID we can track
+            // This part is tricky as FullCalendar might have already added it.
+            // For now, logging error and proceeding to add our placeholder.
+        }
+
+        const placeholderGeneratedId = `placeholder-${Date.now()}`;
+        const startTime = droppedEventData.start;
+        const endTime = droppedEventData.end || addHours(startTime, 2);
+        
+        let resource = null;
+        if (droppedEventData.getResources) {
+            const resources = droppedEventData.getResources();
+            console.log('Dropped event resources:', resources);
+            if (resources.length > 0) {
+                resource = resources[0];
+                console.log('Selected resource from drop:', resource);
+                console.log('Selected resource ID from drop:', resource?.id);
+            } else {
+                console.log('Dropped event has no associated resources.');
+            }
+        } else {
+            console.log('droppedEventData.getResources function does not exist.');
+        }
+        
+        const staffId = (resource && resource.id && resource.id.toString() !== 'unassigned') ? resource.id.toString() : null;
+        console.log('Determined staffId for modal/placeholder:', staffId);
+
+        const recipeDetails = recipes.find(r => 
+            r.id === initialExtendedProps.recipe_id || r.recipe_id === initialExtendedProps.recipe_id
+        );
+
+        const staffDetails = staffId ? staffResources.find(s => s.id === staffId) : null;
+
+        const taskDataForModal = {
+            id: null,
+            recipe: recipeDetails,
+            recipe_id: initialExtendedProps.recipe_id,
+            recipe_name: recipeDetails?.name || initialExtendedProps.recipe_name || droppedEventData.title,
+            yield_unit: recipeDetails?.yield_unit || 'units',
+            scheduled_start_time: startTime,
+            scheduled_end_time: endTime,
+            assigned_staff_id: staffId,
+            assigned_staff: staffDetails ? [staffDetails] : [],
+            task_type: 'production',
+            scheduled_quantity: 1,
+            status: 'scheduled',
+            department_id: recipeDetails?.department_id || null,
+            description: `Production of ${recipeDetails?.name || initialExtendedProps.recipe_name || droppedEventData.title}`,
+            notes: ''
+        };
+        console.log('Recipe dropped - Task data for modal:', taskDataForModal);
+
+        // Now, programmatically add our own placeholder event
+        console.log(`[handleEventReceive] About to add placeholder. taskDataForModal.assigned_staff_id: ${taskDataForModal.assigned_staff_id}, type: ${typeof taskDataForModal.assigned_staff_id}`);
+        try {
+            if (calendarRef.current?.getApi()) {
+                const calendarApi = calendarRef.current.getApi();
+                const eventToAdd = {
+                    id: placeholderGeneratedId,
+                    title: taskDataForModal.recipe_name || 'New Production Task',
+                    start: taskDataForModal.scheduled_start_time,
+                    end: taskDataForModal.scheduled_end_time,
+                    resourceId: taskDataForModal.assigned_staff_id || undefined, // Ensure undefined if null/falsy
+                    allDay: false,
+                    extendedProps: {
+                        ...taskDataForModal,
+                        isExternal: true,
+                        isPlaceholder: true
+                    },
+                    backgroundColor: theme.palette.grey[300],
+                    borderColor: theme.palette.grey[500],
+                    textColor: theme.palette.grey[700],
+                    classNames: ['placeholder-production-event']
+                };
+                console.log('[handleEventReceive] Event object to add to calendar:', eventToAdd);
+                calendarApi.addEvent(eventToAdd);
+                setPlaceholderEventId(placeholderGeneratedId);
+                console.log(`[handleEventReceive] Added new placeholder event ${placeholderGeneratedId} to calendar.`);
+            } else {
+                console.warn('[handleEventReceive] Calendar API not available to add placeholder event.');
+            }
+            
+            setSelectedTask(taskDataForModal);
+            setEditMode(false);
+            setAssignmentModalOpen(true);
+            console.log('[handleEventReceive] Modal should be opening now.');
+
+        } catch (error) {
+            console.error('[handleEventReceive] Error during placeholder addition or modal opening:', error);
+            // Attempt to clean up if placeholderId was set but event add might have failed partially
+            if (placeholderEventId === placeholderGeneratedId) {
+                setPlaceholderEventId(null); // Clear our tracking ID
+                console.warn('[handleEventReceive] Cleared placeholderEventId due to error.');
+            }
+        }
+
+    } else {
+        console.warn('handleEventReceive called for a non-external or malformed event. Reverting if possible.', droppedEventData);
+        if (receiveInfo.revert) {
+           receiveInfo.revert();
+        }
     }
-  };
+};
 
   const handleCalendarDateChange = (newDate) => {
     // Called when calendar navigates, update our selectedDate
@@ -587,13 +623,13 @@ const ProductionSchedulerPage = () => {
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         <Paper sx={{ p: 3, mb: 3 }}>
           <Grid container spacing={2} alignItems="center" justifyContent="space-between">
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Typography variant="h4" gutterBottom>
                 Recipe Production Scheduler
               </Typography>
             </Grid>
-            <Grid item xs={12} md={8} container spacing={2} justifyContent="flex-end">
-                <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, md: 8 }} container spacing={2} justifyContent="flex-end">
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <DatePicker
                         label="Selected Month"
                         value={selectedDate}
@@ -607,7 +643,7 @@ const ProductionSchedulerPage = () => {
                         }}
                     />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}

@@ -261,14 +261,13 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
                 onChange={handleCountryChange}
                 options={countryOptions}
                 freeSolo
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Country of Origin"
-                    helperText="Default: South Africa"
-                    disabled={loading}
-                  />
-                )}
+                slotProps={{
+                  textField: {
+                    label: "Country of Origin",
+                    helperText: "Default: South Africa",
+                    disabled: loading
+                  }
+                }}
               />
             </Grid>
             
