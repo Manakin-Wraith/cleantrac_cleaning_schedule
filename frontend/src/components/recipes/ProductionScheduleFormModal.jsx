@@ -42,7 +42,7 @@ const ProductionScheduleFormModal = ({
     quantity: '',
     notes: '',
     assigned_to: '',
-    status: 'pending'
+    status: 'scheduled'
   };
 
   const [formData, setFormData] = useState(initialFormState);
@@ -56,24 +56,25 @@ const ProductionScheduleFormModal = ({
   useEffect(() => {
     if (open) {
       fetchRecipesAndStaff();
-      
-      if (isEditing && schedule) {
-        setFormData({
-          recipe: schedule.recipe,
-          scheduled_date: new Date(schedule.scheduled_date),
-          quantity: schedule.quantity,
-          notes: schedule.notes || '',
-          assigned_to: schedule.assigned_to || '',
-          status: schedule.status
-        });
-      } else {
-        setFormData(initialFormState);
-      }
+    } else {
+      // Reset form and errors when modal is closed
+      setFormData(initialFormState);
+      setErrors({});
+      setFetchError(null);
+      // Consider resetting submitError here if it's part of this modal's state
+      // setSubmitError(null); 
     }
-  }, [open, isEditing, schedule]);
+  }, [open]); // schedule and isEditing are used within fetchRecipesAndStaff
 
   const fetchRecipesAndStaff = async () => {
+    // Pass `isEditing` and `schedule` if they are needed from the outer scope and not directly available
+    // For now, assuming they are accessible from the component's scope where fetchRecipesAndStaff is defined.
     setLoading(true);
+    
+    if (isEditing && schedule) {
+      console.log('Schedule data:', JSON.stringify(schedule, null, 2));
+    }
+    
     try {
       // Fetch recipes for the department
       const recipesResponse = await api.get('/recipes/', {
@@ -82,15 +83,48 @@ const ProductionScheduleFormModal = ({
           is_active: true
         }
       });
-      setRecipes(recipesResponse.data);
-
+      
+      // Log recipes response for debugging
+      console.log('Recipes loaded:', recipesResponse.data.length);
+      console.log('Recipe IDs:', recipesResponse.data.map(r => r.id));
+      
       // Fetch staff for the department
       const staffResponse = await api.get('/users/', {
         params: { department_id: currentUser?.profile?.department?.id }
       });
-      setStaff(staffResponse.data);
       
-      setFetchError(null);
+      // Update state with fetched data
+      setRecipes(recipesResponse.data);
+      setStaff(staffResponse.data);
+      setFetchError(null); // Clear previous fetch error
+
+      // Now that recipes and staff are fetched, set form data
+      if (isEditing && schedule) {
+        const recipeId = schedule.recipe_details?.id || '';
+        console.log('Setting recipe ID:', recipeId);
+        
+        // Verify the recipe ID exists in the fetched recipes
+        const recipeExists = recipesResponse.data.some(recipe => recipe.id === recipeId);
+        console.log('Recipe exists in options:', recipeExists);
+        
+        // If recipe doesn't exist in options but we have a valid ID, add it to the recipes array
+        if (!recipeExists && recipeId && schedule.recipe_details) {
+          console.log('Adding missing recipe to options:', schedule.recipe_details);
+          setRecipes(prevRecipes => [...prevRecipes, schedule.recipe_details]);
+        }
+        
+        setFormData({
+          recipe: recipeId, // Always set the recipe ID from the schedule
+          scheduled_date: schedule.scheduled_date ? new Date(schedule.scheduled_date) : new Date(),
+          quantity: schedule.batch_size || '',
+          notes: schedule.notes || '',
+          assigned_to: schedule.assigned_staff_details?.[0]?.id || schedule.assigned_to || '', 
+          status: schedule.status || 'scheduled'
+        });
+      } else if (!isEditing) { // If opening for a new schedule, ensure it's reset after fetches
+        setFormData(initialFormState);
+      }
+      setErrors({}); // Reset validation errors after successful data load and form setup
     } catch (err) {
       console.error('Error fetching data:', err);
       setFetchError('Failed to load required data. Please try again.');
@@ -172,12 +206,15 @@ const ProductionScheduleFormModal = ({
 
   const selectedRecipe = getSelectedRecipeDetails();
 
+  const titleId = 'production-schedule-dialog-title';
+
   return (
     <Dialog 
       open={open} 
       onClose={onClose} 
       maxWidth="md" 
       fullWidth
+      aria-labelledby={titleId}
       PaperProps={{
         sx: {
           borderTop: `4px solid ${departmentColor}`,
@@ -185,11 +222,16 @@ const ProductionScheduleFormModal = ({
         }
       }}
     >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6">
-          {isEditing ? 'Edit Production Schedule' : 'Schedule New Production'}
-        </Typography>
-        <IconButton onClick={onClose} size="small">
+      <DialogTitle id={titleId} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            {isEditing ? 'Edit Production Schedule' : 'Schedule New Production'}
+          </Typography>
+          <IconButton 
+            aria-label="close"
+            onClick={onClose}
+            size="small"
+            // sx prop for IconButton can be removed if default positioning is fine, or adjusted
+          >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -211,16 +253,20 @@ const ProductionScheduleFormModal = ({
                 <Select
                   labelId="recipe-select-label"
                   name="recipe"
-                  value={formData.recipe}
+                  value={recipes.length > 0 ? formData.recipe : ''}
                   onChange={handleChange}
                   label="Recipe"
                   disabled={isEditing}
                 >
-                  {recipes.map(recipe => (
-                    <MenuItem key={recipe.id} value={recipe.id}>
-                      {recipe.name} ({recipe.product_code})
-                    </MenuItem>
-                  ))}
+                  {recipes.length === 0 ? (
+                    <MenuItem value="">Loading recipes...</MenuItem>
+                  ) : (
+                    recipes.map(recipe => (
+                      <MenuItem key={recipe.id} value={recipe.id}>
+                        {recipe.name} ({recipe.product_code})
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
                 {errors.recipe && <FormHelperText>{errors.recipe}</FormHelperText>}
               </FormControl>
@@ -308,7 +354,7 @@ const ProductionScheduleFormModal = ({
                   </MenuItem>
                   {staff.map(person => (
                     <MenuItem key={person.id} value={person.id}>
-                      {person.user.first_name} {person.user.last_name}
+                      {person.user ? `${person.user.first_name || ''} ${person.user.last_name || ''}`.trim() : person.first_name ? `${person.first_name || ''} ${person.last_name || ''}`.trim() : 'Unknown Staff'}
                     </MenuItem>
                   ))}
                 </Select>
@@ -326,6 +372,7 @@ const ProductionScheduleFormModal = ({
                   label="Status"
                 >
                   <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="scheduled">Scheduled</MenuItem>
                   <MenuItem value="in_progress">In Progress</MenuItem>
                   <MenuItem value="completed">Completed</MenuItem>
                   <MenuItem value="cancelled">Cancelled</MenuItem>
