@@ -836,31 +836,55 @@ const ProductionSchedulerPage = () => {
             {tabValue === 0 ? (
               <Paper sx={{ p: 2 }}>
                 <ProductionSchedulerCalendar 
-                calendarRef={calendarRef}
-                events={productionTasks}
-                resources={staffResources}
-                currentDate={selectedDate}
-                currentView={calendarView} // Pass the current view state
-                onDateChange={handleCalendarDateChange} // For calendar's internal navigation
-                onViewChange={handleViewChange} // Handle view type changes
-                onEventClick={handleEventClick}
-                onEventDrop={handleEventDrop}
-                onEventResize={handleEventDrop} // Treat resize similar to drop for time changes
-                onDateClick={(arg) => handleOpenAssignmentModal(arg.date, arg.resource?.id)}
-                onEventReceive={handleEventReceive}
+                  calendarRef={calendarRef}
+                  events={productionTasks}
+                  resources={staffResources}
+                  currentDate={selectedDate}
+                  currentView={calendarView} // Pass the current view state
+                  onDateChange={handleCalendarDateChange} // For calendar's internal navigation
+                  onViewChange={handleViewChange} // Handle view type changes
+                  onEventClick={handleEventClick}
+                  onEventDrop={handleEventDrop}
+                  onEventResize={handleEventDrop} // Treat resize similar to drop for time changes
+                  onDateClick={(arg) => handleOpenAssignmentModal(arg.date, arg.resource?.id)}
+                  onEventReceive={handleEventReceive}
                 />
               </Paper>
             ) : (
               <Paper sx={{ p: 2 }}>
-                <ProductionScheduleList departmentColor={departmentColor} />
-              </Paper>
-            )}
-          </>
         )}
-      {/* Modals rendered inside the main component structure */}
-      <ProductionAssignmentModal
-        open={assignmentModalOpen}
-        onClose={handleCloseAssignmentModal} // Use the new handler
+      </Box>
+      <Typography variant="caption" color="text.secondary">
+        Drag recipes to the calendar to schedule production tasks
+      </Typography>
+    </Paper>
+    
+    {tabValue === 0 ? (
+      <Paper sx={{ p: 2 }}>
+        <ProductionSchedulerCalendar 
+          calendarRef={calendarRef}
+          events={productionTasks}
+          resources={staffResources}
+          currentDate={selectedDate}
+          currentView={calendarView} // Pass the current view state
+          onDateChange={handleCalendarDateChange} // For calendar's internal navigation
+          onViewChange={handleViewChange} // Handle view type changes
+          onEventClick={handleEventClick}
+          onEventDrop={handleEventDrop}
+          onEventResize={handleEventDrop} // Treat resize similar to drop for time changes
+          onDateClick={(arg) => handleOpenAssignmentModal(arg.date, arg.resource?.id)}
+          onEventReceive={handleEventReceive}
+        />
+      </Paper>
+    ) : (
+      <Paper sx={{ p: 2 }}>
+        <ProductionScheduleList departmentColor={departmentColor} />
+      </Paper>
+    )}
+  </>
+)}
+
+</LocalizationProvider>
         productionTask={selectedTask}
         editMode={editMode}
         onSave={handleSaveProductionTask}
@@ -882,8 +906,8 @@ const ProductionSchedulerPage = () => {
         onStatusUpdate={handleStatusUpdate}
         canEdit={canEdit} // Pass permission flag
       />
-    </Container>
-  </LocalizationProvider>
+      </Container>
+    </LocalizationProvider>
   );
 };
 

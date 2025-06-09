@@ -200,6 +200,14 @@
   - [x] Progress tracking
   - [x] Quick action buttons
 
+## UI Refactoring and Enhancements
+
+- [x] **Production Schedule UI Consolidation**:
+  - [x] Moved `ProductionScheduleList` from `RecipeManagementPage` to `ProductionSchedulerPage` as a new "List View" tab.
+  - [x] Updated `ProductionSchedulerPage` to include a tab system for "Calendar View" and "List View".
+  - [x] Ensured `departmentColor` theming and all functionalities are preserved in the new layout.
+  - [x] Removed "Production Schedule" tab from `RecipeManagementPage` and adjusted remaining tabs.
+
 ### Integration with Existing Systems
 - [x] Integrate with staff management:
   - [x] Pull staff availability
