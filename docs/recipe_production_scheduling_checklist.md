@@ -61,6 +61,13 @@
   - [x] Fixed form submission data format to match backend expectations
   - [x] Resolved React hydration error with nested heading elements
   - [x] Improved modal design consistency and accessibility
+  - [x] **Edit Production Task Modal**
+    - [x] Resolve persistent HTML heading nesting warning (`h2 > h2 > h6`) in `ProductionScheduleFormModal.jsx`.
+    - [x] Ensure "Update Schedule" button correctly submits changes (PUT request).
+    - [x] Verify all form fields populate correctly from existing task data.
+    - [x] Verify "Status" dropdown includes "Scheduled" and selects correctly.
+    - [x] Resolve any "controlled vs. uncontrolled input" warnings.
+    - [x] Resolve any "out-of-range value" warnings for select components.
 
 ### Production Workflow Components
 - [x] ProductionTaskDetailModal component
@@ -199,6 +206,15 @@
 - [ ] Calendar functionality tests
 - [ ] Workflow progression tests
 - [ ] Inventory integration tests
+
+## VI. Recipe Production Scheduling UI/UX (vs. Cleaning Tasks) - Phase 1 Complete
+- [x] **Placeholder Event on Drop**: Implement immediate visual feedback by adding a temporary placeholder event to the calendar when a recipe chip is dragged and dropped.
+- [x] **Placeholder Event Styling**: Ensure placeholder events are visually distinct (e.g., greyed out, specific icon, '(Pending)' prefix, reduced opacity).
+- [x] **`renderEventContent` Handles Placeholders**: Update the calendar's event rendering logic to correctly display placeholder events with their specific styling and information.
+- [x] **Placeholder Removed on Save/Cancel**: Confirm that the placeholder event is correctly removed from the calendar when the scheduling modal is saved (and replaced by the actual event) or when the modal is cancelled.
+- [x] **Visibility on All Calendar Views**: Verified that both placeholder and saved recipe production events are visible and correctly rendered across all calendar views (Day, Week, Month, Timeline).
+- [x] **Saved Event Display**: Verified that the final saved event displays with the correct styling (based on status, task type) and information on all calendar views.
+- [x] **Consistency with Cleaning Tasks**: Final review confirmed overall UX alignment with cleaning task scheduling, including tooltips, event click, date click, drag/resize, and general look/feel.
 
 ### User Acceptance Testing
 - [ ] Manager scheduling workflow

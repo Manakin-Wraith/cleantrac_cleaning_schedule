@@ -49,6 +49,16 @@
 ### Frontend Components
 - [x] Create `RecipeManagementPage` component:
   - [x] Department selector (using user's department from auth context)
+
+## Recipe Production Scheduling UI/UX (vs. Cleaning Tasks)
+
+- [x] **Placeholder Event on Drop**: Implement immediate visual feedback by adding a temporary placeholder event to the calendar when a recipe chip is dragged and dropped.
+- [x] **Placeholder Event Styling**: Ensure placeholder events are visually distinct (e.g., greyed out, specific icon, '(Pending)' prefix, reduced opacity).
+- [x] **`renderEventContent` Handles Placeholders**: Update the calendar's event rendering logic to correctly display placeholder events with their specific styling and information.
+- [x] **Placeholder Removed on Save/Cancel**: Confirm that the placeholder event is correctly removed from the calendar when the scheduling modal is saved (and replaced by the actual event) or when the modal is cancelled.
+- [x] **Visibility on All Calendar Views**: Verified that both placeholder and saved recipe production events are visible and correctly rendered across all calendar views (Day, Week, Month, Timeline).
+- [x] **Saved Event Display**: Verified that the final saved event displays with the correct styling (based on status, task type) and information on all calendar views.
+- [x] **Consistency with Cleaning Tasks**: Final review confirmed overall UX alignment with cleaning task scheduling, including tooltips, event click, date click, drag/resize, and general look/feel.
   - [x] Recipe list view
   - [x] Search and filter functionality
 
@@ -189,6 +199,14 @@
   - [x] List of day's scheduled production
   - [x] Progress tracking
   - [x] Quick action buttons
+
+## UI Refactoring and Enhancements
+
+- [x] **Production Schedule UI Consolidation**:
+  - [x] Moved `ProductionScheduleList` from `RecipeManagementPage` to `ProductionSchedulerPage` as a new "List View" tab.
+  - [x] Updated `ProductionSchedulerPage` to include a tab system for "Calendar View" and "List View".
+  - [x] Ensured `departmentColor` theming and all functionalities are preserved in the new layout.
+  - [x] Removed "Production Schedule" tab from `RecipeManagementPage` and adjusted remaining tabs.
 
 ### Integration with Existing Systems
 - [x] Integrate with staff management:

@@ -268,7 +268,7 @@ const ThermometerAssignmentManager = () => {
                       onChange={handleDateChange}
                       minDate={startOfDay(new Date())} // Ensure minDate is also start of day
                       maxDate={addDays(new Date(), 30)} 
-                      renderInput={(params) => <TextField {...params} fullWidth required />}
+                      
                       slotProps={{
                         textField: { fullWidth: true, required: true }
                       }}

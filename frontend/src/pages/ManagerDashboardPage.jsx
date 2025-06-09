@@ -1016,7 +1016,7 @@ function ManagerDashboardPage() {
                                         {cleaningItems
                                             .filter(item => !scheduledCleaningItemIds.includes(item.id))
                                             .map(item => (
-                                                <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
+                                                <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={item.id}>
                                                     <Box
                                                         className="draggable-cleaning-item"
                                                         sx={{

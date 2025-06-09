@@ -257,9 +257,9 @@ const ProductionTaskDetailModal = ({
       }}
     >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6">
+        <span style={{ fontSize: '1.25rem', fontWeight: 500 }}>
           Production Task Details
-        </Typography>
+        </span>
         <Box>
           {canEdit && (
             <>

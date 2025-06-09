@@ -11,7 +11,6 @@ import {
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import RecipeList from '../components/recipes/RecipeList';
-import ProductionScheduleList from '../components/recipes/ProductionScheduleList';
 import InventoryList from '../components/recipes/InventoryList';
 import WasteRecordList from '../components/recipes/WasteRecordList';
 import { useTheme } from '@mui/material/styles';
@@ -81,9 +80,8 @@ const RecipeManagementPage = () => {
           }}
         >
           <Tab label="Recipes" id="tab-0" />
-          <Tab label="Production Schedule" id="tab-1" />
-          <Tab label="Inventory" id="tab-2" />
-          <Tab label="Waste Records" id="tab-3" />
+          <Tab label="Inventory" id="tab-1" />
+          <Tab label="Waste Records" id="tab-2" />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
@@ -94,9 +92,8 @@ const RecipeManagementPage = () => {
           ) : (
             <>
               {tabValue === 0 && <RecipeList departmentColor={departmentColor} />}
-              {tabValue === 1 && <ProductionScheduleList departmentColor={departmentColor} />}
-              {tabValue === 2 && <InventoryList departmentColor={departmentColor} />}
-              {tabValue === 3 && <WasteRecordList departmentColor={departmentColor} />}
+              {tabValue === 1 && <InventoryList departmentColor={departmentColor} />}
+              {tabValue === 2 && <WasteRecordList departmentColor={departmentColor} />}
             </>
           )}
         </Box>
