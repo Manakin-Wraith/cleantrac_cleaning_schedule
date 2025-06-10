@@ -129,15 +129,68 @@ const ProductionAssignmentModal = ({
       return;
     }
 
-    // --- START OF RESTORED/CORRECTED Department and Recipe LOGIC ---
+    // --- START OF ENHANCED Department and Recipe LOGIC ---
     let newDepartmentId = '';
     let derivedDeptName = '';
+    
+    // Debug the currentUser object structure in detail
+    console.log('[FormInit Dep/Recipe] Current User Object:', JSON.stringify(currentUser, null, 2));
     console.log('[FormInit Dep/Recipe] Determining department. EditMode:', editMode, 'Task:', productionTask, 'User:', currentUser, 'Recipe on Task:', productionTask?.recipe, 'DeptOptions:', departmentOptions.length);
+    
+    // Enhanced check for user's department with more possible paths
+    let userDepartmentId = null;
+    let userDepartmentName = null;
+    
+    // Check all possible paths where department info might be stored
+    if (currentUser) {
+      // Direct properties
+      if (currentUser.department_id) {
+        userDepartmentId = currentUser.department_id;
+        userDepartmentName = currentUser.department_name;
+      } 
+      // Nested department object
+      else if (currentUser.department) {
+        if (typeof currentUser.department === 'object') {
+          userDepartmentId = currentUser.department.id;
+          userDepartmentName = currentUser.department.name;
+        } else if (typeof currentUser.department === 'string' || typeof currentUser.department === 'number') {
+          // If department is just an ID
+          userDepartmentId = currentUser.department;
+          // Try to find the name from department options
+          if (departmentOptions.length > 0) {
+            const deptObj = departmentOptions.find(d => String(d.id) === String(currentUser.department));
+            if (deptObj) userDepartmentName = deptObj.name;
+          }
+        }
+      }
+      // Check profile.department path
+      else if (currentUser.profile && currentUser.profile.department) {
+        if (typeof currentUser.profile.department === 'object') {
+          userDepartmentId = currentUser.profile.department.id;
+          userDepartmentName = currentUser.profile.department.name;
+        } else {
+          userDepartmentId = currentUser.profile.department;
+          // Try to find the name from department options
+          if (departmentOptions.length > 0) {
+            const deptObj = departmentOptions.find(d => String(d.id) === String(currentUser.profile.department));
+            if (deptObj) userDepartmentName = deptObj.name;
+          }
+        }
+      }
+    }
+    
+    console.log('[FormInit Dep/Recipe] Extracted user department info:', { 
+      userDepartmentId, 
+      userDepartmentName,
+      departmentOptions
+    });
 
     if (editMode && productionTask?.department_id) {
+      // In edit mode, keep the task's original department
       newDepartmentId = String(productionTask.department_id);
       console.log('[FormInit Dep/Recipe] Department from task (edit mode):', newDepartmentId);
-    } else if (productionTask?.recipe) { // Task from drag-drop usually has recipe object
+    } else if (productionTask?.recipe) { 
+      // Task from drag-drop usually has recipe object
       if (productionTask.recipe.department_id) {
         newDepartmentId = String(productionTask.recipe.department_id);
         console.log('[FormInit Dep/Recipe] Department ID directly from productionTask.recipe.department_id:', newDepartmentId);
@@ -151,11 +204,24 @@ const ProductionAssignmentModal = ({
           console.warn('[FormInit Dep/Recipe] Recipe department_name from task not found in departmentOptions:', productionTask.recipe.department_name);
         }
       } else if (productionTask.recipe.department_name) {
-          console.log('[FormInit Dep/Recipe] Recipe has department_name, but departmentOptions not ready. Will attempt to set name later.');
+        console.log('[FormInit Dep/Recipe] Recipe has department_name, but departmentOptions not ready. Will attempt to set name later.');
       }
-    } else if (!editMode && currentUser?.department_id) { // Fallback to user's department for new blank task
-      newDepartmentId = String(currentUser.department_id);
-      console.log('[FormInit Dep/Recipe] Department from current user (new blank task):', newDepartmentId);
+    } 
+    
+    // If no department has been set yet, prioritize user's department
+    if (!newDepartmentId && userDepartmentId) {
+      newDepartmentId = String(userDepartmentId);
+      if (userDepartmentName) {
+        derivedDeptName = userDepartmentName;
+      }
+      console.log('[FormInit Dep/Recipe] Department auto-populated from current user:', { newDepartmentId, derivedDeptName });
+    }
+    
+    // Fallback to first department in options if we still don't have a department
+    if (!newDepartmentId && departmentOptions.length > 0) {
+      newDepartmentId = String(departmentOptions[0].id);
+      derivedDeptName = departmentOptions[0].name;
+      console.log('[FormInit Dep/Recipe] No user department found, using first available department:', { newDepartmentId, derivedDeptName });
     }
     setDepartment(newDepartmentId);
 

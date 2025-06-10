@@ -138,6 +138,9 @@
   - [x] Fix recipe chip drag-and-drop behavior in calendar
   - [x] Ensure consistent time display formats across the application
   - [x] Improve error handling for missing or null time values
+  - [x] Remove circular quality check icons from calendar event chips
+  - [x] Enhance calendar event chip design with modern styling and subtle shadows
+  - [x] Simplify department field in ProductionAssignmentModal to show only department name
 
 ### Data Import and Migration
 - [x] Create data import utility:

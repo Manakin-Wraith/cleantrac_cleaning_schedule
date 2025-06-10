@@ -35,6 +35,7 @@ const ProductionSchedulerPage = () => {
   const [staffResources, setStaffResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarView, setCalendarView] = useState('resourceTimeGridDay');
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
@@ -62,6 +63,25 @@ const ProductionSchedulerPage = () => {
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
+  
+  // Auto-clear success and error messages after a delay
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000); // Clear after 5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+  
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 5000); // Clear after 5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
   
   // Department-specific styling
   const getDepartmentColor = () => {
@@ -97,6 +117,7 @@ const ProductionSchedulerPage = () => {
       // Get start and end of month for filtering
       const startDate = new Date(date.getFullYear(), date.getMonth(), 1);
       const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      const formattedDate = format(date, 'yyyy-MM-dd');
       
       const params = {
         start_date: format(startDate, 'yyyy-MM-dd'),
@@ -104,13 +125,16 @@ const ProductionSchedulerPage = () => {
         department_id: departmentFilter || undefined,
         status: statusFilter || undefined,
         recipe: recipeFilter || undefined,
+        // Add a cache-busting parameter if forceRefresh is true
+        _t: forceRefresh ? Date.now() : undefined
       };
+      
       const response = await apiClient.get('/production-schedules/', { params });
       // Handle both array responses and paginated responses with results property
       const tasksData = Array.isArray(response.data) ? response.data : 
                        (response.data?.results || []);
       
-      console.log('Raw production tasks data:', tasksData);
+      console.log(`Fetched ${tasksData.length} production tasks for ${formattedDate}${forceRefresh ? ' (forced refresh)' : ''}`);
       
       // Helper function to get color based on task status
       const getTaskColor = (status, isBorder = false) => {
@@ -143,22 +167,62 @@ const ProductionSchedulerPage = () => {
         }
       };
       
+      // Map tasks to calendar events
       const tasks = tasksData.map(task => {
-        // Ensure we have valid start and end times
-        let startTime = task.scheduled_start_time ? new Date(task.scheduled_start_time) : null;
-        let endTime = task.scheduled_end_time ? new Date(task.scheduled_end_time) : null;
+        // Ensure we have valid dates - create default times if missing
+        let startTime = null;
+        let endTime = null;
         
-        // If we don't have valid times but have a scheduled date, create default times
-        if (task.scheduled_date && (!startTime || !endTime)) {
+        // First try to use scheduled_start_time and scheduled_end_time (full ISO datetime)
+        if (task.scheduled_start_time) {
+          startTime = new Date(task.scheduled_start_time);
+        }
+        
+        if (task.scheduled_end_time) {
+          endTime = new Date(task.scheduled_end_time);
+        }
+        
+        // If those aren't available, try to combine scheduled_date with start_time and end_time
+        if (!startTime && task.scheduled_date) {
           const scheduledDate = new Date(task.scheduled_date);
-          if (!startTime) {
+          
+          if (task.start_time) {
+            // Parse time in format HH:MM:SS
+            const [hours, minutes, seconds] = task.start_time.split(':').map(Number);
             startTime = new Date(scheduledDate);
-            startTime.setHours(9, 0, 0); // Default to 9:00 AM
+            startTime.setHours(hours || 9, minutes || 0, seconds || 0);
+          } else {
+            // Default to 9:00 AM if no time specified
+            startTime = new Date(scheduledDate);
+            startTime.setHours(9, 0, 0);
           }
-          if (!endTime) {
+          
+          if (task.end_time) {
+            // Parse time in format HH:MM:SS
+            const [hours, minutes, seconds] = task.end_time.split(':').map(Number);
             endTime = new Date(scheduledDate);
-            endTime.setHours(11, 0, 0); // Default to 11:00 AM (2 hour duration)
+            endTime.setHours(hours || 11, minutes || 0, seconds || 0);
+          } else {
+            // Default to start time + 2 hours if no end time specified
+            endTime = new Date(startTime);
+            endTime.setHours(startTime.getHours() + 2);
           }
+        }
+        
+        // Last resort - create default times based on current date
+        if (!startTime) {
+          console.warn(`Task ${task.id} has no valid start time - creating default:`, task);
+          const defaultDate = task.scheduled_date ? new Date(task.scheduled_date) : new Date();
+          startTime = new Date(defaultDate);
+          startTime.setHours(9, 0, 0);
+          endTime = new Date(defaultDate);
+          endTime.setHours(11, 0, 0);
+        }
+        
+        // Ensure end time is after start time
+        if (endTime <= startTime) {
+          endTime = new Date(startTime);
+          endTime.setHours(startTime.getHours() + 2);
         }
         
         // Get recipe name from either recipe_details or directly from recipe_name field
@@ -167,8 +231,9 @@ const ProductionSchedulerPage = () => {
         // Get batch size from either scheduled_quantity or batch_size field
         const batchSize = task.scheduled_quantity || task.batch_size || '';
         
-        // Get assigned staff IDs
+        // Initialize staff IDs array
         let staffIds = [];
+        
         if (task.assigned_staff_details && task.assigned_staff_details.length > 0) {
           staffIds = task.assigned_staff_details.map(staff => staff.id.toString());
         } else if (task.assigned_staff_ids) { // Fallback for older format if needed
@@ -200,19 +265,38 @@ const ProductionSchedulerPage = () => {
           borderColor: getTaskColor(task.status || 'scheduled', true),
           textColor: '#ffffff'
         };
-      });
-      console.log('[ProductionSchedulerPage] Mapped tasks for calendar:', JSON.stringify(tasks.map(t => ({id: t.id, title: t.title, start: t.start, end: t.end, resourceId: t.resourceId, recipe_name: t.extendedProps.recipe_name})), null, 2));
+      }).filter(Boolean); // Remove any null events
+      
+      console.log(`Mapped ${tasks.length} tasks for calendar display`);
       
       // Update state with new tasks
-      setProductionTasks(prevTasks => {
-        // If forceRefresh is true, replace all tasks
-        if (forceRefresh) return tasks;
-        
-        // Otherwise, merge with existing tasks, prioritizing new ones with the same ID
-        const existingTasksMap = new Map(prevTasks.map(task => [task.id, task]));
-        tasks.forEach(task => existingTasksMap.set(task.id, task));
-        return Array.from(existingTasksMap.values());
-      });
+      if (forceRefresh) {
+        // For force refresh, completely replace the events
+        console.log('Force refreshing calendar events');
+        setProductionTasks(tasks);
+      } else {
+        // For normal fetch, merge with existing events to avoid UI flicker
+        setProductionTasks(prevTasks => {
+          // Create a map of existing events by ID for quick lookup
+          const existingTasksMap = new Map(prevTasks.map(task => [task.id, task]));
+          
+          // Create a map of new tasks by ID
+          const newTasksMap = new Map(tasks.map(task => [task.id, task]));
+          
+          // Start with all new tasks
+          const mergedTasks = [...tasks];
+          
+          // Add any existing tasks that aren't in the new set (might be from other dates)
+          prevTasks.forEach(task => {
+            if (!newTasksMap.has(task.id)) {
+              mergedTasks.push(task);
+            }
+          });
+          
+          console.log(`Merged ${mergedTasks.length} tasks for calendar (${tasks.length} new, ${mergedTasks.length - tasks.length} retained)`);
+          return mergedTasks;
+        });
+      }
     } catch (err) {
       console.error('Error fetching production tasks:', err);
       setError('Failed to load production tasks.');
@@ -295,10 +379,11 @@ const ProductionSchedulerPage = () => {
     }
   };
 
-  // Initialize draggable recipe items
-  useEffect(() => {
+  // Function to initialize draggable recipe items
+  const initializeDraggables = useCallback(() => {
     let draggable = null;
     if (externalEventsRef.current && recipes.length > 0) {
+      console.log('Initializing draggable recipe items...');
       // Use FullCalendar's Draggable utility for external events
       draggable = new Draggable(externalEventsRef.current, {
         itemSelector: '.draggable-recipe-item',
@@ -325,51 +410,31 @@ const ProductionSchedulerPage = () => {
         }
       });
       
-      // Re-initialize draggable after a short delay to ensure DOM is fully updated
-      const reInitTimeout = setTimeout(() => {
-        if (draggable) {
-          draggable.destroy();
-          draggable = new Draggable(externalEventsRef.current, {
-            itemSelector: '.draggable-recipe-item',
-            eventData: function(eventEl) {
-              const eventDataString = eventEl.getAttribute('data-event');
-              if (eventDataString) {
-                try {
-                  const parsedData = JSON.parse(eventDataString);
-                  return {
-                    title: parsedData.title,
-                    duration: parsedData.duration || '02:00',
-                    extendedProps: { 
-                      recipe_id: parsedData.recipe_id,
-                      recipe_name: parsedData.title, // Added recipe_name
-                      isExternal: true 
-                    },
-                  };
-                } catch (e) {
-                  console.error("Failed to parse event data from draggable item:", e);
-                  return {};
-                }
-              }
-              return {}; 
-            }
-          });
-        }
-      }, 500);
-      
-      return () => {
-        clearTimeout(reInitTimeout);
-        if (draggable) {
-          draggable.destroy();
-        }
-      };
+      return draggable;
     }
+    return null;
+  }, [recipes]);
+  
+  // Initialize draggable recipe items when component mounts or recipes change
+  useEffect(() => {
+    let draggable = initializeDraggables();
+    
+    // Re-initialize draggable after a short delay to ensure DOM is fully updated
+    const reInitTimeout = setTimeout(() => {
+      if (draggable) {
+        draggable.destroy();
+        draggable = initializeDraggables();
+        console.log('Re-initialized draggable recipe items after delay');
+      }
+    }, 500);
     
     return () => {
+      clearTimeout(reInitTimeout);
       if (draggable) {
         draggable.destroy();
       }
     };
-  }, [recipes]);
+  }, [recipes, initializeDraggables]);
 
   // Handle receiving an external event (dropped recipe)
   const handleEventReceive = (receiveInfo) => {
@@ -518,8 +583,11 @@ const ProductionSchedulerPage = () => {
       const calendarApi = calendarRef.current.getApi();
       const placeholderEvent = calendarApi.getEventById(placeholderEventId);
       if (placeholderEvent) {
+        const originalEventId = placeholderEvent.extendedProps?.originalEventId;
         placeholderEvent.remove();
-        console.log(`Placeholder event ${placeholderEventId} removed on modal cancel.`);
+        if (originalEventId) {
+          fetchProductionTasks(selectedDate, true);
+        }
       }
       setPlaceholderEventId(null); // Clear the placeholder ID
     }
@@ -532,13 +600,41 @@ const ProductionSchedulerPage = () => {
     setLoading(true);
     try {
       let response;
+      let actionDescription = '';
+      
+      // Check if this is from a drag operation (has originalEventId in the placeholder)
+      const isFromDragOperation = placeholderEventId && calendarRef.current?.getApi && 
+        calendarRef.current.getApi().getEventById(placeholderEventId)?.extendedProps?.originalEventId;
+      
+      console.log(`Saving task with ID: ${selectedTask?.id}, isFromDragOperation: ${isFromDragOperation}`);
+      
       if (editMode && selectedTask && selectedTask.id) {
+        // For drag operations, we want to include information about what changed
+        if (isFromDragOperation && selectedTask._originalEvent) {
+          // Log the changes for debugging
+          console.log('Changes from drag operation:', {
+            originalStart: selectedTask._originalEvent.start,
+            newStart: new Date(taskData.scheduled_start_time),
+            originalResourceId: selectedTask._originalEvent.resourceId,
+            newResourceId: taskData.assigned_staff_id
+          });
+          
+          actionDescription = 'Rescheduled via drag-and-drop';
+        } else {
+          actionDescription = 'Updated';
+        }
+        
         response = await apiClient.put(`/production-schedules/${selectedTask.id}/`, taskData);
-        console.log('Updated production task:', response.data);
+        console.log(`${actionDescription} production task:`, response.data);
       } else {
         response = await apiClient.post('/production-schedules/', taskData);
         console.log('Created new production task:', response.data);
+        actionDescription = 'Created';
       }
+      
+      // Store the newly created/updated task data for immediate use
+      const savedTaskData = response.data;
+      console.log('Saved task data for calendar update:', savedTaskData);
       
       // Remove placeholder event if it exists
       if (placeholderEventId && calendarRef.current?.getApi) {
@@ -551,34 +647,52 @@ const ProductionSchedulerPage = () => {
         setPlaceholderEventId(null);
       }
       
-      // Store the newly created/updated task data for immediate use
-      const savedTaskData = response.data;
-      console.log('Saved task data for calendar update:', savedTaskData);
-      
       // Ensure calendar is refreshed with the latest data
-      await fetchProductionTasks(selectedDate);
+      // Force refresh for drag operations to ensure proper rendering
+      await fetchProductionTasks(selectedDate, true);
       
-      // Force calendar to re-render and ensure the new event is properly displayed
-      if (calendarRef.current?.getApi) {
-        const calendarApi = calendarRef.current.getApi();
-        calendarApi.refetchEvents();
-        
-        // If we saved a new task, navigate to its date to ensure visibility
-        if (!editMode && taskData.scheduled_date) {
-          const taskDate = new Date(taskData.scheduled_date);
-          calendarApi.gotoDate(taskDate);
-        }
-      }
+      // Show success message
+      setSuccessMessage(`Task ${actionDescription.toLowerCase()}: ${savedTaskData.recipe_name || 'Production task'}`);
       
-      // Ensure modal is closed after events are refreshed
+      // Close the modal immediately
+      setAssignmentModalOpen(false);
+      setEditMode(false);
+      setSelectedTask(null);
+      
+      // Reinitialize draggable elements to ensure they work after saving
       setTimeout(() => {
-        setAssignmentModalOpen(false);
-        setEditMode(false);
-        setSelectedTask(null);
-      }, 100); // Small delay to ensure calendar updates first
+        // First destroy any existing draggables to avoid duplicates
+        if (externalEventsRef.current) {
+          console.log('Reinitializing draggable recipe elements after successful save...');
+          const draggable = initializeDraggables();
+          if (draggable) {
+            console.log('Successfully reinitialized draggable elements');
+          }
+        }
+        
+        // If we saved a new task or rescheduled via drag, navigate to its date to ensure visibility
+        if (calendarRef.current?.getApi && (!editMode || isFromDragOperation) && taskData.scheduled_date) {
+          const taskDate = new Date(taskData.scheduled_date);
+          calendarRef.current.getApi().gotoDate(taskDate);
+        }
+      }, 200); // Increased delay to ensure DOM is updated first
     } catch (err) {
       console.error('Error saving production task:', err);
-      setError('Failed to save production task.');
+      setError(`Failed to save production task: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
+      
+      // If there was an error and this was a drag operation, restore the original event
+      if (placeholderEventId && calendarRef.current?.getApi) {
+        // Remove the placeholder event
+        const calendarApi = calendarRef.current.getApi();
+        const placeholderEvent = calendarApi.getEventById(placeholderEventId);
+        if (placeholderEvent) {
+          placeholderEvent.remove();
+        }
+        setPlaceholderEventId(null);
+        
+        // Force refresh to restore the original event
+        fetchProductionTasks(selectedDate, true);
+      }
     }
     setLoading(false);
   };
@@ -594,13 +708,44 @@ const ProductionSchedulerPage = () => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       setLoading(true);
       try {
+        // Delete the task from the backend
         await apiClient.delete(`/production-schedules/${taskToDelete.id}/`);
-        fetchProductionTasks(selectedDate); // Refresh tasks
+        
+        // Immediately remove the task from the calendar UI for instant feedback
+        if (calendarRef.current?.getApi) {
+          const calendarApi = calendarRef.current.getApi();
+          const eventToRemove = calendarApi.getEventById(taskToDelete.id.toString());
+          if (eventToRemove) {
+            eventToRemove.remove();
+          }
+        }
+        
+        // Force refresh to ensure the deleted task is removed from the calendar and state is consistent
+        await fetchProductionTasks(selectedDate, true);
+        
+        // Show success message
+        setSuccessMessage(`Task deleted: ${taskToDelete.recipe_name || 'Production task'}`);
+        
+        // Close any open modals
         setDetailModalOpen(false);
         setSelectedTask(null);
+        
+        // Reinitialize draggable elements to ensure they work after deletion
+        setTimeout(() => {
+          if (externalEventsRef.current) {
+            console.log('Reinitializing draggable recipe elements after successful deletion...');
+            const draggable = initializeDraggables();
+            if (draggable) {
+              console.log('Successfully reinitialized draggable elements after deletion');
+            }
+          }
+        }, 200); // Delay to ensure DOM is updated first
       } catch (err) {
         console.error('Error deleting production task:', err);
-        setError('Failed to delete task.');
+        setError(`Failed to delete task: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
+        
+        // Refresh the calendar to ensure consistent state even after an error
+        fetchProductionTasks(selectedDate, true);
       }
       setLoading(false);
     }
@@ -632,8 +777,6 @@ const ProductionSchedulerPage = () => {
     dropInfo.preventDefault();
     const { event, oldEvent, revert } = dropInfo;
     const taskId = event.id;
-    let updatedFields = {};
-    const changeDescription = [];
     
     // Get the task to update from our local state
     const taskToUpdate = productionTasks.find(t => t.id.toString() === taskId.toString());
@@ -644,84 +787,87 @@ const ProductionSchedulerPage = () => {
       return;
     }
     
-    // Handle date changes
-    const newScheduledDate = format(event.start, "yyyy-MM-dd");
-    const oldScheduledDate = oldEvent ? format(oldEvent.start, "yyyy-MM-dd") : null;
-    
-    if (newScheduledDate !== oldScheduledDate) {
-      updatedFields.scheduled_date = newScheduledDate;
-      changeDescription.push(`date to ${newScheduledDate}`);
-    }
-    
-    // Handle resource (staff) changes
-    const newResourceId = event.getResources()?.[0]?.id;
-    const oldResourceId = oldEvent ? oldEvent.getResources()?.[0]?.id : null;
-    
-    if (newResourceId !== oldResourceId) {
-      updatedFields.assigned_staff_id = newResourceId === 'unassigned' ? null : newResourceId;
-      const newStaffName = newResourceId && newResourceId !== 'unassigned' ? 
-        staffResources.find(s => s.id.toString() === newResourceId.toString())?.title || 'Unknown' : 'Unassigned';
-      changeDescription.push(`staff to ${newStaffName}`);
-    }
-    
-    // Handle time changes - always include timezone info
-    const newStartTime = format(event.start, "yyyy-MM-dd'T'HH:mm:ssxxx");
-    const oldStartTime = oldEvent ? format(oldEvent.start, "yyyy-MM-dd'T'HH:mm:ssxxx") : null;
-    
-    if (newStartTime !== oldStartTime) {
-      updatedFields.scheduled_start_time = newStartTime;
-      changeDescription.push(`start time to ${format(event.start, "HH:mm")}`);
-    }
-    
-    if (event.end) {
-      const newEndTime = format(event.end, "yyyy-MM-dd'T'HH:mm:ssxxx");
-      const oldEndTime = (oldEvent && oldEvent.end) ? format(oldEvent.end, "yyyy-MM-dd'T'HH:mm:ssxxx") : null;
-      
-      if (newEndTime !== oldEndTime) {
-        updatedFields.scheduled_end_time = newEndTime;
-        changeDescription.push(`end time to ${format(event.end, "HH:mm")}`);
-      }
-    }
-    
-    if (Object.keys(updatedFields).length === 0) {
-      console.log('No significant change detected during drop.');
-      return;
-    }
-    
-    console.log(`Updating production task ${taskId} with:`, updatedFields, "Description:", changeDescription.join(', '));
-    
     try {
-      // Update the task on the server
-      await apiClient.patch(`/production-schedules/${taskId}/`, updatedFields);
+      console.log(`Event drop detected for task ${taskId}. Opening modal for confirmation.`);
       
-      // Update the task in our local state for immediate feedback
-      if (taskToUpdate) {
-        const updatedTask = {
-          ...taskToUpdate,
-          ...updatedFields
-        };
-        
-        // Update in productionTasks for immediate display
-        setProductionTasks(prev => 
-          prev.map(t => t.id.toString() === taskId.toString() ? {
-            ...t,
-            extendedProps: {
-              ...t.extendedProps,
-              ...updatedFields
-            }
-          } : t)
-        );
-      }
+      // Store the original event details for potential revert
+      const originalStart = oldEvent.start;
+      const originalEnd = oldEvent.end;
+      const originalResourceId = oldEvent.getResources()?.[0]?.id;
       
-      // Show success message
-      setSuccessMessage(`Task updated: ${changeDescription.join(', ')}`);
+      // Create a placeholder event at the new position
+      const placeholderId = `placeholder-${Date.now()}`;
+      const calendarApi = calendarRef.current.getApi();
       
-      // Fetch from server to ensure data consistency
-      fetchProductionTasks(selectedDate);
+      // Extract resource ID from the event
+      const resourceId = event.getResources()?.[0]?.id;
+      
+      // Calculate proper end time if not provided
+      const endTime = event.end || addHours(event.start, 2);
+      
+      // Log the drag operation details for debugging
+      console.log('Drag operation details:', {
+        taskId,
+        originalStart,
+        newStart: event.start,
+        originalResourceId,
+        newResourceId: resourceId,
+        placeholderId
+      });
+      
+      // Remove the original event temporarily
+      event.remove();
+      
+      // Add placeholder event with clear visual indication
+      calendarApi.addEvent({
+        id: placeholderId,
+        start: event.start,
+        end: endTime,
+        resourceId: resourceId,
+        title: `${event.title} (pending)`,
+        extendedProps: {
+          ...taskToUpdate.extendedProps,
+          isPlaceholder: true,
+          originalEventId: taskId,
+          originalStart,
+          originalEnd,
+          originalResourceId
+        },
+        backgroundColor: theme.palette.info.light,
+        borderColor: theme.palette.info.main,
+        textColor: theme.palette.info.contrastText,
+        classNames: ['placeholder-production-event']
+      });
+      
+      // Set placeholder event ID and selected task
+      setPlaceholderEventId(placeholderId);
+      
+      // Prepare task data for the modal
+      // We need to convert the event data to the format expected by the modal
+      const modalTaskData = {
+        ...taskToUpdate.extendedProps,
+        id: taskId,
+        scheduled_date: format(event.start, "yyyy-MM-dd"),
+        scheduled_start_time: format(event.start, "yyyy-MM-dd'T'HH:mm:ssxxx"),
+        scheduled_end_time: format(endTime, "yyyy-MM-dd'T'HH:mm:ssxxx"),
+        start_time: format(event.start, "HH:mm"),
+        end_time: format(endTime, "HH:mm"),
+        assigned_staff_id: resourceId || taskToUpdate.extendedProps.assigned_staff_id,
+        _originalEvent: {
+          start: originalStart,
+          end: originalEnd,
+          resourceId: originalResourceId
+        }
+      };
+      
+      // Open the modal with the task data
+      setSelectedTask(modalTaskData);
+      setEditMode(true);
+      setAssignmentModalOpen(true);
     } catch (err) {
-      console.error('Error updating task on drop:', err.response?.data || err.message);
-      setError(`Failed to update task: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
-      revert(); // Revert calendar event on error
+      console.error('Error handling event drop:', err);
+      setError(`Failed to handle drag operation: ${err.message || 'Unknown error'}`);
+      revert();
     }
   };
 
@@ -774,6 +920,7 @@ const ProductionSchedulerPage = () => {
         </Paper>
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {successMessage && <Alert severity="success" sx={{ mb: 2 }}>{successMessage}</Alert>}
 
         {loading && !productionTasks.length ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>

@@ -26,36 +26,69 @@ const ProductionSchedulerCalendar = ({
     const localCalendarRef = useRef(null);
     const effectiveRef = calendarRef || localCalendarRef;
     const theme = useTheme();
+    const prevEventsRef = useRef([]);
     
-    // Use effect to enhance day view event visibility after render
-    // useEffect(() => {
-    //     const enhanceDayViewEvents = () => {
-    //         if (effectiveRef.current && currentView === 'resourceTimeGridDay') {
-    //             // Force a refresh of the calendar to ensure events are properly rendered
-    //             const calendarApi = effectiveRef.current.getApi();
-    //             setTimeout(() => {
-    //                 calendarApi.updateSize();
-                    
-    //                 // Apply additional styling to day view events
-    //                 const dayViewEvents = document.querySelectorAll('.fc-resourceTimeGridDay-view .fc-event');
-    //                 dayViewEvents.forEach(event => {
-    //                     event.style.display = 'flex';
-    //                     event.style.visibility = 'visible';
-    //                     event.style.opacity = '1';
-    //                     event.style.zIndex = '5';
-    //                     event.style.minHeight = '30px';
-    //                 });
-    //             }, 100);
-    //         }
-    //     };
-        
-    //     enhanceDayViewEvents();
-        
-    //     // Re-apply when events or view changes
-    //     return () => {
-    //         // Cleanup if needed
-    //     };
-    // }, [events, currentView, effectiveRef]);
+    // Effect to refresh the calendar when events change
+    useEffect(() => {
+        if (effectiveRef.current && events) {
+            const calendarApi = effectiveRef.current.getApi();
+            
+            // Compare events by their essential properties rather than full JSON stringify
+            // This is more reliable for complex objects with circular references
+            const hasEventsChanged = () => {
+                if (prevEventsRef.current.length !== events.length) return true;
+                
+                // Create simplified event signatures for comparison
+                const createEventSignature = (event) => {
+                    return `${event.id}-${event.start}-${event.end}-${event.resourceId}`;
+                };
+                
+                const prevSignatures = new Set(prevEventsRef.current.map(createEventSignature));
+                const currentSignatures = events.map(createEventSignature);
+                
+                // Check if any current event signature is not in the previous set
+                return currentSignatures.some(sig => !prevSignatures.has(sig));
+            };
+            
+            if (hasEventsChanged()) {
+                console.log(`Calendar events changed: ${events.length} events. Refreshing calendar...`);
+                
+                // Update the calendar with new events
+                calendarApi.removeAllEvents();
+                calendarApi.addEventSource(events);
+                
+                // Force a re-render of the calendar
+                setTimeout(() => {
+                    calendarApi.updateSize();
+                }, 50);
+                
+                // Store the current events for future comparison
+                prevEventsRef.current = [...events];
+            }
+        }
+    }, [events, effectiveRef]);
+    
+    // Effect to enhance day view event visibility after render
+    useEffect(() => {
+        if (effectiveRef.current && currentView === 'resourceTimeGridDay') {
+            const calendarApi = effectiveRef.current.getApi();
+            
+            // Force a refresh of the calendar to ensure events are properly rendered
+            setTimeout(() => {
+                calendarApi.updateSize();
+                
+                // Apply additional styling to day view events
+                const dayViewEvents = document.querySelectorAll('.fc-resourceTimeGridDay-view .fc-event');
+                dayViewEvents.forEach(event => {
+                    event.style.display = 'flex';
+                    event.style.visibility = 'visible';
+                    event.style.opacity = '1';
+                    event.style.zIndex = '5';
+                    event.style.minHeight = '30px';
+                });
+            }, 100);
+        }
+    }, [currentView, effectiveRef, events]);
 
     const handleDatesSet = (info) => {
         if (typeof onDateChange === 'function') {
@@ -160,13 +193,15 @@ Status: ${effectiveStatus || 'unknown'}`;
         // Add placeholder class if this is a placeholder event
         const className = isPlaceholder ? 'placeholder-event' : '';
         
+        // Remove quality check indicators by explicitly setting a class that will override any CSS that might be adding them
+        
         // Special handling for day view to ensure visibility
         if (isDayView) {
             // For day view, use a more visible and robust rendering
             return (
                 <Tooltip title={tooltipTitle}>
                     <Box
-                        className={`production-event ${className} day-view-event`}
+                        className={`production-event ${className} day-view-event no-quality-indicators`}
                         sx={{
                             backgroundColor,
                             color: textColor,
@@ -185,6 +220,9 @@ Status: ${effectiveStatus || 'unknown'}`;
                             position: 'relative',
                             zIndex: 10,
                             margin: '1px 0',
+                            '&::before, &::after': {
+                                display: 'none !important' // Remove any pseudo-elements that might be adding icons
+                            }
                         }}
                     >
                         <Typography 
@@ -199,6 +237,9 @@ Status: ${effectiveStatus || 'unknown'}`;
                                 color: textColor,
                                 display: 'block',
                                 width: '100%',
+                                '&::before, &::after': {
+                                    display: 'none !important' // Remove any pseudo-elements that might be adding icons
+                                }
                             }}
                         >
                             {taskTypeIcon} {displayTitle}
@@ -224,7 +265,7 @@ Status: ${effectiveStatus || 'unknown'}`;
         return (
             <Tooltip title={tooltipTitle}>
                 <Box
-                    className={`production-event ${className}`}
+                    className={`production-event ${className} no-quality-indicators`}
                     sx={{
                         backgroundColor,
                         color: textColor,
@@ -256,6 +297,9 @@ Status: ${effectiveStatus || 'unknown'}`;
                         ...(isWeekView && {
                             minHeight: '25px',
                         }),
+                        '&::before, &::after': {
+                            display: 'none !important' // Remove any pseudo-elements that might be adding icons
+                        }
                     }}
                 >
                     <Typography 
@@ -270,6 +314,9 @@ Status: ${effectiveStatus || 'unknown'}`;
                             display: 'block',
                             width: '100%',
                             fontWeight: 'bold',
+                            '&::before, &::after': {
+                                display: 'none !important' // Remove any pseudo-elements that might be adding icons
+                            }
                         }}
                     >
                         {taskTypeIcon} {displayTitle}
