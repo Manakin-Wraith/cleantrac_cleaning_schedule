@@ -59,6 +59,11 @@
 - [x] **Visibility on All Calendar Views**: Verified that both placeholder and saved recipe production events are visible and correctly rendered across all calendar views (Day, Week, Month, Timeline).
 - [x] **Saved Event Display**: Verified that the final saved event displays with the correct styling (based on status, task type) and information on all calendar views.
 - [x] **Consistency with Cleaning Tasks**: Final review confirmed overall UX alignment with cleaning task scheduling, including tooltips, event click, date click, drag/resize, and general look/feel.
+- [x] **Fix Recipe Chip Drag-Drop Behavior**: Fixed issue where recipe chips would snap back to default time after being dragged, dropped, and scheduled via the modal.
+  - [x] Enhanced state management in `ProductionSchedulerPage.jsx` to preserve task positions
+  - [x] Improved time handling in `ProductionAssignmentModal.jsx` for consistent formats
+  - [x] Added both datetime and time-only fields for backend compatibility
+  - [x] Implemented proper event refresh sequence to prevent snapping back
   - [x] Recipe list view
   - [x] Search and filter functionality
 
@@ -128,6 +133,11 @@
   - [ ] Add validation for ingredient quantities
   - [ ] Implement inventory deduction on production
   - [ ] Add batch tracking for ingredients
+- [x] Fix Production Schedule UI issues:
+  - [x] Add distinct Start Time and End Time columns to production schedule list
+  - [x] Fix recipe chip drag-and-drop behavior in calendar
+  - [x] Ensure consistent time display formats across the application
+  - [x] Improve error handling for missing or null time values
 
 ### Data Import and Migration
 - [x] Create data import utility:

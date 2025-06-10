@@ -102,8 +102,9 @@ const ProductionScheduleList = ({ departmentColor }) => {
       const processedSchedules = Array.isArray(response.data) ? response.data : 
                                (response.data?.results || []);
       
-      // Enhance schedules with staff names
+      // Enhance schedules with staff names and handle time fields
       processedSchedules.forEach(schedule => {
+        // Handle staff assignments
         schedule.assigned_staff_names = []; // Initialize
         schedule.assigned_staff_name = undefined; // Initialize
 
@@ -136,9 +137,39 @@ const ProductionScheduleList = ({ departmentColor }) => {
             }
           }
         }
+
+        // Handle time fields - convert database fields to expected frontend fields
+        // For RecipeProductionTask model (uses scheduled_start_time and scheduled_end_time as DateTimeField)
+        if (schedule.scheduled_start_time === undefined && schedule.start_time !== undefined) {
+          // If we have start_time from ProductionSchedule model, convert it to ISO format with the scheduled_date
+          if (schedule.start_time) {
+            const dateStr = schedule.scheduled_date;
+            const timeStr = schedule.start_time;
+            // Create a datetime string by combining date and time
+            const dateObj = new Date(dateStr);
+            if (!isNaN(dateObj.getTime())) {
+              // Format: YYYY-MM-DDT{time string}
+              schedule.scheduled_start_time = `${dateStr}T${timeStr}`;
+            }
+          }
+        }
+
+        if (schedule.scheduled_end_time === undefined && schedule.end_time !== undefined) {
+          // If we have end_time from ProductionSchedule model, convert it to ISO format with the scheduled_date
+          if (schedule.end_time) {
+            const dateStr = schedule.scheduled_date;
+            const timeStr = schedule.end_time;
+            // Create a datetime string by combining date and time
+            const dateObj = new Date(dateStr);
+            if (!isNaN(dateObj.getTime())) {
+              // Format: YYYY-MM-DDT{time string}
+              schedule.scheduled_end_time = `${dateStr}T${timeStr}`;
+            }
+          }
+        }
       });
       
-      console.log('Processed schedules with staff names:', JSON.parse(JSON.stringify(processedSchedules))); // DEBUGGING: Log a deep copy
+      console.log('Processed schedules with staff names and times:', JSON.parse(JSON.stringify(processedSchedules))); // DEBUGGING: Log a deep copy
       setSchedules(processedSchedules);
       setError(null);
     } catch (err) {
@@ -287,6 +318,16 @@ const ProductionScheduleList = ({ departmentColor }) => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const formatTime = (dateTimeString) => {
+    if (!dateTimeString) return '-';
+    try {
+      return new Date(dateTimeString).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return '-';
+    }
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -383,6 +424,8 @@ const ProductionScheduleList = ({ departmentColor }) => {
             <TableRow sx={{ bgcolor: 'rgba(0, 0, 0, 0.04)' }}>
               <TableCell>Recipe</TableCell>
               <TableCell>Scheduled Date</TableCell>
+              <TableCell>Start Time</TableCell>
+              <TableCell>End Time</TableCell>
               <TableCell>Quantity</TableCell>
               <TableCell>Assigned To</TableCell>
               <TableCell>Status</TableCell>
@@ -392,13 +435,13 @@ const ProductionScheduleList = ({ departmentColor }) => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                   <CircularProgress size={40} />
                 </TableCell>
               </TableRow>
             ) : schedules.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                   <Typography variant="body1">
                     {searchTerm || statusFilter !== 'all' || dateFilter
                       ? 'No production schedules match your search criteria.'
@@ -423,12 +466,12 @@ const ProductionScheduleList = ({ departmentColor }) => {
                     </TableCell>
                     <TableCell>
                       {formatDate(schedule.scheduled_date)}
-                      {schedule.scheduled_start_time && (
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {new Date(schedule.scheduled_start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
-                          {new Date(schedule.scheduled_end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </Typography>
-                      )}
+                    </TableCell>
+                    <TableCell>
+                      {formatTime(schedule.scheduled_start_time)}
+                    </TableCell>
+                    <TableCell>
+                      {formatTime(schedule.scheduled_end_time)}
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">

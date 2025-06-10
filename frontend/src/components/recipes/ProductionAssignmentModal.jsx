@@ -459,21 +459,35 @@ const ProductionAssignmentModal = ({
       return;
     }
 
-    // Combine date and time for start and end
-    const combinedStartTime = new Date(scheduledDate);
-    combinedStartTime.setHours(new Date(startTime).getHours(), new Date(startTime).getMinutes(), new Date(startTime).getSeconds());
+    // Combine date and time for start and end - ensure we're working with Date objects
+    const startTimeObj = startTime instanceof Date ? startTime : new Date(startTime);
+    const endTimeObj = endTime instanceof Date ? endTime : new Date(endTime);
+    const scheduledDateObj = scheduledDate instanceof Date ? scheduledDate : new Date(scheduledDate);
+    
+    const combinedStartTime = new Date(scheduledDateObj);
+    combinedStartTime.setHours(startTimeObj.getHours(), startTimeObj.getMinutes(), startTimeObj.getSeconds());
 
-    const combinedEndTime = new Date(scheduledDate);
-    combinedEndTime.setHours(new Date(endTime).getHours(), new Date(endTime).getMinutes(), new Date(endTime).getSeconds());
+    const combinedEndTime = new Date(scheduledDateObj);
+    combinedEndTime.setHours(endTimeObj.getHours(), endTimeObj.getMinutes(), endTimeObj.getSeconds());
+    
+    console.log('Form submission - combined times:', {
+      scheduledDate: scheduledDateObj,
+      startTime: startTimeObj,
+      endTime: endTimeObj,
+      combinedStartTime,
+      combinedEndTime
+    });
 
     const taskData = {
-      recipe_id: recipe ? recipe.recipe_id : null,
+      recipe_id: recipe ? (recipe.recipe_id || recipe.id) : null, // Handle both recipe_id and id formats
       department_id: department ? parseInt(department) : null,
       batch_size: batchSize ? parseFloat(batchSize) : null,  // Changed from scheduled_quantity to batch_size
-      scheduled_date: format(scheduledDate, "yyyy-MM-dd"),  // Added explicit scheduled_date field
+      scheduled_date: format(scheduledDateObj, "yyyy-MM-dd"),  // Added explicit scheduled_date field
       task_type: taskType,
       scheduled_start_time: format(combinedStartTime, "yyyy-MM-dd'T'HH:mm:ssxxx"), // ISO 8601 with timezone
       scheduled_end_time: format(combinedEndTime, "yyyy-MM-dd'T'HH:mm:ssxxx"),   // ISO 8601 with timezone
+      start_time: format(startTimeObj, "HH:mm:ss"), // Add time-only fields for backend compatibility
+      end_time: format(endTimeObj, "HH:mm:ss"),     // Add time-only fields for backend compatibility
       duration_minutes: durationMinutes ? parseInt(durationMinutes) : null,
       assigned_staff_ids: assignedStaff.map(s => s.id),
       description: description,
@@ -487,8 +501,13 @@ const ProductionAssignmentModal = ({
     console.log('Submitting task data:', taskData);
 
     try {
-      await onSave(taskData, editMode ? productionTask.id : null);
-      onClose(); // Close modal on successful save
+      // Add a small delay to ensure the modal doesn't close too quickly
+      // This gives the parent component time to process the data
+      const result = await onSave(taskData, editMode ? productionTask.id : null);
+      console.log('Task saved successfully:', result);
+      
+      // Don't close the modal here - let the parent component handle it
+      // The parent will close it after ensuring the calendar is updated
     } catch (error) {
       console.error('Failed to save production task:', error);
       setErrors(prev => ({ 
