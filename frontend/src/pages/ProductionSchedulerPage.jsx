@@ -90,7 +90,7 @@ const ProductionSchedulerPage = () => {
     }
   }, []);
 
-  const fetchProductionTasks = useCallback(async (date) => {
+  const fetchProductionTasks = useCallback(async (date, forceRefresh = false) => {
     setLoading(true);
     setError(null);
     try {
@@ -202,7 +202,17 @@ const ProductionSchedulerPage = () => {
         };
       });
       console.log('[ProductionSchedulerPage] Mapped tasks for calendar:', JSON.stringify(tasks.map(t => ({id: t.id, title: t.title, start: t.start, end: t.end, resourceId: t.resourceId, recipe_name: t.extendedProps.recipe_name})), null, 2));
-      setProductionTasks(tasks);
+      
+      // Update state with new tasks
+      setProductionTasks(prevTasks => {
+        // If forceRefresh is true, replace all tasks
+        if (forceRefresh) return tasks;
+        
+        // Otherwise, merge with existing tasks, prioritizing new ones with the same ID
+        const existingTasksMap = new Map(prevTasks.map(task => [task.id, task]));
+        tasks.forEach(task => existingTasksMap.set(task.id, task));
+        return Array.from(existingTasksMap.values());
+      });
     } catch (err) {
       console.error('Error fetching production tasks:', err);
       setError('Failed to load production tasks.');
@@ -541,10 +551,14 @@ const ProductionSchedulerPage = () => {
         setPlaceholderEventId(null);
       }
       
+      // Store the newly created/updated task data for immediate use
+      const savedTaskData = response.data;
+      console.log('Saved task data for calendar update:', savedTaskData);
+      
       // Ensure calendar is refreshed with the latest data
       await fetchProductionTasks(selectedDate);
       
-      // Force calendar to re-render
+      // Force calendar to re-render and ensure the new event is properly displayed
       if (calendarRef.current?.getApi) {
         const calendarApi = calendarRef.current.getApi();
         calendarApi.refetchEvents();
@@ -556,12 +570,15 @@ const ProductionSchedulerPage = () => {
         }
       }
       
-      setAssignmentModalOpen(false);
-      setEditMode(false);
-      setSelectedTask(null);
+      // Ensure modal is closed after events are refreshed
+      setTimeout(() => {
+        setAssignmentModalOpen(false);
+        setEditMode(false);
+        setSelectedTask(null);
+      }, 100); // Small delay to ensure calendar updates first
     } catch (err) {
-      console.error('Error saving production task:', err.response?.data || err.message);
-      setError(`Failed to save task: ${JSON.stringify(err.response?.data) || err.message}`);
+      console.error('Error saving production task:', err);
+      setError('Failed to save production task.');
     }
     setLoading(false);
   };
