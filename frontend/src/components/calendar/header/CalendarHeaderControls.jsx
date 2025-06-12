@@ -8,6 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import Paper from '@mui/material/Paper';
 import { format } from 'date-fns'; // A robust library for date formatting
 
 /**
@@ -60,22 +61,34 @@ export default function CalendarHeaderControls({
 
       {/* Right side: View Selectors and Filters */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <ButtonGroup variant="contained" aria-label="view selection group">
-          {availableViews.map((view) => (
-            <Button
-              key={view.name}
-              onClick={() => onViewChange(view.name)}
-              variant={currentView === view.name ? 'contained' : 'outlined'}
-            >
-              {view.label}
-            </Button>
-          ))}
-        </ButtonGroup>
+        <Paper elevation={1} sx={{ borderRadius: 4, overflow: 'hidden' }}>
+          <ButtonGroup disableElevation size="small">
+            {availableViews.map((view, idx) => (
+              <Button
+                key={view.name}
+                onClick={() => onViewChange(view.name)}
+                sx={{
+                  textTransform: 'none',
+                  px: 2,
+                  bgcolor: currentView === view.name ? 'primary.main' : 'transparent',
+                  color: currentView === view.name ? 'primary.contrastText' : 'text.secondary',
+                  borderRight: idx !== availableViews.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
+                  '&:hover': {
+                    bgcolor: currentView === view.name ? 'primary.dark' : 'action.hover',
+                  },
+                }}
+              >
+                {view.label}
+              </Button>
+            ))}
+          </ButtonGroup>
+        </Paper>
 
         <IconButton
-          color="inherit"
+          color="primary"
           aria-label="toggle filters"
           onClick={onToggleFilters}
+          sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
         >
           <FilterListIcon />
         </IconButton>

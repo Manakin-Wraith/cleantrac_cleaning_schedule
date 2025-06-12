@@ -433,6 +433,24 @@ The unified calendar must be accessible to all users, including those with disab
 - Feedback collection system
 - Full deployment
 
+## UI Polish (2025-06-12)
+
+### Sidebar Enhancements
+- Removed global header to maximize vertical space; `PageLayout` now defaults `showHeaderBar: false`.
+- Left sidebar improvements:
+  - Added in-drawer chevron (top-right) to collapse / expand.
+  - Floating menu icon only visible when collapsed.
+  - Collapsed state shows tooltip on hover, with subtle blur + shadow.
+- Behaviour mirrors right sidebar so managers have consistent controls.
+
+### Calendar Header Controls
+- Re-styled view toggle (Month / Week / Day) into pill-style button group with active-state colour.
+- Filter icon converted to outlined circular icon with primary tint.
+
+### Filters Card
+- Card now uses responsive Grid.
+- Hover elevation and tighter spacing for modern look.
+
 ## Changelog
 
 #### 2025-06-12

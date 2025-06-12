@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Box, CssBaseline, Toolbar, useTheme, Container } from '@mui/material';
+import { Box, CssBaseline, Toolbar, useTheme, Container, IconButton } from '@mui/material';
 import HeaderBar from './HeaderBar';
 import Sidebar, { drawerWidth as expandedSidebarWidthValue } from './Sidebar'; 
+import MenuIcon from '@mui/icons-material/Menu';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
-const PageLayout = ({ children, showSidebar = true }) => {
+const PageLayout = ({ children, showSidebar = true, showHeaderBar = false }) => {
   const theme = useTheme();
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
 
   const collapsedWidthValue = theme.spacing(7);
 
@@ -21,17 +24,20 @@ const PageLayout = ({ children, showSidebar = true }) => {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', width: '100%', backgroundColor: theme.palette.background.default }}> 
       <CssBaseline />
-      <HeaderBar 
-        handleDrawerToggle={handleMobileDrawerToggle}
-        handleSidebarToggle={handleDesktopSidebarToggle} 
-        isSidebarCollapsed={isDesktopSidebarCollapsed}
-        showSidebar={showSidebar}
-      />
+      {showHeaderBar && (
+        <HeaderBar 
+          handleDrawerToggle={handleMobileDrawerToggle}
+          handleSidebarToggle={handleDesktopSidebarToggle} 
+          isSidebarCollapsed={isDesktopSidebarCollapsed}
+          showSidebar={showSidebar}
+        />
+      )}
       {showSidebar && (
         <Sidebar 
           isMobileOpen={isMobileDrawerOpen} 
-          onMobileClose={handleMobileDrawerToggle} 
-          isCollapsed={isDesktopSidebarCollapsed} 
+          handleDrawerToggle={handleMobileDrawerToggle} 
+          isCollapsed={isDesktopSidebarCollapsed}
+          onCollapseToggle={handleDesktopSidebarToggle}
         />
       )}
       
@@ -41,8 +47,8 @@ const PageLayout = ({ children, showSidebar = true }) => {
           flexGrow: 1,
           backgroundColor: theme.palette.background.paper, // White background for main content
           // py and px removed, will be applied to the Container
-          minHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px - 1px)`, // Adjusted for header and potential border
-          marginTop: `${theme.mixins.toolbar.minHeight}px`, // Align directly below HeaderBar
+          minHeight: `calc(100vh - ${showHeaderBar ? theme.mixins.toolbar.minHeight : 0}px)`,
+          marginTop: showHeaderBar ? `${theme.mixins.toolbar.minHeight}px` : 0,
           display: 'flex', // Added to allow Toolbar and Container to be direct children with correct flow
           flexDirection: 'column', // Added for Toolbar and Container stacking
           transition: theme.transitions.create(['width', 'margin', 'border-radius'], { 
@@ -63,7 +69,23 @@ const PageLayout = ({ children, showSidebar = true }) => {
           },
         }}
       >
-        <Toolbar /> 
+        {showHeaderBar && <Toolbar />}
+        {!showHeaderBar && showSidebar && (isMdUp ? isDesktopSidebarCollapsed : true) && (
+          <IconButton
+            onClick={isMdUp ? handleDesktopSidebarToggle : handleMobileDrawerToggle}
+            size="small"
+            sx={{
+              position: 'fixed',
+              top: 8,
+              left: { xs: 8, md: isDesktopSidebarCollapsed ? 8 : expandedSidebarWidthValue + 8 },
+              zIndex: (theme) => theme.zIndex.appBar + 1,
+              display: { xs: 'block', md: 'block' },
+            }}
+            color="primary"
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
         <Container maxWidth="lg" sx={{ flexGrow: 1, py: 3, px: { xs: 2, sm: 3 } }}>
           {children}
         </Container>

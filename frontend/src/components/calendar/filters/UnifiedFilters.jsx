@@ -2,13 +2,19 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  TextField,
-  Chip,
   Stack,
+  Chip,
+  Grid,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import CleaningFilters from './CleaningFilters';
 import RecipeFilters from './RecipeFilters';
@@ -39,86 +45,120 @@ const UnifiedFilters = ({
   selectedRecipeStatuses,
   onRecipeStatusChange,
 }) => {
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+
   return (
-    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {/* Event Type Selector */}
-      <FormControl fullWidth>
-        <InputLabel>Event Type</InputLabel>
-        <Select
-          value={selectedEventType}
-          label="Event Type"
-          onChange={(e) => onEventTypeChange(e.target.value)}
-        >
-          <MenuItem value="all">All</MenuItem>
-          <MenuItem value="cleaning">Cleaning Tasks</MenuItem>
-          <MenuItem value="recipe">Recipe Production</MenuItem>
-        </Select>
-      </FormControl>
+    <Card elevation={1} sx={{ mb: 2, transition: 'box-shadow 0.3s', '&:hover': { boxShadow: theme.shadows[4] } }}>
+      <CardContent>
+        <Typography variant="subtitle1" gutterBottom>Filters</Typography>
 
-      {/* Common Search Filter */}
-      <TextField
-        fullWidth
-        label="Search by keyword"
-        variant="outlined"
-        value={searchTerm}
-        onChange={(e) => onSearchChange(e.target.value)}
-      />
+        <Grid container spacing={isMdUp ? 2 : 1}>
+          <Grid item xs={12} md={4}>
+            {/* Event Type Selector */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Event Type</InputLabel>
+              <Select value={selectedEventType} onChange={(e) => onEventTypeChange(e.target.value)}>
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="cleaning">Cleaning Tasks</MenuItem>
+                <MenuItem value="recipe">Recipe Production</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
 
-      {/* Type-Specific Filters */}
-      {selectedEventType === 'cleaning' && (
-        <CleaningFilters
-          statuses={cleaningStatuses}
-          departments={allDepartments}
-          selectedStatuses={selectedCleaningStatuses}
-          onStatusChange={onCleaningStatusChange}
-          searchTerm={searchTerm} // Pass down for consistency, though handled above
-          onSearchChange={onSearchChange}
-          selectedDepartments={selectedDepartments}
-          onDepartmentChange={onDepartmentChange}
-        />
-      )}
+          <Grid item xs={12} md={4}>
+            {/* Common Search Filter */}
+            <TextField
+              fullWidth
+              label="Search by keyword"
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              size="small"
+            />
+          </Grid>
 
-      {selectedEventType === 'recipe' && (
-        <RecipeFilters
-          statuses={recipeStatuses}
-          departments={allDepartments}
-          selectedStatuses={selectedRecipeStatuses}
-          onStatusChange={onRecipeStatusChange}
-          searchTerm={searchTerm} // Pass down for consistency
-          onSearchChange={onSearchChange}
-          selectedDepartments={selectedDepartments}
-          onDepartmentChange={onDepartmentChange}
-        />
-      )}
+          <Grid item xs={12} md={4}>
+            {/* Department Filter */}
+            <FormControl fullWidth size="small">
+              <InputLabel>Filter by Department</InputLabel>
+              <Select
+                multiple
+                value={selectedDepartments}
+                onChange={(e) => onDepartmentChange(e.target.value)}
+                renderValue={(selected) => (
+                  <Stack gap={1} direction="row" flexWrap="wrap">
+                    {selected.map((value) => (
+                      <Chip key={value} label={value} />
+                    ))}
+                  </Stack>
+                )}
+              >
+                {allDepartments.map((department) => (
+                  <MenuItem key={department} value={department}>
+                    {department}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
 
-      {/* When 'all' is selected, we might want a simplified filter set */}
-      {selectedEventType === 'all' && (
-        <Box>
-          {/* Department filter for 'all' view */}
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Filter by Department</InputLabel>
-            <Select
-              multiple
-              value={selectedDepartments}
-              onChange={(e) => onDepartmentChange(e.target.value)}
-              renderValue={(selected) => (
-                <Stack gap={1} direction="row" flexWrap="wrap">
-                  {selected.map((value) => (
-                    <Chip key={value} label={value} />
-                  ))}
-                </Stack>
-              )}
-            >
-              {allDepartments.map((department) => (
-                <MenuItem key={department} value={department}>
-                  {department}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-      )}
-    </Box>
+        {/* Type-Specific Filters */}
+        {selectedEventType === 'cleaning' && (
+          <CleaningFilters
+            statuses={cleaningStatuses}
+            departments={allDepartments}
+            selectedStatuses={selectedCleaningStatuses}
+            onStatusChange={onCleaningStatusChange}
+            searchTerm={searchTerm} // Pass down for consistency, though handled above
+            onSearchChange={onSearchChange}
+            selectedDepartments={selectedDepartments}
+            onDepartmentChange={onDepartmentChange}
+          />
+        )}
+
+        {selectedEventType === 'recipe' && (
+          <RecipeFilters
+            statuses={recipeStatuses}
+            departments={allDepartments}
+            selectedStatuses={selectedRecipeStatuses}
+            onStatusChange={onRecipeStatusChange}
+            searchTerm={searchTerm} // Pass down for consistency
+            onSearchChange={onSearchChange}
+            selectedDepartments={selectedDepartments}
+            onDepartmentChange={onDepartmentChange}
+          />
+        )}
+
+        {/* When 'all' is selected, we might want a simplified filter set */}
+        {selectedEventType === 'all' && (
+          <Box>
+            {/* Department filter for 'all' view */}
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Filter by Department</InputLabel>
+              <Select
+                multiple
+                value={selectedDepartments}
+                onChange={(e) => onDepartmentChange(e.target.value)}
+                renderValue={(selected) => (
+                  <Stack gap={1} direction="row" flexWrap="wrap">
+                    {selected.map((value) => (
+                      <Chip key={value} label={value} />
+                    ))}
+                  </Stack>
+                )}
+              >
+                {allDepartments.map((department) => (
+                  <MenuItem key={department} value={department}>
+                    {department}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

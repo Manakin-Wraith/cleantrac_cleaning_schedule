@@ -187,3 +187,11 @@ This document outlines the results of our codebase audit for implementing the un
 1. Remove deprecated components after successful migration
 2. Update documentation
 3. Final code review and optimization
+
+### Completed Refactors (2025-06-12)
+- `Sidebar.jsx` – hover tooltips, blur/shadow, in-drawer chevron collapse, parent dropdown toggle.
+- `UnifiedFilters.jsx` – responsive grid, card elevation, compressed spacing.
+- `CalendarHeaderControls.jsx` – pill-style view toggle, outlined filter icon.
+
+### Outstanding
+- Empty-state illustration/message for calendars.
