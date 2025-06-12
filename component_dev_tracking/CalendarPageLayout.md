@@ -3,7 +3,7 @@
 ## Status:
 - [ ] Not Started
 - [ ] In Progress
-- [ ] Completed
+- [x] Completed
 - [ ] Blocked
 
 ## Key Props:

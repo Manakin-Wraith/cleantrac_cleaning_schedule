@@ -19,7 +19,8 @@ import DocumentTemplateManagementPage from './pages/DocumentTemplateManagementPa
 import SupplierManagementPage from './pages/SupplierManagementPage';
 import RecipeManagementPage from './pages/RecipeManagementPage';
 import ProductionSchedulerPage from './pages/ProductionSchedulerPage';
-import TaskSchedulerPage from './pages/TaskSchedulerPage';
+import TaskSchedulerPage from './pages/TaskSchedulerPage'; // legacy
+import UnifiedCalendarPage from './pages/UnifiedCalendarPage';
 
 // Helper component to apply theme based on auth context
 const ThemedApp = () => {
@@ -71,7 +72,7 @@ const ThemedApp = () => {
           <Route path="/manager-temperature-checks" element={<PageLayout><TemperatureChecksPage /></PageLayout>} />
           <Route path="/manager-documents" element={<PageLayout><DocumentTemplateManagementPage /></PageLayout>} />
           <Route path="/admin/departments" element={<PageLayout><DepartmentManagementPage /></PageLayout>} />
-          <Route path="/manager-schedule" element={<PageLayout><TaskSchedulerPage /></PageLayout>} />
+          <Route path="/manager-schedule" element={<PageLayout><UnifiedCalendarPage /></PageLayout>} />
         </Route>
 
         <Route path="/" element={<Navigate replace to="/login" />} />

@@ -630,16 +630,22 @@ const ProductionAssignmentModal = ({
                     setRecipe(newValue);
                     validateField('recipe', newValue);
                   }}
-                  renderOption={(props, option) => (
-                    <Box component="li" {...props} sx={{ 
-                      whiteSpace: "normal", 
-                      wordBreak: "break-word"
-                    }}>
-                      <Typography noWrap={false}>
-                        {option.name} <Typography component="span" color="text.secondary" variant="body2">({option.product_code || 'N/A'})</Typography>
-                      </Typography>
-                    </Box>
-                  )}
+                  renderOption={(props, option) => {
+                    const { key, ...liProps } = props;
+                    return (
+                      <Box component="li" {...liProps} key={key} sx={{
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                      }}>
+                        <Typography noWrap={false}>
+                          {option.name}{' '}
+                          <Typography component="span" color="text.secondary" variant="body2">
+                            ({option.product_code || 'N/A'})
+                          </Typography>
+                        </Typography>
+                      </Box>
+                    );
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -899,13 +905,14 @@ const ProductionAssignmentModal = ({
                   validateField('assignedStaff', newValue);
                 }}
                 isOptionEqualToValue={(option, value) => option?.id === value?.id}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props} key={option.id}>
-                    <Typography>
-                      {`${option.first_name || ''} ${option.last_name || ''}`.trim()}
-                    </Typography>
-                  </Box>
-                )}
+                renderOption={(props, option) => {
+                  const { key, ...liProps } = props;
+                  return (
+                    <Box component="li" {...liProps} key={key ?? option.id}>
+                      <Typography>{`${option.first_name || ''} ${option.last_name || ''}`.trim()}</Typography>
+                    </Box>
+                  );
+                }}
                 renderTags={(value, getTagProps) =>
                   value.map((option, index) => (
                     <Chip

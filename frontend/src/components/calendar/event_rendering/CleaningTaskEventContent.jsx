@@ -11,19 +11,26 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import PersonIcon from '@mui/icons-material/Person';
 import NotesIcon from '@mui/icons-material/Notes';
 
-const EventCard = styled(Box)(({ theme, statusColor }) => ({
-  width: '100%',
-  height: '100%',
-  padding: theme.spacing(0.5, 1),
-  backgroundColor: theme.palette.background.paper,
-  borderLeft: `4px solid ${statusColor}`,
-  borderRadius: '4px',
-  boxShadow: theme.shadows[1],
-  overflow: 'hidden',
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-}));
+// Create a styled component that properly handles the statusColor prop
+// without passing it to the DOM element
+const EventCard = styled(Box, {
+  // Tell styled-components to filter out our custom props
+  shouldForwardProp: (prop) => prop !== 'statusColor',
+})(
+  ({ theme, statusColor }) => ({
+    width: '100%',
+    height: '100%',
+    padding: theme.spacing(0.5, 1),
+    backgroundColor: theme.palette.background.paper,
+    borderLeft: `4px solid ${statusColor}`,
+    borderRadius: '4px',
+    boxShadow: theme.shadows[1],
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+  })
+);
 
 const getStatusColor = (status) => {
   switch (status) {

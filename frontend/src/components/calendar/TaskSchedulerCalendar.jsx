@@ -28,7 +28,8 @@ const TaskSchedulerCalendar = ({
     eventResize,
     onEventReceive,
     onDateClick,
-    calendarRef
+    calendarRef,
+    useSimpleLayout = false // Flag to determine if we should use the simple layout or full layout
 }) => {
     const localCalendarRef = useRef(null);
     const effectiveRef = calendarRef || localCalendarRef;
@@ -77,6 +78,40 @@ const TaskSchedulerCalendar = ({
     const handleNewTask = () => console.log('New Task clicked');
     const handleNewRecipe = () => console.log('New Recipe clicked');
 
+    // If useSimpleLayout is true, render only the FullCalendar component without the layout wrapper
+    // This is used when the parent component (TaskSchedulerPage) is managing the layout
+    if (useSimpleLayout) {
+        return (
+            <Box sx={{ height: '100%', width: '100%' }}>
+                <FullCalendar
+                    ref={effectiveRef}
+                    plugins={[dayGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, timeGridPlugin, interactionPlugin]}
+                    headerToolbar={false} // Disable default header
+                    initialView={view}
+                    initialDate={currentDate}
+                    editable={true}
+                    selectable={true}
+                    droppable={true}
+                    events={filteredEvents} // Use filtered events
+                    resources={resources}
+                    resourceAreaHeaderContent="Staff"
+                    eventDrop={onEventDrop}
+                    eventResize={eventResize}
+                    eventClick={onEventClick}
+                    eventReceive={onEventReceive}
+                    dateClick={onDateClick}
+                    eventContent={(eventInfo) => <CleaningTaskEventContent eventInfo={eventInfo} />} // Use new component
+                    datesSet={(dateInfo) => onDateChange && onDateChange(dateInfo.start)}
+                    height="100%"
+                    allDaySlot={false}
+                    slotMinTime="06:00:00"
+                    slotMaxTime="22:00:00"
+                />
+            </Box>
+        );
+    }
+    
+    // Otherwise, use the full layout with header, sidebar, and filters
     return (
         <CalendarPageLayout
             header={

@@ -43,6 +43,7 @@ const ProductionSchedulerCalendar = ({
     onNewRecipe, // Callback for creating a new recipe
     onOpenAssignmentModal, // New prop from parent
     onOpenDetailModal, // New prop from parent
+    useSimpleLayout = false, // Flag to determine if we should use the simple layout or full layout
 }) => {
     const localCalendarRef = useRef(null);
     const effectiveRef = calendarRef || localCalendarRef;
@@ -164,6 +165,52 @@ const ProductionSchedulerCalendar = ({
         </CollapsibleFiltersDisplay>
     );
 
+    // If useSimpleLayout is true, render only the FullCalendar component without the layout wrapper
+    // This is used when the parent component (ProductionSchedulerPage) is managing the layout
+    if (useSimpleLayout) {
+        return (
+            <Box sx={{ position: 'relative', zIndex: 0, height: '100%' }}>
+                <FullCalendar
+                    ref={effectiveRef}
+                    plugins={[dayGridPlugin, timeGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, interactionPlugin]}
+                    initialView={currentView}
+                    headerToolbar={false} // Use our custom header controls
+                    views={{
+                        resourceTimelineWeek: {
+                            type: 'resourceTimeline',
+                            duration: { days: 7 },
+                            buttonText: 'Timeline'
+                        }
+                    }}
+                    editable={true}
+                    selectable={true}
+                    selectMirror={true}
+                    dayMaxEvents={true}
+                    weekends={true}
+                    nowIndicator={true}
+                    droppable={true}
+                    initialDate={currentDate}
+                    events={filteredEvents} // Use filtered events
+                    resources={resources}
+                    eventContent={RecipeEventContent} // Use the new event rendering component
+                    eventClick={handleEventClick}
+                    eventDrop={(info) => onEventDrop && onEventDrop(info)}
+                    eventResize={(info) => eventResize && eventResize(info)}
+                    dateClick={handleDateClick}
+                    datesSet={handleDatesSet}
+                    eventReceive={handleEventReceive}
+                    height="100%"
+                    allDaySlot={false}
+                    slotMinTime="06:00:00"
+                    slotMaxTime="22:00:00"
+                    resourceAreaHeaderContent="Staff"
+                    schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
+                />
+            </Box>
+        );
+    }
+    
+    // Otherwise, use the full layout with header, sidebar, and filters
     return (
         <CalendarPageLayout
             headerContent={headerControls}

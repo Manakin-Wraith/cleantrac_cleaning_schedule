@@ -1,5 +1,7 @@
 # Detailed Calendar Wireframes for Desktop
 
+> **Implementation Note (June 12, 2025)**: The architecture has been updated so that `CalendarPageLayout` is implemented at the page level (e.g., in `ProductionSchedulerPage.jsx`) rather than within the calendar components themselves. This allows for better separation of concerns, with page components handling layout and calendar components focusing on calendar-specific rendering.
+
 ## 1. Overall Layout Structure
 
 ### Base Layout Framework
