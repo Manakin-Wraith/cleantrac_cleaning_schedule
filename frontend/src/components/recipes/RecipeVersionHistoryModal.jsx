@@ -143,7 +143,6 @@ const RecipeVersionHistoryModal = ({ open, onClose, recipe, departmentColor }) =
           </IconButton>
         </Box>
       </DialogTitle>
-      
       <DialogContent dividers>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -447,7 +446,6 @@ const RecipeVersionHistoryModal = ({ open, onClose, recipe, departmentColor }) =
           </Box>
         )}
       </DialogContent>
-      
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onClose}>
           Close

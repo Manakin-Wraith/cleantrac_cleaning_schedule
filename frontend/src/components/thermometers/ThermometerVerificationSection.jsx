@@ -89,7 +89,6 @@ const ThermometerVerificationSection = ({
           Thermometer Verification
         </Typography>
       </Box>
-      
       {isLoadingFromProps || componentLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
           <CircularProgress />

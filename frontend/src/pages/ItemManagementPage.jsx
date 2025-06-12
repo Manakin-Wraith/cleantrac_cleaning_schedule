@@ -171,11 +171,8 @@ const ItemManagementPage = () => {
                     Add New Item
                 </Button>
             </Box>
-
-            {error && !items.length && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>} 
-            
+            {error && !items.length && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             {loading && items.length > 0 && <CircularProgress sx={{ display: 'block', margin: '20px auto'}}/>}
-            
             <TableContainer component={Paper} elevation={3}>
                 <Table sx={{ minWidth: 650 }} aria-label="cleaning items table">
                     <TableHead sx={{ backgroundColor: 'grey.200' }}>
@@ -247,7 +244,6 @@ const ItemManagementPage = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
-            
             {isModalOpen && (
                 <ItemFormModal 
                     open={isModalOpen} 
@@ -257,7 +253,6 @@ const ItemManagementPage = () => {
                     departmentId={user?.profile?.department_id}
                 />
             )}
-            
         </Container>
     );
 };
