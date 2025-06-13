@@ -9,8 +9,9 @@ import Typography from '@mui/material/Typography';
  * It structures and displays the different sections passed in as props.
  */
 export default function CalendarRightSidebar({
-  resourceFilterContent,
   quickActionsContent,
+  listContent,
+  resourceFilterContent,
   legendContent,
 }) {
   return (
@@ -22,6 +23,21 @@ export default function CalendarRightSidebar({
         </Typography>
         {quickActionsContent}
       </Box>
+
+      <Divider sx={{ my: 1 }} />
+
+      {/* Section for Schedule List */}
+      {listContent && (
+        <>
+          <Divider sx={{ my: 1 }} />
+          <Box my={2} sx={{ maxHeight: '35vh', overflowY: 'auto' }}>
+            <Typography variant="h6" gutterBottom component="div">
+              Scheduled Tasks
+            </Typography>
+            {listContent}
+          </Box>
+        </>
+      )}
 
       <Divider sx={{ my: 1 }} />
 
@@ -55,6 +71,10 @@ CalendarRightSidebar.propTypes = {
    * The component to render in the quick actions section.
    */
   quickActionsContent: PropTypes.node,
+  /**
+   * The component to render in the scheduled list section.
+   */
+  listContent: PropTypes.node,
   /**
    * The component to render in the legend section.
    */

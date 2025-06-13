@@ -29,6 +29,8 @@ import QuickActionsMenu from '../components/calendar/sidebar/QuickActionsMenu';
 import CalendarLegend from '../components/calendar/sidebar/CalendarLegend';
 import ResourceFilterList from '../components/calendar/sidebar/ResourceFilterList';
 import CollapsibleFiltersDisplay from '../components/calendar/filters/CollapsibleFiltersDisplay';
+import { ScheduleProvider } from '../context/ScheduleContext';
+import ScheduleListPanel from '../components/calendar/sidebar/ScheduleListPanel';
 
 // Import modals
 import TaskDetailModal from '../components/modals/TaskDetailModal';
@@ -44,6 +46,8 @@ import NewCleaningTaskModal from '../components/modals/NewCleaningTaskModal';
 // Temporary imports until we implement the unified components
 import UnifiedCalendarComponent from '../components/calendar/UnifiedCalendarComponent';
 import UnifiedFilters from '../components/calendar/filters/UnifiedFilters';
+
+import dayjs from 'dayjs';
 
 // Mock Data - to be replaced with API data
 const cleaningStatuses = ['Completed', 'Pending Review', 'Pending', 'Overdue'];
@@ -108,91 +112,48 @@ const UnifiedCalendarPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartments, setSelectedDepartments] = useState([]);
 
-  // Fetch user data on component mount
-  useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const user = await getCurrentUser();
-        // setCurrentUser(user);
-      } catch (error) {
-        console.error('Error fetching current user:', error);
-        setErrorMessage('Failed to fetch user data');
+  // Combined events array for schedule context
+  const allEvents = useMemo(() => {
+    const clean = cleaningEvents.map(ev => {
+      let assignedName = '';
+      if (ev.assigned_to_details) {
+        const u = ev.assigned_to_details;
+        const fname = u.first_name || u.name || '';
+        const lname = u.last_name || '';
+        assignedName = `${fname} ${lname}`.trim() || u.username || u.email || '';
+      } else if (ev.assigned_to_name) {
+        assignedName = ev.assigned_to_name;
       }
-    };
+      const start = dayjs(`${ev.due_date || ev.date || ''} ${ev.start_time || ''}`).toDate();
+      const end = ev.end_time ? dayjs(`${ev.due_date || ev.date || ''} ${ev.end_time}`).toDate() : undefined;
+      return { ...ev, type: 'cleaning', assignedToName: assignedName || 'Unassigned', start, end };
+    });
 
-    fetchCurrentUser();
-  }, []);
-
-  const fetchAllData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const cleaningData = await getTaskInstances();
-      console.log('Raw Cleaning Task Instances:', cleaningData);
-      setCleaningEvents(cleaningData.results || []);
-
-      const scheduleData = await getProductionSchedules();
-      console.log('Raw Production Schedules:', scheduleData);
-      setRecipeEvents(scheduleData.results || scheduleData);
-
-      const usersData = await getUsers();
-      const formattedResources = (usersData.results || []).map(user => ({
-        id: user.id.toString(),
-        title: `${user.first_name} ${user.last_name}`.trim() || user.email,
-      }));
-      setResourcesData(formattedResources);
-    } catch (error) {
-      console.error('Error fetching calendar data:', error);
-      setErrorMessage('Failed to fetch calendar data. Please try again later.');
-      enqueueSnackbar('Failed to load calendar data', { variant: 'error' });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [enqueueSnackbar]);
-
-  // initial fetch
-  useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
-
-  // Handlers for Quick Actions
-  const handleNewCleaningTask = useCallback(() => {
-    setSelectedTask(null);
-    setTaskAssignmentModalOpen(true);
-  }, []);
-
-  const handleNewRecipeTask = useCallback(() => {
-    setSelectedTask(null);
-    setRecipeAssignmentModalOpen(true);
-  }, []);
-
-  // Combine and normalize events from both sources
-  const combinedEvents = useMemo(() => {
-    // Add type identifier and ensure unique IDs
-    const normalizedCleaningEvents = cleaningEvents.map(event => ({
-      ...event,
-      id: `cleaning-${event.id}`,
-      originalType: 'cleaning',
-    }));
-
-    const normalizedRecipeEvents = recipeEvents.map(event => ({
-      ...event,
-      id: `recipe-${event.id}`,
-      originalType: 'recipe',
-    }));
-
-    // Filter based on selected event type
-    if (selectedEventType === 'cleaning') {
-      return normalizedCleaningEvents;
-    } else if (selectedEventType === 'recipe') {
-      return normalizedRecipeEvents;
-    } else {
-      return [...normalizedCleaningEvents, ...normalizedRecipeEvents];
-    }
-  }, [cleaningEvents, recipeEvents, selectedEventType]);
+    const prod = recipeEvents.map(ev => {
+      let assignedName = '';
+      if (Array.isArray(ev.assigned_staff_details) && ev.assigned_staff_details.length) {
+        const u = ev.assigned_staff_details[0];
+        const fname = u.first_name || u.name || '';
+        const lname = u.last_name || '';
+        assignedName = `${fname} ${lname}`.trim() || u.username || u.email || '';
+      } else if (Array.isArray(ev.assigned_staff) && ev.assigned_staff.length) {
+        const u = ev.assigned_staff[0];
+        const fname = u.first_name || u.name || '';
+        const lname = u.last_name || '';
+        assignedName = `${fname} ${lname}`.trim() || u.username || u.email || '';
+      } else if (ev.assigned_staff_name) {
+        assignedName = ev.assigned_staff_name;
+      }
+      const start = ev.scheduled_start_time ? new Date(ev.scheduled_start_time) : dayjs(`${ev.scheduled_date || ''} ${ev.start_time || ''}`).toDate();
+      const end = ev.scheduled_end_time ? new Date(ev.scheduled_end_time) : (ev.end_time ? dayjs(`${ev.scheduled_date || ''} ${ev.end_time}`).toDate() : undefined);
+      return { ...ev, type: 'production', assignedToName: assignedName || 'Unassigned', start, end };
+    });
+    return [...clean, ...prod];
+  }, [cleaningEvents, recipeEvents]);
 
   // Filter events based on selected filters
   const filteredEvents = useMemo(() => {
-    return combinedEvents.filter(event => {
+    return allEvents.filter(event => {
       // Common filters
       const searchMatch = !searchTerm || 
         event.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -217,7 +178,7 @@ const UnifiedCalendarPage = () => {
       return searchMatch && resourceMatch && departmentMatch && statusMatch;
     });
   }, [
-    combinedEvents, 
+    allEvents, 
     searchTerm, 
     selectedResourceIds, 
     selectedDepartments, 
@@ -227,8 +188,9 @@ const UnifiedCalendarPage = () => {
 
   // Event handlers
   const handleEventClick = useCallback((clickInfo) => {
-    const eventId = clickInfo.event.id;
-    const eventType = eventId.split('-')[0]; // Extract 'cleaning' or 'recipe' from the ID
+    const rawId = clickInfo.event.id;
+    const idStr = typeof rawId === 'string' ? rawId : `unknown-${rawId}`;
+    const eventType = idStr.includes('-') ? idStr.split('-')[0] : clickInfo.event.extendedProps?.type || 'cleaning';
     
     setModalInfo({
       event: clickInfo.event,
@@ -307,146 +269,277 @@ const UnifiedCalendarPage = () => {
     }
   };
 
+  // Fetch user data on component mount
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        // setCurrentUser(user);
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+        setErrorMessage('Failed to fetch user data');
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
+
+  const fetchAllData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const cleaningData = await getTaskInstances();
+      console.log('Raw Cleaning Task Instances:', cleaningData);
+      setCleaningEvents(cleaningData.results || cleaningData);
+
+      const scheduleData = await getProductionSchedules();
+      console.log('Raw Production Schedules:', scheduleData);
+      setRecipeEvents(scheduleData.results || scheduleData);
+
+      const usersData = await getUsers();
+      const formattedResources = (usersData.results || []).map(user => ({
+        id: user.id.toString(),
+        title: `${user.first_name} ${user.last_name}`.trim() || user.email,
+      }));
+      setResourcesData(formattedResources);
+    } catch (error) {
+      console.error('Error fetching calendar data:', error);
+      setErrorMessage('Failed to fetch calendar data. Please try again later.');
+      enqueueSnackbar('Failed to load calendar data', { variant: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [enqueueSnackbar]);
+
+  // initial fetch
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
+
+  // Handlers for Quick Actions
+  const handleNewCleaningTask = useCallback(() => {
+    setSelectedTask(null);
+    setTaskAssignmentModalOpen(true);
+  }, []);
+
+  const handleNewRecipeTask = useCallback(() => {
+    setSelectedTask(null);
+    setRecipeAssignmentModalOpen(true);
+  }, []);
+
+  // Combine and normalize events from both sources
+  const combinedEvents = useMemo(() => {
+    // Add type identifier and ensure unique IDs
+    const normalizedCleaningEvents = cleaningEvents.map(event => {
+      let assignedName = '';
+      if (event.assigned_to_details) {
+        const u = event.assigned_to_details;
+        const fname = u.first_name || u.name || '';
+        const lname = u.last_name || '';
+        assignedName = `${fname} ${lname}`.trim() || u.username || u.email || '';
+      } else if (event.assigned_to_name) {
+        assignedName = event.assigned_to_name;
+      }
+      const start = dayjs(`${event.due_date || event.date || ''} ${event.start_time || ''}`).toDate();
+      const end = event.end_time ? dayjs(`${event.due_date || event.date || ''} ${event.end_time}`).toDate() : undefined;
+      return {
+        ...event,
+        id: `cleaning-${event.id}`,
+        originalType: 'cleaning',
+        assignedToName: assignedName || 'Unassigned',
+        start,
+        end,
+      };
+    });
+
+    const normalizedRecipeEvents = recipeEvents.map(event => {
+      let assignedName = '';
+      if (Array.isArray(event.assigned_staff_details) && event.assigned_staff_details.length) {
+        const u = event.assigned_staff_details[0];
+        const fname = u.first_name || u.name || '';
+        const lname = u.last_name || '';
+        assignedName = `${fname} ${lname}`.trim() || u.username || u.email || '';
+      } else if (Array.isArray(event.assigned_staff) && event.assigned_staff.length) {
+        const u = event.assigned_staff[0];
+        const fname = u.first_name || u.name || '';
+        const lname = u.last_name || '';
+        assignedName = `${fname} ${lname}`.trim() || u.username || u.email || '';
+      } else if (event.assigned_staff_name) {
+        assignedName = event.assigned_staff_name;
+      }
+      const start = event.scheduled_start_time ? new Date(event.scheduled_start_time) : dayjs(`${event.scheduled_date || ''} ${event.start_time || ''}`).toDate();
+      const end = event.scheduled_end_time ? new Date(event.scheduled_end_time) : (event.end_time ? dayjs(`${event.scheduled_date || ''} ${event.end_time}`).toDate() : undefined);
+      return { ...event, id: `recipe-${event.id}`, originalType: 'recipe', assignedToName: assignedName || 'Unassigned', start, end };
+    });
+
+    // Filter based on selected event type
+    if (selectedEventType === 'cleaning') {
+      return normalizedCleaningEvents;
+    } else if (selectedEventType === 'recipe') {
+      return normalizedRecipeEvents;
+    } else {
+      return [...normalizedCleaningEvents, ...normalizedRecipeEvents];
+    }
+  }, [cleaningEvents, recipeEvents, selectedEventType]);
+
+  // Handle list row click -> scroll calendar and open modal
+  const handleListRowClick = useCallback((ev) => {
+    if (!ev) return;
+    const api = calendarRef.current?.getApi?.();
+    if (api) {
+      api.gotoDate(ev.start || ev.date || new Date());
+    }
+    // mimic FullCalendar event object for existing handler
+    const fakeEvent = {
+      id: ev.id,
+      extendedProps: ev,
+      ...ev,
+    };
+    handleEventClick({ event: fakeEvent });
+  }, [handleEventClick]);
+
   // Render the component
   return (
-    <Box sx={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
-      <CalendarPageLayout
-        headerContent={
-          <CalendarHeaderControls
-            currentDate={currentCalendarDate}
-            currentView={currentCalendarView}
-            onDateChange={handleDateChange}
-            onViewChange={handleViewChange}
-            onEventTypeChange={handleEventTypeChange} // Pass the new handler
-            selectedEventType={selectedEventType} // Pass the current state
-          />
-        }
-        sidebarContent={
-          <CalendarRightSidebar
-            quickActionsContent={
-              <QuickActionsMenu
-                onNewTaskClick={handleNewCleaningTask}
-                onNewRecipeClick={handleNewRecipeTask}
-              />
-            }
-            legendContent={<CalendarLegend legendItems={legendItems} />}
-            resourceFilterContent={
-              <ResourceFilterList
-                resources={resourcesData}
-                selectedResourceIds={selectedResourceIds}
-                onResourceSelectionChange={setSelectedResourceIds}
-              />
-            }
-          />
-        }
-        filtersBarContent={
-          <CollapsibleFiltersDisplay
-            isOpen={isFiltersOpen}
-            onToggle={() => setFiltersOpen(!isFiltersOpen)}
-          >
-            <UnifiedFilters
-              selectedEventType={selectedEventType}
-              onEventTypeChange={handleEventTypeChange}
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              selectedDepartments={selectedDepartments}
-              onDepartmentChange={setSelectedDepartments}
-              allDepartments={mockDepartments}
-              cleaningStatuses={cleaningStatuses}
-              selectedCleaningStatuses={selectedCleaningStatuses}
-              onCleaningStatusChange={setSelectedCleaningStatuses}
-              recipeStatuses={recipeStatuses}
-              selectedRecipeStatuses={selectedRecipeStatuses}
-              onRecipeStatusChange={setSelectedRecipeStatuses}
+    <ScheduleProvider externalEvents={allEvents}>
+      <Box sx={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
+        <CalendarPageLayout
+          headerContent={
+            <CalendarHeaderControls
+              currentDate={currentCalendarDate}
+              currentView={currentCalendarView}
+              onDateChange={handleDateChange}
+              onViewChange={handleViewChange}
+              onEventTypeChange={handleEventTypeChange} // Pass the new handler
+              selectedEventType={selectedEventType} // Pass the current state
             />
-          </CollapsibleFiltersDisplay>
-        }
-      >
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <UnifiedCalendarComponent
-            events={filteredEvents}
-            resources={resourcesData}
-            currentDate={currentCalendarDate}
-            currentView={currentCalendarView}
-            onDateChange={handleDateChange}
-            onViewChange={handleViewChange}
-            onEventClick={handleEventClick}
-            onEventDrop={handleEventDrop}
-            onEventResize={handleEventResize}
-            onDateClick={handleDateClick}
-            calendarRef={calendarRef}
-          />
-        )}
-      </CalendarPageLayout>
+          }
+          sidebarContent={
+            <CalendarRightSidebar
+              quickActionsContent={
+                <QuickActionsMenu
+                  onNewTaskClick={handleNewCleaningTask}
+                  onNewRecipeClick={handleNewRecipeTask}
+                />
+              }
+              listContent={<ScheduleListPanel onRowClick={handleListRowClick} />}
+              legendContent={<CalendarLegend legendItems={legendItems} />}
+              resourceFilterContent={
+                <ResourceFilterList
+                  resources={resourcesData}
+                  selectedResourceIds={selectedResourceIds}
+                  onResourceSelectionChange={setSelectedResourceIds}
+                />
+              }
+            />
+          }
+          filtersBarContent={
+            <CollapsibleFiltersDisplay
+              isOpen={isFiltersOpen}
+              onToggle={() => setFiltersOpen(!isFiltersOpen)}
+            >
+              <UnifiedFilters
+                selectedEventType={selectedEventType}
+                onEventTypeChange={handleEventTypeChange}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                selectedDepartments={selectedDepartments}
+                onDepartmentChange={setSelectedDepartments}
+                allDepartments={mockDepartments}
+                cleaningStatuses={cleaningStatuses}
+                selectedCleaningStatuses={selectedCleaningStatuses}
+                onCleaningStatusChange={setSelectedCleaningStatuses}
+                recipeStatuses={recipeStatuses}
+                selectedRecipeStatuses={selectedRecipeStatuses}
+                onRecipeStatusChange={setSelectedRecipeStatuses}
+              />
+            </CollapsibleFiltersDisplay>
+          }
+        >
+          {isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <UnifiedCalendarComponent
+              events={filteredEvents}
+              resources={resourcesData}
+              currentDate={currentCalendarDate}
+              currentView={currentCalendarView}
+              onDateChange={handleDateChange}
+              onViewChange={handleViewChange}
+              onEventClick={handleEventClick}
+              onEventDrop={handleEventDrop}
+              onEventResize={handleEventResize}
+              onDateClick={handleDateClick}
+              calendarRef={calendarRef}
+            />
+          )}
+        </CalendarPageLayout>
 
-      {/* Modals */}
-      {taskDetailModalOpen && (
-        <TaskDetailModal
-          open={taskDetailModalOpen}
-          onClose={handleCloseModals}
-          task={selectedTask}
-          onEdit={() => {
-            handleCloseModals();
-            setTaskAssignmentModalOpen(true);
-          }}
-        />
-      )}
-      {taskAssignmentModalOpen && (
-        selectedTask ? (
-          <EditTaskAssignmentModal
-            open={taskAssignmentModalOpen}
+        {/* Modals */}
+        {taskDetailModalOpen && (
+          <TaskDetailModal
+            open={taskDetailModalOpen}
             onClose={handleCloseModals}
             task={selectedTask}
-            users={resourcesData.filter(r => r.type === 'user')}
+            onEdit={() => {
+              handleCloseModals();
+              setTaskAssignmentModalOpen(true);
+            }}
           />
-        ) : (
-          <NewCleaningTaskModal
-            open={taskAssignmentModalOpen}
+        )}
+        {taskAssignmentModalOpen && (
+          selectedTask ? (
+            <EditTaskAssignmentModal
+              open={taskAssignmentModalOpen}
+              onClose={handleCloseModals}
+              task={selectedTask}
+              users={resourcesData.filter(r => r.type === 'user')}
+            />
+          ) : (
+            <NewCleaningTaskModal
+              open={taskAssignmentModalOpen}
+              onClose={handleCloseModals}
+              departmentId={currentUser?.profile?.department_id || null}
+            />
+          )
+        )}
+        {recipeDetailModalOpen && (
+          <ProductionTaskDetailModal
+            open={recipeDetailModalOpen}
             onClose={handleCloseModals}
-            departmentId={currentUser?.profile?.department_id || null}
+            task={selectedTask}
           />
-        )
-      )}
-      {recipeDetailModalOpen && (
-        <ProductionTaskDetailModal
-          open={recipeDetailModalOpen}
-          onClose={handleCloseModals}
-          task={selectedTask}
-        />
-      )}
-      {recipeAssignmentModalOpen && (
-        <ProductionAssignmentModal
-          open={recipeAssignmentModalOpen}
-          onClose={handleCloseModals}
-          onSave={handleProductionTaskSaved}
-          productionTask={selectedTask}
-        />
-      )}
+        )}
+        {recipeAssignmentModalOpen && (
+          <ProductionAssignmentModal
+            open={recipeAssignmentModalOpen}
+            onClose={handleCloseModals}
+            onSave={handleProductionTaskSaved}
+            productionTask={selectedTask}
+          />
+        )}
 
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={!!successMessage}
-        autoHideDuration={6000}
-        onClose={() => setSuccessMessage('')}
-      >
-        <Alert onClose={() => setSuccessMessage('')} severity="success" sx={{ width: '100%' }}>
-          {successMessage}
-        </Alert>
-      </Snackbar>
-      <Snackbar
-        open={!!errorMessage}
-        autoHideDuration={6000}
-        onClose={() => setErrorMessage('')}
-      >
-        <Alert onClose={() => setErrorMessage('')} severity="error" sx={{ width: '100%' }}>
-          {errorMessage}
-        </Alert>
-      </Snackbar>
-    </Box>
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={!!successMessage}
+          autoHideDuration={6000}
+          onClose={() => setSuccessMessage('')}
+        >
+          <Alert onClose={() => setSuccessMessage('')} severity="success" sx={{ width: '100%' }}>
+            {successMessage}
+          </Alert>
+        </Snackbar>
+        <Snackbar
+          open={!!errorMessage}
+          autoHideDuration={6000}
+          onClose={() => setErrorMessage('')}
+        >
+          <Alert onClose={() => setErrorMessage('')} severity="error" sx={{ width: '100%' }}>
+            {errorMessage}
+          </Alert>
+        </Snackbar>
+      </Box>
+    </ScheduleProvider>
   );
 };
 
