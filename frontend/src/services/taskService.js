@@ -82,18 +82,25 @@ export const updateTaskInstance = async (taskId, taskData) => {
         const payload = { ...taskData };
 
         if (taskData.hasOwnProperty('assigned_to_id')) {
-            payload.assigned_to = taskData.assigned_to_id === '' || taskData.assigned_to_id === undefined 
-                ? null 
+            payload.assigned_to = taskData.assigned_to_id === '' || taskData.assigned_to_id === undefined
+                ? null
                 : parseInt(taskData.assigned_to_id, 10);
-            // Optionally, remove assigned_to_id from payload if backend doesn't expect it
-            // and you want to avoid sending redundant fields. However, sending it usually doesn't hurt.
-            // delete payload.assigned_to_id; 
+            // Remove the helper field completely to avoid serializer complaints
+            delete payload.assigned_to_id;
         } else if (taskData.hasOwnProperty('assigned_to')) {
             // Keep existing behavior if 'assigned_to' is directly provided, though 'assigned_to_id' is preferred from frontend logic
             payload.assigned_to = taskData.assigned_to === '' || taskData.assigned_to === undefined 
                 ? null 
                 : parseInt(taskData.assigned_to, 10);
         }
+
+        // Remove status if it is unchanged or redundant to satisfy workflow rules
+        if ('status' in payload && (payload.status === undefined || payload.status === null)) {
+            delete payload.status;
+        }
+
+        // Drop any null/undefined fields to keep PATCH minimal
+        Object.keys(payload).forEach((k) => (payload[k] == null ? delete payload[k] : null));
 
         const response = await api.patch(`/taskinstances/${taskId}/`, payload);
         return response.data;
