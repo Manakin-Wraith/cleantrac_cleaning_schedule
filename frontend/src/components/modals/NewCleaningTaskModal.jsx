@@ -6,16 +6,23 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Grid,
+  Stack,
   TextField,
   MenuItem,
   FormControl,
   InputLabel,
   Select,
+  Checkbox,
+  FormControlLabel,
+  Typography,
+  Box,
+  FormHelperText,
 } from '@mui/material';
 import { DesktopDatePicker, TimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+dayjs.extend(duration);
 import { useSnackbar } from 'notistack';
 import { createTaskInstance } from '../../services/taskService';
 import api from '../../services/api';
@@ -35,9 +42,14 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId }) {
     assigned_to_id: '',
     due_date: dayjs(),
     start_time: dayjs().hour(9).minute(0),
-    duration_minutes: 60,
+    end_time: dayjs().hour(10).minute(0),
     notes: '',
   });
+
+  // recurrence state
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState('none');
+  const [recurrencePattern, setRecurrencePattern] = useState('');
 
   // fetch cleaning items and staff for dept
   useEffect(() => {
@@ -64,6 +76,7 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId }) {
 
   const handleDateChange = (value) => setForm({ ...form, due_date: value });
   const handleStartTimeChange = (value) => setForm({ ...form, start_time: value });
+  const handleEndTimeChange = (value) => setForm({ ...form, end_time: value });
 
   const handleSubmit = async () => {
     try {
@@ -72,8 +85,12 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId }) {
         assigned_to_id: form.assigned_to_id || null,
         due_date: form.due_date.format('YYYY-MM-DD'),
         start_time: form.start_time.format('HH:mm:ss'),
-        duration_minutes: form.duration_minutes,
+        duration_minutes: dayjs(form.end_time).diff(form.start_time, 'minute'),
+        end_time: form.end_time.format('HH:mm:ss'),
         notes: form.notes,
+        is_recurring: isRecurring,
+        recurrence_type: recurrenceType,
+        recurrence_pattern: recurrenceType !== 'none' ? recurrencePattern : null,
         status: 'pending',
         department_id: departmentId,
       });
@@ -85,85 +102,132 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId }) {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="xs">
       <DialogTitle>Schedule New Cleaning Task</DialogTitle>
       <DialogContent dividers>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel id="cleaning-item-label">Cleaning Item</InputLabel>
-                <Select
-                  labelId="cleaning-item-label"
-                  label="Cleaning Item"
-                  value={form.cleaning_item_id}
-                  onChange={handleChange('cleaning_item_id')}
-                >
-                  {cleaningItems.map((ci) => (
-                    <MenuItem key={ci.id} value={ci.id}>
-                      {ci.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel id="assigned-to-label">Assigned Staff</InputLabel>
-                <Select
-                  labelId="assigned-to-label"
-                  label="Assigned Staff"
-                  value={form.assigned_to_id}
-                  onChange={handleChange('assigned_to_id')}
-                >
-                  <MenuItem value="">
-                    <em>Unassigned</em>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {/* Cleaning Item */}
+            <FormControl fullWidth required>
+              <InputLabel id="cleaning-item-label">Cleaning Item</InputLabel>
+              <Select
+                labelId="cleaning-item-label"
+                label="Cleaning Item"
+                value={form.cleaning_item_id}
+                onChange={handleChange('cleaning_item_id')}
+              >
+                {cleaningItems.map((ci) => (
+                  <MenuItem key={ci.id} value={ci.id}>
+                    {ci.name}
                   </MenuItem>
-                  {staffUsers.map((u) => (
-                    <MenuItem key={u.id} value={u.profile.id}>
-                      {u.first_name} {u.last_name || ''}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <DesktopDatePicker
-                label="Due Date"
-                value={form.due_date}
-                onChange={handleDateChange}
-                slotProps={{ textField: { fullWidth: true } }}
+                ))}
+              </Select>
+            </FormControl>
+            {/* Assigned Staff */}
+            <FormControl fullWidth>
+              <InputLabel id="assigned-to-label">Assigned Staff</InputLabel>
+              <Select
+                labelId="assigned-to-label"
+                label="Assigned Staff"
+                value={form.assigned_to_id}
+                onChange={handleChange('assigned_to_id')}
+              >
+                <MenuItem value="">
+                  <em>Unassigned</em>
+                </MenuItem>
+                {staffUsers.map((u) => (
+                  <MenuItem key={u.id} value={u.profile.id}>
+                    {u.first_name} {u.last_name || ''}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {/* Due Date */}
+            <DesktopDatePicker
+              label="Due Date"
+              value={form.due_date}
+              onChange={handleDateChange}
+              slotProps={{ textField: { fullWidth: true } }}
+            />
+            {/* Start Time */}
+            <TimePicker
+              label="Start Time"
+              value={form.start_time}
+              onChange={handleStartTimeChange}
+              slotProps={{ textField: { fullWidth: true } }}
+            />
+            {/* End Time */}
+            <TimePicker
+              label="End Time"
+              value={form.end_time}
+              onChange={handleEndTimeChange}
+              slotProps={{ textField: { fullWidth: true } }}
+            />
+            {/* Notes */}
+            <TextField
+              label="Notes"
+              multiline
+              rows={3}
+              fullWidth
+              value={form.notes}
+              onChange={handleChange('notes')}
+            />
+            {/* Recurrence Options */}
+            <Box sx={{ p: 2, borderRadius: 1, bgcolor: isRecurring ? 'action.hover' : 'transparent' }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isRecurring}
+                    onChange={(e) => setIsRecurring(e.target.checked)}
+                  />
+                }
+                label={
+                  <Typography variant="body1" fontWeight={isRecurring ? 'medium' : 'normal'}>
+                    Recurring Task
+                  </Typography>
+                }
               />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TimePicker
-                label="Start Time"
-                value={form.start_time}
-                onChange={handleStartTimeChange}
-                slotProps={{ textField: { fullWidth: true } }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Duration (min)"
-                type="number"
-                fullWidth
-                value={form.duration_minutes}
-                onChange={handleChange('duration_minutes')}
-                inputProps={{ min: 1 }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Notes"
-                multiline
-                rows={3}
-                fullWidth
-                value={form.notes}
-                onChange={handleChange('notes')}
-              />
-            </Grid>
-          </Grid>
+              {isRecurring && (
+                <Stack spacing={2} sx={{ mt: 2 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Recurrence Type</InputLabel>
+                    <Select
+                      value={recurrenceType}
+                      label="Recurrence Type"
+                      onChange={(e) => setRecurrenceType(e.target.value)}
+                    >
+                      <MenuItem value="daily">Daily</MenuItem>
+                      <MenuItem value="weekly">Weekly</MenuItem>
+                      <MenuItem value="monthly">Monthly</MenuItem>
+                    </Select>
+                  </FormControl>
+                  {recurrenceType === 'weekly' && (
+                    <TextField
+                      label="Day of Week (0=Sunday)"
+                      type="number"
+                      fullWidth
+                      value={recurrencePattern}
+                      onChange={(e) => setRecurrencePattern(e.target.value)}
+                      inputProps={{ min: 0, max: 6 }}
+                    />
+                  )}
+                  {recurrenceType === 'monthly' && (
+                    <TextField
+                      label="Day of Month (1-31)"
+                      type="number"
+                      fullWidth
+                      value={recurrencePattern}
+                      onChange={(e) => setRecurrencePattern(e.target.value)}
+                      inputProps={{ min: 1, max: 31 }}
+                    />
+                  )}
+                  {recurrenceType === 'daily' && (
+                    <FormHelperText>This task will repeat every day</FormHelperText>
+                  )}
+                </Stack>
+              )}
+            </Box>
+          </Stack>
         </LocalizationProvider>
       </DialogContent>
       <DialogActions>

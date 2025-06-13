@@ -18,7 +18,7 @@ import {
   Chip,
   IconButton,
   Autocomplete,
-  Switch,
+  Checkbox,
   FormControlLabel,
   Alert,
   Stack
@@ -617,15 +617,19 @@ const ProductionAssignmentModal = ({
       </DialogTitle>
       <DialogContent sx={{ pt: 2, px: 3, pb: 3 }}> {/* Adjust padding */}
           {/* Basic Information Section */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" fontWeight="medium" gutterBottom color="primary">
-              {departmentName || 'Task Information'}
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <Grid container columnSpacing={2} rowSpacing={2.5} sx={{ mt: 0 }} alignItems="flex-start">
+          <Box sx={{ mb: departmentName && departmentName.toLowerCase() !== 'hmr' ? 3 : 0 }}>
+            {departmentName && departmentName.toLowerCase() !== 'hmr' && (
+              <>
+                <Typography variant="subtitle1" fontWeight="medium" gutterBottom color="primary">
+                  {departmentName}
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+              </>
+            )}
+            <Grid container columnSpacing={2} rowSpacing={2} sx={{ mt: 0 }} alignItems="flex-start">
               {/* Single Column with specified order */}
               <Grid item xs={12}>
-                <Stack spacing={2.5}>
+                <Stack spacing={1} sx={{ mt: 1 }}>
                   {/* Recipe */}
                   <Autocomplete
                     id="recipe-select"
@@ -689,9 +693,9 @@ const ProductionAssignmentModal = ({
                   </LocalizationProvider>
 
                   {/* Batch Size + Unit */}
-                  <Box display="flex" gap={1}>
+                  <Box display="flex" gap={2} sx={{ mt: 2 }}>
                     <TextField
-                      sx={{ flex: 2, '& .MuiInputBase-input': { fontWeight: 500 } }}
+                      sx={{ mt: 2, flex: 2, '& .MuiInputBase-input': { fontWeight: 500 } }}
                       value={batchSize}
                       onChange={(e) => {
                         setBatchSize(e.target.value);
@@ -705,7 +709,7 @@ const ProductionAssignmentModal = ({
                       helperText={errors.batchSize || ' '}
                       inputProps={{ min:1, step:1, style:{textAlign:'right',paddingRight:'40px'} }}
                     />
-                    <FormControl sx={{ flex: 1 }} error={!!errors.batchUnit}>
+                    <FormControl sx={{ mt: 2, flex: 1 }} error={!!errors.batchUnit}>
                       <InputLabel id="batch-unit-label">Unit</InputLabel>
                       <Select
                         labelId="batch-unit-label"
@@ -760,7 +764,8 @@ const ProductionAssignmentModal = ({
           </Box>
 
           {/* Recurrence Options */}
-          <Box sx={{ 
+          <Box sx={{
+            mt: 2, 
             mb: 3,
             border: '1px solid', 
             borderColor: 'divider', 
@@ -773,10 +778,9 @@ const ProductionAssignmentModal = ({
               Recurrence Options
             </Typography>
             <FormControlLabel
-                control={<Switch 
+                control={<Checkbox 
                   checked={isRecurring} 
                   onChange={(e) => setIsRecurring(e.target.checked)}
-                  color="primary"
                 />}
                 label={<Typography variant="body1" fontWeight={isRecurring ? 'medium' : 'normal'}>
                   Recurring Task
