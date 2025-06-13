@@ -64,12 +64,14 @@ const EditTaskAssignmentModal = ({
 
     const assignedUserName = useMemo(() => {
         if (!task) return 'N/A';
+        const staffArr = Array.isArray(staffUsers) ? staffUsers : [];
+
         if (task.assigned_to_details) {
-            const staffUser = staffUsers.find(su => su.profile?.id === task.assigned_to_details.id);
+            const staffUser = staffArr.find(su => su.profile?.id === task.assigned_to_details.id);
             if (staffUser) return `${staffUser.first_name} ${staffUser.last_name}`.trim() || staffUser.username;
         }
-        if (task.assigned_to && staffUsers) {
-            const staffUser = staffUsers.find(su => su.profile?.id === task.assigned_to);
+        if (task.assigned_to) {
+            const staffUser = staffArr.find(su => su.profile?.id === task.assigned_to);
             if (staffUser) return `${staffUser.first_name} ${staffUser.last_name}`.trim() || staffUser.username;
         }
         return 'Unassigned';

@@ -312,6 +312,20 @@ class TaskInstanceSerializer(serializers.ModelSerializer):
                 )
         return data
 
+    def update(self, instance, validated_data):
+        """Ensure workflow isn’t triggered when status wasn’t part of request.
+
+        If the client didn’t explicitly include a `status` field in the incoming
+        request data (checked via `self.initial_data`), remove any status key
+        that might have slipped into `validated_data` via default handling. This
+        prevents the workflow engine from treating the update as a redundant
+        status-transition (e.g. pending → pending) and returning 403.
+        """
+        if 'status' not in self.initial_data:
+            validated_data.pop('status', None)
+
+        return super().update(instance, validated_data)
+
 class CompletionLogSerializer(serializers.ModelSerializer):
     task_instance_id = serializers.PrimaryKeyRelatedField(
         queryset=TaskInstance.objects.all(), 

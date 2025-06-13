@@ -233,6 +233,12 @@ class CanUpdateTaskStatus(BasePermission):
         if request.method in SAFE_METHODS:
             return True
 
+        if request.method in ['PUT', 'PATCH']:
+            status_in_request = request.data.get('status', None)
+            if status_in_request in [None, '', obj.status]:
+                # No status change intended
+                return True
+
         # For write methods, specifically PATCH for status updates
         if request.method == 'PATCH':
             try:
@@ -1006,7 +1012,6 @@ class CanManageProductionTasks(BasePermission):
             return user_profile.role == UserProfile.ROLE_MANAGER
         except AttributeError:
             return False
-
 
 class CanExecuteProductionTasks(BasePermission):
     """Permission to execute production tasks.

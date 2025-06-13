@@ -24,7 +24,7 @@ import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 dayjs.extend(duration);
 import { useSnackbar } from 'notistack';
-import { createTaskInstance } from '../../services/taskService';
+import { createTaskInstance, updateTaskInstance } from '../../services/taskService';
 import api from '../../services/api';
 
 /**
@@ -32,19 +32,21 @@ import api from '../../services/api';
  * Shows a placeholder message so managers can differentiate from the recipe-production modal.
  * Replace with full form implementation during the cleaning-task refactor.
  */
-export default function NewCleaningTaskModal({ open, onClose, departmentId }) {
+export default function NewCleaningTaskModal({ open, onClose, departmentId, editMode = false, task = null, onSave }) {
   const { enqueueSnackbar } = useSnackbar();
   const [cleaningItems, setCleaningItems] = useState([]);
   const [staffUsers, setStaffUsers] = useState([]);
 
-  const [form, setForm] = useState({
+  const initialFormState = {
     cleaning_item_id: '',
     assigned_to_id: '',
     due_date: dayjs(),
     start_time: dayjs().hour(9).minute(0),
     end_time: dayjs().hour(10).minute(0),
     notes: '',
-  });
+  };
+
+  const [form, setForm] = useState(initialFormState);
 
   // recurrence state
   const [isRecurring, setIsRecurring] = useState(false);
@@ -60,8 +62,24 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId }) {
           api.get('/cleaningitems/', { params: { department_id: departmentId } }),
           api.get('/users/', { params: { department_id: departmentId } }),
         ]);
-        setCleaningItems(itemsRes.data);
-        setStaffUsers(usersRes.data);
+        const fetchedItems = itemsRes.data;
+        const fetchedUsers = usersRes.data;
+
+        // Ensure currently selected values exist in options to avoid MUI out-of-range warnings
+        if (editMode && task) {
+          const cid = typeof task.cleaning_item === 'object' ? task.cleaning_item?.id : task.cleaning_item_id || task.cleaning_item;
+          if (cid && !fetchedItems.some(ci => ci.id === cid)) {
+            fetchedItems.push({ id: cid, name: task.cleaning_item?.name || 'Selected Item' });
+          }
+
+          const uid = task.assigned_to || task.assigned_to_id;
+          if (uid && !fetchedUsers.some(u => u.profile?.id === uid)) {
+            fetchedUsers.push({ id: uid, profile: { id: uid }, first_name: 'Assigned', last_name: 'User' });
+          }
+        }
+
+        setCleaningItems(fetchedItems);
+        setStaffUsers(fetchedUsers);
       } catch (e) {
         console.error(e);
         enqueueSnackbar('Failed to load form data', { variant: 'error' });
@@ -69,6 +87,29 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId }) {
     };
     fetchData();
   }, [open, departmentId, enqueueSnackbar]);
+
+  // populate form when editing
+  useEffect(() => {
+    if (open && editMode && task) {
+      setForm({
+        cleaning_item_id: task.cleaning_item_id || (typeof task.cleaning_item === 'object' ? task.cleaning_item.id : task.cleaning_item) || '',
+        assigned_to_id: task.assigned_to || task.assigned_to_id || '',
+        due_date: task.due_date ? dayjs(task.due_date) : dayjs(),
+        start_time: task.start_time ? dayjs(`1970-01-01T${task.start_time}`) : dayjs().hour(9).minute(0),
+        end_time: task.end_time ? dayjs(`1970-01-01T${task.end_time}`) : dayjs().hour(10).minute(0),
+        notes: task.notes || '',
+      });
+      setIsRecurring(Boolean(task.is_recurring));
+      setRecurrenceType(task.recurrence_type || 'none');
+      setRecurrencePattern(task.recurrence_pattern || '');
+    } else if (!open) {
+      // reset when closed
+      setForm(initialFormState);
+      setIsRecurring(false);
+      setRecurrenceType('none');
+      setRecurrencePattern('');
+    }
+  }, [open, editMode, task]);
 
   const handleChange = (key) => (e) => {
     setForm({ ...form, [key]: e.target.value });
@@ -80,30 +121,79 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId }) {
 
   const handleSubmit = async () => {
     try {
-      await createTaskInstance({
-        cleaning_item_id_write: form.cleaning_item_id,
-        assigned_to_id: form.assigned_to_id || null,
-        due_date: form.due_date.format('YYYY-MM-DD'),
-        start_time: form.start_time.format('HH:mm:ss'),
-        duration_minutes: dayjs(form.end_time).diff(form.start_time, 'minute'),
-        end_time: form.end_time.format('HH:mm:ss'),
-        notes: form.notes,
-        is_recurring: isRecurring,
-        recurrence_type: recurrenceType,
-        recurrence_pattern: recurrenceType !== 'none' ? recurrencePattern : null,
-        status: 'pending',
-        department_id: departmentId,
-      });
-      enqueueSnackbar('Task scheduled', { variant: 'success' });
+      const toNullableNumber = (v) => (v === '' || v === null || v === undefined ? null : Number(v));
+
+      let payload;
+      if (editMode && task) {
+        payload = {};
+        // compare each editable field; add only if changed
+        const origAssigned = task.assigned_to || task.assigned_to_id || null;
+        if (toNullableNumber(form.assigned_to_id) !== toNullableNumber(origAssigned)) {
+          payload.assigned_to_id = toNullableNumber(form.assigned_to_id);
+        }
+
+        if (!dayjs(form.due_date).isSame(task.due_date, 'day')) {
+          payload.due_date = form.due_date.format('YYYY-MM-DD');
+        }
+
+        const origStart = dayjs(`1970-01-01T${task.start_time}`);
+        if (!form.start_time.isSame(origStart, 'minute')) {
+          payload.start_time = form.start_time.format('HH:mm:ss');
+        }
+
+        const origEnd = dayjs(`1970-01-01T${task.end_time}`);
+        if (!form.end_time.isSame(origEnd, 'minute')) {
+          payload.end_time = form.end_time.format('HH:mm:ss');
+          payload.duration_minutes = dayjs(form.end_time).diff(form.start_time, 'minute');
+        }
+
+        if ((task.notes || '') !== (form.notes || '')) {
+          payload.notes = form.notes;
+        }
+
+        // Recurrence fields
+        if (task.is_recurring !== isRecurring) payload.is_recurring = isRecurring;
+        if (task.recurrence_type !== recurrenceType) payload.recurrence_type = recurrenceType;
+        if ((task.recurrence_pattern || '') !== (recurrencePattern || '')) payload.recurrence_pattern = recurrencePattern;
+
+        // remove null/undefined
+        Object.keys(payload).forEach((k) => (payload[k] == null ? delete payload[k] : null));
+      } else {
+        payload = {
+          assigned_to_id: toNullableNumber(form.assigned_to_id),
+          due_date: form.due_date.format('YYYY-MM-DD'),
+          start_time: form.start_time.format('HH:mm:ss'),
+          duration_minutes: dayjs(form.end_time).diff(form.start_time, 'minute'),
+          end_time: form.end_time.format('HH:mm:ss'),
+          notes: form.notes,
+          is_recurring: isRecurring,
+          recurrence_type: recurrenceType,
+          recurrence_pattern: recurrenceType !== 'none' ? recurrencePattern : null,
+          status: 'pending',
+          cleaning_item_id_write: toNullableNumber(form.cleaning_item_id),
+          department_id: departmentId,
+        };
+      }
+
+      let saved;
+      if (editMode && task?.id) {
+        saved = await updateTaskInstance(task.id, payload);
+        enqueueSnackbar('Task updated', { variant: 'success' });
+      } else {
+        saved = await createTaskInstance(payload);
+        enqueueSnackbar('Task scheduled', { variant: 'success' });
+      }
+
+      if (onSave) onSave(saved, editMode ? task.id : null);
       onClose();
     } catch (e) {
-      enqueueSnackbar(e.message || 'Failed to create task', { variant: 'error' });
+      enqueueSnackbar(e.message || 'Failed to save task', { variant: 'error' });
     }
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs">
-      <DialogTitle>Schedule New Cleaning Task</DialogTitle>
+      <DialogTitle>{editMode ? 'Edit Cleaning Task' : 'Schedule New Cleaning Task'}</DialogTitle>
       <DialogContent dividers>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
           <Stack spacing={2} sx={{ mt: 1 }}>
@@ -113,11 +203,11 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId }) {
               <Select
                 labelId="cleaning-item-label"
                 label="Cleaning Item"
-                value={form.cleaning_item_id}
+                value={String(form.cleaning_item_id || '')}
                 onChange={handleChange('cleaning_item_id')}
               >
                 {cleaningItems.map((ci) => (
-                  <MenuItem key={ci.id} value={ci.id}>
+                  <MenuItem key={ci.id} value={String(ci.id)}>
                     {ci.name}
                   </MenuItem>
                 ))}
@@ -129,14 +219,14 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId }) {
               <Select
                 labelId="assigned-to-label"
                 label="Assigned Staff"
-                value={form.assigned_to_id}
+                value={String(form.assigned_to_id || '')}
                 onChange={handleChange('assigned_to_id')}
               >
                 <MenuItem value="">
                   <em>Unassigned</em>
                 </MenuItem>
                 {staffUsers.map((u) => (
-                  <MenuItem key={u.id} value={u.profile.id}>
+                  <MenuItem key={u.id} value={String(u.profile.id)}>
                     {u.first_name} {u.last_name || ''}
                   </MenuItem>
                 ))}
@@ -233,7 +323,7 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId }) {
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={!form.cleaning_item_id}>
-          Schedule Task
+          {editMode ? 'Save Changes' : 'Schedule'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -244,4 +334,7 @@ NewCleaningTaskModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   departmentId: PropTypes.number.isRequired,
+  editMode: PropTypes.bool,
+  task: PropTypes.object,
+  onSave: PropTypes.func,
 };

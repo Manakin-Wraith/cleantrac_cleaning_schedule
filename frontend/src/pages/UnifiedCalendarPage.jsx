@@ -27,6 +27,7 @@ import CalendarHeaderControls from '../components/calendar/header/CalendarHeader
 import CalendarRightSidebar from '../components/calendar/sidebar/CalendarRightSidebar';
 import QuickActionsMenu from '../components/calendar/sidebar/QuickActionsMenu';
 import CalendarLegend from '../components/calendar/sidebar/CalendarLegend';
+import TaskDrawer from '../components/calendar/TaskDrawer';
 import ResourceFilterList from '../components/calendar/sidebar/ResourceFilterList';
 import CollapsibleFiltersDisplay from '../components/calendar/filters/CollapsibleFiltersDisplay';
 import { ScheduleProvider } from '../context/ScheduleContext';
@@ -34,7 +35,6 @@ import ScheduleListPanel from '../components/calendar/sidebar/ScheduleListPanel'
 
 // Import modals
 import TaskDetailModal from '../components/modals/TaskDetailModal';
-import EditTaskAssignmentModal from '../components/modals/EditTaskAssignmentModal';
 import ProductionTaskDetailModal from '../components/recipes/ProductionTaskDetailModal';
 import ProductionAssignmentModal from '../components/recipes/ProductionAssignmentModal';
 import NewCleaningTaskModal from '../components/modals/NewCleaningTaskModal';
@@ -103,6 +103,7 @@ const UnifiedCalendarPage = () => {
   const [recipeAssignmentModalOpen, setRecipeAssignmentModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [modalInfo, setModalInfo] = useState({ event: null, isNew: false });
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // State for filters and sidebar
   const [isFiltersOpen, setFiltersOpen] = useState(true);
@@ -249,23 +250,52 @@ const UnifiedCalendarPage = () => {
     setSelectedTask(null);
   };
 
-  /**
-   * Callback when a production task is saved/created from the modal.
-   * Simply refresh events and close modals.
-   */
-  const handleProductionTaskSaved = async (payload, existingId = null) => {
+  // Save handler for recipe modal (create or update)
+  const handleProductionTaskSaved = async (taskData, existingId = null) => {
     try {
+      let saved;
       if (existingId) {
-        await updateProductionSchedule(existingId, payload);
+        saved = await updateProductionSchedule(existingId, taskData);
       } else {
-        await createProductionSchedule(payload);
+        saved = await createProductionSchedule(taskData);
       }
-      setSuccessMessage('Production task saved');
-      await fetchAllData();
-      handleCloseModals();
+
+      // merge into recipeEvents
+      setRecipeEvents(prev => {
+        const withoutOld = prev.filter(ev => ev.id !== saved.id && ev.id !== existingId);
+        return [...withoutOld, saved];
+      });
+
+      enqueueSnackbar(existingId ? 'Recipe updated' : 'Recipe created', { variant: 'success' });
+      setRecipeAssignmentModalOpen(false);
+      setDrawerOpen(false);
     } catch (err) {
-      console.error('Failed to save production task:', err);
-      setErrorMessage(typeof err === 'string' ? err : (err.detail || 'Failed to save production task'));
+      console.error('Save recipe failed', err);
+      enqueueSnackbar(err.message || 'Failed to save recipe', { variant: 'error' });
+    }
+  };
+
+  // Save handler for cleaning task modal
+  const handleCleaningTaskSaved = async (taskData, existingId = null) => {
+    try {
+      let saved;
+      if (existingId) {
+        saved = await updateTaskInstance(existingId, taskData);
+      } else {
+        saved = await createTaskInstance(taskData);
+      }
+
+      setCleaningEvents(prev => {
+        const withoutOld = prev.filter(ev => ev.id !== saved.id && ev.id !== existingId);
+        return [...withoutOld, saved];
+      });
+
+      enqueueSnackbar(existingId ? 'Task updated' : 'Task scheduled', { variant: 'success' });
+      setTaskAssignmentModalOpen(false);
+      setDrawerOpen(false);
+    } catch (err) {
+      console.error('Save cleaning task failed', err);
+      enqueueSnackbar(err.message || 'Failed to save cleaning task', { variant: 'error' });
     }
   };
 
@@ -388,14 +418,30 @@ const UnifiedCalendarPage = () => {
     if (api) {
       api.gotoDate(ev.start || ev.date || new Date());
     }
-    // mimic FullCalendar event object for existing handler
-    const fakeEvent = {
-      id: ev.id,
-      extendedProps: ev,
-      ...ev,
-    };
-    handleEventClick({ event: fakeEvent });
-  }, [handleEventClick]);
+    setSelectedTask(ev);
+    setDrawerOpen(true);
+  }, []);
+
+  // drawer callbacks
+  const handleDrawerClose = () => {
+    setDrawerOpen(false);
+  };
+
+  const handleDrawerEdit = (task) => {
+    if (!task) return;
+    if (task.type === 'cleaning') {
+      setSelectedTask(task);
+      setTaskAssignmentModalOpen(true);
+    } else {
+      setSelectedTask(task);
+      setRecipeAssignmentModalOpen(true);
+    }
+  };
+
+  const handleDrawerDelete = (task) => {
+    // TODO: implement delete confirmation and API call
+    enqueueSnackbar('Delete functionality coming soon', { variant: 'info' });
+  };
 
   // Render the component
   return (
@@ -475,6 +521,15 @@ const UnifiedCalendarPage = () => {
           )}
         </CalendarPageLayout>
 
+        {/* Task detail drawer */}
+        <TaskDrawer
+          open={drawerOpen}
+          onClose={handleDrawerClose}
+          task={selectedTask}
+          onEdit={handleDrawerEdit}
+          onDelete={handleDrawerDelete}
+        />
+
         {/* Modals */}
         {taskDetailModalOpen && (
           <TaskDetailModal
@@ -488,20 +543,14 @@ const UnifiedCalendarPage = () => {
           />
         )}
         {taskAssignmentModalOpen && (
-          selectedTask ? (
-            <EditTaskAssignmentModal
-              open={taskAssignmentModalOpen}
-              onClose={handleCloseModals}
-              task={selectedTask}
-              users={resourcesData.filter(r => r.type === 'user')}
-            />
-          ) : (
-            <NewCleaningTaskModal
-              open={taskAssignmentModalOpen}
-              onClose={handleCloseModals}
-              departmentId={currentUser?.profile?.department_id || null}
-            />
-          )
+          <NewCleaningTaskModal
+            open={taskAssignmentModalOpen}
+            onClose={handleCloseModals}
+            departmentId={currentUser?.profile?.department_id || null}
+            editMode={Boolean(selectedTask?.id)}
+            task={selectedTask}
+            onSave={handleCleaningTaskSaved}
+          />
         )}
         {recipeDetailModalOpen && (
           <ProductionTaskDetailModal
@@ -513,8 +562,9 @@ const UnifiedCalendarPage = () => {
         {recipeAssignmentModalOpen && (
           <ProductionAssignmentModal
             open={recipeAssignmentModalOpen}
-            onClose={handleCloseModals}
+            onClose={() => setRecipeAssignmentModalOpen(false)}
             onSave={handleProductionTaskSaved}
+            editMode={Boolean(selectedTask?.id)}
             productionTask={selectedTask}
           />
         )}
