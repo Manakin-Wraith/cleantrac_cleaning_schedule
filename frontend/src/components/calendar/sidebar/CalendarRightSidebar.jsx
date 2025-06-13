@@ -30,7 +30,7 @@ export default function CalendarRightSidebar({
       {listContent && (
         <>
           <Divider sx={{ my: 1 }} />
-          <Box my={2} sx={{ maxHeight: '35vh', overflowY: 'auto' }}>
+          <Box my={2} sx={{ flex: 1, overflowY: 'auto' }}>
             <Typography variant="h6" gutterBottom component="div">
               Scheduled Tasks
             </Typography>
@@ -39,25 +39,7 @@ export default function CalendarRightSidebar({
         </>
       )}
 
-      <Divider sx={{ my: 1 }} />
-
-      {/* Section for Resource Filtering */}
-      <Box my={2} sx={{ flex: 1, overflowY: 'auto' }}>
-        <Typography variant="h6" gutterBottom component="div">
-          Filter by Staff
-        </Typography>
-        {resourceFilterContent}
-      </Box>
-
-      <Divider sx={{ my: 1 }} />
-
-      {/* Section for Calendar Legend */}
-      <Box mt={2}>
-        <Typography variant="h6" gutterBottom component="div">
-          Legend
-        </Typography>
-        {legendContent}
-      </Box>
+      {/* Removed Staff filter and Legend per latest UX */}
     </Box>
   );
 }
