@@ -20,7 +20,8 @@ import {
   Autocomplete,
   Switch,
   FormControlLabel,
-  Alert
+  Alert,
+  Stack
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker, TimePicker } from '@mui/x-date-pickers';
@@ -50,6 +51,7 @@ const ProductionAssignmentModal = ({
   const [departmentName, setDepartmentName] = useState(''); // For displaying department name
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const [batchSize, setBatchSize] = useState('');
+  const [batchUnit, setBatchUnit] = useState('kg');
   const [scheduledDate, setScheduledDate] = useState(selectedDate || new Date());
   const [startTime, setStartTime] = useState(new Date(new Date().setHours(9, 0, 0, 0)));
   const [endTime, setEndTime] = useState(new Date(new Date().setHours(11, 0, 0, 0)));
@@ -61,7 +63,7 @@ const ProductionAssignmentModal = ({
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState('none');
   const [recurrencePattern, setRecurrencePattern] = useState({});
-  const [taskType, setTaskType] = useState('production');
+  const [taskType] = useState('production'); // default, not shown in UI
   const [description, setDescription] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(120); // Default 2 hours
 
@@ -265,6 +267,7 @@ const ProductionAssignmentModal = ({
     // Populate other fields
     if (productionTask) {
       setBatchSize(productionTask.scheduled_quantity || 1);
+      setBatchUnit(productionTask.batch_unit || 'kg');
       if (productionTask.scheduled_start_time) {
         const startDate = new Date(productionTask.scheduled_start_time);
         setScheduledDate(startDate);
@@ -347,10 +350,7 @@ const ProductionAssignmentModal = ({
       setIsRecurring(productionTask.is_recurring || false);
       setRecurrenceType(productionTask.recurrence_type || 'none');
       setRecurrencePattern(productionTask.recurrence_pattern || {});
-      setTaskType(productionTask.task_type || 'production');
-      // Set description carefully, considering if recipe is loaded yet
-      const currentRecipeName = recipe?.name || productionTask?.recipe_name; // Use recipe state here
-      setDescription(productionTask.description || (currentRecipeName ? `Production of ${currentRecipeName}`: 'New Production Task'));
+      setDescription(productionTask.description || (recipe?.name ? `Production of ${recipe.name}`: 'New Production Task'));
       setDurationMinutes(productionTask.duration_minutes || 120); // Default duration if not set
 
     } else { // New task, not from drag-drop, not edit mode
@@ -359,8 +359,7 @@ const ProductionAssignmentModal = ({
       setStartTime(new Date(new Date().setHours(9,0,0,0)));
       setEndTime(new Date(new Date().setHours(11,0,0,0)));
       setBatchSize(1);
-      setTaskType('production');
-      setNotes('');
+      setBatchUnit('kg');
       setDescription(recipe?.name ? `Production of ${recipe.name}` : 'New Production Task'); // Use recipe state here
       setDurationMinutes(120);
       setIsRecurring(false);
@@ -425,6 +424,10 @@ const ProductionAssignmentModal = ({
         if (!value) newErrors.batchSize = 'Batch size is required';
         else if (isNaN(value) || Number(value) <= 0) newErrors.batchSize = 'Must be a positive number';
         else delete newErrors.batchSize;
+        break;
+      case 'batchUnit':
+        if (!value) newErrors.batchUnit = 'Unit is required';
+        else delete newErrors.batchUnit;
         break;
       case 'taskType':
         if (!value) newErrors.taskType = 'Task type is required';
@@ -493,6 +496,7 @@ const ProductionAssignmentModal = ({
     if (!recipe) newErrors.recipe = 'Recipe is required';
     if (!batchSize) newErrors.batchSize = 'Batch size is required';
     else if (isNaN(batchSize) || Number(batchSize) <= 0) newErrors.batchSize = 'Must be a positive number';
+    if (!batchUnit) newErrors.batchUnit = 'Unit is required';
     if (!taskType) newErrors.taskType = 'Task type is required';
     if (!scheduledDate) newErrors.scheduledDate = 'Date is required';
     if (!startTime) newErrors.startTime = 'Start time is required';
@@ -548,6 +552,7 @@ const ProductionAssignmentModal = ({
       recipe_id: recipe ? (recipe.recipe_id || recipe.id) : null, // Handle both recipe_id and id formats
       department_id: department ? parseInt(department) : null,
       batch_size: batchSize ? parseFloat(batchSize) : null,  // Changed from scheduled_quantity to batch_size
+      batch_unit: batchUnit,
       scheduled_date: format(scheduledDateObj, "yyyy-MM-dd"),  // Added explicit scheduled_date field
       task_type: taskType,
       scheduled_start_time: format(combinedStartTime, "yyyy-MM-dd'T'HH:mm:ssxxx"), // ISO 8601 with timezone
@@ -588,8 +593,7 @@ const ProductionAssignmentModal = ({
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="md"
-      fullWidth
+      maxWidth="xs"
       PaperProps={{
         sx: {
           borderRadius: '12px',
@@ -611,408 +615,150 @@ const ProductionAssignmentModal = ({
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      <DialogContent sx={{ pt: 3, px: 3 }}>
+      <DialogContent sx={{ pt: 2, px: 3, pb: 3 }}> {/* Adjust padding */}
           {/* Basic Information Section */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle1" fontWeight="medium" gutterBottom color="primary">
-              Task Information
+              {departmentName || 'Task Information'}
             </Typography>
             <Divider sx={{ mb: 2 }} />
-            <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={{ xs: 2, md: 3 }}>
-              {/* Recipe Selection */}
-              <Box>
-                <Autocomplete
-                  id="recipe-select"
-                  options={recipeOptions.filter(option => !department || option.department_id === parseInt(department) || option.department_name === departmentName )}
-                  getOptionLabel={(option) => option ? `${option.name} (${option.product_code || 'N/A'})` : ''}
-                  value={recipe}
-                  onChange={(event, newValue) => {
-                    setRecipe(newValue);
-                    validateField('recipe', newValue);
-                  }}
-                  renderOption={(props, option) => {
-                    const { key, ...liProps } = props;
-                    return (
-                      <Box component="li" {...liProps} key={key} sx={{
-                        whiteSpace: 'normal',
-                        wordBreak: 'break-word',
-                      }}>
-                        <Typography noWrap={false}>
-                          {option.name}{' '}
-                          <Typography component="span" color="text.secondary" variant="body2">
-                            ({option.product_code || 'N/A'})
-                          </Typography>
-                        </Typography>
-                      </Box>
-                    );
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Recipe"
-                      variant="outlined"
-                      fullWidth
-                      error={!!errors.recipe}
-                      helperText={errors.recipe || " "}
-                      required
-                      onBlur={() => validateField('recipe', recipe)}
-                      InputProps={{
-                        ...params.InputProps,
-                        style: { overflow: 'hidden', textOverflow: 'ellipsis' }
-                      }}
-                    />
-                  )}
-                  slotProps={{
-                    textField: {
-                      label: "Recipe",
-                      variant: "outlined",
-                      fullWidth: true,
-                      error: !!errors.recipe,
-                      helperText: errors.recipe || " ",
-                      required: true,
-                      onBlur: () => validateField('recipe', recipe),
-                      InputProps: {
-                        style: { overflow: 'hidden', textOverflow: 'ellipsis' }
-                      }
-                    }
-                  }}
-                  isOptionEqualToValue={(option, value) => option?.id === value?.id}
-                  ListboxProps={{
-                    sx: { maxHeight: '200px' }
-                  }}
-                  disablePortal
-                  popupIcon={<ArrowDropDownIcon />}
-                  clearOnBlur={false}
-                  openOnFocus
-                />
-              </Box>
-
-              {/* Department Display */}
-              <Box>
-                <TextField
-                  label="Department"
-                  value={departmentName || 'N/A'}
-                  fullWidth
-                  InputProps={{
-                    readOnly: true,
-                    sx: { bgcolor: 'action.hover', opacity: 0.9 }
-                  }}
-                  variant="outlined"
-                  error={!!errors.department}
-                  helperText={errors.department || " "}
-                  required
-                />
-              </Box>
-
-              {/* Batch Size */}
-              <Box>
-                <TextField
-                  label="Batch Size"
-                  type="number"
-                  value={batchSize}
-                  onChange={(e) => {
-                    setBatchSize(e.target.value);
-                    validateField('batchSize', e.target.value);
-                  }}
-                  onBlur={() => validateField('batchSize', batchSize)}
-                  fullWidth
-                  variant="outlined"
-                  InputProps={{
-                    endAdornment: recipe?.yield_unit ? (
-                      <Typography variant="body2" color="text.secondary" sx={{ ml: 1, minWidth: '30px' }}>
-                        {recipe.yield_unit}
-                      </Typography>
-                    ) : null,
-                    style: { fontSize: '1rem' }
-                  }}
-                  error={!!errors.batchSize}
-                  helperText={errors.batchSize || " "}
-                  required
-                  inputProps={{
-                    min: 1,
-                    step: 1,
-                    style: { textAlign: 'right', paddingRight: '40px' },
-                    'aria-label': 'Batch size in ' + (recipe?.yield_unit || 'units')
-                  }}
-                  sx={{ '& .MuiInputBase-input': { fontWeight: 500 } }}
-                />
-              </Box>
-              
-              {/* Task Type */}
-              <Box>
-                <FormControl fullWidth>
-                  <InputLabel id="task-type-label">Task Type</InputLabel>
-                  <Select
-                    labelId="task-type-label"
-                    value={taskType}
-                    label="Task Type"
-                    onChange={(e) => {
-                      setTaskType(e.target.value);
-                      validateField('taskType', e.target.value);
+            <Grid container columnSpacing={2} rowSpacing={2.5} sx={{ mt: 0 }} alignItems="flex-start">
+              {/* Single Column with specified order */}
+              <Grid item xs={12}>
+                <Stack spacing={2.5}>
+                  {/* Recipe */}
+                  <Autocomplete
+                    id="recipe-select"
+                    options={recipeOptions.filter(option => !department || option.department_id === parseInt(department) || option.department_name === departmentName )}
+                    getOptionLabel={(option) => option ? `${option.name} (${option.product_code || 'N/A'})` : ''}
+                    value={recipe}
+                    onChange={(event, newValue) => {
+                      setRecipe(newValue);
+                      validateField('recipe', newValue);
                     }}
-                    onBlur={() => validateField('taskType', taskType)}
-                    error={!!errors.taskType}
-                    inputProps={{
-                      'aria-label': 'Select task type'
-                    }}
-                    MenuProps={{
-                      PaperProps: {
-                        style: { maxHeight: 200 }
-                      }
-                    }}
-                    IconComponent={ArrowDropDownIcon}
-                  >
-                    <MenuItem value="production">Production</MenuItem>
-                    <MenuItem value="prep">Prep</MenuItem>
-                    <MenuItem value="packaging">Packaging</MenuItem>
-                    <MenuItem value="cleanup">Cleanup</MenuItem>
-                  </Select>
-                  <FormHelperText error={!!errors.taskType}>{errors.taskType || " "}</FormHelperText>
-                </FormControl>
-              </Box>
-            
-            {/* Duration */}
-            <Box>
-              <TextField
-                label="Duration (minutes)"
-                type="number"
-                value={durationMinutes}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value, 10);
-                  setDurationMinutes(value > 0 ? value : 1);
-                }}
-                fullWidth
-                variant="outlined"
-                InputProps={{ 
-                  endAdornment: (
-                    <Typography variant="body2" color="text.secondary" sx={{ ml: 1, minWidth: '30px' }}>
-                      min
-                    </Typography>
-                  ),
-                  style: { fontSize: '1rem' }
-                }}
-                helperText="Estimated task duration"
-                inputProps={{
-                  min: 1,
-                  step: 5,
-                  style: { textAlign: 'right', paddingRight: '40px' },
-                  'aria-label': 'Duration in minutes'
-                }}
-                sx={{ '& .MuiInputBase-input': { fontWeight: 500 } }}
-              />
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Scheduling Section */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" fontWeight="medium" gutterBottom color="primary">
-            Scheduling
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
-          <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={{ xs: 2, md: 3 }}>
-            {/* Date Picker */}
-            <Box>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DatePicker
-                  label="Scheduled Date"
-                  value={scheduledDate}
-                  onChange={(newValue) => {
-                    setScheduledDate(newValue);
-                    validateField('scheduledDate', newValue);
-                  }}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      variant: "outlined",
-                      error: !!errors.scheduledDate,
-                      helperText: errors.scheduledDate || " ",
-                      required: true,
-                      onBlur: () => validateField('scheduledDate', scheduledDate),
-                      inputProps: {
-                        'aria-label': 'Select scheduled date'
-                      }
-                    }
-                  }}
-                />
-              </LocalizationProvider>
-            </Box>
-
-            {/* Start Time Picker */}
-            <Box>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <TimePicker
-                  label="Start Time"
-                  value={startTime}
-                  onChange={(newValue) => {
-                    setStartTime(newValue);
-                    validateField('startTime', newValue);
-                  }}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      variant: "outlined",
-                      error: !!errors.startTime,
-                      helperText: errors.startTime || " ",
-                      required: true,
-                      onBlur: () => validateField('startTime', startTime),
-                      inputProps: {
-                        'aria-label': 'Select start time'
-                      }
-                    }
-                  }}
-                />
-              </LocalizationProvider>
-            </Box>
-
-            {/* End Time Picker */}
-            <Box>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <TimePicker
-                  label="End Time"
-                  value={endTime}
-                  onChange={(newValue) => {
-                    setEndTime(newValue);
-                    validateField('endTime', newValue);
-                  }}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      variant: "outlined",
-                      error: !!errors.endTime,
-                      helperText: errors.endTime || " ",
-                      required: true,
-                      onBlur: () => validateField('endTime', endTime),
-                      inputProps: {
-                        'aria-label': 'Select end time'
-                      }
-                    }
-                  }}
-                />
-              </LocalizationProvider>
-            </Box>
-            
-            {/* Staff Assignment */}
-            <Box>
-              <Autocomplete
-                id="assigned-staff"
-                multiple
-                options={staffOptions}
-                getOptionLabel={(option) => option ? `${option.first_name || ''} ${option.last_name || ''}`.trim() : ''}
-                value={assignedStaff}
-                onChange={(event, newValue) => {
-                  setAssignedStaff(newValue);
-                  validateField('assignedStaff', newValue);
-                }}
-                isOptionEqualToValue={(option, value) => option?.id === value?.id}
-                renderOption={(props, option) => {
-                  const { key, ...liProps } = props;
-                  return (
-                    <Box component="li" {...liProps} key={key ?? option.id}>
-                      <Typography>{`${option.first_name || ''} ${option.last_name || ''}`.trim()}</Typography>
-                    </Box>
-                  );
-                }}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip
-                      {...getTagProps({ index })}
-                      key={option.id}
-                      label={`${option.first_name || ''} ${option.last_name || ''}`.trim()}
-                      /* Simplified sx for debugging */
-                      sx={{
-                        margin: '2px',
-                        // Ensure basic visibility
-                        backgroundColor: 'lightgray',
-                        color: 'black',
-                      }}
-                    />
-                  ))
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Assigned Staff"
-                    variant="outlined"
-                    fullWidth
-                    error={!!errors.assignedStaff}
-                    helperText={errors.assignedStaff || " "}
-                    required
-                    onBlur={() => validateField('assignedStaff', assignedStaff)}
-                    InputProps={{
-                      ...params.InputProps,
-                      style: { overflow: 'visible' }
-                    }}
-                    inputProps={{
-                      ...params.inputProps,
-                      'aria-label': 'Select staff members'
-                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Recipe"
+                        required
+                        error={!!errors.recipe}
+                        helperText={errors.recipe || ' '}
+                        fullWidth
+                      />
+                    )}
+                    popupIcon={<ArrowDropDownIcon />}
                   />
-                )}
-                disablePortal
-                popupIcon={<ArrowDropDownIcon />}
-                clearOnBlur={false}
-                openOnFocus
-                sx={{ 
-                  minHeight: '80px',
-                  '& .MuiOutlinedInput-root': {
-                    padding: '8px 8px 8px 12px',
-                  },
-                  '& .MuiAutocomplete-endAdornment': {
-                    right: '8px',
-                  },
-                  '& .MuiChip-root': {
-                    margin: '2px',
-                  }
-                }}
-              />
-            </Box>
-          </Box>
-        </Box>
 
-        {/* Additional Details Section */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" fontWeight="medium" gutterBottom color="primary">
-            Additional Details
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
-          <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={{ xs: 2, md: 3 }}>
-            {/* Description Text Area */}
-            <Box>
-              <TextField
-                label="Description"
-                multiline
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                fullWidth
-                variant="outlined"
-                helperText="Brief description of the production task"
-                inputProps={{
-                  'aria-label': 'Task description'
-                }}
-              />
-            </Box>
+                  {/* Assigned Staff */}
+                  <Autocomplete
+                    id="assigned-staff"
+                    multiple
+                    options={staffOptions}
+                    getOptionLabel={(option) => option.full_name || option.username || option.email}
+                    value={assignedStaff}
+                    onChange={(e, value) => {
+                      setAssignedStaff(value);
+                      validateField('assignedStaff', value);
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Assigned Staff"
+                        required
+                        error={!!errors.assignedStaff}
+                        helperText={errors.assignedStaff || ' '}
+                        fullWidth
+                      />
+                    )}
+                    popupIcon={<ArrowDropDownIcon />}
+                  />
 
-            {/* Notes Text Area */}
-            <Box>
-              <TextField
-                label="Notes"
-                multiline
-                rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                fullWidth
-                variant="outlined"
-                helperText="Additional notes or instructions for staff"
-                inputProps={{
-                  'aria-label': 'Additional notes'
-                }}
-              />
-            </Box>
+                  {/* Date */}
+                  <LocalizationProvider dateAdapter={AdapterDateFns}>
+                    <DatePicker
+                      label="Date"
+                      value={scheduledDate}
+                      onChange={(date) => {
+                        setScheduledDate(date);
+                        validateField('scheduledDate', date);
+                      }}
+                      renderInput={(params) => (
+                        <TextField {...params} required error={!!errors.scheduledDate} helperText={errors.scheduledDate || ' '} fullWidth />
+                      )}
+                    />
+                  </LocalizationProvider>
+
+                  {/* Batch Size + Unit */}
+                  <Box display="flex" gap={1}>
+                    <TextField
+                      sx={{ flex: 2, '& .MuiInputBase-input': { fontWeight: 500 } }}
+                      value={batchSize}
+                      onChange={(e) => {
+                        setBatchSize(e.target.value);
+                        validateField('batchSize', e.target.value);
+                      }}
+                      onBlur={() => validateField('batchSize', batchSize)}
+                      label="Batch Size"
+                      type="number"
+                      required
+                      error={!!errors.batchSize}
+                      helperText={errors.batchSize || ' '}
+                      inputProps={{ min:1, step:1, style:{textAlign:'right',paddingRight:'40px'} }}
+                    />
+                    <FormControl sx={{ flex: 1 }} error={!!errors.batchUnit}>
+                      <InputLabel id="batch-unit-label">Unit</InputLabel>
+                      <Select
+                        labelId="batch-unit-label"
+                        value={batchUnit}
+                        label="Unit"
+                        onChange={(e) => {
+                          setBatchUnit(e.target.value);
+                          validateField('batchUnit', e.target.value);
+                        }}
+                      >
+                        <MenuItem value="kg">kg</MenuItem>
+                        <MenuItem value="L">L</MenuItem>
+                        <MenuItem value="ea">ea</MenuItem>
+                        <MenuItem value="case">case</MenuItem>
+                      </Select>
+                      <FormHelperText>{errors.batchUnit || ' '}</FormHelperText>
+                    </FormControl>
+                  </Box>
+
+                  {/* Start Time */}
+                  <LocalizationProvider dateAdapter={AdapterDateFns}>
+                    <TimePicker
+                      label="Start Time"
+                      value={startTime}
+                      onChange={(time) => {
+                        setStartTime(time);
+                        validateField('startTime', time);
+                      }}
+                      renderInput={(params) => (
+                        <TextField {...params} required error={!!errors.startTime} helperText={errors.startTime || ' '} fullWidth />
+                      )}
+                    />
+                  </LocalizationProvider>
+
+                  {/* End Time */}
+                  <LocalizationProvider dateAdapter={AdapterDateFns}>
+                    <TimePicker
+                      label="End Time"
+                      value={endTime}
+                      onChange={(time) => {
+                        setEndTime(time);
+                        validateField('endTime', time);
+                      }}
+                      renderInput={(params) => (
+                        <TextField {...params} required error={!!errors.endTime} helperText={errors.endTime || ' '} fullWidth />
+                      )}
+                    />
+                  </LocalizationProvider>
+                </Stack>
+              </Grid>
+            </Grid>
           </Box>
-        </Box>
-          
+
           {/* Recurrence Options */}
           <Box sx={{ 
             mb: 3,

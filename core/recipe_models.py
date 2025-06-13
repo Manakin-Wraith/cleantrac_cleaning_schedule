@@ -104,6 +104,12 @@ class ProductionSchedule(models.Model):
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     ]
+    UNIT_CHOICES = [
+        ('kg', 'Kilogram'),
+        ('L', 'Litre'),
+        ('ea', 'Each'),
+        ('case', 'Case'),
+    ]
     
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='production_schedules')
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='production_schedules')
@@ -111,6 +117,7 @@ class ProductionSchedule(models.Model):
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
     batch_size = models.DecimalField(max_digits=10, decimal_places=2)
+    batch_unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='kg', help_text="Unit for batch_size (kg, L, ea, case)")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
     assigned_staff = models.ManyToManyField(User, related_name='assigned_productions', blank=True)
     notes = models.TextField(blank=True, null=True)
