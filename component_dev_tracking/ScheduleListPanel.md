@@ -23,6 +23,7 @@ Uses `useSchedule()` from `ScheduleContext` to get `visibleEvents`, filter state
 - Added robust title and assignee resolvers to support varied API shapes.
 - Added vertical stacking of date & staff lines (`Stack`).
 - Fixed hydration warning by setting `disableTypography` on `ListItemText`.
+- Sidebar now expands list panel (`flex:1`) after staff filter & legend removal.
 
 ## Testing
 - Verified 14 cleaning + 10 production events render with correct names.
@@ -30,4 +31,3 @@ Uses `useSchedule()` from `ScheduleContext` to get `visibleEvents`, filter state
 - Confirmed clicking list item highlights calendar event and opens modal.
 
 ---
-

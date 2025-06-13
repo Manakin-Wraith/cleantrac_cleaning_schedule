@@ -41,6 +41,7 @@ export default function CalendarHeaderControls({
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
+        pl: { xs: 7 }, // ensure left nav buttons are pushed away from sidebar
       }}
     >
       {/* Left side: Navigation and Date */}
