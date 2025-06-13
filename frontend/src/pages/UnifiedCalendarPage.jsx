@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '../context/AuthContext';
+import { ScheduleProvider } from '../context/ScheduleContext'; // Filters bar removed – CollapsibleFiltersDisplay no longer used
 
 // Import services
 import { getCurrentUser } from '../services/authService';
@@ -29,8 +30,6 @@ import QuickActionsMenu from '../components/calendar/sidebar/QuickActionsMenu';
 import CalendarLegend from '../components/calendar/sidebar/CalendarLegend';
 import TaskDrawer from '../components/calendar/TaskDrawer';
 import ResourceFilterList from '../components/calendar/sidebar/ResourceFilterList';
-import CollapsibleFiltersDisplay from '../components/calendar/filters/CollapsibleFiltersDisplay';
-import { ScheduleProvider } from '../context/ScheduleContext';
 import ScheduleListPanel from '../components/calendar/sidebar/ScheduleListPanel';
 
 // Import modals
@@ -477,28 +476,7 @@ const UnifiedCalendarPage = () => {
               }
             />
           }
-          filtersBarContent={
-            <CollapsibleFiltersDisplay
-              isOpen={isFiltersOpen}
-              onToggle={() => setFiltersOpen(!isFiltersOpen)}
-            >
-              <UnifiedFilters
-                selectedEventType={selectedEventType}
-                onEventTypeChange={handleEventTypeChange}
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                selectedDepartments={selectedDepartments}
-                onDepartmentChange={setSelectedDepartments}
-                allDepartments={mockDepartments}
-                cleaningStatuses={cleaningStatuses}
-                selectedCleaningStatuses={selectedCleaningStatuses}
-                onCleaningStatusChange={setSelectedCleaningStatuses}
-                recipeStatuses={recipeStatuses}
-                selectedRecipeStatuses={selectedRecipeStatuses}
-                onRecipeStatusChange={setSelectedRecipeStatuses}
-              />
-            </CollapsibleFiltersDisplay>
-          }
+          filtersBarContent={null}
         >
           {isLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
