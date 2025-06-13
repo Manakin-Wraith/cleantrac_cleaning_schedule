@@ -1,387 +1,261 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import resourceTimeGridPlugin from '@fullcalendar/resource-timegrid';
 import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Box, Typography, Tooltip } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import './productionSchedulerCalendar.css'; // We'll create this CSS file
+import { Box } from '@mui/material';
+
+// Import the new layout and UI components
+import CalendarPageLayout from '../calendar/layout/CalendarPageLayout';
+import CalendarHeaderControls from '../calendar/header/CalendarHeaderControls';
+import CalendarRightSidebar from '../calendar/sidebar/CalendarRightSidebar';
+import QuickActionsMenu from '../calendar/sidebar/QuickActionsMenu';
+import CalendarLegend from '../calendar/sidebar/CalendarLegend';
+import ResourceFilterList from '../calendar/sidebar/ResourceFilterList';
+import CollapsibleFiltersDisplay from '../calendar/filters/CollapsibleFiltersDisplay';
+import RecipeFilters from '../calendar/filters/RecipeFilters';
+import RecipeEventContent from '../calendar/event_rendering/RecipeEventContent';
+
+// Mock Data - to be replaced with props or state management
+const recipeStatuses = ['Completed', 'In Progress', 'Pending', 'Missed'];
+const mockDepartments = ['Kitchen', 'Bakery', 'Front of House', 'Catering'];
+
+const mockLegendItems = [
+  { label: 'Completed', color: '#4caf50' },
+  { label: 'In Progress', color: '#ff9800' },
+  { label: 'Pending', color: '#2196f3' },
+  { label: 'Missed', color: '#f44336' },
+];
 
 const ProductionSchedulerCalendar = ({ 
-    events,         // Production tasks/schedules
-    resources,      // Staff resources
-    currentDate,    // Current date to display
-    currentView,    // Current view to display (e.g., 'dayGridMonth', 'timeGridWeek')
-    onDateChange,   // Callback for date navigation
-    onEventDrop,    // Callback for drag-and-drop rescheduling
-    onEventClick,   // Callback for clicking on a production task
-    eventResize,    // Callback for resizing a production task
-    onEventReceive, // Callback for external event drops
-    onDateClick,    // Callback for clicking on a date
-    onViewChange,   // Callback for view type changes
-    calendarRef     // Ref to access calendar API from parent
+    events = [],
+    resources = [],
+    currentDate,
+    currentView = 'dayGridMonth',
+    onDateChange,
+    onEventDrop,
+    eventResize,
+    onViewChange,
+    calendarRef,
+    onNewTask, // Callback for creating a new task
+    onNewRecipe, // Callback for creating a new recipe
+    onOpenAssignmentModal, // New prop from parent
+    onOpenDetailModal, // New prop from parent
+    useSimpleLayout = false, // Flag to determine if we should use the simple layout or full layout
 }) => {
     const localCalendarRef = useRef(null);
     const effectiveRef = calendarRef || localCalendarRef;
-    const theme = useTheme();
-    const prevEventsRef = useRef([]);
-    
-    // Effect to refresh the calendar when events change
+
+    // State for new UI components
+    const [isFiltersOpen, setFiltersOpen] = useState(false);
+        const [selectedResourceIds, setSelectedResourceIds] = useState([]);
+    const [selectedStatuses, setSelectedStatuses] = useState([]);
+        const [searchTerm, setSearchTerm] = useState('');
+    const [selectedDepartments, setSelectedDepartments] = useState([]);
+
+    // When the component mounts or resources change, select all resources by default
     useEffect(() => {
-        if (effectiveRef.current && events) {
-            const calendarApi = effectiveRef.current.getApi();
-            
-            // Compare events by their essential properties rather than full JSON stringify
-            // This is more reliable for complex objects with circular references
-            const hasEventsChanged = () => {
-                if (prevEventsRef.current.length !== events.length) return true;
-                
-                // Create simplified event signatures for comparison
-                const createEventSignature = (event) => {
-                    return `${event.id}-${event.start}-${event.end}-${event.resourceId}`;
-                };
-                
-                const prevSignatures = new Set(prevEventsRef.current.map(createEventSignature));
-                const currentSignatures = events.map(createEventSignature);
-                
-                // Check if any current event signature is not in the previous set
-                return currentSignatures.some(sig => !prevSignatures.has(sig));
-            };
-            
-            if (hasEventsChanged()) {
-                console.log(`Calendar events changed: ${events.length} events. Refreshing calendar...`);
-                
-                // Update the calendar with new events
-                calendarApi.removeAllEvents();
-                calendarApi.addEventSource(events);
-                
-                // Force a re-render of the calendar
-                setTimeout(() => {
-                    calendarApi.updateSize();
-                }, 50);
-                
-                // Store the current events for future comparison
-                prevEventsRef.current = [...events];
-            }
+        if (resources.length > 0) {
+            setSelectedResourceIds(resources.map(r => r.id));
         }
-    }, [events, effectiveRef]);
-    
-    // Effect to enhance day view event visibility after render
-    useEffect(() => {
-        if (effectiveRef.current && currentView === 'resourceTimeGridDay') {
-            const calendarApi = effectiveRef.current.getApi();
-            
-            // Force a refresh of the calendar to ensure events are properly rendered
-            setTimeout(() => {
-                calendarApi.updateSize();
-                
-                // Apply additional styling to day view events
-                const dayViewEvents = document.querySelectorAll('.fc-resourceTimeGridDay-view .fc-event');
-                dayViewEvents.forEach(event => {
-                    event.style.display = 'flex';
-                    event.style.visibility = 'visible';
-                    event.style.opacity = '1';
-                    event.style.zIndex = '5';
-                    event.style.minHeight = '30px';
-                });
-            }, 100);
-        }
-    }, [currentView, effectiveRef, events]);
+    }, [resources]);
 
     const handleDatesSet = (info) => {
-        if (typeof onDateChange === 'function') {
-            onDateChange(info.view.activeStart);
+        if (typeof onDateChange === 'function') onDateChange(info.view.activeStart);
+        if (typeof onViewChange === 'function') onViewChange(info.view.type);
+    };
+
+    const handleNavigate = (action) => {
+        const calendarApi = effectiveRef.current?.getApi();
+        if (!calendarApi) return;
+
+        if (action === 'today') calendarApi.today();
+        else if (action === 'prev') calendarApi.prev();
+        else if (action === 'next') calendarApi.next();
+    };
+
+    const handleViewChange = (view) => {
+        const calendarApi = effectiveRef.current?.getApi();
+        if (calendarApi) calendarApi.changeView(view);
+    };
+
+    // Filter events based on selected resources
+    const filteredEvents = useMemo(() => {
+        if (selectedResourceIds.length === resources.length) {
+            return events; // All resources selected, show all events
         }
-        if (typeof onViewChange === 'function') {
-            onViewChange(info.view.type);
+                return events.filter(event => {
+            const resourceMatch = selectedResourceIds.length === 0 || selectedResourceIds.includes(event.resourceId);
+            const statusMatch = selectedStatuses.length === 0 || selectedStatuses.includes(event.extendedProps.status);
+                        const searchMatch = !searchTerm || event.title.toLowerCase().includes(searchTerm.toLowerCase());
+            const departmentMatch = selectedDepartments.length === 0 || selectedDepartments.includes(event.extendedProps.department);
+            return resourceMatch && statusMatch && searchMatch && departmentMatch;
+        });
+    }, [events, selectedResourceIds, resources.length]);
+
+    // Internal handlers to call parent modal openers
+    const handleEventClick = (clickInfo) => {
+        const task = clickInfo.event.extendedProps;
+        if (task && typeof onOpenDetailModal === 'function') {
+            onOpenDetailModal(task);
         }
     };
 
-    // Custom event rendering function for production tasks
-    const renderEventContent = (eventInfo) => {
-        const eventResources = eventInfo.event.getResources ? eventInfo.event.getResources() : [];
-        const actualResourceId = eventInfo.event.resourceId || (eventResources.length > 0 ? eventResources[0]?.id : undefined);
-
-        console.log(`[RenderEventContent] View: ${eventInfo.view.type}, Event ID: ${eventInfo.event.id}, Title: ${eventInfo.event.title}, RecipeName: ${eventInfo.event.extendedProps?.recipe_name}, Start: ${eventInfo.event.start}, event.resourceId: ${eventInfo.event.resourceId}, getResources[0]?.id: ${eventResources.length > 0 ? eventResources[0]?.id : 'N/A'}, actualUsedResourceId: ${actualResourceId}`);
-        // console.log('[RenderEventContent] Full eventInfo.event.getResources():', eventResources);
-
-        const extendedProps = eventInfo.event.extendedProps || {}; // Ensure extendedProps exists
-        const { status, task_type, recipe_name, batch_size, yield_unit, isPlaceholder, description, isExternal } = extendedProps;
-
-        if (eventInfo.view.type === 'resourceTimeGridDay' && typeof recipe_name === 'undefined') {
-            console.warn('[RenderEventContent - DayView Missing RecipeName] Full eventInfo.event:', JSON.stringify(eventInfo.event, null, 2));
+    const handleDateClick = (clickInfo) => {
+        if (typeof onOpenAssignmentModal === 'function') {
+            onOpenAssignmentModal(clickInfo, true);
         }
-        
-        let backgroundColor, textColor, borderColor, effectiveStatus;
-        
-        // Determine the current view type for specific styling
-        const isTimelineView = eventInfo.view.type.includes('timeline');
-        const isMonthView = eventInfo.view.type === 'dayGridMonth';
-        const isDayView = eventInfo.view.type === 'resourceTimeGridDay';
-        const isWeekView = eventInfo.view.type === 'timeGridWeek';
-        
-        if (isPlaceholder || isExternal) {
-            backgroundColor = eventInfo.event.backgroundColor || theme.palette.grey[300];
-            textColor = eventInfo.event.textColor || theme.palette.getContrastText(backgroundColor);
-            borderColor = eventInfo.event.borderColor || theme.palette.grey[500];
-            effectiveStatus = 'placeholder'; // Use a distinct status for styling if needed
-        } else {
-            effectiveStatus = status;
-            // Default colors, will be overridden by status
-            backgroundColor = theme.palette.grey[200];
-            textColor = theme.palette.getContrastText(backgroundColor);
-            borderColor = theme.palette.grey[400];
+    };
 
-            // Color coding based on production task status
-            switch (effectiveStatus) {
-                case 'completed':
-                    backgroundColor = theme.palette.success.light;
-                    textColor = theme.palette.success.contrastText;
-                    borderColor = theme.palette.success.main;
-                    break;
-                case 'in_progress':
-                    backgroundColor = theme.palette.info.light;
-                    textColor = theme.palette.info.contrastText;
-                    borderColor = theme.palette.info.main;
-                    break;
-                case 'scheduled':
-                    backgroundColor = theme.palette.primary.light;
-                    textColor = theme.palette.primary.contrastText;
-                    borderColor = theme.palette.primary.main;
-                    break;
-                case 'cancelled':
-                    backgroundColor = theme.palette.error.light;
-                    textColor = theme.palette.error.contrastText;
-                    borderColor = theme.palette.error.main;
-                    break;
-                case 'pending_review':
-                    backgroundColor = theme.palette.warning.light;
-                    textColor = theme.palette.warning.contrastText;
-                    borderColor = theme.palette.warning.main;
-                    break;
-                case 'on_hold':
-                    backgroundColor = theme.palette.grey[300];
-                    textColor = theme.palette.text.primary;
-                    borderColor = theme.palette.grey[500];
-                    break;
-                default:
-                    // Keep default colors
-                    break;
+    const handleEventReceive = (eventInfo) => {
+        if (typeof onOpenAssignmentModal === 'function') {
+            onOpenAssignmentModal(eventInfo, true);
+        }
+    };
+
+    // Header Controls Component
+    const headerControls = (
+        <CalendarHeaderControls
+            currentDate={currentDate}
+            currentView={currentView}
+            onNavigate={handleNavigate}
+            onViewChange={handleViewChange}
+            onToggleFilters={() => setFiltersOpen(!isFiltersOpen)}
+        />
+    );
+
+    // Sidebar Component
+    const sidebarContent = (
+        <CalendarRightSidebar
+            quickActionsContent={
+                <QuickActionsMenu
+                    onNewTaskClick={onNewTask}
+                    onNewRecipeClick={onNewRecipe}
+                />
             }
-        }
-        
-        // Determine what icon to show based on task type
-        let taskTypeIcon = '';
-        if (task_type === 'production') {
-            taskTypeIcon = '🍳'; // Cooking emoji for production tasks
-        } else if (task_type === 'prep') {
-            taskTypeIcon = '🔪'; // Knife emoji for prep tasks
-        } else if (task_type === 'cleaning') {
-            taskTypeIcon = '🧹'; // Broom emoji for cleaning tasks
-        }
-        
-        // Determine what to display as the title
-        const displayTitle = recipe_name || (eventInfo.event.extendedProps && eventInfo.event.extendedProps.recipe_name) || eventInfo.event.title || 'Untitled Task';
-        
-        // Create tooltip content
-        const tooltipTitle = `${displayTitle} (${batch_size || '?'} ${yield_unit || ''})
-${description || ''}
-Status: ${effectiveStatus || 'unknown'}`;
-        
-        // Add placeholder class if this is a placeholder event
-        const className = isPlaceholder ? 'placeholder-event' : '';
-        
-        // Remove quality check indicators by explicitly setting a class that will override any CSS that might be adding them
-        
-        // Special handling for day view to ensure visibility
-        if (isDayView) {
-            // For day view, use a more visible and robust rendering
-            return (
-                <Tooltip title={tooltipTitle}>
-                    <Box
-                        className={`production-event ${className} day-view-event no-quality-indicators`}
-                        sx={{
-                            backgroundColor,
-                            color: textColor,
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            borderLeft: `6px solid ${borderColor}`,
-                            overflow: 'visible',
-                            height: '100%',
-                            minHeight: '35px',
-                            width: '100%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            boxShadow: theme.shadows[2],
-                            opacity: isPlaceholder ? 0.8 : 1,
-                            position: 'relative',
-                            zIndex: 10,
-                            margin: '1px 0',
-                            '&::before, &::after': {
-                                display: 'none !important' // Remove any pseudo-elements that might be adding icons
-                            }
-                        }}
-                    >
-                        <Typography 
-                            variant="body1"
-                            sx={{ 
-                                fontWeight: 600,
-                                fontSize: '0.95rem',
-                                lineHeight: 1.5,
-                                overflow: 'visible',
-                                whiteSpace: 'normal',
-                                textDecoration: effectiveStatus === 'completed' ? 'line-through' : 'none',
-                                color: textColor,
-                                display: 'block',
-                                width: '100%',
-                                '&::before, &::after': {
-                                    display: 'none !important' // Remove any pseudo-elements that might be adding icons
-                                }
-                            }}
-                        >
-                            {taskTypeIcon} {displayTitle}
-                        </Typography>
-                        {eventInfo.timeText && (
-                            <Typography 
-                                variant="caption"
-                                sx={{ 
-                                    fontWeight: 500,
-                                    display: 'block',
-                                    width: '100%',
-                                }}
-                            >
-                                {eventInfo.timeText}
-                            </Typography>
-                        )}
-                    </Box>
-                </Tooltip>
-            );
-        }
-        
-        // Standard rendering for other views
+            legendContent={<CalendarLegend legendItems={mockLegendItems} />}
+            resourceFilterContent={
+                <ResourceFilterList
+                    resources={resources}
+                    selectedResourceIds={selectedResourceIds}
+                    onResourceSelectionChange={setSelectedResourceIds}
+                    onSelectAllResources={() => setSelectedResourceIds(resources.map(r => r.id))}
+                    onClearAllResources={() => setSelectedResourceIds([])}
+                />
+            }
+        />
+    );
+
+    // Filters Bar Component
+    const filtersBarContent = (
+        <CollapsibleFiltersDisplay isOpen={isFiltersOpen}>
+            {/* Placeholder for actual filter controls */}
+                        <RecipeFilters 
+                statuses={recipeStatuses}
+                selectedStatuses={selectedStatuses}
+                onStatusChange={setSelectedStatuses}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                departments={mockDepartments}
+                selectedDepartments={selectedDepartments}
+                onDepartmentChange={setSelectedDepartments}
+            />
+        </CollapsibleFiltersDisplay>
+    );
+
+    // If useSimpleLayout is true, render only the FullCalendar component without the layout wrapper
+    // This is used when the parent component (ProductionSchedulerPage) is managing the layout
+    if (useSimpleLayout) {
         return (
-            <Tooltip title={tooltipTitle}>
-                <Box
-                    className={`production-event ${className} no-quality-indicators`}
-                    sx={{
-                        backgroundColor,
-                        color: textColor,
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        borderLeft: `4px solid ${borderColor}`,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        height: '100%',
-                        minHeight: '24px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        boxShadow: theme.shadows[1],
-                        opacity: isPlaceholder ? 0.7 : 1,
-                        position: 'relative',
-                        zIndex: isPlaceholder || isExternal ? 5 : 1,
-                        // Specific styling for timeline view
-                        ...(isTimelineView && {
-                            minWidth: '80px',
-                            minHeight: '30px',
-                        }),
-                        // Specific styling for month view
-                        ...(isMonthView && {
-                            minHeight: '20px',
-                        }),
-                        // Specific styling for week view
-                        ...(isWeekView && {
-                            minHeight: '25px',
-                        }),
-                        '&::before, &::after': {
-                            display: 'none !important' // Remove any pseudo-elements that might be adding icons
+            <Box sx={{ position: 'relative', zIndex: 0, height: '100%' }}>
+                <FullCalendar
+                    ref={effectiveRef}
+                    plugins={[dayGridPlugin, timeGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, interactionPlugin]}
+                    initialView={currentView}
+                    headerToolbar={false} // Use our custom header controls
+                    views={{
+                        resourceTimelineWeek: {
+                            type: 'resourceTimeline',
+                            duration: { days: 7 },
+                            buttonText: 'Timeline'
                         }
                     }}
-                >
-                    <Typography 
-                        variant="body2" 
-                        sx={{ 
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            textDecoration: effectiveStatus === 'completed' ? 'line-through' : 'none',
-                            fontSize: isMonthView ? '0.75rem' : '0.875rem',
-                            lineHeight: isMonthView ? 1.2 : 1.43,
-                            display: 'block',
-                            width: '100%',
-                            fontWeight: 'bold',
-                            '&::before, &::after': {
-                                display: 'none !important' // Remove any pseudo-elements that might be adding icons
-                            }
-                        }}
-                    >
-                        {taskTypeIcon} {displayTitle}
-                    </Typography>
-                    {eventInfo.timeText && (
-                        <Typography 
-                            variant="caption" 
-                            sx={{ 
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                textDecoration: effectiveStatus === 'completed' ? 'line-through' : 'none',
-                            }}
-                        >
-                            {eventInfo.timeText}
-                        </Typography>
-                    )}
-                </Box>
-            </Tooltip>
+                    editable={true}
+                    selectable={true}
+                    selectMirror={true}
+                    dayMaxEvents={true}
+                    weekends={true}
+                    nowIndicator={true}
+                    droppable={true}
+                    initialDate={currentDate}
+                    events={filteredEvents} // Use filtered events
+                    resources={resources}
+                    eventContent={RecipeEventContent} // Use the new event rendering component
+                    eventClick={handleEventClick}
+                    eventDrop={(info) => onEventDrop && onEventDrop(info)}
+                    eventResize={(info) => eventResize && eventResize(info)}
+                    dateClick={handleDateClick}
+                    datesSet={handleDatesSet}
+                    eventReceive={handleEventReceive}
+                    height="100%"
+                    allDaySlot={false}
+                    slotMinTime="06:00:00"
+                    slotMaxTime="22:00:00"
+                    resourceAreaHeaderContent="Staff"
+                    schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
+                />
+            </Box>
         );
-    };
-
+    }
+    
+    // Otherwise, use the full layout with header, sidebar, and filters
     return (
-        <Box sx={{ position: 'relative', zIndex: 0 }}>
-            <FullCalendar
-                ref={calendarRef} // Attach the ref here
-                plugins={[dayGridPlugin, timeGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, interactionPlugin]}
-                initialView={currentView || 'resourceTimeGridDay'} // Set initial view
-                headerToolbar={{
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,resourceTimeGridDay,resourceTimelineWeek'
-                }}
-                views={{
-                    resourceTimelineWeek: {
-                        type: 'resourceTimeline',
-                        duration: { days: 7 },
-                        buttonText: 'Timeline'
-                    }
-                }}
-                editable={true}
-                selectable={true}
-                selectMirror={true}
-                dayMaxEvents={true}
-                weekends={true}
-                nowIndicator={true}
-                droppable={true} // Enable dropping external elements onto the calendar
-                initialDate={currentDate}
-                events={events}
-                resources={resources}
-                eventContent={renderEventContent}
-                eventClick={(info) => onEventClick && onEventClick(info)}
-                eventDrop={(info) => onEventDrop && onEventDrop(info)}
-                eventResize={(info) => eventResize && eventResize(info)}
-                dateClick={(info) => onDateClick && onDateClick(info)}
-                datesSet={handleDatesSet} // This now handles date and view changes
-                eventReceive={(info) => onEventReceive && onEventReceive(info)}
-                height="auto"
-                allDaySlot={false}
-                slotMinTime="06:00:00"
-                slotMaxTime="22:00:00"
-                resourceAreaHeaderContent="Staff"
-                schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
-            />
-        </Box>
+        <CalendarPageLayout
+            headerContent={headerControls}
+            sidebarContent={sidebarContent}
+            filtersBarContent={filtersBarContent}
+        >
+            <Box sx={{ position: 'relative', zIndex: 0, height: '100%' }}>
+                <FullCalendar
+                    ref={effectiveRef}
+                    plugins={[dayGridPlugin, timeGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, interactionPlugin]}
+                    initialView={currentView}
+                    headerToolbar={false} // Use our custom header controls
+                    views={{
+                        resourceTimelineWeek: {
+                            type: 'resourceTimeline',
+                            duration: { days: 7 },
+                            buttonText: 'Timeline'
+                        }
+                    }}
+                    editable={true}
+                    selectable={true}
+                    selectMirror={true}
+                    dayMaxEvents={true}
+                    weekends={true}
+                    nowIndicator={true}
+                    droppable={true}
+                    initialDate={currentDate}
+                    events={filteredEvents} // Use filtered events
+                    resources={resources}
+                    eventContent={RecipeEventContent} // Use the new event rendering component
+                    eventClick={handleEventClick}
+                    eventDrop={(info) => onEventDrop && onEventDrop(info)}
+                    eventResize={(info) => eventResize && eventResize(info)}
+                    dateClick={handleDateClick}
+                    datesSet={handleDatesSet}
+                    eventReceive={handleEventReceive}
+                    height="100%"
+                    allDaySlot={false}
+                    slotMinTime="06:00:00"
+                    slotMaxTime="22:00:00"
+                    resourceAreaHeaderContent="Staff"
+                    schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
+                />
+            </Box>
+        </CalendarPageLayout>
     );
 };
 

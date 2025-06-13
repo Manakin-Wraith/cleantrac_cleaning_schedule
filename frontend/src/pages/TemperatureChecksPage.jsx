@@ -10,6 +10,7 @@ import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import { getCurrentUser } from '../services/authService';
 import TemperatureCheckAssignmentManager from '../components/thermometers/TemperatureCheckAssignmentManager';
 import TemperatureLogsList from '../components/thermometers/TemperatureLogsList';
+import TemperatureLoggingSummary from '../components/thermometers/TemperatureLoggingSummary';
 import { 
   DashboardLayout, 
   DashboardCard, 
@@ -95,7 +96,14 @@ function TemperatureChecksPage() {
 
       {currentTab === 'dashboard' && (
         <>
-
+          <SectionTitle title="Overall Temperature Logging Status" />
+          <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid item xs={12}>
+              <DashboardCard>
+                <TemperatureLoggingSummary />
+              </DashboardCard>
+            </Grid>
+          </Grid>
           
           <SectionTitle title="Staff Assignment Management" />
           

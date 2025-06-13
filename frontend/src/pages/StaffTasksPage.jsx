@@ -220,10 +220,8 @@ function StaffTasksPage() {
             <Typography component="h1" variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 4 }}>
                 {userName}'s Tasks - {departmentName} - Today ({getTodayDateString()})
             </Typography>
-
-            {error && <Alert severity="warning" sx={{ mb: 2 }}>{error}</Alert>} 
+            {error && <Alert severity="warning" sx={{ mb: 2 }}>{error}</Alert>}
             {thermometerError && <Alert severity="error" sx={{ mb: 2 }}>{thermometerError}</Alert>}
-
             {/* Thermometer Sections - Only shown when assigned */}
             {!loadingUser && !loadingThermometers && (verificationAssignment || temperatureCheckAssignment) && (
                 <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -359,7 +357,6 @@ function StaffTasksPage() {
                     )}
                 </Grid>
             )}
-
             {/* Temperature Responsibilities Summary */}
             {!loadingUser && !loadingThermometers && (verificationAssignment || temperatureCheckAssignment) && (
                 <Paper elevation={2} sx={{ p: 2, mb: 4 }}>
@@ -433,7 +430,6 @@ function StaffTasksPage() {
                     </Grid>
                 </Paper>
             )}
-            
             {/* Show a message when no assignments exist */}
             {!loadingUser && !loadingThermometers && !verificationAssignment && !temperatureCheckAssignment && (
                 <Alert 
@@ -443,7 +439,6 @@ function StaffTasksPage() {
                     You are not currently assigned to any thermometer or temperature logging duties. Please contact your manager if you believe this is incorrect.
                 </Alert>
             )}
-
             {loadingTasks ? (
                 <CircularProgress sx={{ display: 'block', margin: 'auto', mt: 4 }} />
             ) : error ? (

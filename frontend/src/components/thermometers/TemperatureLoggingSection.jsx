@@ -797,13 +797,12 @@ const TemperatureLoggingSection = ({
           Temperature Logging
         </Typography>
       </Box>
-
       {isLoadingFromProps || componentLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
           <CircularProgress />
         </Box>
       ) : error && activeStep < steps.length -1 ? ( // Show general error only if not on success step
-        <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
+        (<Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>)
       ) : (
         <Box sx={{ width: '100%' }}>
           <Stepper activeStep={activeStep} sx={{ mb: 3 }}>

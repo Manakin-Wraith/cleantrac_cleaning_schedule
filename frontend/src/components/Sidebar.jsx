@@ -1,5 +1,5 @@
 import React from 'react';
-import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, Box, Divider, useTheme, useMediaQuery, Tooltip, Collapse } from '@mui/material';
+import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, Box, Divider, useTheme, useMediaQuery, Tooltip, Collapse, IconButton, Paper } from '@mui/material';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import appLogo from '../assets/box_icon.png'; 
@@ -22,11 +22,13 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime'; // Added missing im
 import LocalShippingIcon from '@mui/icons-material/LocalShipping'; // For Suppliers
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu'; // For Recipe Management
 import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits'; // For Production Scheduler
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 export const drawerWidth = 240;
 const collapsedDrawerWidth = (theme) => theme.spacing(7); 
 
-const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
+const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed, onCollapseToggle = () => {} }) => {
 
   const [openSections, setOpenSections] = React.useState({});
   const { currentUser, logout } = useAuth();
@@ -148,6 +150,29 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
     await logout();
   };
 
+  const renderNavItem = (link, parentActive=false) => {
+    const button = (
+      <ListItemButton
+        component={NavLink}
+        to={link.path}
+        sx={getListItemButtonStyles(location.pathname === link.path, parentActive)}
+      >
+        <ListItemIcon>{link.icon}</ListItemIcon>
+        <ListItemText primary={link.text} sx={{ opacity: isPermanentDrawerEffectivelyOpen ? 1 : 0 }} />
+      </ListItemButton>
+    );
+
+    // Show tooltip only when collapsed and desktop
+    if (showTooltip) {
+      return (
+        <Tooltip title={link.text} placement="right" enterDelay={500} arrow>
+          {button}
+        </Tooltip>
+      );
+    }
+    return button;
+  };
+
   const drawerContent = (
     <div>
       <Toolbar 
@@ -178,35 +203,26 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
               <React.Fragment key={link.text}>
                 <ListItem disablePadding>
                   <Tooltip title={showTooltip ? link.text : ''} placement="right" arrow>
-                    <ListItemButton 
-                      onClick={() => handleSectionToggle(link.text)} 
+                    <ListItemButton
+                      onClick={() => handleSectionToggle(link.text)}
                       sx={getListItemButtonStyles(false, isParentActive)}
                     >
-                      <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center' }}>
-                        {link.icon}
-                      </ListItemIcon>
-                      {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={link.text} />}
-                      {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && (openSections[link.text] ? <ExpandLess /> : <ExpandMore />)}
+                      <ListItemIcon>{link.icon}</ListItemIcon>
+                      <ListItemText primary={link.text} sx={{ opacity: isPermanentDrawerEffectivelyOpen ? 1 : 0 }} />
                     </ListItemButton>
                   </Tooltip>
+                  <Box sx={{ opacity: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 1 : 0, transition: 'opacity 0.2s', ml: 0.5 }}>
+                    {openSections[link.text] ? <ExpandLess /> : <ExpandMore />}
+                  </Box>
                 </ListItem>
                 <Collapse in={openSections[link.text]} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
                     {link.children.map((childLink) => (
-                      <NavLink to={childLink.path} key={childLink.text} style={{ textDecoration: 'none', color: 'inherit' }}>
-                        {({ isActive }) => (
-                          <ListItem disablePadding>
-                            <Tooltip title={showTooltip ? childLink.text : ''} placement="right" arrow>
-                              <ListItemButton sx={getListItemButtonStyles(isActive)}>
-                                <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 2 : 'auto', justifyContent: 'center', pl: showTooltip ? 0 : theme.spacing(0.5) }}>
-                                  {childLink.icon}
-                                </ListItemIcon>
-                                {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={childLink.text} />}
-                              </ListItemButton>
-                            </Tooltip>
-                          </ListItem>
-                        )}
-                      </NavLink>
+                      <React.Fragment key={childLink.text}>
+                        <ListItem disablePadding>
+                          {renderNavItem(childLink, isParentActive)}
+                        </ListItem>
+                      </React.Fragment>
                     ))}
                   </List>
                 </Collapse>
@@ -215,27 +231,18 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
           }
           // Render non-parent link
           return (
-            <NavLink to={link.path} key={link.text} style={{ textDecoration: 'none', color: 'inherit' }}>
-              {({ isActive }) => (
-                <ListItem disablePadding>
-                  <Tooltip title={showTooltip ? link.text : ''} placement="right" arrow>
-                    <ListItemButton sx={getListItemButtonStyles(isActive)}>
-                      <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center' }}>
-                        {link.icon}
-                      </ListItemIcon>
-                      {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary={link.text} />}
-                    </ListItemButton>
-                  </Tooltip>
-                </ListItem>
-              )}
-            </NavLink>
+            <React.Fragment key={link.text}>
+              <ListItem disablePadding>
+                {renderNavItem(link, isParentActive)}
+              </ListItem>
+            </React.Fragment>
           );
         })}
         {currentUser && (
           <>
             <Divider sx={{ my: 1 }} />
             <ListItem disablePadding> 
-              <Tooltip title={showTooltip ? 'Logout' : ''} placement="right" arrow>
+              <Tooltip title={showTooltip ? 'Logout' : ''} placement="right" enterDelay={500} arrow>
                 <ListItemButton onClick={handleLogoutClick} sx={getListItemButtonStyles(false)}>
                   <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center' }}> 
                     <LogoutIcon />
@@ -251,7 +258,6 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
   );
 
   const currentPermanentDrawerWidth = isCollapsed ? collapsedDrawerWidth(theme) : drawerWidth;
-
 
   return (
     <Box
@@ -294,10 +300,89 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed }) => {
             }),
             overflowX: 'hidden',
             boxSizing: 'border-box',
+            backdropFilter: showTooltip ? 'blur(6px)' : 'none',
+            boxShadow: showTooltip ? theme.shadows[4] : 'none',
           }
         }}
       >
-        {drawerContent}
+        <Toolbar 
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: isPermanentDrawerEffectivelyOpen ? 'flex-start' : 'center', px: 2 }}
+        >
+          <img src={appLogo} alt="CleanTrack Logo" style={{ height: '32px', marginRight: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? '8px' : '0' }} /> 
+          {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && (
+            <Typography variant="h6" component="div" sx={{ color: theme.palette.text.primary, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+              CleanTrac
+            </Typography>
+          )}
+        </Toolbar>
+        {/* Collapse/Expand toggle button (desktop only) */}
+        {isMdUp && (
+          <Box sx={{ position: 'absolute', top: theme.spacing(1), right: theme.spacing(1), zIndex: theme.zIndex.drawer + 1 }}>
+            <IconButton size="small" color="primary" onClick={onCollapseToggle} sx={{ bgcolor: 'inherit', '&:hover': { bgcolor: 'action.hover' } }}>
+              {isCollapsed ? <ChevronRightIcon fontSize="small" /> : <ChevronLeftIcon fontSize="small" />}
+            </IconButton>
+          </Box>
+        )}
+        <Divider />
+        <List sx={{ pt: 0 }} component="nav">
+          {determinedLinks.map((link) => {
+            const isParentActive = link.children && link.children.some(child => location.pathname.startsWith(child.path));
+            if (link.children) {
+              return (
+                <React.Fragment key={link.text}>
+                  <ListItem disablePadding>
+                    <Tooltip title={showTooltip ? link.text : ''} placement="right" arrow>
+                      <ListItemButton
+                        onClick={() => handleSectionToggle(link.text)}
+                        sx={getListItemButtonStyles(false, isParentActive)}
+                      >
+                        <ListItemIcon>{link.icon}</ListItemIcon>
+                        <ListItemText primary={link.text} sx={{ opacity: isPermanentDrawerEffectivelyOpen ? 1 : 0 }} />
+                      </ListItemButton>
+                    </Tooltip>
+                    <Box sx={{ opacity: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 1 : 0, transition: 'opacity 0.2s', ml: 0.5 }}>
+                      {openSections[link.text] ? <ExpandLess /> : <ExpandMore />}
+                    </Box>
+                  </ListItem>
+                  <Collapse in={openSections[link.text]} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+                      {link.children.map((childLink) => (
+                        <React.Fragment key={childLink.text}>
+                          <ListItem disablePadding>
+                            {renderNavItem(childLink, isParentActive)}
+                          </ListItem>
+                        </React.Fragment>
+                      ))}
+                    </List>
+                  </Collapse>
+                </React.Fragment>
+              );
+            }
+            // Render non-parent link
+            return (
+              <React.Fragment key={link.text}>
+                <ListItem disablePadding>
+                  {renderNavItem(link, isParentActive)}
+                </ListItem>
+              </React.Fragment>
+            );
+          })}
+          {currentUser && (
+            <>
+              <Divider sx={{ my: 1 }} />
+              <ListItem disablePadding> 
+                <Tooltip title={showTooltip ? 'Logout' : ''} placement="right" enterDelay={500} arrow>
+                  <ListItemButton onClick={handleLogoutClick} sx={getListItemButtonStyles(false)}>
+                    <ListItemIcon sx={{ minWidth: 0, mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 3 : 'auto', justifyContent: 'center' }}> 
+                      <LogoutIcon />
+                    </ListItemIcon>
+                    {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && <ListItemText primary="Logout" />}
+                  </ListItemButton>
+                </Tooltip>
+              </ListItem>
+            </>
+          )}
+        </List>
       </Drawer>
     </Box>
   );

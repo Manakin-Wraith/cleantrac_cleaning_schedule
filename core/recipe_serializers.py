@@ -105,6 +105,14 @@ class ProductionScheduleSerializer(serializers.ModelSerializer):
     assigned_staff_details = serializers.SerializerMethodField(read_only=True)
     created_by_username = serializers.CharField(source='created_by.username', read_only=True, allow_null=True)
 
+    # Batch unit (kg, L, ea, case)
+    batch_unit = serializers.ChoiceField(choices=[
+        ('kg', 'kg'),
+        ('L', 'L'),
+        ('ea', 'ea'),
+        ('case', 'case'),
+    ], default='kg')
+
     # Fields to accept full datetime strings from payload
     scheduled_start_time_payload = serializers.DateTimeField(
         write_only=True,
@@ -126,7 +134,7 @@ class ProductionScheduleSerializer(serializers.ModelSerializer):
             'scheduled_date',  # Model's DateField (for output, populated by create/update)
             'start_time',      # Model's TimeField (for output, populated by create/update)
             'end_time',        # Model's TimeField (for output, populated by create/update)
-            'batch_size',
+            'batch_size', 'batch_unit',
             'status', 'assigned_staff_ids', 'assigned_staff_details',
             'notes', 'created_by', 'created_by_username',
             'created_at', 'updated_at',
