@@ -20,7 +20,7 @@ import {
 import { getCleaningItems } from '../services/cleaningItemService';
 import { getUsers } from '../services/userService';
 import apiClient from '../services/api'; // still used elsewhere if needed
-import { getProductionSchedules, createProductionSchedule, updateProductionSchedule } from '../services/productionScheduleService';
+import { getProductionSchedules, createProductionSchedule, updateProductionSchedule, deleteProductionSchedule } from '../services/productionScheduleService';
 
 // Import calendar components
 import CalendarPageLayout from '../components/calendar/layout/CalendarPageLayout';
@@ -40,11 +40,11 @@ import NewCleaningTaskModal from '../components/modals/NewCleaningTaskModal';
 
 // Import placeholder components (to be implemented)
 // import UnifiedCalendarComponent from '../components/calendar/UnifiedCalendarComponent';
-// import UnifiedFilters from '../components/calendar/filters/UnifiedFilters';
+// 
 
 // Temporary imports until we implement the unified components
 import UnifiedCalendarComponent from '../components/calendar/UnifiedCalendarComponent';
-import UnifiedFilters from '../components/calendar/filters/UnifiedFilters';
+
 
 import dayjs from 'dayjs';
 import { format } from 'date-fns';
@@ -118,9 +118,30 @@ const UnifiedCalendarPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartments, setSelectedDepartments] = useState([]);
 
+  // Map of userId -> user object for quick lookup
+  const userMap = useMemo(() => {
+    const map = {};
+    (resourcesData || []).forEach((u) => {
+      if (u && u.id != null) {
+        map[u.id] = u;
+      }
+    });
+    return map;
+  }, [resourcesData]);
+
   // Combined events array for schedule context
   const allEvents = useMemo(() => {
-    const clean = cleaningEvents.map(ev => {
+    // Deduplicate by id first to avoid double rendering
+    const dedupById = (arr) => {
+      const map = new Map();
+      arr.forEach((item) => {
+        map.set(item.id, item);
+      });
+      return Array.from(map.values());
+    };
+    const cleaningUnique = dedupById(cleaningEvents);
+    const recipeUnique = dedupById(recipeEvents);
+    const clean = cleaningUnique.map(ev => {
       let assignedName = '';
       if (ev.assigned_to_details) {
         const u = ev.assigned_to_details;
@@ -129,6 +150,13 @@ const UnifiedCalendarPage = () => {
         assignedName = `${fname} ${lname}`.trim() || u.username || u.email || '';
       } else if (ev.assigned_to_name) {
         assignedName = ev.assigned_to_name;
+      } else if (ev.assigned_to || ev.assigned_to_id) {
+        const u = userMap[ev.assigned_to || ev.assigned_to_id];
+        if (u) {
+          const fname = u.first_name || u.name || '';
+          const lname = u.last_name || '';
+          assignedName = `${fname} ${lname}`.trim() || u.username || u.email || '';
+        }
       }
       const start = dayjs(`${ev.due_date || ev.date || ''} ${ev.start_time || ''}`).toDate();
       const end = ev.end_time ? dayjs(`${ev.due_date || ev.date || ''} ${ev.end_time}`).toDate() : undefined;
@@ -154,7 +182,7 @@ const UnifiedCalendarPage = () => {
       };
     });
 
-    const prod = recipeEvents.map(ev => {
+    const prod = recipeUnique.map(ev => {
       let assignedName = '';
       if (Array.isArray(ev.assigned_staff_details) && ev.assigned_staff_details.length) {
         const u = ev.assigned_staff_details[0];
@@ -174,7 +202,7 @@ const UnifiedCalendarPage = () => {
       return {
         ...ev,
         id: `recipe-${ev.id}`,
-        title: ev.recipe_name || ev.name || 'Recipe',
+        title: ev.recipe_name || ev.recipe?.name || ev.name || (ev.recipe && ev.recipe.recipe_name) || 'Recipe',
         type: 'production',
         status: ev.status || 'Pending',
         assignedToName: assignedName || 'Unassigned',
@@ -184,7 +212,7 @@ const UnifiedCalendarPage = () => {
         extendedProps: {
           originalType: 'recipe',
           status: ev.status || 'Pending',
-          recipe_name: ev.recipe_name || ev.name || '',
+          recipe_name: ev.recipe_name || ev.recipe?.name || ev.name || (ev.recipe && ev.recipe.recipe_name) || '',
           batch_size: ev.batch_size || '',
           yield_unit: ev.yield_unit || '',
           subtasks_completed: ev.subtasks_completed || 0,
@@ -273,8 +301,8 @@ const UnifiedCalendarPage = () => {
       } else if (prefix === 'recipe') {
         await updateProductionSchedule(rawId, {
           scheduled_date: dateToYmd(newStart),
-          scheduled_start_time: newStart.toISOString(),
-          scheduled_end_time: newEnd ? newEnd.toISOString() : null,
+          scheduled_start_time_payload: newStart.toISOString(),
+          scheduled_end_time_payload: newEnd ? newEnd.toISOString() : null,
         });
       }
       enqueueSnackbar('Event updated successfully', { variant: 'success' });
@@ -301,8 +329,8 @@ const UnifiedCalendarPage = () => {
       } else if (prefix === 'recipe') {
         await updateProductionSchedule(rawId, {
           scheduled_date: dateToYmd(newStart),
-          scheduled_start_time: newStart.toISOString(),
-          scheduled_end_time: newEnd ? newEnd.toISOString() : null,
+          scheduled_start_time_payload: newStart.toISOString(),
+          scheduled_end_time_payload: newEnd ? newEnd.toISOString() : null,
         });
       }
       enqueueSnackbar('Event duration updated', { variant: 'success' });
@@ -359,6 +387,13 @@ const UnifiedCalendarPage = () => {
         saved = await updateProductionSchedule(existingId, taskData);
       } else {
         saved = await createProductionSchedule(taskData);
+        // Ensure recipe_name exists for UI display
+        if (!saved.recipe_name && taskData.recipe_name) {
+          saved.recipe_name = taskData.recipe_name;
+        }
+        if (!saved.recipe && taskData.recipe_name) {
+          saved.recipe = { name: taskData.recipe_name, id: taskData.recipe_id };
+        }
       }
 
       // merge into recipeEvents
@@ -376,13 +411,29 @@ const UnifiedCalendarPage = () => {
     }
   };
 
+  // Prevent double-submit flag
+  const cleaningSaveRef = useRef(false);
+
   // Save handler for cleaning task modal
   const handleCleaningTaskSaved = async (taskData, existingId = null) => {
+    // If modal already performed the save and returned the object (taskData has id), just merge/refetch
+    if (taskData && taskData.id && !existingId) {
+      await fetchAllData();
+      enqueueSnackbar('Task scheduled', { variant: 'success' });
+      setTaskAssignmentModalOpen(false);
+      setDrawerOpen(false);
+      return;
+    }
+    if (cleaningSaveRef.current) return;
+    cleaningSaveRef.current = true;
+    if (cleaningSaveRef.current) return; // guard against double click / double event
+    cleaningSaveRef.current = true;
     try {
       let saved;
       const payload = {
         ...taskData,
         cleaning_item_id_write: taskData.cleaning_item_id || taskData.cleaning_item?.id,
+        assigned_to_write: taskData.assigned_to_id || taskData.assigned_to || null,
       };
       if (existingId) {
         saved = await updateTaskInstance(existingId, payload);
@@ -390,17 +441,16 @@ const UnifiedCalendarPage = () => {
         saved = await createTaskInstance(payload);
       }
 
-      setCleaningEvents(prev => {
-        const withoutOld = prev.filter(ev => ev.id !== saved.id && ev.id !== existingId);
-        return [...withoutOld, saved];
-      });
-
+      // Refresh tasks to ensure we have latest details
+      await fetchAllData();
       enqueueSnackbar(existingId ? 'Task updated' : 'Task scheduled', { variant: 'success' });
       setTaskAssignmentModalOpen(false);
       setDrawerOpen(false);
     } catch (err) {
       console.error('Save cleaning task failed', err);
       enqueueSnackbar(err.message || 'Failed to save cleaning task', { variant: 'error' });
+    } finally {
+      cleaningSaveRef.current = false;
     }
   };
 
@@ -543,10 +593,29 @@ const UnifiedCalendarPage = () => {
     }
   };
 
-  const handleDrawerDelete = (task) => {
-    // TODO: implement delete confirmation and API call
-    enqueueSnackbar('Delete functionality coming soon', { variant: 'info' });
+  const handleDrawerDelete = async (task) => {
+    if (!task) return;
+
+    const [prefix, rawId] = (task.id || '').toString().split('-');
+    if (!rawId) return;
+
+    try {
+      if (prefix === 'cleaning') {
+        await deleteTaskInstance(rawId);
+        setCleaningEvents(prev => prev.filter(ev => ev.id !== parseInt(rawId, 10)));
+      } else if (prefix === 'recipe') {
+        await deleteProductionSchedule(rawId);
+        setRecipeEvents(prev => prev.filter(ev => ev.id !== parseInt(rawId, 10)));
+      }
+      enqueueSnackbar('Deleted successfully', { variant: 'success' });
+    } catch (err) {
+      console.error('Delete failed', err);
+      enqueueSnackbar(err.message || 'Failed to delete', { variant: 'error' });
+    } finally {
+      setDrawerOpen(false);
+    }
   };
+
 
   // Render the component
   return (
@@ -580,23 +649,7 @@ const UnifiedCalendarPage = () => {
               }
             />
           }
-          filtersBarContent={
-            <UnifiedFilters
-              selectedEventType={selectedEventType}
-              onEventTypeChange={handleEventTypeChange}
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              selectedDepartments={selectedDepartments}
-              onDepartmentChange={setSelectedDepartments}
-              allDepartments={mockDepartments}
-              cleaningStatuses={cleaningStatuses}
-              selectedCleaningStatuses={selectedCleaningStatuses}
-              onCleaningStatusChange={setSelectedCleaningStatuses}
-              recipeStatuses={recipeStatuses}
-              selectedRecipeStatuses={selectedRecipeStatuses}
-              onRecipeStatusChange={setSelectedRecipeStatuses}
-            />
-          }
+          filtersBarContent={null}
         >
           {isLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>

@@ -36,3 +36,13 @@ export const updateProductionSchedule = async (id, payload) => {
     throw error.response?.data || new Error('Failed to update production schedule');
   }
 };
+
+// Delete a production schedule
+export const deleteProductionSchedule = async (id) => {
+  try {
+    await api.delete(`/production-schedules/${id}/`);
+  } catch (error) {
+    console.error(`Error deleting production schedule ${id}:`, error.response?.data || error.message);
+    throw error.response?.data || new Error('Failed to delete production schedule');
+  }
+};
