@@ -47,6 +47,7 @@ import UnifiedCalendarComponent from '../components/calendar/UnifiedCalendarComp
 import UnifiedFilters from '../components/calendar/filters/UnifiedFilters';
 
 import dayjs from 'dayjs';
+import { format } from 'date-fns';
 
 // Mock Data - to be replaced with API data
 const cleaningStatuses = ['Completed', 'Pending Review', 'Pending', 'Overdue'];
@@ -64,9 +65,14 @@ const legendItems = [
 const UNASSIGNED_RESOURCE_ID = '___unassigned___';
 
 // Helper functions
+const pad = (n) => n.toString().padStart(2, '0');
 const dateToYmd = (date) => {
   const d = new Date(date);
-  return d.toISOString().split('T')[0];
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+};
+
+const timeToHms = (date) => {
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 };
 
 const timeFromIso = (iso) => (iso ? iso.split('T')[1]?.substring(0, 8) : null);
@@ -126,7 +132,26 @@ const UnifiedCalendarPage = () => {
       }
       const start = dayjs(`${ev.due_date || ev.date || ''} ${ev.start_time || ''}`).toDate();
       const end = ev.end_time ? dayjs(`${ev.due_date || ev.date || ''} ${ev.end_time}`).toDate() : undefined;
-      return { ...ev, type: 'cleaning', assignedToName: assignedName || 'Unassigned', start, end };
+      return {
+        ...ev,
+        id: `cleaning-${ev.id}`,
+        title: ev.cleaning_item?.name || ev.name || 'Cleaning Task',
+        type: 'cleaning',
+        status: ev.status || 'Pending',
+        assignedToName: assignedName || 'Unassigned',
+        resourceId: ev.assigned_to_details?.id || ev.assigned_to_id || null,
+        start,
+        end,
+        extendedProps: {
+          originalType: 'cleaning',
+          status: ev.status || 'Pending',
+          task_name: ev.cleaning_item?.name || ev.name || '',
+          location: ev.location || ev.cleaning_item?.equipment || '',
+          assigned_staff_name: assignedName || 'Unassigned',
+          equipment_needed: ev.cleaning_item?.equipment || '',
+          notes_count: ev.notes_count || 0,
+        },
+      };
     });
 
     const prod = recipeEvents.map(ev => {
@@ -146,7 +171,28 @@ const UnifiedCalendarPage = () => {
       }
       const start = ev.scheduled_start_time ? new Date(ev.scheduled_start_time) : dayjs(`${ev.scheduled_date || ''} ${ev.start_time || ''}`).toDate();
       const end = ev.scheduled_end_time ? new Date(ev.scheduled_end_time) : (ev.end_time ? dayjs(`${ev.scheduled_date || ''} ${ev.end_time}`).toDate() : undefined);
-      return { ...ev, type: 'production', assignedToName: assignedName || 'Unassigned', start, end };
+      return {
+        ...ev,
+        id: `recipe-${ev.id}`,
+        title: ev.recipe_name || ev.name || 'Recipe',
+        type: 'production',
+        status: ev.status || 'Pending',
+        assignedToName: assignedName || 'Unassigned',
+        resourceId: assignedName ? (ev.assigned_staff_details?.[0]?.id || ev.assigned_staff?.[0]?.id) : null,
+        start,
+        end,
+        extendedProps: {
+          originalType: 'recipe',
+          status: ev.status || 'Pending',
+          recipe_name: ev.recipe_name || ev.name || '',
+          batch_size: ev.batch_size || '',
+          yield_unit: ev.yield_unit || '',
+          subtasks_completed: ev.subtasks_completed || 0,
+          subtasks_total: ev.subtasks_total || 0,
+          assigned_staff_name: assignedName || 'Unassigned',
+          notes_count: ev.notes_count || 0,
+        },
+      };
     });
     return [...clean, ...prod];
   }, [cleaningEvents, recipeEvents]);
@@ -154,6 +200,10 @@ const UnifiedCalendarPage = () => {
   // Filter events based on selected filters
   const filteredEvents = useMemo(() => {
     return allEvents.filter(event => {
+      // Event type hide/reveal checkbox logic
+      if (selectedEventType !== 'all' && event.originalType !== selectedEventType) {
+        return false;
+      }
       // Common filters
       const searchMatch = !searchTerm || 
         event.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -179,6 +229,7 @@ const UnifiedCalendarPage = () => {
     });
   }, [
     allEvents, 
+    selectedEventType, 
     searchTerm, 
     selectedResourceIds, 
     selectedDepartments, 
@@ -206,22 +257,60 @@ const UnifiedCalendarPage = () => {
     }
   }, []);
 
-  const handleEventDrop = useCallback((dropInfo) => {
+  const handleEventDrop = useCallback(async (dropInfo) => {
     const eventId = dropInfo.event.id;
-    const eventType = eventId.split('-')[0];
-    
-    // TODO: Implement type-specific update logic
-    
-    enqueueSnackbar('Event updated successfully', { variant: 'success' });
+    const [prefix, rawId] = eventId.split('-');
+    const newStart = dropInfo.event.start;
+    const newEnd = dropInfo.event.end || null;
+
+    try {
+      if (prefix === 'cleaning') {
+        await updateTaskInstance(rawId, {
+          due_date: dateToYmd(newStart),
+          start_time: timeToHms(newStart),
+          end_time: newEnd ? timeToHms(newEnd) : null,
+        });
+      } else if (prefix === 'recipe') {
+        await updateProductionSchedule(rawId, {
+          scheduled_date: dateToYmd(newStart),
+          scheduled_start_time: newStart.toISOString(),
+          scheduled_end_time: newEnd ? newEnd.toISOString() : null,
+        });
+      }
+      enqueueSnackbar('Event updated successfully', { variant: 'success' });
+    } catch (err) {
+      console.error('Update failed', err);
+      enqueueSnackbar('Failed to update event', { variant: 'error' });
+      dropInfo.revert();
+    }
   }, [enqueueSnackbar]);
 
-  const handleEventResize = useCallback((resizeInfo) => {
+  const handleEventResize = useCallback(async (resizeInfo) => {
     const eventId = resizeInfo.event.id;
-    const eventType = eventId.split('-')[0];
-    
-    // TODO: Implement type-specific resize logic
-    
-    enqueueSnackbar('Event duration updated', { variant: 'success' });
+    const [prefix, rawId] = eventId.split('-');
+    const newStart = resizeInfo.event.start;
+    const newEnd = resizeInfo.event.end;
+
+    try {
+      if (prefix === 'cleaning') {
+        await updateTaskInstance(rawId, {
+          due_date: dateToYmd(newStart),
+          start_time: timeToHms(newStart),
+          end_time: newEnd ? timeToHms(newEnd) : null,
+        });
+      } else if (prefix === 'recipe') {
+        await updateProductionSchedule(rawId, {
+          scheduled_date: dateToYmd(newStart),
+          scheduled_start_time: newStart.toISOString(),
+          scheduled_end_time: newEnd ? newEnd.toISOString() : null,
+        });
+      }
+      enqueueSnackbar('Event duration updated', { variant: 'success' });
+    } catch (err) {
+      console.error('Resize update failed', err);
+      enqueueSnackbar('Failed to resize event', { variant: 'error' });
+      resizeInfo.revert();
+    }
   }, [enqueueSnackbar]);
 
   const handleDateClick = useCallback((dateClickInfo) => {
@@ -231,10 +320,23 @@ const UnifiedCalendarPage = () => {
 
   const handleViewChange = useCallback((newView) => {
     setCurrentCalendarView(newView);
+    const api = calendarRef.current?.getApi?.();
+    if (api && api.view?.type !== newView) {
+      api.changeView(newView);
+    }
   }, []);
 
-  const handleDateChange = useCallback((newDate) => {
-    setCurrentCalendarDate(newDate);
+  const handleDateChange = useCallback((date) => {
+    setCurrentCalendarDate(date);
+  }, []);
+
+  const handleNavigate = useCallback((action) => {
+    const api = calendarRef.current?.getApi?.();
+    if (!api) return;
+    if (action === 'today') api.today();
+    else if (action === 'prev') api.prev();
+    else if (action === 'next') api.next();
+    setCurrentCalendarDate(api.getDate());
   }, []);
 
   const handleEventTypeChange = useCallback((eventType) => {
@@ -278,10 +380,14 @@ const UnifiedCalendarPage = () => {
   const handleCleaningTaskSaved = async (taskData, existingId = null) => {
     try {
       let saved;
+      const payload = {
+        ...taskData,
+        cleaning_item_id_write: taskData.cleaning_item_id || taskData.cleaning_item?.id,
+      };
       if (existingId) {
-        saved = await updateTaskInstance(existingId, taskData);
+        saved = await updateTaskInstance(existingId, payload);
       } else {
-        saved = await createTaskInstance(taskData);
+        saved = await createTaskInstance(payload);
       }
 
       setCleaningEvents(prev => {
@@ -445,16 +551,14 @@ const UnifiedCalendarPage = () => {
   // Render the component
   return (
     <ScheduleProvider externalEvents={allEvents}>
-      <Box sx={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', height: '100vh', flexDirection: 'column', flexGrow: 1, width: '100%', maxWidth: '100vw' }}>
         <CalendarPageLayout
           headerContent={
             <CalendarHeaderControls
+              onViewChange={handleViewChange}
               currentDate={currentCalendarDate}
               currentView={currentCalendarView}
-              onDateChange={handleDateChange}
-              onViewChange={handleViewChange}
-              onEventTypeChange={handleEventTypeChange} // Pass the new handler
-              selectedEventType={selectedEventType} // Pass the current state
+              onNavigate={handleNavigate}
             />
           }
           sidebarContent={
@@ -476,7 +580,23 @@ const UnifiedCalendarPage = () => {
               }
             />
           }
-          filtersBarContent={null}
+          filtersBarContent={
+            <UnifiedFilters
+              selectedEventType={selectedEventType}
+              onEventTypeChange={handleEventTypeChange}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              selectedDepartments={selectedDepartments}
+              onDepartmentChange={setSelectedDepartments}
+              allDepartments={mockDepartments}
+              cleaningStatuses={cleaningStatuses}
+              selectedCleaningStatuses={selectedCleaningStatuses}
+              onCleaningStatusChange={setSelectedCleaningStatuses}
+              recipeStatuses={recipeStatuses}
+              selectedRecipeStatuses={selectedRecipeStatuses}
+              onRecipeStatusChange={setSelectedRecipeStatuses}
+            />
+          }
         >
           {isLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>

@@ -1,3 +1,17 @@
+.cleaning-chip {
+  background-color: #26a69a !important; /* teal */
+  color: #fff !important;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.production-chip {
+  background-color: #ffb300 !important; /* amber */
+  color: #000 !important;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
 #root {
   width: 100%; /* Ensure the root element takes full width */
 }
@@ -11,6 +25,8 @@ body {
   /* Typography and background color are now handled by MUI theme and CssBaseline */
 }
 
+/* Let the EventChip control its own spacing */
+.fc-event { padding: 0 !important; }
 /* 
   Global styles for a, h1, button, and color schemes have been removed.
   These should be handled by Material-UI's ThemeProvider, CssBaseline,
