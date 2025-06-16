@@ -114,14 +114,14 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed, onCollapseToggle
     { text: 'Thermometers', icon: <DeviceThermostatIcon />, path: '/manager-thermometers' },
     { text: 'Temperature Checks', icon: <AcUnitIcon />, path: '/manager-temperature-checks' },
     { text: 'Document Templates', icon: <DescriptionIcon />, path: '/manager-documents' },
-    { text: 'Production Scheduler', icon: <CalendarMonthIcon />, path: '/production-scheduler' },
+
     { text: 'Task Scheduler', icon: <CalendarMonthIcon />, path: '/manager-schedule' },
   ];
 
   const staffLinks = [
     { text: 'My Tasks', icon: <AssignmentIcon />, path: '/staff-tasks' },
     { text: 'Recipe Management', icon: <RestaurantMenuIcon />, path: '/recipe-management' },
-    { text: 'Production Scheduler', icon: <ProductionQuantityLimitsIcon />, path: '/production-scheduler' },
+
   ];
 
   let determinedLinks = [];
