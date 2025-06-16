@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '../context/AuthContext';
+import { ScheduleProvider } from '../context/ScheduleContext'; // Filters bar removed – CollapsibleFiltersDisplay no longer used
 
 // Import services
 import { getCurrentUser } from '../services/authService';
@@ -19,7 +20,7 @@ import {
 import { getCleaningItems } from '../services/cleaningItemService';
 import { getUsers } from '../services/userService';
 import apiClient from '../services/api'; // still used elsewhere if needed
-import { getProductionSchedules, createProductionSchedule, updateProductionSchedule } from '../services/productionScheduleService';
+import { getProductionSchedules, createProductionSchedule, updateProductionSchedule, deleteProductionSchedule } from '../services/productionScheduleService';
 
 // Import calendar components
 import CalendarPageLayout from '../components/calendar/layout/CalendarPageLayout';
@@ -29,8 +30,6 @@ import QuickActionsMenu from '../components/calendar/sidebar/QuickActionsMenu';
 import CalendarLegend from '../components/calendar/sidebar/CalendarLegend';
 import TaskDrawer from '../components/calendar/TaskDrawer';
 import ResourceFilterList from '../components/calendar/sidebar/ResourceFilterList';
-import CollapsibleFiltersDisplay from '../components/calendar/filters/CollapsibleFiltersDisplay';
-import { ScheduleProvider } from '../context/ScheduleContext';
 import ScheduleListPanel from '../components/calendar/sidebar/ScheduleListPanel';
 
 // Import modals
@@ -41,13 +40,14 @@ import NewCleaningTaskModal from '../components/modals/NewCleaningTaskModal';
 
 // Import placeholder components (to be implemented)
 // import UnifiedCalendarComponent from '../components/calendar/UnifiedCalendarComponent';
-// import UnifiedFilters from '../components/calendar/filters/UnifiedFilters';
+// 
 
 // Temporary imports until we implement the unified components
 import UnifiedCalendarComponent from '../components/calendar/UnifiedCalendarComponent';
-import UnifiedFilters from '../components/calendar/filters/UnifiedFilters';
+
 
 import dayjs from 'dayjs';
+import { format } from 'date-fns';
 
 // Mock Data - to be replaced with API data
 const cleaningStatuses = ['Completed', 'Pending Review', 'Pending', 'Overdue'];
@@ -65,9 +65,14 @@ const legendItems = [
 const UNASSIGNED_RESOURCE_ID = '___unassigned___';
 
 // Helper functions
+const pad = (n) => n.toString().padStart(2, '0');
 const dateToYmd = (date) => {
   const d = new Date(date);
-  return d.toISOString().split('T')[0];
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+};
+
+const timeToHms = (date) => {
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 };
 
 const timeFromIso = (iso) => (iso ? iso.split('T')[1]?.substring(0, 8) : null);
@@ -113,9 +118,30 @@ const UnifiedCalendarPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartments, setSelectedDepartments] = useState([]);
 
+  // Map of userId -> user object for quick lookup
+  const userMap = useMemo(() => {
+    const map = {};
+    (resourcesData || []).forEach((u) => {
+      if (u && u.id != null) {
+        map[u.id] = u;
+      }
+    });
+    return map;
+  }, [resourcesData]);
+
   // Combined events array for schedule context
   const allEvents = useMemo(() => {
-    const clean = cleaningEvents.map(ev => {
+    // Deduplicate by id first to avoid double rendering
+    const dedupById = (arr) => {
+      const map = new Map();
+      arr.forEach((item) => {
+        map.set(item.id, item);
+      });
+      return Array.from(map.values());
+    };
+    const cleaningUnique = dedupById(cleaningEvents);
+    const recipeUnique = dedupById(recipeEvents);
+    const clean = cleaningUnique.map(ev => {
       let assignedName = '';
       if (ev.assigned_to_details) {
         const u = ev.assigned_to_details;
@@ -124,13 +150,39 @@ const UnifiedCalendarPage = () => {
         assignedName = `${fname} ${lname}`.trim() || u.username || u.email || '';
       } else if (ev.assigned_to_name) {
         assignedName = ev.assigned_to_name;
+      } else if (ev.assigned_to || ev.assigned_to_id) {
+        const u = userMap[ev.assigned_to || ev.assigned_to_id];
+        if (u) {
+          const fname = u.first_name || u.name || '';
+          const lname = u.last_name || '';
+          assignedName = `${fname} ${lname}`.trim() || u.username || u.email || '';
+        }
       }
       const start = dayjs(`${ev.due_date || ev.date || ''} ${ev.start_time || ''}`).toDate();
       const end = ev.end_time ? dayjs(`${ev.due_date || ev.date || ''} ${ev.end_time}`).toDate() : undefined;
-      return { ...ev, type: 'cleaning', assignedToName: assignedName || 'Unassigned', start, end };
+      return {
+        ...ev,
+        id: `cleaning-${ev.id}`,
+        title: ev.cleaning_item?.name || ev.name || 'Cleaning Task',
+        type: 'cleaning',
+        status: ev.status || 'Pending',
+        assignedToName: assignedName || 'Unassigned',
+        resourceId: ev.assigned_to_details?.id || ev.assigned_to_id || null,
+        start,
+        end,
+        extendedProps: {
+          originalType: 'cleaning',
+          status: ev.status || 'Pending',
+          task_name: ev.cleaning_item?.name || ev.name || '',
+          location: ev.location || ev.cleaning_item?.equipment || '',
+          assigned_staff_name: assignedName || 'Unassigned',
+          equipment_needed: ev.cleaning_item?.equipment || '',
+          notes_count: ev.notes_count || 0,
+        },
+      };
     });
 
-    const prod = recipeEvents.map(ev => {
+    const prod = recipeUnique.map(ev => {
       let assignedName = '';
       if (Array.isArray(ev.assigned_staff_details) && ev.assigned_staff_details.length) {
         const u = ev.assigned_staff_details[0];
@@ -147,7 +199,28 @@ const UnifiedCalendarPage = () => {
       }
       const start = ev.scheduled_start_time ? new Date(ev.scheduled_start_time) : dayjs(`${ev.scheduled_date || ''} ${ev.start_time || ''}`).toDate();
       const end = ev.scheduled_end_time ? new Date(ev.scheduled_end_time) : (ev.end_time ? dayjs(`${ev.scheduled_date || ''} ${ev.end_time}`).toDate() : undefined);
-      return { ...ev, type: 'production', assignedToName: assignedName || 'Unassigned', start, end };
+      return {
+        ...ev,
+        id: `recipe-${ev.id}`,
+        title: ev.recipe_name || ev.recipe?.name || ev.name || (ev.recipe && ev.recipe.recipe_name) || 'Recipe',
+        type: 'production',
+        status: ev.status || 'Pending',
+        assignedToName: assignedName || 'Unassigned',
+        resourceId: assignedName ? (ev.assigned_staff_details?.[0]?.id || ev.assigned_staff?.[0]?.id) : null,
+        start,
+        end,
+        extendedProps: {
+          originalType: 'recipe',
+          status: ev.status || 'Pending',
+          recipe_name: ev.recipe_name || ev.recipe?.name || ev.name || (ev.recipe && ev.recipe.recipe_name) || '',
+          batch_size: ev.batch_size || '',
+          yield_unit: ev.yield_unit || '',
+          subtasks_completed: ev.subtasks_completed || 0,
+          subtasks_total: ev.subtasks_total || 0,
+          assigned_staff_name: assignedName || 'Unassigned',
+          notes_count: ev.notes_count || 0,
+        },
+      };
     });
     return [...clean, ...prod];
   }, [cleaningEvents, recipeEvents]);
@@ -155,6 +228,10 @@ const UnifiedCalendarPage = () => {
   // Filter events based on selected filters
   const filteredEvents = useMemo(() => {
     return allEvents.filter(event => {
+      // Event type hide/reveal checkbox logic
+      if (selectedEventType !== 'all' && event.originalType !== selectedEventType) {
+        return false;
+      }
       // Common filters
       const searchMatch = !searchTerm || 
         event.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -180,6 +257,7 @@ const UnifiedCalendarPage = () => {
     });
   }, [
     allEvents, 
+    selectedEventType, 
     searchTerm, 
     selectedResourceIds, 
     selectedDepartments, 
@@ -207,22 +285,60 @@ const UnifiedCalendarPage = () => {
     }
   }, []);
 
-  const handleEventDrop = useCallback((dropInfo) => {
+  const handleEventDrop = useCallback(async (dropInfo) => {
     const eventId = dropInfo.event.id;
-    const eventType = eventId.split('-')[0];
-    
-    // TODO: Implement type-specific update logic
-    
-    enqueueSnackbar('Event updated successfully', { variant: 'success' });
+    const [prefix, rawId] = eventId.split('-');
+    const newStart = dropInfo.event.start;
+    const newEnd = dropInfo.event.end || null;
+
+    try {
+      if (prefix === 'cleaning') {
+        await updateTaskInstance(rawId, {
+          due_date: dateToYmd(newStart),
+          start_time: timeToHms(newStart),
+          end_time: newEnd ? timeToHms(newEnd) : null,
+        });
+      } else if (prefix === 'recipe') {
+        await updateProductionSchedule(rawId, {
+          scheduled_date: dateToYmd(newStart),
+          scheduled_start_time_payload: newStart.toISOString(),
+          scheduled_end_time_payload: newEnd ? newEnd.toISOString() : null,
+        });
+      }
+      enqueueSnackbar('Event updated successfully', { variant: 'success' });
+    } catch (err) {
+      console.error('Update failed', err);
+      enqueueSnackbar('Failed to update event', { variant: 'error' });
+      dropInfo.revert();
+    }
   }, [enqueueSnackbar]);
 
-  const handleEventResize = useCallback((resizeInfo) => {
+  const handleEventResize = useCallback(async (resizeInfo) => {
     const eventId = resizeInfo.event.id;
-    const eventType = eventId.split('-')[0];
-    
-    // TODO: Implement type-specific resize logic
-    
-    enqueueSnackbar('Event duration updated', { variant: 'success' });
+    const [prefix, rawId] = eventId.split('-');
+    const newStart = resizeInfo.event.start;
+    const newEnd = resizeInfo.event.end;
+
+    try {
+      if (prefix === 'cleaning') {
+        await updateTaskInstance(rawId, {
+          due_date: dateToYmd(newStart),
+          start_time: timeToHms(newStart),
+          end_time: newEnd ? timeToHms(newEnd) : null,
+        });
+      } else if (prefix === 'recipe') {
+        await updateProductionSchedule(rawId, {
+          scheduled_date: dateToYmd(newStart),
+          scheduled_start_time_payload: newStart.toISOString(),
+          scheduled_end_time_payload: newEnd ? newEnd.toISOString() : null,
+        });
+      }
+      enqueueSnackbar('Event duration updated', { variant: 'success' });
+    } catch (err) {
+      console.error('Resize update failed', err);
+      enqueueSnackbar('Failed to resize event', { variant: 'error' });
+      resizeInfo.revert();
+    }
   }, [enqueueSnackbar]);
 
   const handleDateClick = useCallback((dateClickInfo) => {
@@ -232,10 +348,23 @@ const UnifiedCalendarPage = () => {
 
   const handleViewChange = useCallback((newView) => {
     setCurrentCalendarView(newView);
+    const api = calendarRef.current?.getApi?.();
+    if (api && api.view?.type !== newView) {
+      api.changeView(newView);
+    }
   }, []);
 
-  const handleDateChange = useCallback((newDate) => {
-    setCurrentCalendarDate(newDate);
+  const handleDateChange = useCallback((date) => {
+    setCurrentCalendarDate(date);
+  }, []);
+
+  const handleNavigate = useCallback((action) => {
+    const api = calendarRef.current?.getApi?.();
+    if (!api) return;
+    if (action === 'today') api.today();
+    else if (action === 'prev') api.prev();
+    else if (action === 'next') api.next();
+    setCurrentCalendarDate(api.getDate());
   }, []);
 
   const handleEventTypeChange = useCallback((eventType) => {
@@ -258,6 +387,13 @@ const UnifiedCalendarPage = () => {
         saved = await updateProductionSchedule(existingId, taskData);
       } else {
         saved = await createProductionSchedule(taskData);
+        // Ensure recipe_name exists for UI display
+        if (!saved.recipe_name && taskData.recipe_name) {
+          saved.recipe_name = taskData.recipe_name;
+        }
+        if (!saved.recipe && taskData.recipe_name) {
+          saved.recipe = { name: taskData.recipe_name, id: taskData.recipe_id };
+        }
       }
 
       // merge into recipeEvents
@@ -275,27 +411,46 @@ const UnifiedCalendarPage = () => {
     }
   };
 
+  // Prevent double-submit flag
+  const cleaningSaveRef = useRef(false);
+
   // Save handler for cleaning task modal
   const handleCleaningTaskSaved = async (taskData, existingId = null) => {
+    // If modal already performed the save and returned the object (taskData has id), just merge/refetch
+    if (taskData && taskData.id && !existingId) {
+      await fetchAllData();
+      enqueueSnackbar('Task scheduled', { variant: 'success' });
+      setTaskAssignmentModalOpen(false);
+      setDrawerOpen(false);
+      return;
+    }
+    if (cleaningSaveRef.current) return;
+    cleaningSaveRef.current = true;
+    if (cleaningSaveRef.current) return; // guard against double click / double event
+    cleaningSaveRef.current = true;
     try {
       let saved;
+      const payload = {
+        ...taskData,
+        cleaning_item_id_write: taskData.cleaning_item_id || taskData.cleaning_item?.id,
+        assigned_to_write: taskData.assigned_to_id || taskData.assigned_to || null,
+      };
       if (existingId) {
-        saved = await updateTaskInstance(existingId, taskData);
+        saved = await updateTaskInstance(existingId, payload);
       } else {
-        saved = await createTaskInstance(taskData);
+        saved = await createTaskInstance(payload);
       }
 
-      setCleaningEvents(prev => {
-        const withoutOld = prev.filter(ev => ev.id !== saved.id && ev.id !== existingId);
-        return [...withoutOld, saved];
-      });
-
+      // Refresh tasks to ensure we have latest details
+      await fetchAllData();
       enqueueSnackbar(existingId ? 'Task updated' : 'Task scheduled', { variant: 'success' });
       setTaskAssignmentModalOpen(false);
       setDrawerOpen(false);
     } catch (err) {
       console.error('Save cleaning task failed', err);
       enqueueSnackbar(err.message || 'Failed to save cleaning task', { variant: 'error' });
+    } finally {
+      cleaningSaveRef.current = false;
     }
   };
 
@@ -438,24 +593,41 @@ const UnifiedCalendarPage = () => {
     }
   };
 
-  const handleDrawerDelete = (task) => {
-    // TODO: implement delete confirmation and API call
-    enqueueSnackbar('Delete functionality coming soon', { variant: 'info' });
+  const handleDrawerDelete = async (task) => {
+    if (!task) return;
+
+    const [prefix, rawId] = (task.id || '').toString().split('-');
+    if (!rawId) return;
+
+    try {
+      if (prefix === 'cleaning') {
+        await deleteTaskInstance(rawId);
+        setCleaningEvents(prev => prev.filter(ev => ev.id !== parseInt(rawId, 10)));
+      } else if (prefix === 'recipe') {
+        await deleteProductionSchedule(rawId);
+        setRecipeEvents(prev => prev.filter(ev => ev.id !== parseInt(rawId, 10)));
+      }
+      enqueueSnackbar('Deleted successfully', { variant: 'success' });
+    } catch (err) {
+      console.error('Delete failed', err);
+      enqueueSnackbar(err.message || 'Failed to delete', { variant: 'error' });
+    } finally {
+      setDrawerOpen(false);
+    }
   };
+
 
   // Render the component
   return (
     <ScheduleProvider externalEvents={allEvents}>
-      <Box sx={{ display: 'flex', height: '100vh', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', height: '100vh', flexDirection: 'column', flexGrow: 1, width: '100%', maxWidth: '100vw' }}>
         <CalendarPageLayout
           headerContent={
             <CalendarHeaderControls
+              onViewChange={handleViewChange}
               currentDate={currentCalendarDate}
               currentView={currentCalendarView}
-              onDateChange={handleDateChange}
-              onViewChange={handleViewChange}
-              onEventTypeChange={handleEventTypeChange} // Pass the new handler
-              selectedEventType={selectedEventType} // Pass the current state
+              onNavigate={handleNavigate}
             />
           }
           sidebarContent={
@@ -477,28 +649,7 @@ const UnifiedCalendarPage = () => {
               }
             />
           }
-          filtersBarContent={
-            <CollapsibleFiltersDisplay
-              isOpen={isFiltersOpen}
-              onToggle={() => setFiltersOpen(!isFiltersOpen)}
-            >
-              <UnifiedFilters
-                selectedEventType={selectedEventType}
-                onEventTypeChange={handleEventTypeChange}
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                selectedDepartments={selectedDepartments}
-                onDepartmentChange={setSelectedDepartments}
-                allDepartments={mockDepartments}
-                cleaningStatuses={cleaningStatuses}
-                selectedCleaningStatuses={selectedCleaningStatuses}
-                onCleaningStatusChange={setSelectedCleaningStatuses}
-                recipeStatuses={recipeStatuses}
-                selectedRecipeStatuses={selectedRecipeStatuses}
-                onRecipeStatusChange={setSelectedRecipeStatuses}
-              />
-            </CollapsibleFiltersDisplay>
-          }
+          filtersBarContent={null}
         >
           {isLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>

@@ -33,19 +33,32 @@ const UnifiedCalendarComponent = ({
       headerToolbar={false} // Header is handled by CalendarHeaderControls
       initialView={currentView}
       initialDate={currentDate}
+      schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
       events={events}
       resources={resources}
       editable={true}
       droppable={true}
       selectable={true}
       eventContent={(eventInfo) => <UnifiedEventContent eventInfo={eventInfo} />}
+      eventClassNames={({ event }) => {
+        const type = event.extendedProps?.originalType;
+        return type === 'recipe' ? ['production-chip'] : ['cleaning-chip'];
+      }}
       eventClick={onEventClick}
       eventDrop={onEventDrop}
       eventResize={onEventResize}
       dateClick={onDateClick}
+      dayMaxEvents={currentView.startsWith('timeGrid') ? 1 : 2}
+      dayMaxEventRows={currentView.startsWith('timeGrid') ? 1 : 2}
+      moreLinkClick="popover"
+      eventMaxStack={currentView.startsWith('timeGrid') ? 1 : undefined}
       datesSet={(arg) => {
-        onDateChange(arg.view.currentStart);
-        onViewChange(arg.view.type);
+        if (typeof onDateChange === 'function') {
+          onDateChange(arg.view.currentStart);
+        }
+        if (typeof onViewChange === 'function') {
+          onViewChange(arg.view.type);
+        }
       }}
       resourceAreaHeaderContent="Resources"
       resourceOrder="title"
@@ -59,8 +72,8 @@ UnifiedCalendarComponent.propTypes = {
   resources: PropTypes.array.isRequired,
   currentDate: PropTypes.instanceOf(Date).isRequired,
   currentView: PropTypes.string.isRequired,
-  onDateChange: PropTypes.func.isRequired,
-  onViewChange: PropTypes.func.isRequired,
+  onDateChange: PropTypes.func,
+  onViewChange: PropTypes.func,
   onEventClick: PropTypes.func.isRequired,
   onEventDrop: PropTypes.func.isRequired,
   onEventResize: PropTypes.func.isRequired,

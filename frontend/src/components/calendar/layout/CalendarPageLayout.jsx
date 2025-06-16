@@ -16,7 +16,10 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })((
   { theme, open },
 ) => ({
   flexGrow: 1,
-  padding: theme.spacing(3),
+  padding: 0,
+  minHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px)`,
+  overflowX: 'visible',
+  overflowY: 'hidden',
   transition: theme.transitions.create('margin', {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,

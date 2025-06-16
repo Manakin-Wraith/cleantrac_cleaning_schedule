@@ -24,13 +24,27 @@ export default function CalendarHeaderControls({
   availableViews = [
     { name: 'dayGridMonth', label: 'Month' },
     { name: 'timeGridWeek', label: 'Week' },
-    { name: 'resourceTimeGridDay', label: 'Day' },
+    { name: 'timeGridDay', label: 'Day' },
   ],
 }) {
   // Format the displayed date range based on the current view
   const formattedDate = () => {
     if (!currentDate) return '';
-    // This can be expanded with more sophisticated logic for week/day ranges
+    if (currentView.includes('Day')) {
+      // Day views – show full date
+      return format(currentDate, 'EEEE, MMM d yyyy');
+    }
+    if (currentView.includes('Week')) {
+      // Week views – show week range (start – end)
+      const start = currentDate;
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      const sameMonth = start.getMonth() === end.getMonth();
+      return sameMonth
+        ? `${format(start, 'MMM d')} – ${format(end, 'd yyyy')}`
+        : `${format(start, 'MMM d')} – ${format(end, 'MMM d yyyy')}`;
+    }
+    // Default: Month view
     return format(currentDate, 'MMMM yyyy');
   };
 

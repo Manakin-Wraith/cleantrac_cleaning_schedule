@@ -549,6 +549,7 @@ const ProductionAssignmentModal = ({
     });
 
     const taskData = {
+      recipe_name: recipe?.name || recipe?.recipe_name || undefined,
       recipe_id: recipe ? (recipe.recipe_id || recipe.id) : null, // Handle both recipe_id and id formats
       department_id: department ? parseInt(department) : null,
       batch_size: batchSize ? parseFloat(batchSize) : null,  // Changed from scheduled_quantity to batch_size
