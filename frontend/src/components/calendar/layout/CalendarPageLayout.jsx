@@ -115,6 +115,9 @@ export default function CalendarPageLayout({
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
+            backgroundColor: '#F5F6F8',
+            borderLeft: '1px solid rgba(0,0,0,0.08)',
+            boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
           },
         }}
         variant="persistent"

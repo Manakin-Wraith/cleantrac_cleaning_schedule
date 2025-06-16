@@ -17,6 +17,7 @@
 }
 
 body {
+  background: #F5F6F8; /* light warm grey canvas */
   margin: 0; /* CssBaseline handles this, but explicit can be kept for clarity if desired */
   /* display: flex; */ /* Removed to prevent layout conflicts */
   /* place-items: center; */ /* Removed to prevent layout conflicts */
