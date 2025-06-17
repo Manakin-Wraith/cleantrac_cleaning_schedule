@@ -202,7 +202,7 @@ const UnifiedCalendarPage = () => {
       return {
         ...ev,
         id: `recipe-${ev.id}`,
-        title: ev.recipe_name || ev.recipe?.name || ev.name || (ev.recipe && ev.recipe.recipe_name) || 'Recipe',
+        title: ev.recipe_details?.name || ev.recipe_name || ev.recipe?.name || ev.name || (ev.recipe && ev.recipe.recipe_name) || 'Recipe',
         type: 'production',
         status: ev.status || 'Pending',
         assignedToName: assignedName || 'Unassigned',
@@ -212,7 +212,7 @@ const UnifiedCalendarPage = () => {
         extendedProps: {
           originalType: 'recipe',
           status: ev.status || 'Pending',
-          recipe_name: ev.recipe_name || ev.recipe?.name || ev.name || (ev.recipe && ev.recipe.recipe_name) || '',
+          recipe_name: ev.recipe_details?.name || ev.recipe_name || ev.recipe?.name || ev.name || (ev.recipe && ev.recipe.recipe_name) || '',
           batch_size: ev.batch_size || '',
           yield_unit: ev.yield_unit || '',
           subtasks_completed: ev.subtasks_completed || 0,

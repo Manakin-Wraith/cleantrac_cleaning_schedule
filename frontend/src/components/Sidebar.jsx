@@ -120,8 +120,6 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed, onCollapseToggle
 
   const staffLinks = [
     { text: 'My Tasks', icon: <AssignmentIcon />, path: '/staff-tasks' },
-    { text: 'Recipe Management', icon: <RestaurantMenuIcon />, path: '/recipe-management' },
-
   ];
 
   let determinedLinks = [];

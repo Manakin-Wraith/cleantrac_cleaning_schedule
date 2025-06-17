@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Grid, Paper, Typography, Box, Button, Chip, CircularProgress, Alert, List, ListItem, ListItemText, Divider, Badge, Card, CardContent, CardActions } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import { getTaskInstances, updateTaskInstance } from '../services/taskService';
+import { getProductionSchedules } from '../services/productionScheduleService';
 import { getCurrentUser } from '../services/authService';
 import {
     getVerifiedThermometers,
@@ -29,6 +30,7 @@ function StaffTasksPage() {
     const [todaysTasks, setTodaysTasks] = useState([]);
     const [loadingUser, setLoadingUser] = useState(true);
     const [loadingTasks, setLoadingTasks] = useState(false); 
+    const [todaysRecipeTasks, setTodaysRecipeTasks] = useState([]);
     const [error, setError] = useState(''); // General page error
     const [updatingTask, setUpdatingTask] = useState(null);
     const theme = useTheme();
@@ -150,8 +152,16 @@ function StaffTasksPage() {
                         due_date: todayStr,
                     };
                     const tasks = await getTaskInstances(params);
-                    console.log('Fetched tasks for staff page:', tasks);
+
+                    const prodParams = {
+                        assigned_to: userData.id,
+                        due_date: todayStr,
+                    };
+                    const prodData = await getProductionSchedules(prodParams);
+                    const recipeTasks = prodData?.results || prodData || [];
+
                     setTodaysTasks(tasks || []);
+                    setTodaysRecipeTasks(recipeTasks);
                     
                     // Fetch thermometer data after user is loaded
                     // await fetchThermometerData(); // fetchThermometerData will be called in its own useEffect triggered by user change
@@ -443,9 +453,11 @@ function StaffTasksPage() {
                 <CircularProgress sx={{ display: 'block', margin: 'auto', mt: 4 }} />
             ) : error ? (
                 <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
-            ) : todaysTasks.length > 0 ? (
+            ) : (todaysTasks.length + todaysRecipeTasks.length) > 0 ? (
                 <Grid container spacing={3} sx={{ mt: 2 }}> 
-                    {todaysTasks.map(task => (
+                    {[...todaysTasks.map(t=>({...t, __type:'cleaning'})), ...todaysRecipeTasks.map(t=>({...t, __type:'recipe'}))]
+                        .sort((a,b)=> ((a.due_date||a.scheduled_date||'').localeCompare(b.due_date||b.scheduled_date||'')))
+                        .map(task => (
                         <Grid item xs={12} sm={6} md={4} key={task.id}>
                             <Card sx={{
                                 display: 'flex', 
@@ -472,10 +484,10 @@ function StaffTasksPage() {
                                                 }),
                                             }}
                                         >
-                                            {task.cleaning_item?.name || 'Unnamed Task'}
+                                             {task.__type==='recipe' ? (task.recipe_details?.name || task.recipe?.name || 'Unnamed Recipe') : (task.cleaning_item?.name || 'Unnamed Task')}
                                         </Typography>
                                         <Chip 
-                                            label={task.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                            label={(task.status||'').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                             size="small"
                                             color={task.status === 'completed' ? 'success' : task.status === 'pending' ? 'warning' : 'default'}
                                             sx={{ fontWeight: 'medium' }}
@@ -487,14 +499,14 @@ function StaffTasksPage() {
                                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                                             <EventIcon sx={{ mr: 1, color: 'text.secondary' }} fontSize="small" />
                                             <Typography variant="body2" color="text.secondary">
-                                                <strong>Scheduled Date:</strong> {task.due_date ? formatDate(task.due_date) : 'N/A'}
+                                                 <strong>Scheduled Date:</strong> {task.__type==='recipe' ? (task.scheduled_date ? formatDate(task.scheduled_date) : 'N/A') : (task.due_date ? formatDate(task.due_date) : 'N/A')}
                                             </Typography>
                                         </Box>
                                         {(task.start_time || task.end_time || task.timeslot) && (
                                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                                                 <AccessTimeIcon sx={{ mr: 1, color: 'text.secondary' }} fontSize="small" />
                                                 <Typography variant="body2" color="text.secondary">
-                                                    <strong>Timeslot:</strong> {task.start_time && task.end_time ? `${task.start_time.substring(0,5)} - ${task.end_time.substring(0,5)}` : (task.timeslot || 'N/A')}
+                                                     <strong>Timeslot:</strong> {task.__type==='recipe' ? (task.start_time && task.end_time ? `${task.start_time.substring(0,5)} - ${task.end_time.substring(0,5)}` : (task.scheduled_start_time && task.scheduled_end_time ? `${task.scheduled_start_time.substring(11,16)} - ${task.scheduled_end_time.substring(11,16)}` : 'N/A')) : (task.start_time && task.end_time ? `${task.start_time.substring(0,5)} - ${task.end_time.substring(0,5)}` : (task.timeslot || 'N/A'))}
                                                 </Typography>
                                             </Box>
                                         )}
@@ -503,7 +515,7 @@ function StaffTasksPage() {
                                     <Divider sx={{ my: 1.5 }} />
                                     
                                     <Box sx={{ mb: 1 }}>
-                                        {task.cleaning_item?.equipment && (
+                                         {task.__type==='cleaning' && task.cleaning_item?.equipment && (
                                             <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 0.5 }}>
                                                 <BuildIcon sx={{ mr: 1, mt: 0.5, color: 'text.secondary' }} fontSize="small" />
                                                 <Typography variant="body2" color="text.secondary">
@@ -511,7 +523,7 @@ function StaffTasksPage() {
                                                 </Typography>
                                             </Box>
                                         )}
-                                        {task.cleaning_item?.chemical && (
+                                         {task.__type==='cleaning' && task.cleaning_item?.chemical && (
                                             <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 0.5 }}>
                                                 <ScienceIcon sx={{ mr: 1, mt: 0.5, color: 'text.secondary' }} fontSize="small" />
                                                 <Typography variant="body2" color="text.secondary">
@@ -519,7 +531,7 @@ function StaffTasksPage() {
                                                 </Typography>
                                             </Box>
                                         )}
-                                        {task.cleaning_item?.method && (
+                                         {task.__type==='cleaning' && task.cleaning_item?.method && (
                                             <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 0.5 }}>
                                                 <ListAltIcon sx={{ mr: 1, mt: 0.5, color: 'text.secondary' }} fontSize="small" />
                                                 <Typography variant="body2" color="text.secondary">
@@ -529,7 +541,13 @@ function StaffTasksPage() {
                                         )}
                                     </Box>
 
-                                    {task.notes && (
+                                     {task.__type==='recipe' && (
+                                         <Typography variant="body2" color="text.secondary">
+                                             <strong>Quantity:</strong> {task.batch_size ? `${task.batch_size} ${task.batch_unit || ''}` : (task.quantity || task.batch_quantity || 'N/A')}
+                                         </Typography>
+                                     )}
+
+                                     {task.notes && (
                                         <>
                                             <Divider sx={{ my: 1.5 }} />
                                             <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
