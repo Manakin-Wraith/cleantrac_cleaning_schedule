@@ -281,9 +281,10 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             
             # Check if there are any task instances in the date range
             count = TaskInstance.objects.filter(
-                scheduled_date__gte=start_date,
-                scheduled_date__lte=end_date,
-                cleaning_item__department=template.department
+                due_date__gte=start_date,
+                due_date__lte=end_date,
+                department=template.department,
+                cleaning_item__isnull=False
             ).count()
             
             return count > 0
@@ -380,23 +381,24 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             
             # Get cleaning tasks for the specified date range and department
             tasks = TaskInstance.objects.filter(
-                scheduled_date__gte=start_date,
-                scheduled_date__lte=end_date,
-                cleaning_item__department=template.department
+                due_date__gte=start_date,
+                due_date__lte=end_date,
+                department=template.department,
+                cleaning_item__isnull=False
             ).select_related(
                 'cleaning_item',
-                'completed_by'
-            ).order_by('-scheduled_date')[:10]  # Limit to 10 tasks for preview
+                'assigned_to'
+            ).order_by('-due_date')[:10]  # Limit to 10 tasks for preview
             
             # Format tasks for preview
             formatted_tasks = []
             for task in tasks:
                 formatted_task = {
-                    'date': task.scheduled_date.strftime('%Y-%m-%d'),
+                    'date': task.due_date.strftime('%Y-%m-%d'),
                     'name': task.cleaning_item.name,
                     'status': task.get_status_display(),
-                    'completed_by': task.completed_by.username if task.completed_by else "",
-                    'completed_at': task.completed_at.strftime('%Y-%m-%d %H:%M') if task.completed_at else ""
+                    'assigned_to': task.assigned_to.user.username if task.assigned_to else "Unassigned",
+                    
                 }
                 
                 formatted_tasks.append(formatted_task)
@@ -500,30 +502,27 @@ def generate_document_file(template, parameters, user):
         # Section 3: Cleaning Tasks
         if template.template_type == 'cleaning' and parameters.get('includeCleaningTasks', True):
             tasks = TaskInstance.objects.filter(
-                task_type__is_cleaning_task=True,
+                cleaning_item__isnull=False,
                 due_date__gte=start_date,
                 due_date__lte=end_date,
                 department=template.department
-            ).select_related('task_type', 'assigned_to', 'completed_by', 'area_unit').order_by('due_date', 'task_type__name')
+            ).select_related('assigned_to', 'cleaning_item').order_by('due_date', 'cleaning_item__name')
 
             cleaning_task_data = []
             if tasks.exists():
                 for task in tasks:
                     cleaning_task_data.append({
                         'Due Date': task.due_date.strftime('%Y-%m-%d'),
-                        'Task Name': task.task_type.name,
-                        'Area/Unit': task.area_unit.name if task.area_unit else 'N/A',
+                        'Task Name': task.cleaning_item.name,
                         'Status': task.get_status_display(),
-                        'Assigned To': task.assigned_to.username if task.assigned_to else 'Unassigned',
-                        'Completed By': task.completed_by.username if task.completed_by else '',
-                        'Completion Date': task.completion_date.strftime('%Y-%m-%d %H:%M') if task.completion_date else '',
+                        'Assigned To': task.assigned_to.user.username if task.assigned_to else 'Unassigned',
                         'Notes': task.notes or ''
                     })
             document_info["sections"].append({
                 "title": "Cleaning Task Records",
                 "type": "cleaning_tasks",
                 "data": cleaning_task_data,
-                "headers": ['Due Date', 'Task Name', 'Area/Unit', 'Status', 'Assigned To', 'Completed By', 'Completion Date', 'Notes']
+                "headers": ['Due Date', 'Task Name', 'Status', 'Assigned To', 'Notes']
             })
 
         # --- PDF Generation using ReportLab ---

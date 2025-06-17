@@ -14,6 +14,7 @@ import {
   deleteTaskInstance,
 } from '../services/taskService';
 import { getCleaningItems } from '../services/cleaningItemService';
+import { getProductionSchedules } from '../services/productionScheduleService';
 import { getUsers } from '../services/userService';
 import TaskSchedulerCalendar from '../components/calendar/TaskSchedulerCalendar';
 import TaskDetailModal from '../components/modals/TaskDetailModal';
@@ -92,14 +93,27 @@ export default function TaskSchedulerPage() {
       const dateStr = dateToYmd(selectedDate);
       const params = { department_id: user.profile.department_id, due_date: dateStr };
       try {
-        const [tasksRes, itemsRes, usersRes] = await Promise.all([
+        const [tasksRes, prodRes, itemsRes, usersRes] = await Promise.all([
           getTaskInstances(params),
+          getProductionSchedules({ department_id: user.profile.department_id, scheduled_date: dateStr, expand: 'recipe_details,recipe' }),
           getCleaningItems({ department_id: user.profile.department_id }),
           getUsers({ department_id: user.profile.department_id }),
         ]);
 
         const fetchedTasks = tasksRes?.results || tasksRes || [];
-        setTasks(fetchedTasks);
+        const fetchedRecipes = prodRes?.results || prodRes || [];
+        const merged = [
+          ...fetchedTasks.map(t=>({...t,__type:'cleaning'})),
+          ...fetchedRecipes.map(r=>({
+            ...r,
+            __type:'recipe',
+            title: r.recipe_details?.name || r.recipe_name || r.recipe?.name || r.description || r.name || 'Recipe',
+          }))
+        ];
+        setTasks(merged);
+        if (typeof window !== 'undefined') {
+          window.__lastFetchedRecipes = fetchedRecipes;
+        }
         setCleaningItems(itemsRes?.results || itemsRes || []);
         const staffOnly = (usersRes?.results || usersRes || []).filter(
           (u) => u.profile?.role === 'staff',
@@ -147,6 +161,16 @@ export default function TaskSchedulerPage() {
   const resolveItemName = useCallback(
     (task) => {
       if (!task) return 'Task';
+      // Recipe production task (check various possible fields)
+      if (task.recipe_details?.name) return task.recipe_details.name;
+      if (task.recipe_details?.recipe_name) return task.recipe_details.recipe_name;
+      if (task.recipe_name) return task.recipe_name;
+      if (task.recipe?.name) return task.recipe.name;
+      if (task.recipe?.recipe_name) return task.recipe.recipe_name;
+      if (task.recipe?.description) return task.recipe.description;
+      if (task.description && task.__type==='recipe' && task.description.toLowerCase() !== 'recipe') return task.description;
+      if (task.name && task.__type==='recipe' && task.name.toLowerCase() !== 'recipe') return task.name;
+      // Cleaning task
       if (task.cleaning_item?.name) return task.cleaning_item.name;
       const item = cleaningItems.find((ci) => ci.id === task.cleaning_item_id);
       return item?.name || 'Task';
@@ -266,9 +290,9 @@ export default function TaskSchedulerPage() {
       tasks.map((t) => ({
         id: String(t.id),
         resourceId: t.assigned_to_id ? String(t.assigned_to_id) : UNASSIGNED_RESOURCE_ID,
-        title: resolveItemName(t),
-        start: t.start_time ? `${t.due_date}T${t.start_time}` : t.due_date,
-        end: t.end_time ? `${t.due_date}T${t.end_time}` : null,
+        title: t.title || resolveItemName(t),
+        start: t.scheduled_start_time || (t.start_time ? `${t.due_date || t.scheduled_date}T${t.start_time}` : t.due_date || t.scheduled_date),
+        end: t.scheduled_end_time || (t.end_time ? `${t.due_date || t.scheduled_date}T${t.end_time}` : null),
         extendedProps: {
           ...t,
           status: t.status || 'Pending',

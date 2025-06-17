@@ -53,6 +53,9 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
       position="fixed" 
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 1,
+        backgroundColor: '#F5F6F8',
+        color: '#333',
+        boxShadow: 'none',
         borderBottom: `1px solid ${theme.palette.divider}`, // Added for visual separation
         transition: theme.transitions.create(['width', 'margin'], { 
           easing: theme.transitions.easing.sharp,
