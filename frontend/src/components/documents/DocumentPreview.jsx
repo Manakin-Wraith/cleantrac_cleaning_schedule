@@ -296,7 +296,7 @@ const DocumentPreview = ({ template, parameters, onProceed, onCancel }) => {
                     <TableCell>Date</TableCell>
                     <TableCell>Task</TableCell>
                     <TableCell>Status</TableCell>
-                    <TableCell>Completed By</TableCell>
+                    <TableCell>Assigned To</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -305,7 +305,7 @@ const DocumentPreview = ({ template, parameters, onProceed, onCancel }) => {
                       <TableCell>{task.date}</TableCell>
                       <TableCell>{task.name}</TableCell>
                       <TableCell>{task.status}</TableCell>
-                      <TableCell>{task.completed_by}</TableCell>
+                      <TableCell>{task.assigned_to}</TableCell>
                     </TableRow>
                   ))}
                   {previewData.cleaning_tasks.length > 5 && (

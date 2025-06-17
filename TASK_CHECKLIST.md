@@ -78,6 +78,7 @@
   - [x] Add template editor for creating custom templates
 
 - **[x] Enhanced Features**
+  - [x] Frontend: Replace browser confirm dialog with Material-UI Dialog for deleting generated documents
   - [x] Implement spreadsheet editor using react-spreadsheet and ExcelJS
   - [x] Enhance document generation to preserve template formatting
   - [x] Add comprehensive data preview with all relevant fields
