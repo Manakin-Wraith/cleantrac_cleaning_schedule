@@ -120,7 +120,7 @@ const ScheduleListPanel = ({ onRowClick }) => {
             <ListItemText
               disableTypography
               primary={
-                <Typography variant="body2" fontWeight={500} noWrap>
+                <Typography variant="body2" fontWeight={500} noWrap sx={{ textDecoration: ((ev.type==='production' || ev.type==='cleaning') && ['completed','done'].includes(ev.status?.toLowerCase?.())) ? 'line-through' : 'none' }}>
                   {resolveTitle(ev)}
                 </Typography>
               }

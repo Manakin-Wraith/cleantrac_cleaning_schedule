@@ -2,6 +2,8 @@
 
 ## Status
 - [x] MVP Implemented (read-only + edit/delete buttons)
+- [x] Completed-button flow (mark cleaning task as completed)
+- [x] Visual strikethrough for completed/done tasks
 
 ## Purpose
 Slide-in drawer from the right that shows details of a Cleaning or Recipe task when a list row is clicked. Offers quick Edit and Delete actions while keeping the calendar visible.
@@ -28,6 +30,11 @@ Slide-in drawer from the right that shows details of a Cleaning or Recipe task w
 - `UnifiedCalendarPage` manages `selectedTask` and `drawerOpen` state.
 - `ScheduleListPanel` row click now sets task + opens drawer.
 - Drawer Edit routes to existing assignment modals; Delete emits info toast until implemented.
+
+## Recent Changes (2025-06-17)
+- Added **Completed** button shown when a cleaning task is in `pending_review` status. Click PATCHes status→`completed`, updates state & snackbar.
+- Title now renders with CSS line-through when status is `completed`/`done` for clearer visual feedback.
+- Passed new `onComplete` prop from `UnifiedCalendarPage`.
 
 ## Next Steps (Phase 2)
 - Replace modals with inline **Edit** tab + auto-save inside drawer.
