@@ -17,6 +17,8 @@ from .views import (
     ThermometerVerificationAssignmentViewSet,
     TemperatureCheckAssignmentViewSet,
     TemperatureLogViewSet,
+    # Document Management ViewSet
+    DocumentViewSet,
     # Supplier Management ViewSet
     SupplierViewSet
 )
@@ -55,6 +57,8 @@ router.register(r'temperature-logs', TemperatureLogViewSet, basename='temperatur
 
 # Register Document Template Management ViewSets
 router.register(r'document-templates', DocumentTemplateViewSet, basename='documenttemplate')
+# Register Documents ViewSet
+router.register(r'documents', DocumentViewSet, basename='document')
 router.register(r'generated-documents', GeneratedDocumentViewSet, basename='generateddocument')
 
 # Register Supplier Management ViewSet

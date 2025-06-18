@@ -4,7 +4,7 @@ from .models import (
     Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
     AreaUnit, Thermometer, ThermometerVerificationRecord, 
     ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog,
-    Supplier
+    Document, Supplier
 )
 from rest_framework.validators import UniqueValidator
 
@@ -700,6 +700,25 @@ class TemperatureLogSerializer(serializers.ModelSerializer):
             pass
 
         return data
+
+
+class DocumentSerializer(serializers.ModelSerializer):
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True
+    )
+    department_name = serializers.CharField(source='department.name', read_only=True)
+
+    uploaded_by_username = serializers.CharField(source='uploaded_by.username', read_only=True, allow_null=True)
+
+    class Meta:
+        model = Document
+        fields = [
+            'id', 'title', 'description', 'file',
+            'department_id', 'department_name',
+            'uploaded_by_username', 'created_at'
+        ]
 
 
 class SupplierSerializer(serializers.ModelSerializer):

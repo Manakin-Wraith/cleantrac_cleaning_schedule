@@ -16,6 +16,7 @@ import DepartmentManagementPage from './pages/DepartmentManagementPage';
 import ThermometerVerificationPage from './pages/ThermometerVerificationPage';
 import TemperatureChecksPage from './pages/TemperatureChecksPage';
 import DocumentTemplateManagementPage from './pages/DocumentTemplateManagementPage';
+import DocumentsManagementPage from './pages/DocumentsManagementPage';
 import SupplierManagementPage from './pages/SupplierManagementPage';
 import RecipeManagementPage from './pages/RecipeManagementPage';
 import ProductionSchedulerPage from './pages/ProductionSchedulerPage';
@@ -71,6 +72,8 @@ const ThemedApp = () => {
           <Route path="/manager-thermometer-verification" element={<PageLayout><ThermometerVerificationPage /></PageLayout>} />
           <Route path="/manager-temperature-checks" element={<PageLayout><TemperatureChecksPage /></PageLayout>} />
           <Route path="/manager-documents" element={<PageLayout><DocumentTemplateManagementPage /></PageLayout>} />
+          <Route path="/manager-documents-library" element={<PageLayout><DocumentsManagementPage /></PageLayout>} />
+
           <Route path="/admin/departments" element={<PageLayout><DepartmentManagementPage /></PageLayout>} />
           <Route path="/manager-schedule" element={<PageLayout showHeaderBar={false}><UnifiedCalendarPage /></PageLayout>} />
         </Route>

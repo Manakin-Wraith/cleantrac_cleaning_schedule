@@ -384,6 +384,24 @@ class GeneratedDocument(models.Model):
         ordering = ['-created_at']
 
 
+class Document(models.Model):
+    """Generic documents uploaded by managers for departmental reference"""
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    file = models.FileField(upload_to="documents/")
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='documents')
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='uploaded_documents')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Document"
+        verbose_name_plural = "Documents"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} ({self.department.name})"
+
+
 class Supplier(models.Model):
     """Represents a supplier that can serve multiple departments."""
     supplier_code = models.CharField(max_length=50, unique=True)
