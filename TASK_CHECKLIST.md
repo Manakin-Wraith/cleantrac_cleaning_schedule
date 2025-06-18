@@ -155,6 +155,33 @@
 - [ ] Further UI/UX refinements based on user feedback.
 - [ ] Plan for Production Database (PostgreSQL setup).
 
+## IV. Document Library (Bulk Upload & Folders)
+
+- **[x] Backend Implementation**
+  - [x] `Folder` model with global visibility
+  - [x] `Document` model includes optional `folder` FK
+  - [x] API endpoints
+    - `/api/folders/` CRUD
+    - `/api/documents/` list + `/bulk_upload/`
+  - [x] Removed department filtering – folders/docs are global
+
+- **[x] Frontend Implementation**
+  - [x] `DocumentUploadModal` supports multiple files & inline folder creation
+  - [x] `FolderDropdown` in page header for filtering
+  - [x] `DocumentList` table simplified (Title + Download)
+  - [x] Inline folder delete (rename pending)
+
+- **[x] UI/UX Tweaks**
+  - [x] Removed Description, Department, Uploaded By, Date columns
+  - [x] Folders visible to all roles
+
+- **[ ] Enhancements**
+  - [ ] Folder rename in dropdown
+  - [ ] Nested folders/tree view
+  - [ ] CSV batch folder import
+
+---
+
 ## VI. Thermometer Verification System
 
 - **[x] `ThermometerStatusDashboard.jsx` - UI Fixes**

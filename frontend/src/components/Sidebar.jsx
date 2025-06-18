@@ -18,6 +18,7 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import TuneIcon from '@mui/icons-material/Tune'; // For Management group 
 import DescriptionIcon from '@mui/icons-material/Description'; // For Document Templates
+import FolderOpenIcon from '@mui/icons-material/FolderOpen'; // For Documents Library
 import AccessTimeIcon from '@mui/icons-material/AccessTime'; // Added missing import
 import LocalShippingIcon from '@mui/icons-material/LocalShipping'; // For Suppliers
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu'; // For Recipe Management
@@ -114,6 +115,7 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed, onCollapseToggle
     { text: 'Thermometers', icon: <DeviceThermostatIcon />, path: '/manager-thermometers' },
     { text: 'Temperature Checks', icon: <AcUnitIcon />, path: '/manager-temperature-checks' },
     { text: 'Document Templates', icon: <DescriptionIcon />, path: '/manager-documents' },
+    { text: 'Documents Library', icon: <FolderOpenIcon />, path: '/manager-documents-library' },
 
     { text: 'Task Scheduler', icon: <CalendarMonthIcon />, path: '/manager-schedule' },
   ];

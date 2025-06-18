@@ -1,10 +1,11 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
+    Folder,
     Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
     AreaUnit, Thermometer, ThermometerVerificationRecord, 
     ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog,
-    Supplier
+    Document, Supplier
 )
 from rest_framework.validators import UniqueValidator
 
@@ -700,6 +701,57 @@ class TemperatureLogSerializer(serializers.ModelSerializer):
             pass
 
         return data
+
+
+class DocumentSerializer(serializers.ModelSerializer):
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True
+    )
+    department_name = serializers.CharField(source='department.name', read_only=True)
+
+    uploaded_by_username = serializers.CharField(source='uploaded_by.username', read_only=True, allow_null=True)
+    folder_id = serializers.PrimaryKeyRelatedField(
+        queryset=Folder.objects.all(),
+        source='folder',
+        required=False,
+        allow_null=True
+    )
+    folder_name = serializers.CharField(source='folder.name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = Document
+        fields = [
+            'id', 'title', 'description', 'file',
+            'department_id', 'department_name',
+            'folder_id', 'folder_name',
+            'uploaded_by_username', 'created_at'
+        ]
+
+
+class FolderSerializer(serializers.ModelSerializer):
+    department_id = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(),
+        source='department',
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    parent_id = serializers.PrimaryKeyRelatedField(
+        queryset=Folder.objects.all(),
+        source='parent',
+        write_only=True,
+        required=False,
+        allow_null=True,
+        default=None,
+    )
+
+    class Meta:
+        model = Folder
+        fields = ['id', 'name', 'department_id', 'department_name', 'parent_id', 'created_at']
+        read_only_fields = ['created_at']
 
 
 class SupplierSerializer(serializers.ModelSerializer):
