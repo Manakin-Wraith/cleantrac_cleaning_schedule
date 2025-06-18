@@ -7,12 +7,14 @@ import {
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DocumentUploadModal from '../components/documents/DocumentUploadModal';
+import FolderDropdown from '../components/documents/FolderDropdown';
 import DocumentList from '../components/documents/DocumentList';
 import { getCurrentUser } from '../services/authService';
 
 function DocumentsManagementPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
+  const [selectedFolder, setSelectedFolder] = useState('');
 
   const handleUploadSuccess = () => {
     setRefreshToken((prev) => prev + 1);
@@ -25,6 +27,7 @@ function DocumentsManagementPage() {
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Department Documents</Typography>
+          <FolderDropdown value={selectedFolder} onChange={setSelectedFolder} />
         <Button
           variant="contained"
           startIcon={<AddCircleOutlineIcon />}
@@ -33,7 +36,7 @@ function DocumentsManagementPage() {
           Upload Documents
         </Button>
       </Box>
-      <DocumentList refreshTrigger={refreshToken} />
+      <DocumentList refreshTrigger={refreshToken} folderId={selectedFolder} />
       <DocumentUploadModal
         open={uploadOpen}
         onClose={closeModal}

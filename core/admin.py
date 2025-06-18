@@ -5,7 +5,7 @@ from .models import (
     Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
     AreaUnit, Thermometer, ThermometerVerificationRecord, 
     ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog,
-    Document, DocumentTemplate, GeneratedDocument, Supplier
+    Folder, Document, DocumentTemplate, GeneratedDocument, Supplier
 )
 from .recipe_models import (
     Recipe, RecipeIngredient, RecipeVersion, ProductionSchedule,
@@ -146,7 +146,8 @@ class GeneratedDocumentAdmin(admin.ModelAdmin):
     readonly_fields = ('parameters',)
 
 admin.site.register(GeneratedDocument, GeneratedDocumentAdmin)
-# Register Document model
+# Register Folder and Document models
+admin.site.register(Folder)
 admin.site.register(Document)
 
 # Supplier Admin Registration

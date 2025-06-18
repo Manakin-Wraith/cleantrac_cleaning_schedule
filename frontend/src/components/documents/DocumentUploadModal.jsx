@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -11,11 +11,27 @@ import {
 } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
 import apiClient from '../../services/api';
+import { fetchFolders } from '../../services/folderService';
+import CreateFolderDialog from './CreateFolderDialog';
 
 function DocumentUploadModal({ open, onClose, onSuccess }) {
   const [files, setFiles] = useState([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [folders, setFolders] = useState([]);
+  const [selectedFolder, setSelectedFolder] = useState('');
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await fetchFolders();
+        setFolders(data);
+      } catch (e) {
+        console.error('Failed to load folders', e);
+      }
+    })();
+  }, []);
 
   const onDrop = useCallback((acceptedFiles) => {
     setFiles((prev) => [...prev, ...acceptedFiles]);
@@ -31,6 +47,9 @@ function DocumentUploadModal({ open, onClose, onSuccess }) {
 
     const formData = new FormData();
     files.forEach((f) => formData.append('files', f));
+    if (selectedFolder) {
+      formData.append('folder_id', selectedFolder);
+    }
 
     setUploading(true);
     try {
@@ -81,7 +100,24 @@ function DocumentUploadModal({ open, onClose, onSuccess }) {
             </Typography>
           )}
         </Box>
-        {files.length > 0 && (
+        <Box sx={{ mt:2 }}>
+            <Box sx={{ display:'flex', alignItems:'center', mb:1 }}>
+              <Typography variant="subtitle2" sx={{ mr:1 }}>Destination Folder</Typography>
+              <Button size="small" onClick={()=>setCreateOpen(true)}>+ New</Button>
+            </Box>
+            <select
+              value={selectedFolder}
+              onChange={(e)=>setSelectedFolder(e.target.value)}
+              style={{ width:'100%', padding:'8px' }}
+            >
+              <option value="">-- None (Unfiled) --</option>
+              {folders.map((f)=> (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+          </Box>
+
+          {files.length > 0 && (
           <Box sx={{ mt: 2 }}>
             {files.map((file) => (
               <Box
@@ -109,6 +145,15 @@ function DocumentUploadModal({ open, onClose, onSuccess }) {
           Upload
         </Button>
       </DialogActions>
+          <CreateFolderDialog
+        open={createOpen}
+        onClose={()=>setCreateOpen(false)}
+        onCreated={(folder)=>{
+          setFolders(prev=>[...prev, folder]);
+          setSelectedFolder(folder.id.toString());
+          setCreateOpen(false);
+        }}
+      />
     </Dialog>
   );
 }

@@ -13,7 +13,7 @@ from .models import (
     Department, UserProfile, CleaningItem, TaskInstance, CompletionLog, PasswordResetToken,
     AreaUnit, Thermometer, ThermometerVerificationRecord, 
     ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog,
-    Document, Supplier
+    Folder, Document, Supplier
 )
 from .serializers import (
     DepartmentSerializer, UserSerializer, UserProfileSerializer, 
@@ -22,7 +22,7 @@ from .serializers import (
     PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
     AreaUnitSerializer, ThermometerSerializer, ThermometerVerificationRecordSerializer,
     ThermometerVerificationAssignmentSerializer, TemperatureCheckAssignmentSerializer, TemperatureLogSerializer,
-    DocumentSerializer,
+    FolderSerializer, DocumentSerializer,
     SupplierSerializer
 )
 from rest_framework.permissions import AllowAny # Corrected: AllowAny from DRF
@@ -38,6 +38,46 @@ from django.contrib.auth.password_validation import validate_password # For pass
 from django.core.exceptions import ValidationError as DjangoValidationError # For password validation
 
 # Create your views here.
+
+class FolderViewSet(viewsets.ModelViewSet):
+    serializer_class = FolderSerializer
+    permission_classes = [IsSuperUserWriteOrManagerRead]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return Folder.objects.none()
+        # All authenticated users can see every folder, regardless of department.
+        if user.is_authenticated:
+            return Folder.objects.all()
+        return Folder.objects.none()
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        if not data.get('department_id'):
+            try:
+                if request.user.profile.role == 'manager' and request.user.profile.department:
+                    data['department_id'] = str(request.user.profile.department.id)
+            except AttributeError:
+                pass
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if not serializer.validated_data.get('department') and not user.is_superuser:
+            try:
+                department = user.profile.department
+                if department:
+                    serializer.save(department=department)
+                    return
+            except AttributeError:
+                pass
+        serializer.save()
+
 
 class DepartmentViewSet(viewsets.ModelViewSet):
     serializer_class = DepartmentSerializer
@@ -1058,13 +1098,12 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_superuser:
-            return Document.objects.all()
-        try:
-            department = user.profile.department
-            return Document.objects.filter(department=department)
-        except (AttributeError, UserProfile.DoesNotExist):
-            return Document.objects.none()
+        qs = Document.objects.all()
+        # Optional filter by folder via query param
+        folder_id = self.request.query_params.get('folder_id')
+        if folder_id:
+            qs = qs.filter(folder_id=folder_id)
+        return qs
 
     def perform_create(self, serializer):
         # Automatically set department from manager profile if not provided
@@ -1076,6 +1115,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='bulk_upload')
     def bulk_upload(self, request):
+        folder_id = request.data.get('folder_id')
         files = request.FILES.getlist('files')
         if not files:
             return Response({'error': 'No files provided.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -1102,6 +1142,8 @@ class DocumentViewSet(viewsets.ModelViewSet):
                         data['department_id'] = department.id
                 except AttributeError:
                     pass
+                if folder_id:
+                    data['folder_id'] = folder_id
                 serializer = self.get_serializer(data=data)
                 serializer.is_valid(raise_exception=True)
                 serializer.save(uploaded_by=request.user)

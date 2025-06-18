@@ -6,7 +6,7 @@ import {
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import apiClient from '../../services/api';
 
-function DocumentList({ refreshTrigger }) {
+function DocumentList({ refreshTrigger, folderId = '' }) {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -14,13 +14,15 @@ function DocumentList({ refreshTrigger }) {
   useEffect(() => {
     fetchDocs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshTrigger]);
+  }, [refreshTrigger, folderId]);
 
   const fetchDocs = async () => {
     try {
       setLoading(true);
-      const res = await apiClient.get('/documents/');
-      setDocs(res.data);
+            const res = await apiClient.get('/documents/');
+      const docsRaw = res.data;
+      const filtered = folderId ? docsRaw.filter((d)=> String(d.folder_id || '') === String(folderId)) : docsRaw;
+      setDocs(filtered);
     } catch (err) {
       console.error('Failed to fetch documents', err);
       setError('Failed to load documents');
@@ -51,10 +53,7 @@ function DocumentList({ refreshTrigger }) {
         <TableHead>
           <TableRow>
             <TableCell>Title</TableCell>
-            <TableCell>Description</TableCell>
-            <TableCell>Department</TableCell>
-            <TableCell>Uploaded By</TableCell>
-            <TableCell>Date</TableCell>
+
             <TableCell align="right">Actions</TableCell>
           </TableRow>
         </TableHead>
@@ -62,10 +61,7 @@ function DocumentList({ refreshTrigger }) {
           {docs.map((doc) => (
             <TableRow key={doc.id}>
               <TableCell>{doc.title}</TableCell>
-              <TableCell>{doc.description}</TableCell>
-              <TableCell>{doc.department_name}</TableCell>
-              <TableCell>{doc.uploaded_by_username || 'Unknown'}</TableCell>
-              <TableCell>{new Date(doc.created_at).toLocaleString()}</TableCell>
+
               <TableCell align="right">
                 <Tooltip title="Download / View">
                   <IconButton
