@@ -35,7 +35,8 @@ const TaskSchedulerCalendar = ({
     const effectiveRef = calendarRef || localCalendarRef;
 
     // State for new UI controls
-    const [view, setView] = useState('resourceTimelineWeek');
+    // Default to Month view when calendar loads
+    const [view, setView] = useState('dayGridMonth');
     const [isFiltersVisible, setFiltersVisible] = useState(true);
         const [selectedResources, setSelectedResources] = useState([]);
     const [selectedStatuses, setSelectedStatuses] = useState([]);

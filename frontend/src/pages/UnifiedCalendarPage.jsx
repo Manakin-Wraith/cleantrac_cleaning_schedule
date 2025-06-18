@@ -93,7 +93,14 @@ const UnifiedCalendarPage = () => {
   const [recipeEvents, setRecipeEvents] = useState([]);
   const [resourcesData, setResourcesData] = useState([]);
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
-  const [currentCalendarView, setCurrentCalendarView] = useState('resourceTimelineWeek');
+  // Default calendar view to Month on load
+  const [currentCalendarView, setCurrentCalendarView] = useState('dayGridMonth');
+  // Ensure FullCalendar actually starts on month view when mounted
+  useEffect(() => {
+    if (calendarRef.current) {
+      calendarRef.current.getApi().changeView('dayGridMonth');
+    }
+  }, []);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');

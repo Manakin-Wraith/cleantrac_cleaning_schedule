@@ -66,7 +66,8 @@ export default function TaskSchedulerPage() {
   const calendarRef = useRef(null);
   
   // State for filters and sidebar
-  const [currentView, setCurrentView] = useState('resourceTimelineWeek');
+  // Default calendar view to Month when page loads
+  const [currentView, setCurrentView] = useState('dayGridMonth');
   const [isFiltersOpen, setFiltersOpen] = useState(false);
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
@@ -157,6 +158,13 @@ export default function TaskSchedulerPage() {
     if (user) fetchData();
   }, [user, selectedDate, fetchData]);
 
+  // Ensure calendar starts in month view on first render
+  useEffect(() => {
+    if (calendarRef.current) {
+      calendarRef.current.getApi().changeView('dayGridMonth');
+    }
+  }, []);
+
   /* ----------------------------- Data Helpers ------------------------------- */
   const resolveItemName = useCallback(
     (task) => {
@@ -237,6 +245,9 @@ export default function TaskSchedulerPage() {
 
   const handleViewChange = (view) => {
     setCurrentView(view);
+    if (calendarRef.current) {
+      calendarRef.current.getApi().changeView(view);
+    }
   };
   
   // When the component mounts or resources change, select all resources by default
