@@ -78,7 +78,7 @@ export default function EventChip({
   const content = (
     <ChipContainer typeColour={typeColour} compact={isCompact}>
       {/* primary row */}
-      <Typography variant="caption" fontWeight={600} sx={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+      <Typography variant="caption" fontWeight={600} sx={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', textDecoration: ((type==='recipe' || type==='cleaning') && ['completed','done'].includes(status?.toLowerCase?.())) ? 'line-through' : 'none' }}>
         {primaryLabel}
       </Typography>
 

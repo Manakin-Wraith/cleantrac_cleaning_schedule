@@ -23,6 +23,7 @@ export default function TaskDrawer({
   task,
   onEdit,
   onDelete,
+  onComplete,
 }) {
   if (!task) return null;
 
@@ -53,7 +54,7 @@ export default function TaskDrawer({
         {/* Details Section */}
         <Stack spacing={1.5} sx={{ flex: 1, overflowY: 'auto' }}>
           {/* Title */}
-          <Typography variant="subtitle1" fontWeight={600} sx={{ wordBreak: 'break-word' }}>
+          <Typography variant="subtitle1" fontWeight={600} sx={{ wordBreak: 'break-word', textDecoration: ['completed','done'].includes(task.status?.toLowerCase?.()) ? 'line-through' : 'none' }}>
             {task.title || task.cleaning_item_name || task.cleaning_item?.name || task.recipe_details?.name || 'Untitled'}
           </Typography>
 
@@ -128,6 +129,16 @@ export default function TaskDrawer({
 
         {/* Actions */}
         <Box sx={{ pt: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+          {task.type === 'cleaning' && task.status === 'pending_review' && (
+            <Button
+              variant="contained"
+              color="success"
+              onClick={() => onComplete && onComplete(task)}
+              sx={{ mr: 1 }}
+            >
+              Completed
+            </Button>
+          )}
           <Button variant="outlined" startIcon={<EditIcon />} onClick={() => onEdit(task)}>
             Edit
           </Button>
@@ -146,4 +157,5 @@ TaskDrawer.propTypes = {
   task: PropTypes.object,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
+  onComplete: PropTypes.func,
 };

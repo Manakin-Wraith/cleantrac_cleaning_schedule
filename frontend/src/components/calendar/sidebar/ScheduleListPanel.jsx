@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import {
   Box,
@@ -11,6 +11,8 @@ import {
   ListItemIcon,
   Typography,
   Stack,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
@@ -76,12 +78,22 @@ const resolveAssignee = (ev) => {
 };
 
 const ScheduleListPanel = ({ onRowClick }) => {
-  const { events, visibleEvents, listFilter, setListFilter } = useSchedule();
+  const { events, visibleEvents: visibleEventsRaw, listFilter, setListFilter } = useSchedule();
+  const [showCompleted, setShowCompleted] = useState(false);
+  const visibleEvents = useMemo(() => {
+    return visibleEventsRaw.filter((ev) => showCompleted || !['completed', 'done'].includes(ev.status?.toLowerCase?.()));
+  }, [visibleEventsRaw, showCompleted]);
 
+  const done = (e)=> ['completed','done'].includes(e.status?.toLowerCase?.());
   const counts = React.useMemo(() => {
-    const cleaning = events.filter((e) => e.type === 'cleaning').length;
-    const production = events.filter((e) => e.type === 'production').length;
-    return { cleaning, production, all: events.length };
+    const totalCleaning = events.filter(e=> e.type==='cleaning').length;
+    const totalProduction = events.filter(e=> e.type==='production').length;
+    const activeCleaning = events.filter(e=> e.type==='cleaning' && !done(e)).length;
+    const activeProduction = events.filter(e=> e.type==='production' && !done(e)).length;
+    return {
+      total: { cleaning: totalCleaning, production: totalProduction, all: events.length },
+      active: { cleaning: activeCleaning, production: activeProduction, all: events.filter(e=> !done(e)).length }
+    };
   }, [events]);
 
   return (
@@ -96,21 +108,26 @@ const ScheduleListPanel = ({ onRowClick }) => {
         fullWidth
       >
         <ToggleButton value="all">
-          <Badge badgeContent={counts.all} color="secondary">
+          <Badge badgeContent={showCompleted ? counts.total.all : counts.active.all} color="secondary">
             <ViewAgendaIcon />
           </Badge>
         </ToggleButton>
         <ToggleButton value="cleaning">
-          <Badge badgeContent={counts.cleaning} color="secondary">
+          <Badge badgeContent={showCompleted ? counts.total.cleaning : counts.active.cleaning} color="secondary">
             <CleaningServicesIcon />
           </Badge>
         </ToggleButton>
         <ToggleButton value="production">
-          <Badge badgeContent={counts.production} color="secondary">
+          <Badge badgeContent={showCompleted ? counts.total.production : counts.active.production} color="secondary">
             <RestaurantMenuIcon />
           </Badge>
         </ToggleButton>
       </ToggleButtonGroup>
+      <FormControlLabel
+        control={<Switch size="small" checked={showCompleted} onChange={(e)=>setShowCompleted(e.target.checked)} />}
+        label="Show completed"
+        sx={{ ml:1 }}
+      />
 
       {/* List */}
       <List dense sx={{ mt: 1, maxHeight: 'calc(100vh - 200px)', overflow: 'auto' }}>
@@ -120,7 +137,7 @@ const ScheduleListPanel = ({ onRowClick }) => {
             <ListItemText
               disableTypography
               primary={
-                <Typography variant="body2" fontWeight={500} noWrap>
+                <Typography variant="body2" fontWeight={500} noWrap sx={{ textDecoration: ((ev.type==='production' || ev.type==='cleaning') && ['completed','done'].includes(ev.status?.toLowerCase?.())) ? 'line-through' : 'none' }}>
                   {resolveTitle(ev)}
                 </Typography>
               }

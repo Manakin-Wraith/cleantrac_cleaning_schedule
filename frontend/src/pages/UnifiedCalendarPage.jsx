@@ -93,7 +93,14 @@ const UnifiedCalendarPage = () => {
   const [recipeEvents, setRecipeEvents] = useState([]);
   const [resourcesData, setResourcesData] = useState([]);
   const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
-  const [currentCalendarView, setCurrentCalendarView] = useState('resourceTimelineWeek');
+  // Default calendar view to Month on load
+  const [currentCalendarView, setCurrentCalendarView] = useState('dayGridMonth');
+  // Ensure FullCalendar actually starts on month view when mounted
+  useEffect(() => {
+    if (calendarRef.current) {
+      calendarRef.current.getApi().changeView('dayGridMonth');
+    }
+  }, []);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -593,6 +600,20 @@ const UnifiedCalendarPage = () => {
     }
   };
 
+  const handleDrawerComplete = async (task) => {
+    if (!task) return;
+    try {
+      const [prefix, rawId] = (task.id || '').toString().split('-');
+      if (prefix !== 'cleaning' || !rawId) return;
+      await updateTaskInstance(rawId, { status: 'completed' });
+      setCleaningEvents(prev => prev.map(ev => ev.id === task.id ? { ...ev, status: 'completed' } : ev));
+      enqueueSnackbar('Task marked as completed.', { variant: 'success' });
+      setDrawerOpen(false);
+    } catch (err) {
+      enqueueSnackbar(err.message || 'Failed to update task status.', { variant: 'error' });
+    }
+  };
+
   const handleDrawerDelete = async (task) => {
     if (!task) return;
 
@@ -679,6 +700,7 @@ const UnifiedCalendarPage = () => {
           task={selectedTask}
           onEdit={handleDrawerEdit}
           onDelete={handleDrawerDelete}
+          onComplete={handleDrawerComplete}
         />
 
         {/* Modals */}

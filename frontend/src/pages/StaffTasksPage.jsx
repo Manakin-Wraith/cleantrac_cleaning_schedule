@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Grid, Paper, Typography, Box, Button, Chip, CircularProgress, Alert, List, ListItem, ListItemText, Divider, Badge, Card, CardContent, CardActions } from '@mui/material';
+
 import { useTheme, alpha } from '@mui/material/styles';
 import { getTaskInstances, updateTaskInstance } from '../services/taskService';
+import { updateProductionSchedule } from '../services/productionScheduleService';
+import { getRecipe } from '../services/recipeService';
+import RecipeIngredientsDialog from '../components/recipes/RecipeIngredientsDialog';
 import { getProductionSchedules } from '../services/productionScheduleService';
 import { getCurrentUser } from '../services/authService';
 import {
@@ -33,6 +37,11 @@ function StaffTasksPage() {
     const [todaysRecipeTasks, setTodaysRecipeTasks] = useState([]);
     const [error, setError] = useState(''); // General page error
     const [updatingTask, setUpdatingTask] = useState(null);
+    // dialog state
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogLoading, setDialogLoading] = useState(false);
+    const [dialogRecipe, setDialogRecipe] = useState(null);
+    const [selectedTask, setSelectedTask] = useState(null);
     const theme = useTheme();
 
     // New state for thermometer data
@@ -185,16 +194,44 @@ function StaffTasksPage() {
         }
     }, [user, fetchThermometerData]); // Re-run if user or the callback itself changes
 
-    const handleSubmitForReview = async (taskId) => {
+    const handleCardClick = async (task) => {
+        if (task.__type !== 'recipe') return;
+        setSelectedTask(task);
+        setDialogOpen(true);
+        setDialogLoading(true);
+        try {
+            const data = await getRecipe(task.recipe_details.id, { expand: 'ingredients' });
+            if (Array.isArray(data?.ingredients) && data.ingredients.length) {
+                // eslint-disable-next-line no-console
+                console.log('Sample ingredient object:', data.ingredients[0]);
+            }
+            setDialogRecipe(data);
+        } catch (err) {
+            console.error('Failed to fetch recipe ingredients:', err);
+        } finally {
+            setDialogLoading(false);
+        }
+    };
+
+    const handleDialogClose = () => {
+        setDialogOpen(false);
+        setDialogRecipe(null);
+        setSelectedTask(null);
+    };
+
+    const handleSubmitForReview = async (taskObj) => {
+        const taskId = taskObj.id;
+        const isRecipe = taskObj.__type === 'recipe';
         setUpdatingTask(taskId);
         setError('');
         try {
-            await updateTaskInstance(taskId, { status: 'pending_review' });
-            setTodaysTasks(prevTasks => 
-                prevTasks.map(task => 
-                    task.id === taskId ? { ...task, status: 'pending_review' } : task
-                )
-            );
+            if (isRecipe) {
+                await updateProductionSchedule(taskId, { status: 'completed' });
+                setTodaysRecipeTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completed' } : t));
+            } else {
+                await updateTaskInstance(taskId, { status: 'completed' });
+                setTodaysTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completed' } : t));
+            }
         } catch (err) {
             console.error(`Failed to submit task ${taskId} for review:`, err);
             setError(err.response?.data?.detail || err.message || 'Failed to update task. Please try again.');
@@ -459,11 +496,14 @@ function StaffTasksPage() {
                         .sort((a,b)=> ((a.due_date||a.scheduled_date||'').localeCompare(b.due_date||b.scheduled_date||'')))
                         .map(task => (
                         <Grid item xs={12} sm={6} md={4} key={task.id}>
-                            <Card sx={{
-                                display: 'flex', 
-                                flexDirection: 'column', 
-                                justifyContent: 'space-between', 
-                                height: '100%',
+                            <Card
+                                onClick={() => handleCardClick(task)}
+                                sx={{
+                                    cursor: task.__type==='recipe' ? 'pointer' : 'default',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                    height: '100%',
                                 ...(task.status === 'completed' && {
                                     backgroundColor: theme.palette.grey[100], 
                                 }),
@@ -471,7 +511,8 @@ function StaffTasksPage() {
                                     backgroundColor: alpha(theme.palette.info.main, 0.12), 
                                 }),
                                 // 'pending' tasks will use the default card background
-                            }}>
+                                }}>
+
                                 <CardContent sx={{ flexGrow: 1, padding: 2 }}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                                         <Typography 
@@ -559,16 +600,16 @@ function StaffTasksPage() {
                                         </>
                                     )}
                                 </CardContent>
-                                {task.status !== 'completed' && task.status !== 'pending_review' && (
+                                {task.status !== 'completed' && (
                                     <CardActions sx={{ justifyContent: 'flex-end', pt: 0 }}>
                                         <Button 
                                             variant="contained" 
                                             color="primary" 
                                             size="small"
-                                            onClick={() => handleSubmitForReview(task.id)}
+                                            onClick={(e) => { e.stopPropagation(); handleSubmitForReview(task); }}
                                             disabled={updatingTask === task.id}
                                         >
-                                            {updatingTask === task.id ? <CircularProgress size={20} color="inherit" /> : 'Submit for Review'}
+                                            {updatingTask === task.id ? <CircularProgress size={20} color="inherit" /> : 'Completed'}
                                         </Button>
                                     </CardActions>
                                 )}
@@ -581,6 +622,13 @@ function StaffTasksPage() {
                     <Typography variant="subtitle1">No tasks assigned for today.</Typography>
                 </Paper>
             )}
+            <RecipeIngredientsDialog
+                open={dialogOpen}
+                onClose={handleDialogClose}
+                recipe={dialogRecipe}
+                task={selectedTask}
+                loading={dialogLoading}
+            />
         </Container>
     );
 }

@@ -1,7 +1,8 @@
 # Component: ScheduleListPanel
 
 ## Status
-- [x] Completed
+- [x] Completed (Phase-1)
+- [x] Visual cues updated (strike-through for completed cleaning & production tasks)
 
 ## Purpose
 Sidebar list that displays scheduled cleaning and production (recipe) tasks with a toggle for All / Cleaning / Production.
@@ -19,7 +20,11 @@ Sidebar list that displays scheduled cleaning and production (recipe) tasks with
 ## Context Dependencies
 Uses `useSchedule()` from `ScheduleContext` to get `visibleEvents`, filter state, and counts.
 
-## Recent Changes (2025-06-13)
+## Recent Changes (2025-06-17)
+- Added CSS line-through on task title when status is `completed`/`done` for BOTH cleaning and production tasks.
+- Updated logic to inspect `ev.type` and apply style accordingly.
+
+## Previous Changes (2025-06-13)
 - Added robust title and assignee resolvers to support varied API shapes.
 - Added vertical stacking of date & staff lines (`Stack`).
 - Fixed hydration warning by setting `disableTypography` on `ListItemText`.
