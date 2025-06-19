@@ -33,6 +33,11 @@ SECRET_KEY = "django-insecure-a4ektjq)l(q9t3+q!b1j0jt^to5$b7qmqu3_o4wg5_#r7i*xe*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Allow our frontend to embed PDFs via <iframe> for same-origin requests.
+# This is safe because documents are served from the same domain / network segment.
+SECURE_BROWSER_XSS_FILTER = True
+X_FRAME_OPTIONS = "SAMEORIGIN"
+
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
@@ -71,6 +76,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "core.middleware.AllowIframeForMedia",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
