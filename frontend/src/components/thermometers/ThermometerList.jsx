@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Typography, Box, Paper, CircularProgress, Alert, 
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Chip, IconButton, Tooltip, Button
+  Chip, IconButton, Tooltip, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import EditIcon from '@mui/icons-material/Edit';
@@ -22,6 +22,8 @@ const ThermometerList = () => {
   const [error, setError] = useState('');
   const [thermometers, setThermometers] = useState([]);
   const [editingThermometer, setEditingThermometer] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [thermometerToDelete, setThermometerToDelete] = useState(null);
   const theme = useTheme();
 
   useEffect(() => {
@@ -55,21 +57,30 @@ const ThermometerList = () => {
     fetchThermometers();
   };
 
-  const handleDeleteThermometer = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this thermometer?')) {
-      return;
-    }
-    
+  const handleDeleteThermometer = (thermometer) => {
+    setThermometerToDelete(thermometer);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!thermometerToDelete) return;
     try {
       setLoading(true);
-      await deleteThermometer(id);
+      await deleteThermometer(thermometerToDelete.id);
       fetchThermometers();
     } catch (err) {
       console.error("Failed to delete thermometer:", err);
       setError(err.message || 'Failed to delete thermometer. Please try again.');
     } finally {
       setLoading(false);
+      setDeleteDialogOpen(false);
+      setThermometerToDelete(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setThermometerToDelete(null);
   };
 
   const getStatusChip = (thermometer) => {
@@ -121,7 +132,8 @@ const ThermometerList = () => {
   }
 
   return (
-    <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+    <>
+      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
           <CircularProgress />
@@ -175,7 +187,7 @@ const ThermometerList = () => {
                       <IconButton 
                         size="small" 
                         color="error"
-                        onClick={() => handleDeleteThermometer(thermometer.id)}
+                        onClick={() => handleDeleteThermometer(thermometer)}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -188,6 +200,21 @@ const ThermometerList = () => {
         </TableContainer>
       )}
     </Paper>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
+        <DialogTitle>Delete Thermometer</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this thermometer{thermometerToDelete ? ` (Serial: ${thermometerToDelete.serial_number})` : ''}? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete} color="inherit">Cancel</Button>
+          <Button onClick={handleConfirmDelete} color="error" autoFocus>Delete</Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 
