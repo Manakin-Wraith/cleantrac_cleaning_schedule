@@ -15,12 +15,12 @@ import {
     CircularProgress,
     Stack, LinearProgress, Dialog, DialogTitle, DialogContent, List, ListItem, ListItemText, IconButton, Link
 } from '@mui/material';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+
 import RestaurantIcon from '@mui/icons-material/Restaurant'; // For Production Schedule
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'; // For Alerts
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'; // For Tasks
-import BarChartIcon from '@mui/icons-material/BarChart'; // For View Reports
-import DownloadIcon from '@mui/icons-material/Download'; // For Download Reports
+ // For View Reports
+ // For Download Reports
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices'; // Cleaning icon
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'; // For status dots
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'; // For yellow alerts
@@ -46,7 +46,7 @@ const doneStatus = (s) => ['completed','done'].includes((s||'').toLowerCase());
 const cardBaseStyles = {
     p: 2.5, 
     borderRadius: 3,
-    height: '100%',
+    width: '100%', height: '100%',
     display: 'flex',
     flexDirection: 'column',
     boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
@@ -242,53 +242,21 @@ function ManagerDashboardPage() {
     }
 
     return (
-        <Container maxWidth="xl" sx={{ mt: 2, mb: 4, px: { xs: 2, sm: 3 } }}>
+        <Container maxWidth="xl" sx={(theme) => ({ mt: 2, mb: 5, px: { xs: 2, sm: 3 }, bgcolor: theme.palette.primary.main, minHeight: '100vh', boxShadow: 1, borderRadius: 2 })}>
             {/* Top Header Section */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 6 }}>
                 <Box>
-                    <Typography variant="h4" component="h1" sx={{ fontWeight: 500, color: 'text.primary' }}>
-                        Manager Dashboard
-                        {/* HMR part is dev specific, omitting. Department can be added if needed */}
-                        {/* {user.profile.department_name ? ` - ${user.profile.department_name}` : ''} */}
+                    <Typography variant="h2" component="h1" sx={{ fontWeight: 700, color: 'text.primary', mt: 2, mb: 2 }}>
+                        Welcome {user?.first_name || user?.username || ''}
                     </Typography>
                     <Typography variant="subtitle1" sx={{ color: 'text.secondary' }}>
-                        Welcome back! Here's what's happening today.
+                        Here’s a snapshot of your department today.
                     </Typography>
                 </Box>
-                <Stack direction="row" spacing={1.5}>
-                    <Button 
-                        variant="contained" 
-                        color="primary" 
-                        href="/manager-schedule" 
-                        startIcon={<CalendarTodayIcon />}
-                        sx={{ borderRadius: '8px', textTransform: 'none', px: 2, py: 0.75 }}
-                    >
-                        Task Scheduler
-                    </Button>
-                    <Button 
-                        variant="outlined" 
-                        color="inherit" 
-                        href="/reports" 
-                        startIcon={<BarChartIcon />}
-                        sx={{ borderRadius: '8px', textTransform: 'none', borderColor: 'grey.400', color: 'text.primary', px: 2, py: 0.75 }}
-                    >
-                        View Reports
-                    </Button>
-                    <Button 
-                        variant="outlined" 
-                        color="inherit" 
-                        // href="/download-reports" // Assuming a new route or handler
-                        onClick={() => enqueueSnackbar('Download Reports clicked (handler not implemented)', { variant: 'info' })}
-                        startIcon={<DownloadIcon />}
-                        sx={{ borderRadius: '8px', textTransform: 'none', borderColor: 'grey.400', color: 'text.primary', px: 2, py: 0.75 }}
-                    >
-                        Download Reports
-                    </Button>
-                </Stack>
             </Box>
 
             {/* Main Content Grid: Tasks, Team, Alerts */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid container spacing={4} justifyContent="center" sx={{ mt: 16, mb: 6 }}>
                 {/* Tasks At A Glance Card */}
                 <Grid item xs={12} md={4}>
                     <Paper elevation={1} sx={{ p: 2.5, borderRadius: '12px', height: '100%' }}>

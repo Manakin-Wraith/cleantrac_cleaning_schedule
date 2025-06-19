@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Typography, Box, Paper, Button, CircularProgress, Alert, 
   TextField, Grid, Card, CardContent, CardActions, Divider,
-  FormControl, InputLabel, MenuItem, Select, List, ListItem, ListItemText, Chip,
+  FormControl, InputLabel, MenuItem, Select, List, ListItem, ListItemText, Chip, Autocomplete,
   Stack, IconButton, Tooltip
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -287,28 +287,23 @@ const TemperatureCheckAssignmentManager = () => {
             
             <form onSubmit={handleSubmitAssignment}>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth required>
-                    <InputLabel id="staff-member-label">Staff Member</InputLabel>
-                    <Select
-                      labelId="staff-member-label"
-                      name="staff_member_id"
-                      value={formData.staff_member_id}
-                      onChange={handleChange}
-                      label="Staff Member"
-                    >
-                      <MenuItem value="">
-                        <em>Select Staff Member</em>
-                      </MenuItem>
-                      {staffUsers.map(user => (
-                        <MenuItem key={user.id} value={user.id}>
-                          {user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                <Grid item xs={12} md={3}>
+                  <Autocomplete
+                    fullWidth
+                    size="small"
+                    options={staffUsers}
+                    getOptionLabel={(option) => option.first_name && option.last_name ? `${option.first_name} ${option.last_name} (${option.username})` : option.username}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    value={staffUsers.find(u => u.id === formData.staff_member_id) || null}
+                    onChange={(event, newValue) => {
+                      setFormData(prev => ({ ...prev, staff_member_id: newValue ? newValue.id : '' }));
+                    }}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Staff Member" required helperText="Search by name or username" />
+                    )}
+                  />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} md={3}>
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <DatePicker
                       label="Assigned Date"
@@ -337,8 +332,8 @@ const TemperatureCheckAssignmentManager = () => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
+                <Grid item xs={12} md={3}>
+                  <TextField size="small"
                     fullWidth
                     name="department_id"
                     label="Department ID (Auto-filled)"
@@ -353,6 +348,7 @@ const TemperatureCheckAssignmentManager = () => {
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
+                    size="small"
                     name="notes"
                     label="Notes (Optional)"
                     multiline
@@ -362,8 +358,8 @@ const TemperatureCheckAssignmentManager = () => {
                   />
                 </Grid>
               </Grid>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-                <Button onClick={handleCancelAssignment} color="inherit" sx={{ mr: 1 }}>
+              <CardActions sx={{ justifyContent: 'flex-end', mt: 1 }}>
+                <Button onClick={handleCancelAssignment} color="inherit" sx={{ mr: 1 }} size="small">
                   Cancel
                 </Button>
                 <Button 
@@ -374,7 +370,7 @@ const TemperatureCheckAssignmentManager = () => {
                 >
                   {loading ? 'Saving...' : (formData.id ? 'Update Assignment' : 'Create Assignment')}
                 </Button>
-              </Box>
+              </CardActions>
             </form>
           </CardContent>
         </Card>
