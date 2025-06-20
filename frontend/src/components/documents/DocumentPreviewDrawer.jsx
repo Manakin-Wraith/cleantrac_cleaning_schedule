@@ -23,6 +23,15 @@ function isExcel(fileUrl = '') {
   );
 }
 
+// -----------------------------------------------------------
+// Helper: convert relative media path from API to absolute URL
+// -----------------------------------------------------------
+const BACKEND_ORIGIN = import.meta.env.VITE_BACKEND_ORIGIN || window.location.origin;
+function toAbsoluteUrl(path) {
+  if (/^https?:\/\//i.test(path)) return path; // already absolute
+  return `${BACKEND_ORIGIN}${path.startsWith('/') ? '' : '/'}${path}`;
+}
+
 export default function DocumentPreviewDrawer({ open, onClose, doc }) {
   return (
     <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: { xs: '100%', sm: 400, md: 500 } } }}>
@@ -48,7 +57,7 @@ export default function DocumentPreviewDrawer({ open, onClose, doc }) {
               {isPdf(doc.file) ? (
                 <iframe
                   title="PDF preview"
-                  src={doc.file}
+                  src={toAbsoluteUrl(doc.file)}
                   width="100%"
                   height="100%"
                   style={{ border: 'none' }}
@@ -59,7 +68,7 @@ export default function DocumentPreviewDrawer({ open, onClose, doc }) {
                   <Typography variant="body2" sx={{ mb: 2 }}>
                     Inline preview not available for Excel files.
                   </Typography>
-                  <Button variant="contained" href={doc.file} target="_blank" rel="noopener">
+                  <Button variant="contained" href={toAbsoluteUrl(doc.file)} target="_blank" rel="noopener">
                     Download File
                   </Button>
                 </Box>
@@ -73,7 +82,7 @@ export default function DocumentPreviewDrawer({ open, onClose, doc }) {
                   <Typography variant="body2" sx={{ mb: 2 }}>
                     No inline preview available for this file type.
                   </Typography>
-                  <Button variant="contained" href={doc.file} target="_blank" rel="noopener">
+                  <Button variant="contained" href={toAbsoluteUrl(doc.file)} target="_blank" rel="noopener">
                     Open File
                   </Button>
                 </Box>
