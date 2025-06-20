@@ -1091,6 +1091,10 @@ class TemperatureLogViewSet(viewsets.ModelViewSet):
         
         return Response(result)
 
+from django.http import StreamingHttpResponse
+from zipfile import ZipFile, ZIP_DEFLATED
+from io import BytesIO
+
 class DocumentViewSet(viewsets.ModelViewSet):
     """ViewSet for managing documents. Managers can upload/delete within their department; all authenticated users can view."""
     serializer_class = DocumentSerializer
@@ -1112,6 +1116,30 @@ class DocumentViewSet(viewsets.ModelViewSet):
         if not user.is_superuser and hasattr(user, 'profile') and user.profile.department:
             department = user.profile.department
         serializer.save(uploaded_by=user, department=department or serializer.validated_data.get('department'))
+
+    @action(detail=False, methods=['post'], url_path='bulk-download')
+    def bulk_download(self, request):
+        """Combine requested document files into a single ZIP and stream it back."""
+        ids = request.data.get('ids', [])
+        if not isinstance(ids, list) or not ids:
+            return Response({'detail': 'No document ids provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        qs = self.get_queryset().filter(id__in=ids)
+        if not qs.exists():
+            return Response({'detail': 'No documents found'}, status=status.HTTP_404_NOT_FOUND)
+
+        zip_buffer = BytesIO()
+        with ZipFile(zip_buffer, 'w', ZIP_DEFLATED) as zf:
+            for doc in qs:
+                doc.file.open('rb')
+                data = doc.file.read()
+                doc.file.close()
+                filename = doc.file.name.split('/', 1)[-1]
+                zf.writestr(filename, data)
+        zip_buffer.seek(0)
+        resp = StreamingHttpResponse(zip_buffer, content_type='application/zip')
+        resp['Content-Disposition'] = 'attachment; filename="documents.zip"'
+        return resp
 
     @action(detail=False, methods=['post'], url_path='bulk_upload')
     def bulk_upload(self, request):

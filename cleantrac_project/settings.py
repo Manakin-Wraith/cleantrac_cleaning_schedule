@@ -33,6 +33,15 @@ SECRET_KEY = "django-insecure-a4ektjq)l(q9t3+q!b1j0jt^to5$b7qmqu3_o4wg5_#r7i*xe*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Allow our frontend to embed PDFs via <iframe> for same-origin requests.
+# This is safe because documents are served from the same domain / network segment.
+SECURE_BROWSER_XSS_FILTER = True
+# Default clickjacking protection for production
+X_FRAME_OPTIONS = "SAMEORIGIN"
+
+
+
+
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
@@ -72,7 +81,20 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.AllowIframeForMedia",
 ]
+
+# ------------------------------------------------------------------
+# Local-development security relaxations
+# ------------------------------------------------------------------
+if DEBUG:
+    # Allow any site (e.g. Vite on another port) to embed this Django
+    # instance in an <iframe>. DO NOT use in production.
+    X_FRAME_OPTIONS = "ALLOWALL"
+    # Remove the default clickjacking middleware so no X-Frame-Options header is added.
+    MIDDLEWARE = [mw for mw in MIDDLEWARE if mw != "django.middleware.clickjacking.XFrameOptionsMiddleware"]
+
+
 
 ROOT_URLCONF = "cleantrac_project.urls"
 
