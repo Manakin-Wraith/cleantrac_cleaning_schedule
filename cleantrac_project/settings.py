@@ -28,10 +28,10 @@ else:
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-a4ektjq)l(q9t3+q!b1j0jt^to5$b7qmqu3_o4wg5_#r7i*xe*"
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-placeholder-change-me")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 # Allow our frontend to embed PDFs via <iframe> for same-origin requests.
 # This is safe because documents are served from the same domain / network segment.
@@ -43,10 +43,10 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 
 
 ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '10.0.0.42',  # Replace with your Mac's actual local IP address
-    '0.0.0.0',    # Allows Django to be accessed from any network interface
+    "localhost",
+    "127.0.0.1",
+    "10.0.0.42",  # your local IP
+    "0.0.0.0",
 ]
 
 

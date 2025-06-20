@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Paper, Container } from '@mui/material';
+import { Box, Typography, Button, Paper, Container, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
 import SuppliersList from '../components/suppliers/SuppliersList';
 import SupplierFormModal from '../components/suppliers/SupplierFormModal';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,8 @@ const SupplierManagementPage = () => {
   const [error, setError] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [currentSupplier, setCurrentSupplier] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const { currentUser } = useAuth();
 
   const fetchSuppliers = async () => {
@@ -90,16 +92,27 @@ const SupplierManagementPage = () => {
     }
   };
 
-  const handleDeleteSupplier = async (supplierId) => {
-    if (window.confirm('Are you sure you want to delete this supplier?')) {
-      try {
-        await api.delete(`/suppliers/${supplierId}/`);
-        fetchSuppliers();
-      } catch (err) {
-        console.error('Error deleting supplier:', err);
-        setError('Failed to delete supplier. Please try again later.');
-      }
+  const handleRequestDelete = (supplierId) => {
+    setDeleteTarget(supplierId);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      setDeleteLoading(true);
+      await api.delete(`/suppliers/${deleteTarget}/`);
+      setDeleteTarget(null);
+      fetchSuppliers();
+    } catch (err) {
+      console.error('Error deleting supplier:', err);
+      setError('Failed to delete supplier. Please try again later.');
+    } finally {
+      setDeleteLoading(false);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteTarget(null);
   };
 
   return (
@@ -129,7 +142,7 @@ const SupplierManagementPage = () => {
         suppliers={suppliers} 
         loading={loading} 
         onEdit={handleEditSupplier} 
-        onDelete={handleDeleteSupplier}
+        onDelete={handleRequestDelete}
       />
 
       <SupplierFormModal 
@@ -138,6 +151,26 @@ const SupplierManagementPage = () => {
         onSave={handleSaveSupplier} 
         supplier={currentSupplier}
       />
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={Boolean(deleteTarget)} onClose={handleCancelDelete}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete this supplier?
+        </DialogContent>
+        <DialogActions sx={{ pr: 3, pb: 2 }}>
+          <Button onClick={handleCancelDelete} disabled={deleteLoading}>Cancel</Button>
+          <Button 
+            onClick={handleConfirmDelete} 
+            color="error" 
+            variant="contained" 
+            disabled={deleteLoading}
+            startIcon={deleteLoading ? <CircularProgress size={20} /> : null}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
