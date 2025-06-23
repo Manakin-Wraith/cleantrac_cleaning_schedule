@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
+  Typography,
+  Alert,
   DialogContent,
   DialogActions,
   Button,
@@ -13,7 +15,6 @@ import {
   MenuItem,
   CircularProgress,
   Box,
-  Typography,
   Autocomplete,
   Checkbox,
   Chip
@@ -47,13 +48,17 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
         try {
           const response = await api.get('/departments/');
           setDepartments(response.data);
+          // After departments are fetched, if creating new supplier and no department selected, preselect user's department
+          if (!supplier && formData.department_ids.length === 0 && currentUser?.profile?.department_id) {
+            setFormData((prev) => ({ ...prev, department_ids: [currentUser.profile.department_id] }));
+          }
         } catch (err) {
           console.error('Error fetching departments:', err);
         }
       };
       fetchDepartments();
     }
-  }, [open]);
+  }, [open, supplier, formData.department_ids.length, currentUser]);
   
   // Set form data when editing an existing supplier
   useEffect(() => {
@@ -196,14 +201,22 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        {supplier ? 'Edit Supplier' : 'Add New Supplier'}
+        <Typography variant="h6" component="div" fontWeight={600}>
+          {supplier ? 'Edit Supplier' : 'Add New Supplier'}
+        </Typography>
       </DialogTitle>
       
       <DialogContent>
-        <Box sx={{ mt: 2 }}>
+        <Box sx={{ mt: 1 }}>
+          {errors.general && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {errors.general}
+            </Alert>
+          )}
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
               <TextField
+                margin="dense"
                 name="supplier_code"
                 label="Supplier Code *"
                 fullWidth
@@ -217,6 +230,7 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
             
             <Grid item xs={12} md={6}>
               <TextField
+                margin="dense"
                 name="supplier_name"
                 label="Supplier Name *"
                 fullWidth
@@ -230,6 +244,7 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
             
             <Grid item xs={12}>
               <TextField
+                margin="dense"
                 name="contact_info"
                 label="Contact Information"
                 fullWidth
@@ -244,6 +259,7 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
             
             <Grid item xs={12}>
               <TextField
+                margin="dense"
                 name="address"
                 label="Address"
                 fullWidth
@@ -257,22 +273,25 @@ const SupplierFormModal = ({ open, onClose, onSave, supplier }) => {
             
             <Grid item xs={12} md={6}>
               <Autocomplete
+                autoHighlight
                 value={formData.country_of_origin}
                 onChange={handleCountryChange}
                 options={countryOptions}
                 freeSolo
-                slotProps={{
-                  textField: {
-                    label: "Country of Origin",
-                    helperText: "Default: South Africa",
-                    disabled: loading
-                  }
-                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Country of Origin"
+                    helperText="Default: South Africa"
+                    disabled={loading}
+                  />
+                )}
               />
             </Grid>
             
             <Grid item xs={12} sm={6}>
-              <FormControl fullWidth error={!!errors.department_ids}>
+              <FormControl fullWidth margin="dense" error={!!errors.department_ids}
+                variant="outlined">
                 <InputLabel id="departments-label">Departments</InputLabel>
                 <Select
                   labelId="departments-label"

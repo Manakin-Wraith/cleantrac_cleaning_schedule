@@ -13,10 +13,13 @@ from .recipe_models import (
 )
 
 # Basic registration
+from .receiving_models import ReceivingRecord, Product
+
 admin.site.register(Department)
 admin.site.register(CleaningItem)
 admin.site.register(TaskInstance)
 admin.site.register(CompletionLog)
+admin.site.register(Product)
 
 # Thermometer Verification System Admin Registration
 
@@ -146,6 +149,23 @@ class GeneratedDocumentAdmin(admin.ModelAdmin):
     readonly_fields = ('parameters',)
 
 admin.site.register(GeneratedDocument, GeneratedDocumentAdmin)
+
+@admin.register(ReceivingRecord)
+class ReceivingRecordAdmin(admin.ModelAdmin):
+    list_display = (
+        "inventory_id",
+        "product_code",
+        "batch_number",
+        "supplier_code",
+        "quantity_remaining",
+        "unit",
+        "department",
+        "received_date",
+        "status",
+    )
+    list_filter = ("department", "status", "supplier_code")
+    search_fields = ("product_code", "batch_number", "supplier_code", "tracking_id")
+
 # Register Folder and Document models
 admin.site.register(Folder)
 admin.site.register(Document)

@@ -10,6 +10,7 @@ from django.db.models import Count
 from django.db import transaction 
 
 from .models import (
+    ReceivingRecord,
     Department, UserProfile, CleaningItem, TaskInstance, CompletionLog, PasswordResetToken,
     AreaUnit, Thermometer, ThermometerVerificationRecord, 
     ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog,
@@ -23,6 +24,7 @@ from .serializers import (
     AreaUnitSerializer, ThermometerSerializer, ThermometerVerificationRecordSerializer,
     ThermometerVerificationAssignmentSerializer, TemperatureCheckAssignmentSerializer, TemperatureLogSerializer,
     FolderSerializer, DocumentSerializer,
+    ReceivingRecordSerializer,
     SupplierSerializer
 )
 from rest_framework.permissions import AllowAny # Corrected: AllowAny from DRF
@@ -1177,6 +1179,25 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 serializer.save(uploaded_by=request.user)
                 created_docs.append(serializer.data)
         return Response(created_docs, status=status.HTTP_201_CREATED)
+
+
+class ReceivingRecordViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read-only access to receiving records with department filtering."""
+    serializer_class = ReceivingRecordSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return ReceivingRecord.objects.none()
+        if user.is_superuser:
+            return ReceivingRecord.objects.all()
+        try:
+            if user.profile and user.profile.department:
+                return ReceivingRecord.objects.filter(department=user.profile.department)
+        except UserProfile.DoesNotExist:
+            return ReceivingRecord.objects.none()
+        return ReceivingRecord.objects.none()
 
 
 class SupplierViewSet(viewsets.ModelViewSet):

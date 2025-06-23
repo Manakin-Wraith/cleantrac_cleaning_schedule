@@ -1,5 +1,6 @@
 // frontend/src/components/users/UserFormModal.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import {
     Dialog, DialogActions, DialogContent, DialogTitle, TextField, Button,
     Grid, FormControl, InputLabel, Select, MenuItem, CircularProgress, Box, Typography
@@ -19,6 +20,7 @@ const initialFormData = {
 };
 
 function UserFormModal({ open, onClose, onSave, user, currentUserRole }) {
+    const { currentUser } = useAuth();
     const [formData, setFormData] = useState(initialFormData);
     const [departments, setDepartments] = useState([]);
     const [loadingDepartments, setLoadingDepartments] = useState(false);
@@ -59,7 +61,9 @@ function UserFormModal({ open, onClose, onSave, user, currentUserRole }) {
                     department_id: user.profile?.department_id || user.profile?.department || '', 
                 });
             } else {
-                setFormData({...initialFormData, role: 'staff'}); // Default new users to staff
+                // Preselect manager's department when creating a new user
+                const defaultDeptId = currentUser?.profile?.department_id || '';
+                setFormData({ ...initialFormData, role: 'staff', department_id: defaultDeptId });
             }
         }
     }, [user, open]);

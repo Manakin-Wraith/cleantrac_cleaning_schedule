@@ -1,1 +1,10 @@
-reportlab
+Django==5.2.1
+# REST API framework
+djangorestframework==3.15.1
+# Token auth sub-package ships with DRF, no extra install needed
+# CORS support for frontend on another port
+django-cors-headers==4.3.1
+# PDF generation for reports
+reportlab==4.2.0
+# Production WSGI server
+gunicorn==22.0.0
