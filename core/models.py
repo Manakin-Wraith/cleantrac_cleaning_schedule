@@ -125,6 +125,13 @@ class PasswordResetToken(models.Model):
 
 # Thermometer Verification System Models
 
+# ----------------------------------------------------------------------------
+# Import additional models defined in separate modules so that Django
+# recognises them during the app registry scan (needed for migrations).
+# ----------------------------------------------------------------------------
+from .receiving_models import ReceivingRecord  # noqa: E402, F401
+
+
 class AreaUnit(models.Model):
     """Represents a specific area or unit where temperature is measured"""
     name = models.CharField(max_length=200)

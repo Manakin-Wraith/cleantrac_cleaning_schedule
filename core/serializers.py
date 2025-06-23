@@ -754,6 +754,8 @@ class FolderSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at']
 
 
+from .receiving_models import ReceivingRecord, Product
+
 class SupplierSerializer(serializers.ModelSerializer):
     department_ids = serializers.PrimaryKeyRelatedField(
         queryset=Department.objects.all(),
@@ -765,10 +767,10 @@ class SupplierSerializer(serializers.ModelSerializer):
         }
     )
     department_names = serializers.SerializerMethodField()
-    
+
     def get_department_names(self, obj):
         return [dept.name for dept in obj.departments.all()]
-    
+
     class Meta:
         model = Supplier
         fields = [
@@ -776,3 +778,22 @@ class SupplierSerializer(serializers.ModelSerializer):
             'country_of_origin', 'department_ids', 'department_names',
             'created_at', 'updated_at'
         ]
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['product_code', 'name', 'description', 'supplier_code']
+
+
+class ReceivingRecordSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True, default=None)
+    product_description = serializers.CharField(source='product.description', read_only=True, default=None)
+
+    department_name = serializers.CharField(source='department.name', read_only=True)
+
+    class Meta:
+        model = ReceivingRecord
+        fields = ['inventory_id', 'product_code', 'product', 'product_name', 'product_description', 'batch_number', 'supplier_code', 'tracking_id', 'quantity_remaining', 'unit', 'storage_location', 'expiry_date', 'best_before_date', 'received_date', 'status', 'last_updated', 'department', 'department_name']
+
+

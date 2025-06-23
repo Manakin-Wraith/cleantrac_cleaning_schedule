@@ -20,7 +20,8 @@ from .views import (
     # Document Management ViewSet
     FolderViewSet, DocumentViewSet,
     # Supplier Management ViewSet
-    SupplierViewSet
+    SupplierViewSet,
+    ReceivingRecordViewSet
 )
 from .document_template_views import (
     DocumentTemplateViewSet,
@@ -64,6 +65,8 @@ router.register(r'generated-documents', GeneratedDocumentViewSet, basename='gene
 
 # Register Supplier Management ViewSet
 router.register(r'suppliers', SupplierViewSet, basename='supplier')
+# Receiving records endpoint
+router.register(r'receiving-records', ReceivingRecordViewSet, basename='receivingrecord')
 
 # Register Recipe Management System ViewSets
 router.register(r'recipes', RecipeViewSet, basename='recipe')
