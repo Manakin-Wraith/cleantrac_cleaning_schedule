@@ -405,6 +405,9 @@ function ManagerDashboardPage() {
 
             {/* Receiving Records Table */}
             <Box sx={{ mt: 4 }}>
+                <Typography variant="h4" sx={{ fontWeight: 500, mb: 2 }}>
+                    Recieved Products
+                </Typography>
                 <ReceivingTableGrid pageSize={25} />
             </Box>
         </Container>
