@@ -250,9 +250,9 @@ const RecipeList = ({ departmentColor }) => {
                     <TableCell>
                       {recipe.ingredients && recipe.ingredients.length > 0 ? (
                         <Tooltip title={
-                          <React.Fragment key={`tooltip-${recipe.id}`}>
-                            {recipe.ingredients.map(ing => (
-                              <div key={`${recipe.id}-${ing.ingredient_name}`}>
+                          <React.Fragment>
+                            {recipe.ingredients.map((ing, idx) => (
+                              <div key={ing.id ?? `${recipe.id}-ing-${idx}`}>
                                 {`${ing.ingredient_name} (${ing.quantity} ${ing.unit})`}
                               </div>
                             ))}

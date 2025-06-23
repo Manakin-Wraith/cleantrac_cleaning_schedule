@@ -15,10 +15,10 @@ import {
   Box,
   InputAdornment,
   Paper,
+  TableContainer,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   CircularProgress,
@@ -30,6 +30,7 @@ import {
   Close as CloseIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
+import ProductAutocomplete from '../common/ProductAutocomplete';
 import api from '../../services/api';
 
 const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmentColor }) => {
@@ -48,6 +49,7 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [newIngredient, setNewIngredient] = useState({
     ingredient_code: '',
     ingredient_name: '',
@@ -109,6 +111,7 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
     }
   };
 
+  // Handle manual field changes (qty, pack size, cost, etc.)
   const handleIngredientChange = (e) => {
     const { name, value } = e.target;
     setNewIngredient({
@@ -125,9 +128,25 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
     }
   };
 
+  const handleProductSelect = (productObj) => {
+    setSelectedProduct(productObj);
+    // Pre-fill code & name where possible
+    setNewIngredient((prev) => ({
+      ...prev,
+      ingredient_code: productObj?.product_code || '',
+      ingredient_name: productObj?.name || '',
+    }));
+    if (ingredientErrors.ingredient_name || ingredientErrors.product) {
+      setIngredientErrors({});
+    }
+  };
+
   const validateIngredient = () => {
     const newErrors = {};
     
+    if (!selectedProduct) {
+      newErrors.product = 'Select a product';
+    }
     if (!newIngredient.ingredient_name.trim()) {
       newErrors.ingredient_name = 'Ingredient name is required';
     }
@@ -156,6 +175,8 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
       const totalCost = quantity * cost;
       
       const ingredientToAdd = {
+        product: selectedProduct?.id, // serializer expects product pk
+        ...newIngredient,
         ...newIngredient,
         total_cost: totalCost
       };
@@ -166,6 +187,7 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
       });
       
       // Reset new ingredient form
+      setSelectedProduct(null);
       setNewIngredient({
         ingredient_code: '',
         ingredient_name: '',
@@ -405,30 +427,16 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
                 
                 <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <TextField
-                        name="ingredient_code"
-                        label="Ingredient Code"
-                        value={newIngredient.ingredient_code}
-                        onChange={handleIngredientChange}
-                        fullWidth
-                        size="small"
+                    <Grid item xs={12} sm={8} md={4}>
+                      <ProductAutocomplete
+                        value={selectedProduct}
+                        onChange={handleProductSelect}
+                        label="Ingredient Product"
+                        error={!!ingredientErrors.product}
+                        helperText={ingredientErrors.product}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <TextField
-                        name="ingredient_name"
-                        label="Ingredient Name"
-                        value={newIngredient.ingredient_name}
-                        onChange={handleIngredientChange}
-                        fullWidth
-                        required
-                        error={!!ingredientErrors.ingredient_name}
-                        helperText={ingredientErrors.ingredient_name}
-                        size="small"
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={2}>
+                    <Grid item xs={12} sm={4} md={2}>
                       <TextField
                         name="pack_size"
                         label="Pack Size"
@@ -438,7 +446,7 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
                         size="small"
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6} md={2}>
+                    <Grid item xs={12} sm={4} md={2}>
                       <TextField
                         name="quantity"
                         label="Quantity"
@@ -475,7 +483,7 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
                         }}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6} md={2}>
+                    <Grid item xs={12} sm={4} md={2}>
                       <TextField
                         name="cost"
                         label="Unit Cost (R)"
@@ -488,6 +496,23 @@ const RecipeFormModal = ({ open, onClose, onSubmit, recipe, isEditing, departmen
                         helperText={ingredientErrors.cost}
                         size="small"
                       />
+                    </Grid>
+                    <Grid item xs={12} display="flex" justifyContent="flex-end">
+                      <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={addIngredient}
+                        sx={{ 
+                          bgcolor: departmentColor,
+                          '&:hover': {
+                            bgcolor: departmentColor,
+                            opacity: 0.9
+                          }
+                        }}
+                      >
+                        Add Ingredient
+                      </Button>
+
                     </Grid>
                     <Grid item xs={12} display="flex" justifyContent="flex-end">
                       <Button

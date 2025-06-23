@@ -79,7 +79,13 @@ const ProductionAssignmentModal = ({
         setDepartmentOptions(deptData);
         
         // Fetch recipes
-        const recipeResponse = await apiClient.get('/recipes/');
+        let recipesUrl = '/recipes/?is_active=true';
+        // include department_id if we have it
+        const deptIdParam = department || currentUser?.profile?.department_id;
+        if (deptIdParam) {
+          recipesUrl += `&department_id=${deptIdParam}`;
+        }
+        const recipeResponse = await apiClient.get(recipesUrl);
         const recipeData = Array.isArray(recipeResponse.data) ? recipeResponse.data : 
                           (recipeResponse.data?.results || []);
         setRecipeOptions(recipeData);
@@ -116,6 +122,13 @@ const ProductionAssignmentModal = ({
   useEffect(() => {
     console.log('Staff Options:', staffOptions);
   }, [staffOptions]);
+
+  // Debug: log sample of recipe options whenever they update
+  useEffect(() => {
+    if (recipeOptions.length) {
+      console.log('[Debug] RecipeOptions sample:', recipeOptions.slice(0, 5));
+    }
+  }, [recipeOptions]);
 
 
 
@@ -634,8 +647,17 @@ const ProductionAssignmentModal = ({
                   {/* Recipe */}
                   <Autocomplete
                     id="recipe-select"
-                    options={recipeOptions.filter(option => !department || option.department_id === parseInt(department) || option.department_name === departmentName )}
-                    getOptionLabel={(option) => option ? `${option.name} (${option.product_code || 'N/A'})` : ''}
+                    options={recipeOptions.filter(r => {
+                      if (!r.is_active) return false;
+                      // If a specific department is selected, compare by ID first
+                      if (department && parseInt(department) === r.department_id) return true;
+                      // Fallback to department name comparison if available
+                      if (departmentName) {
+                        return r.department_name?.toLowerCase() === departmentName.toLowerCase();
+                      }
+                      return true; // no department filtering
+                    })}
+                    getOptionLabel={(option) => option?.name ?? ''}
                     value={recipe}
                     onChange={(event, newValue) => {
                       setRecipe(newValue);
