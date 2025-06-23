@@ -35,6 +35,7 @@ import CloseIcon from '@mui/icons-material/Close';
 
 // Placeholder for actual API calls
 import { getCurrentUser } from '../services/authService';
+import ReceivingTableGrid from '../features/receiving/ReceivingTableGrid';
 import { getTemperatureLoggingManagerSummary, getCurrentTemperatureCheckAssignments } from '../services/thermometerService';
 import dayjs from 'dayjs';
 import { getProductionSchedules } from '../services/productionScheduleService';
@@ -401,6 +402,11 @@ function ManagerDashboardPage() {
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* Receiving Records Table */}
+            <Box sx={{ mt: 4 }}>
+                <ReceivingTableGrid pageSize={25} />
+            </Box>
         </Container>
     );
 }

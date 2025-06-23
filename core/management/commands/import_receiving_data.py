@@ -11,6 +11,7 @@ before importing.
 from typing import List
 
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 from django.db import transaction
 
 from core.import_models import ImportReceivedProduct, ImportProduct
@@ -86,7 +87,8 @@ class Command(BaseCommand):
                     storage_location=rp.storage_location,
                     expiry_date=rp.expiry_date,
                     best_before_date=rp.best_before_date,
-                    received_date=rp.received_date,
+                                            # Ensure timezone-aware datetimes to avoid UTC shift issues
+                        received_date=timezone.make_aware(rp.received_date) if timezone.is_naive(rp.received_date) else rp.received_date,
                     status=rp.quality_status,
                     last_updated=rp.updated_at,
                     department=department,
