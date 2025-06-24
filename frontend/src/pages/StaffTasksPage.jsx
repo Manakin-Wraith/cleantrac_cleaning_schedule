@@ -226,11 +226,11 @@ function StaffTasksPage() {
         setError('');
         try {
             if (isRecipe) {
-                await updateProductionSchedule(taskId, { status: 'completed' });
-                setTodaysRecipeTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completed' } : t));
+                await updateProductionSchedule(taskId, { status: 'pending_review' });
+                setTodaysRecipeTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'pending_review' } : t));
             } else {
-                await updateTaskInstance(taskId, { status: 'completed' });
-                setTodaysTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completed' } : t));
+                await updateTaskInstance(taskId, { status: 'pending_review' });
+                setTodaysTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'pending_review' } : t));
             }
         } catch (err) {
             console.error(`Failed to submit task ${taskId} for review:`, err);
@@ -600,7 +600,7 @@ function StaffTasksPage() {
                                         </>
                                     )}
                                 </CardContent>
-                                {task.status !== 'completed' && (
+                                {['pending', 'in_progress'].includes(task.status) && (
                                     <CardActions sx={{ justifyContent: 'flex-end', pt: 0 }}>
                                         <Button 
                                             variant="contained" 
