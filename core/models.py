@@ -130,6 +130,8 @@ class PasswordResetToken(models.Model):
 # recognises them during the app registry scan (needed for migrations).
 # ----------------------------------------------------------------------------
 from .receiving_models import ReceivingRecord  # noqa: E402, F401
+# Import recurring schedule model so Django detects it for migrations
+from .recurrence_models import RecurringSchedule  # noqa: E402, F401
 
 
 class AreaUnit(models.Model):

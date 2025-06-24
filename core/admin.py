@@ -14,6 +14,7 @@ from .recipe_models import (
 
 # Basic registration
 from .receiving_models import ReceivingRecord, Product
+from .recurrence_models import RecurringSchedule
 
 admin.site.register(Department)
 admin.site.register(CleaningItem)
@@ -250,6 +251,14 @@ class WasteRecordAdmin(admin.ModelAdmin):
     date_hierarchy = 'recorded_at'
 
 admin.site.register(WasteRecord, WasteRecordAdmin)
+
+# Recurring Schedule Admin Registration
+class RecurringScheduleAdmin(admin.ModelAdmin):
+    list_display = ('cleaning_item', 'department', 'recurrence_type', 'start_date', 'end_date', 'assigned_to', 'created_by', 'created_at')
+    list_filter = ('department', 'recurrence_type', 'start_date')
+    search_fields = ('cleaning_item__name', 'department__name')
+
+admin.site.register(RecurringSchedule, RecurringScheduleAdmin)
 
 # You can create more customized ModelAdmin classes for other models as needed
 # For example, for TaskInstance:

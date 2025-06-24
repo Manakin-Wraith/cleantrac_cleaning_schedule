@@ -187,6 +187,7 @@ const UnifiedCalendarPage = () => {
           location: ev.location || ev.cleaning_item?.equipment || '',
           assigned_staff_name: assignedName || 'Unassigned',
           equipment_needed: ev.cleaning_item?.equipment || '',
+          recurrence_type: ev.recurrence_type,
           notes_count: ev.notes_count || 0,
         },
       };
@@ -433,7 +434,19 @@ const UnifiedCalendarPage = () => {
 
   // Save handler for cleaning task modal
   const handleCleaningTaskSaved = async (taskData, existingId = null) => {
-    // If modal already saved and returned object without requiring API call
+    // If modal already saved and returned ARR directly (recurring) or single instance
+    if (Array.isArray(taskData) && !existingId) {
+      setCleaningEvents(prev => {
+        const withoutOld = prev.filter(ev => !taskData.some(t => t.id === ev.id));
+        return [...withoutOld, ...taskData];
+      });
+      await fetchAllData();
+      enqueueSnackbar('Recurring tasks scheduled', { variant: 'success' });
+      setTaskAssignmentModalOpen(false);
+      setDrawerOpen(false);
+      return;
+    }
+    // Single instance already created
     if (taskData && taskData.id && !existingId) {
       setCleaningEvents(prev => {
         const withoutOld = prev.filter(ev => ev.id !== taskData.id);
@@ -465,15 +478,20 @@ const UnifiedCalendarPage = () => {
       if (assigneeVal !== undefined) {
         payload.assigned_to_id = assigneeVal === '' ? null : Number(assigneeVal);
       }
+      let savedArrayForState = [];
       if (existingId) {
         saved = await updateTaskInstance(existingId, payload);
+        savedArrayForState = [saved];
       } else {
-        saved = await createTaskInstance(payload);
+        const response = await createTaskInstance(payload);
+        savedArrayForState = Array.isArray(response) ? response : [response];
+        // Pick first element just for closing modal etc.
+        saved = savedArrayForState[0];
       }
 
       setCleaningEvents(prev => {
-        const withoutOld = prev.filter(ev => ev.id !== saved.id && ev.id !== existingId);
-        return [...withoutOld, saved];
+        const withoutOld = prev.filter(ev => !savedArrayForState.some(s => s.id === ev.id) && ev.id !== existingId);
+        return [...withoutOld, ...savedArrayForState];
       });
 
       await fetchAllData();
