@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.db.models import Q, Sum, Count
 from django.db import transaction
 from django.contrib.auth.models import User
+from datetime import timedelta
 
 from .models import Department
 from .recipe_models import (
@@ -568,6 +569,74 @@ class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
     """
     serializer_class = RecipeProductionTaskSerializer
     permission_classes = [CanManageProductionSchedule]
+
+    # ------------------------------------------------------------------
+    # Override create to support recurring scheduling
+    # ------------------------------------------------------------------
+    def create(self, request, *args, **kwargs):
+        is_recurring_flag = request.data.get('is_recurring') in [True, 'true', 'True', '1', 1]
+        recurrence_type = request.data.get('recurrence_type')
+
+        if is_recurring_flag:
+            if recurrence_type not in ['daily', 'weekly', 'monthly']:
+                return Response({'error': 'Invalid recurrence_type. Must be daily, weekly, or monthly.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            # Save parent recurring task
+            parent_task = serializer.save(created_by=request.user)
+
+            # Determine horizon for child generation
+            days_ahead = 6 if recurrence_type == 'daily' else 30
+            self._generate_child_tasks(parent_task, days_ahead)
+
+            queryset = RecipeProductionTask.objects.filter(Q(id=parent_task.id) | Q(parent_task=parent_task))
+            output_serializer = self.get_serializer(queryset, many=True)
+            headers = self.get_success_headers(serializer.data)
+            return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        # Non-recurring fallback
+        return super().create(request, *args, **kwargs)
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+    def _generate_child_tasks(self, parent_task, days_ahead):
+        """Generate child RecipeProductionTask rows up to *days_ahead* days in advance."""
+        delta_map = {
+            'daily': timedelta(days=1),
+            'weekly': timedelta(weeks=1),
+            'monthly': timedelta(days=30),  # simple month approximation
+        }
+        delta = delta_map.get(parent_task.recurrence_type)
+        if not delta:
+            return
+
+        current_start = parent_task.scheduled_start_time + delta
+        current_end = parent_task.scheduled_end_time + delta if parent_task.scheduled_end_time else None
+        target_end_date = parent_task.scheduled_start_time + timedelta(days=days_ahead)
+
+        while current_start.date() <= target_end_date.date():
+            if not RecipeProductionTask.objects.filter(parent_task=parent_task, scheduled_start_time=current_start).exists():
+                RecipeProductionTask.objects.create(
+                    recipe=parent_task.recipe,
+                    department=parent_task.department,
+                    scheduled_start_time=current_start,
+                    scheduled_end_time=current_end,
+                    scheduled_quantity=parent_task.scheduled_quantity,
+                    status='scheduled',
+                    is_recurring=False,
+                    recurrence_type='none',
+                    notes=f"Auto-generated child of task {parent_task.id}",
+                    assigned_staff=parent_task.assigned_staff,
+                    created_by=parent_task.created_by,
+                    parent_task=parent_task,
+                    task_type=getattr(parent_task, 'task_type', 'prep'),
+                    duration_minutes=getattr(parent_task, 'duration_minutes', None),
+                )
+            current_start += delta
+            if current_end:
+                current_end += delta
     
     def get_queryset(self):
         """

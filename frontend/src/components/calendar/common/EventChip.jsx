@@ -5,6 +5,10 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Tooltip from '@mui/material/Tooltip';
 import Avatar from '@mui/material/Avatar';
+import Chip from '@mui/material/Chip';
+import RepeatOneIcon from '@mui/icons-material/RepeatOne';
+import CalendarViewWeekIcon from '@mui/icons-material/CalendarViewWeek';
+import DateRangeIcon from '@mui/icons-material/DateRange';
 import Stack from '@mui/material/Stack';
 import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import StickyNote2OutlinedIcon from '@mui/icons-material/StickyNote2Outlined';
@@ -68,24 +72,37 @@ export default function EventChip({
   dense = false,
   compact = false,
   tooltipContent = null,
-  badgeText = null,
+  recurrenceType = null,
 }) {
   const typeColour = TYPE_COLOURS[type] || '#616161';
   const isCompact = compact; // alias
   const statusColour = STATUS_COLOURS[status.toLowerCase?.() || 'pending'] || '#BDBDBD';
 
-  let primaryLabel = isCompact && time ? `${title} • ${time}` : title;
-  // If badge provided, append with space
-  if (badgeText) {
-    primaryLabel = `${primaryLabel} ${badgeText}`;
-  }
+  let primaryLabel = isCompact && time ? `${title} • ${time}` : title; // label remains
+
+  // recurrence chip mapping
+  const recurrenceMap = {
+    daily: { label: 'Daily', icon: <RepeatOneIcon sx={{ fontSize: 14 }} /> },
+    weekly: { label: 'Weekly', icon: <CalendarViewWeekIcon sx={{ fontSize: 14 }} /> },
+    monthly: { label: 'Monthly', icon: <DateRangeIcon sx={{ fontSize: 14 }} /> },
+  };
 
   const content = (
     <ChipContainer typeColour={typeColour} compact={isCompact}>
       {/* primary row */}
-      <Typography variant="caption" fontWeight={600} sx={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', textDecoration: ((type==='recipe' || type==='cleaning') && ['completed','done'].includes(status?.toLowerCase?.())) ? 'line-through' : 'none' }}>
-        {primaryLabel}
-      </Typography>
+      <Stack direction="row" spacing={0.5} alignItems="center" sx={{ whiteSpace:'nowrap', overflow:'hidden' }}>
+        <Typography variant="caption" fontWeight={600} sx={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', textDecoration: ((type==='recipe' || type==='cleaning') && ['completed','done'].includes(status?.toLowerCase?.())) ? 'line-through' : 'none' }}>
+          {primaryLabel}
+        </Typography>
+        {recurrenceType && recurrenceMap[recurrenceType] && (
+          <Chip
+            size="small"
+            icon={recurrenceMap[recurrenceType].icon}
+            label={recurrenceMap[recurrenceType].label}
+            sx={{ bgcolor: alpha(typeColour, 0.25), fontSize: 10, height:18 }}
+          />
+        )}
+      </Stack>
 
       {/* secondary row (hidden in dense) */}
       {!dense && !isCompact && (
@@ -136,5 +153,5 @@ EventChip.propTypes = {
   dense: PropTypes.bool,
   compact: PropTypes.bool,
   tooltipContent: PropTypes.node,
-  badgeText: PropTypes.string,
+  recurrenceType: PropTypes.oneOf(['daily','weekly','monthly']),
 };
