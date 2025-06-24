@@ -130,7 +130,9 @@ const UnifiedCalendarPage = () => {
     const map = {};
     (resourcesData || []).forEach((u) => {
       if (u && u.id != null) {
+        // Store under both numeric and string keys for flexible lookup
         map[u.id] = u;
+        map[u.id.toString()] = u;
       }
     });
     return map;
@@ -158,7 +160,8 @@ const UnifiedCalendarPage = () => {
       } else if (ev.assigned_to_name) {
         assignedName = ev.assigned_to_name;
       } else if (ev.assigned_to || ev.assigned_to_id) {
-        const u = userMap[ev.assigned_to || ev.assigned_to_id];
+        const key = (ev.assigned_to || ev.assigned_to_id)?.toString?.() || (ev.assigned_to || ev.assigned_to_id);
+        const u = userMap[key];
         if (u) {
           const fname = u.first_name || u.name || '';
           const lname = u.last_name || '';
@@ -174,7 +177,7 @@ const UnifiedCalendarPage = () => {
         type: 'cleaning',
         status: ev.status || 'Pending',
         assignedToName: assignedName || 'Unassigned',
-        resourceId: ev.assigned_to_details?.id || ev.assigned_to_id || null,
+        resourceId: ev.assigned_to_details?.id?.toString() || (ev.assigned_to_id != null ? ev.assigned_to_id.toString() : null),
         start,
         end,
         extendedProps: {
@@ -389,66 +392,90 @@ const UnifiedCalendarPage = () => {
   // Save handler for recipe modal (create or update)
   const handleProductionTaskSaved = async (taskData, existingId = null) => {
     try {
+      // If modal already saved and returned object
+      if (taskData && taskData.id && !existingId) {
+        setRecipeEvents(prev => {
+          const withoutOld = prev.filter(ev => ev.id !== taskData.id);
+          return [...withoutOld, taskData];
+        });
+        await fetchAllData();
+        enqueueSnackbar('Recipe updated', { variant: 'success' });
+        setRecipeAssignmentModalOpen(false);
+        setDrawerOpen(false);
+        return;
+      }
+
+      // Otherwise perform API call here (create or update)
       let saved;
       if (existingId) {
         saved = await updateProductionSchedule(existingId, taskData);
       } else {
         saved = await createProductionSchedule(taskData);
-        // Ensure recipe_name exists for UI display
-        if (!saved.recipe_name && taskData.recipe_name) {
-          saved.recipe_name = taskData.recipe_name;
-        }
-        if (!saved.recipe && taskData.recipe_name) {
-          saved.recipe = { name: taskData.recipe_name, id: taskData.recipe_id };
-        }
       }
 
-      // merge into recipeEvents
       setRecipeEvents(prev => {
         const withoutOld = prev.filter(ev => ev.id !== saved.id && ev.id !== existingId);
         return [...withoutOld, saved];
       });
 
-      enqueueSnackbar(existingId ? 'Recipe updated' : 'Recipe created', { variant: 'success' });
+      await fetchAllData();
+      enqueueSnackbar(existingId ? 'Recipe updated' : 'Recipe scheduled', { variant: 'success' });
       setRecipeAssignmentModalOpen(false);
       setDrawerOpen(false);
     } catch (err) {
       console.error('Save recipe failed', err);
       enqueueSnackbar(err.message || 'Failed to save recipe', { variant: 'error' });
     }
-  };
+  }
 
   // Prevent double-submit flag
   const cleaningSaveRef = useRef(false);
 
   // Save handler for cleaning task modal
   const handleCleaningTaskSaved = async (taskData, existingId = null) => {
-    // If modal already performed the save and returned the object (taskData has id), just merge/refetch
+    // If modal already saved and returned object without requiring API call
     if (taskData && taskData.id && !existingId) {
+      setCleaningEvents(prev => {
+        const withoutOld = prev.filter(ev => ev.id !== taskData.id);
+        return [...withoutOld, taskData];
+      });
       await fetchAllData();
       enqueueSnackbar('Task scheduled', { variant: 'success' });
       setTaskAssignmentModalOpen(false);
       setDrawerOpen(false);
       return;
     }
+
     if (cleaningSaveRef.current) return;
-    cleaningSaveRef.current = true;
-    if (cleaningSaveRef.current) return; // guard against double click / double event
     cleaningSaveRef.current = true;
     try {
       let saved;
-      const payload = {
-        ...taskData,
-        cleaning_item_id_write: taskData.cleaning_item_id || taskData.cleaning_item?.id,
-        assigned_to_write: taskData.assigned_to_id || taskData.assigned_to || null,
-      };
+      const payload = { ...taskData };
+      // Ensure cleaning_item_id present
+      if (!payload.cleaning_item_id && taskData.cleaning_item?.id) {
+        payload.cleaning_item_id = taskData.cleaning_item.id;
+      }
+      // Normalize cleaning item
+      const itemVal = taskData.cleaning_item_id_write ?? taskData.cleaning_item_id ?? taskData.cleaning_item;
+      if (itemVal !== undefined) {
+        payload.cleaning_item_id_write = itemVal === '' ? null : Number(itemVal);
+      }
+      // Normalize assignee
+      const assigneeVal = taskData.assigned_to_id ?? taskData.assigned_to;
+      if (assigneeVal !== undefined) {
+        payload.assigned_to_id = assigneeVal === '' ? null : Number(assigneeVal);
+      }
       if (existingId) {
         saved = await updateTaskInstance(existingId, payload);
       } else {
         saved = await createTaskInstance(payload);
       }
 
-      // Refresh tasks to ensure we have latest details
+      setCleaningEvents(prev => {
+        const withoutOld = prev.filter(ev => ev.id !== saved.id && ev.id !== existingId);
+        return [...withoutOld, saved];
+      });
+
       await fetchAllData();
       enqueueSnackbar(existingId ? 'Task updated' : 'Task scheduled', { variant: 'success' });
       setTaskAssignmentModalOpen(false);
@@ -489,7 +516,7 @@ const UnifiedCalendarPage = () => {
 
       const usersData = await getUsers();
       const formattedResources = (usersData.results || []).map(user => ({
-        id: user.id.toString(),
+        id: (user.profile?.id ?? user.id).toString(),
         title: `${user.first_name} ${user.last_name}`.trim() || user.email,
       }));
       setResourcesData(formattedResources);

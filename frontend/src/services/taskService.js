@@ -74,6 +74,8 @@ export const createTaskInstance = async (taskData) => {
  * Example: { assigned_to: 3, status: 'in_progress' }
  * @returns {Promise<object>} A promise that resolves to the updated task object.
  */
+import { extractNumericId } from '../utils/idUtils';
+
 export const updateTaskInstance = async (taskId, taskData) => {
     try {
         // Ensure assigned_to_id is correctly mapped to assigned_to for the backend.
@@ -81,17 +83,34 @@ export const updateTaskInstance = async (taskId, taskData) => {
         // with the ID as its value for updates.
         const payload = { ...taskData };
 
+        // Ensure assigned_to_id numeric or null; leave field name as assigned_to_id because DRF serializer accepts it (source='assigned_to')
         if (taskData.hasOwnProperty('assigned_to_id')) {
-            payload.assigned_to = taskData.assigned_to_id === '' || taskData.assigned_to_id === undefined
+            payload.assigned_to_id = taskData.assigned_to_id === '' || taskData.assigned_to_id === undefined
                 ? null
                 : parseInt(taskData.assigned_to_id, 10);
-            // Remove the helper field completely to avoid serializer complaints
-            delete payload.assigned_to_id;
         } else if (taskData.hasOwnProperty('assigned_to')) {
-            // Keep existing behavior if 'assigned_to' is directly provided, though 'assigned_to_id' is preferred from frontend logic
-            payload.assigned_to = taskData.assigned_to === '' || taskData.assigned_to === undefined 
+            // Fallback if caller passed 'assigned_to'
+            payload.assigned_to_id = taskData.assigned_to === '' || taskData.assigned_to === undefined 
                 ? null 
                 : parseInt(taskData.assigned_to, 10);
+            delete payload.assigned_to; // avoid unknown field
+        }
+
+        // Normalize cleaning item key → always send cleaning_item_id_write
+        if (taskData.hasOwnProperty('cleaning_item_id_write')) {
+            payload.cleaning_item_id_write = taskData.cleaning_item_id_write === '' || taskData.cleaning_item_id_write === undefined
+                ? null
+                : parseInt(taskData.cleaning_item_id_write, 10);
+        } else if (taskData.hasOwnProperty('cleaning_item_id')) {
+            payload.cleaning_item_id_write = taskData.cleaning_item_id === '' || taskData.cleaning_item_id === undefined
+                ? null
+                : parseInt(taskData.cleaning_item_id, 10);
+            delete payload.cleaning_item_id;
+        } else if (taskData.hasOwnProperty('cleaning_item')) {
+            // may be object or ID
+            const ciVal = typeof taskData.cleaning_item === 'object' ? taskData.cleaning_item.id : taskData.cleaning_item;
+            payload.cleaning_item_id_write = ciVal === '' || ciVal === undefined ? null : parseInt(ciVal, 10);
+            delete payload.cleaning_item;
         }
 
         // Remove status if it is unchanged or redundant to satisfy workflow rules
@@ -100,13 +119,48 @@ export const updateTaskInstance = async (taskId, taskData) => {
         }
 
         // Drop any null/undefined fields to keep PATCH minimal
-        Object.keys(payload).forEach((k) => (payload[k] == null ? delete payload[k] : null));
+        Object.keys(payload).forEach((k) => {
+            if (payload[k] === '' || payload[k] == null) {
+                delete payload[k];
+            }
+        });
 
-        const response = await api.patch(`/taskinstances/${taskId}/`, payload);
+        const numericId = extractNumericId(taskId);
+        if (Number.isNaN(numericId)) {
+            throw new Error(`Invalid task id '${taskId}'`);
+        }
+        if (Object.keys(payload).length === 0) {
+            // Nothing to update – treat as success
+            return { id: numericId };
+        }
+        if (process.env.NODE_ENV !== 'production') {
+            // eslint-disable-next-line no-console
+            console.log('[updateTaskInstance] PATCH payload', payload);
+        }
+        const response = await api.patch(`/taskinstances/${numericId}/`, payload);
         return response.data;
     } catch (error) {
         console.error(`Error updating task ${taskId}:`, error.response?.data || error.message);
-        throw error.response?.data || new Error('Failed to update task.');
+        let errorMessage = "Failed to update task.";
+        if (error.response && error.response.data) {
+            const errorData = error.response.data;
+            if (typeof errorData === 'string') {
+                errorMessage = errorData;
+            } else if (typeof errorData === 'object') {
+                // Try to extract common DRF error formats
+                if (errorData.detail) {
+                    errorMessage = errorData.detail;
+                } else {
+                    // Concatenate all error messages from DRF (e.g., field errors)
+                    const messages = Object.entries(errorData).map(([key, value]) => {
+                        if (Array.isArray(value)) return `${key}: ${value.join(' ')}`;
+                        return `${key}: ${value}`;
+                    });
+                    if (messages.length > 0) errorMessage = messages.join('; ');
+                }
+            }
+        }
+        throw new Error(errorMessage);
     }
 };
 

@@ -1,4 +1,5 @@
 import api from './api';
+import { extractNumericId } from '../utils/idUtils';
 
 /**
  * Fetch production schedules (scheduled recipe batches).
@@ -28,8 +29,9 @@ export const createProductionSchedule = async (payload) => {
 
 // Update existing production schedule
 export const updateProductionSchedule = async (id, payload) => {
+  const numericId = extractNumericId(id);
   try {
-    const response = await api.patch(`/production-schedules/${id}/`, payload);
+    const response = await api.patch(`/production-schedules/${numericId}/`, payload);
     return response.data;
   } catch (error) {
     console.error(`Error updating production schedule ${id}:`, error.response?.data || error.message);

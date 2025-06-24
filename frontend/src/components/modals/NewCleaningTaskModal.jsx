@@ -1,4 +1,9 @@
 import React, { useEffect, useState } from 'react';
+// DEBUG: confirm correct NewCleaningTaskModal module is loaded
+if (process.env.NODE_ENV !== 'production') {
+  // eslint-disable-next-line no-console
+  console.log('%c[NewCleaningTaskModal] module loaded', 'color: #2196f3');
+}
 import PropTypes from 'prop-types';
 import {
   Dialog,
@@ -68,12 +73,12 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId, edit
         // Ensure currently selected values exist in options to avoid MUI out-of-range warnings
         if (editMode && task) {
           const cid = typeof task.cleaning_item === 'object' ? task.cleaning_item?.id : task.cleaning_item_id || task.cleaning_item;
-          if (cid && !fetchedItems.some(ci => ci.id === cid)) {
+          if (cid && !fetchedItems.some(ci => String(ci.id) === String(cid))) {
             fetchedItems.push({ id: cid, name: task.cleaning_item?.name || 'Selected Item' });
           }
 
           const uid = task.assigned_to || task.assigned_to_id;
-          if (uid && !fetchedUsers.some(u => u.profile?.id === uid)) {
+          if (uid && !fetchedUsers.some(u => String(u.profile?.id) === String(uid))) {
             fetchedUsers.push({ id: uid, profile: { id: uid }, first_name: 'Assigned', last_name: 'User' });
           }
         }
@@ -147,7 +152,13 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId, edit
           payload.duration_minutes = dayjs(form.end_time).diff(form.start_time, 'minute');
         }
 
-        if ((task.notes || '') !== (form.notes || '')) {
+        // Cleaning Item change
+const origCleaning = (typeof task.cleaning_item === 'object' ? task.cleaning_item?.id : task.cleaning_item_id || task.cleaning_item || null);
+if (toNullableNumber(form.cleaning_item_id) !== toNullableNumber(origCleaning)) {
+  payload.cleaning_item_id_write = toNullableNumber(form.cleaning_item_id);
+}
+
+if ((task.notes || '') !== (form.notes || '')) {
           payload.notes = form.notes;
         }
 
@@ -177,14 +188,16 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId, edit
 
       let saved;
       if (editMode && task?.id) {
-        saved = await updateTaskInstance(task.id, payload);
+        // DEBUG: inspect payload for edit mode
+console.log('[NewCleaningTaskModal] update payload', payload);
+saved = await updateTaskInstance(task.id, payload);
         enqueueSnackbar('Task updated', { variant: 'success' });
       } else {
         saved = await createTaskInstance(payload);
         enqueueSnackbar('Task scheduled', { variant: 'success' });
       }
 
-      if (onSave) onSave(saved, editMode ? task.id : null);
+      if (onSave) onSave(saved);
       onClose();
     } catch (e) {
       enqueueSnackbar(e.message || 'Failed to save task', { variant: 'error' });
@@ -226,7 +239,7 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId, edit
                   <em>Unassigned</em>
                 </MenuItem>
                 {staffUsers.map((u) => (
-                  <MenuItem key={u.id} value={String(u.profile.id)}>
+                  <MenuItem key={u.profile?.id || u.id} value={String(u.profile?.id || u.id)}>
                     {u.first_name} {u.last_name || ''}
                   </MenuItem>
                 ))}
