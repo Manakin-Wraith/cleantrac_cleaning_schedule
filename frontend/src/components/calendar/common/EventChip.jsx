@@ -68,12 +68,17 @@ export default function EventChip({
   dense = false,
   compact = false,
   tooltipContent = null,
+  badgeText = null,
 }) {
   const typeColour = TYPE_COLOURS[type] || '#616161';
   const isCompact = compact; // alias
   const statusColour = STATUS_COLOURS[status.toLowerCase?.() || 'pending'] || '#BDBDBD';
 
-  const primaryLabel = isCompact && time ? `${title} • ${time}` : title;
+  let primaryLabel = isCompact && time ? `${title} • ${time}` : title;
+  // If badge provided, append with space
+  if (badgeText) {
+    primaryLabel = `${primaryLabel} ${badgeText}`;
+  }
 
   const content = (
     <ChipContainer typeColour={typeColour} compact={isCompact}>
@@ -131,4 +136,5 @@ EventChip.propTypes = {
   dense: PropTypes.bool,
   compact: PropTypes.bool,
   tooltipContent: PropTypes.node,
+  badgeText: PropTypes.string,
 };

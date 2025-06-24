@@ -9,6 +9,8 @@ import EventChip from '../common/EventChip';
 export default function CleaningTaskEventContent({ eventInfo }) {
   const { extendedProps: p } = eventInfo.event;
   const time = eventInfo.timeText; // FullCalendar provides formatted time range
+  const badgeMap = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
+  const badge = badgeMap[p.recurrence_type] || null;
   return (
     <EventChip
       title={eventInfo.event.title}
@@ -17,6 +19,7 @@ export default function CleaningTaskEventContent({ eventInfo }) {
       time={time}
       assignee={p.assigned_staff_name}
       notesCount={p.notes_count}
+       badgeText={badge}
       dense={eventInfo.view?.type === 'dayGridMonth'}
       compact={eventInfo.view?.type?.startsWith('timeGrid')}
       tooltipContent={`${eventInfo.event.title} • ${p.status}`}

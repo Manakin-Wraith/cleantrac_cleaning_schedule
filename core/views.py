@@ -288,6 +288,8 @@ class CleaningItemViewSet(viewsets.ModelViewSet):
             pass # Fall through to return empty queryset
         return CleaningItem.objects.none() # Default to empty if no department or profile
 
+from .recurrence_models import RecurringSchedule
+
 class TaskInstanceViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def bulk_delete(self, request):
@@ -344,6 +346,52 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
     serializer_class = TaskInstanceSerializer
     # Apply general management permission and specific status update permission
     permission_classes = [CanManageTaskInstance, CanUpdateTaskStatus]
+
+    def create(self, request, *args, **kwargs):
+        """Override create to support recurring schedules."""
+        recurring_flag = request.data.get('recurring') in [True, 'true', 'True', '1', 1]
+        recurrence_type = request.data.get('recurrence_type')
+        if recurring_flag:
+            if recurrence_type not in ['daily', 'weekly', 'monthly']:
+                return Response({'error': 'Invalid recurrence_type. Must be daily, weekly, or monthly.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Validate cleaning_item
+            cleaning_item_id = request.data.get('cleaning_item_id_write') or request.data.get('cleaning_item_id')
+            if not cleaning_item_id:
+                return Response({'error': 'cleaning_item_id_write is required for recurring tasks.'}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                cleaning_item = CleaningItem.objects.get(id=cleaning_item_id)
+            except CleaningItem.DoesNotExist:
+                return Response({'error': 'CleaningItem not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user_profile = request.user.profile
+            department = user_profile.department if user_profile.department else cleaning_item.department
+
+            assigned_to_id = request.data.get('assigned_to_id')
+            assigned_to = None
+            if assigned_to_id:
+                try:
+                    assigned_to = UserProfile.objects.get(id=assigned_to_id)
+                except UserProfile.DoesNotExist:
+                    return Response({'error': 'Assigned_to user profile not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create schedule
+            schedule = RecurringSchedule.objects.create(
+                cleaning_item=cleaning_item,
+                department=department,
+                assigned_to=assigned_to,
+                recurrence_type=recurrence_type,
+                created_by=request.user,
+            )
+            # Generate initial instances
+            schedule.generate_instances()
+
+            instances = TaskInstance.objects.filter(notes__contains=f"[RecurringSchedule:{schedule.id}]")
+            serializer = self.get_serializer(instances, many=True)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        # Fallback to default single task create
+        return super().create(request, *args, **kwargs)
 
     def get_queryset(self):
         user = self.request.user

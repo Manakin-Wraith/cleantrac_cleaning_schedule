@@ -55,7 +55,7 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId, edit
 
   // recurrence state
   const [isRecurring, setIsRecurring] = useState(false);
-  const [recurrenceType, setRecurrenceType] = useState('none');
+  const [recurrenceType, setRecurrenceType] = useState('daily');
   const [recurrencePattern, setRecurrencePattern] = useState('');
 
   // fetch cleaning items and staff for dept
@@ -177,9 +177,9 @@ if ((task.notes || '') !== (form.notes || '')) {
           duration_minutes: dayjs(form.end_time).diff(form.start_time, 'minute'),
           end_time: form.end_time.format('HH:mm:ss'),
           notes: form.notes,
-          is_recurring: isRecurring,
-          recurrence_type: recurrenceType,
-          recurrence_pattern: recurrenceType !== 'none' ? recurrencePattern : null,
+          recurring: isRecurring,
+          recurrence_type: isRecurring ? recurrenceType : undefined,
+          recurrence_pattern: undefined,
           status: 'pending',
           cleaning_item_id_write: toNullableNumber(form.cleaning_item_id),
           department_id: departmentId,
@@ -281,7 +281,13 @@ saved = await updateTaskInstance(task.id, payload);
                 control={
                   <Checkbox
                     checked={isRecurring}
-                    onChange={(e) => setIsRecurring(e.target.checked)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setIsRecurring(checked);
+                      if (checked && recurrenceType === 'none') {
+                        setRecurrenceType('daily');
+                      }
+                    }}
                   />
                 }
                 label={
@@ -299,6 +305,7 @@ saved = await updateTaskInstance(task.id, payload);
                       label="Recurrence Type"
                       onChange={(e) => setRecurrenceType(e.target.value)}
                     >
+                      
                       <MenuItem value="daily">Daily</MenuItem>
                       <MenuItem value="weekly">Weekly</MenuItem>
                       <MenuItem value="monthly">Monthly</MenuItem>

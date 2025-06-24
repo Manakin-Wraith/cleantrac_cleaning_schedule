@@ -217,6 +217,9 @@ class CleaningItemSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
 
+import re
+from .recurrence_models import RecurringSchedule  # noqa: E402, F401
+
 class TaskInstanceSerializer(serializers.ModelSerializer):
     # For reading cleaning_item details
     cleaning_item = CleaningItemSerializer(read_only=True)
@@ -237,6 +240,7 @@ class TaskInstanceSerializer(serializers.ModelSerializer):
     )
     # Display assigned_to user's username and profile ID for clarity in reads
     assigned_to_details = serializers.SerializerMethodField(read_only=True)
+    recurrence_type = serializers.SerializerMethodField(read_only=True)
 
     department_id = serializers.PrimaryKeyRelatedField(
         queryset=Department.objects.all(),
@@ -254,11 +258,26 @@ class TaskInstanceSerializer(serializers.ModelSerializer):
             'department_id', 'department_name',
             'assigned_to_id', 'assigned_to_details', 
             'due_date', 'start_time', 'end_time', # Added start_time and end_time
-            'status', 'notes',
+            'status', 'notes', 'recurrence_type',
             'created_at', 'updated_at'
         ]
         # Remove read_only_fields for department if it's directly settable via department_id
         # read_only_fields = ['created_at', 'updated_at'] # Default for auto_now fields
+
+    def get_recurrence_type(self, obj):
+        """Derive recurrence type (daily/weekly/monthly) from linked RecurringSchedule tag in notes."""
+        # Expect tag like "[RecurringSchedule:123]" in notes
+        if not obj.notes:
+            return None
+        match = re.search(r"\[RecurringSchedule:(\d+)\]", obj.notes)
+        if not match:
+            return None
+        schedule_id = int(match.group(1))
+        try:
+            schedule = RecurringSchedule.objects.get(id=schedule_id)
+            return schedule.recurrence_type
+        except RecurringSchedule.DoesNotExist:
+            return None
 
     def get_assigned_to_details(self, obj):
         if obj.assigned_to: # obj.assigned_to is a UserProfile instance
@@ -755,6 +774,22 @@ class FolderSerializer(serializers.ModelSerializer):
 
 
 from .receiving_models import ReceivingRecord, Product
+from .recurrence_models import RecurringSchedule
+
+class RecurringScheduleSerializer(serializers.ModelSerializer):
+    cleaning_item_id = serializers.PrimaryKeyRelatedField(queryset=CleaningItem.objects.all(), source='cleaning_item')
+    department_id = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all(), source='department')
+    assigned_to_id = serializers.PrimaryKeyRelatedField(queryset=UserProfile.objects.all(), source='assigned_to', allow_null=True, required=False)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+
+    class Meta:
+        model = RecurringSchedule
+        fields = [
+            'id', 'cleaning_item_id', 'department_id', 'assigned_to_id',
+            'start_date', 'end_date', 'recurrence_type',
+            'created_by_username', 'created_at', 'updated_at'
+        ]
+
 
 class SupplierSerializer(serializers.ModelSerializer):
     department_ids = serializers.PrimaryKeyRelatedField(
