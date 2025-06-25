@@ -9,7 +9,7 @@ from datetime import timedelta
 
 from .models import Department
 from .recipe_models import (
-    Recipe, RecipeIngredient, RecipeVersion, ProductionSchedule,
+    Recipe, RecipeIngredient, RecipeVersion, ProductionSchedule, RecipeProductionTask,
     ProductionRecord, InventoryItem, InventoryTransaction, WasteRecord
 )
 from .recipe_serializers import (
@@ -586,6 +586,11 @@ class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
             # Save parent recurring task
             parent_task = serializer.save(created_by=request.user)
 
+            # Ensure recurring flags are saved, even if serializer omitted them
+            parent_task.is_recurring = True
+            parent_task.recurrence_type = recurrence_type
+            parent_task.save(update_fields=["is_recurring", "recurrence_type"])
+
             # Determine horizon for child generation
             days_ahead = 6 if recurrence_type == 'daily' else 30
             self._generate_child_tasks(parent_task, days_ahead)
@@ -626,7 +631,7 @@ class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
                     scheduled_quantity=parent_task.scheduled_quantity,
                     status='scheduled',
                     is_recurring=False,
-                    recurrence_type='none',
+                    recurrence_type=parent_task.recurrence_type,
                     notes=f"Auto-generated child of task {parent_task.id}",
                     assigned_staff=parent_task.assigned_staff,
                     created_by=parent_task.created_by,
@@ -654,6 +659,7 @@ class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
         department_id = self.request.query_params.get('department_id')
         status = self.request.query_params.get('status')
         recipe_id = self.request.query_params.get('recipe_id')
+        date_param = self.request.query_params.get('date')
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
         assigned_staff_id = self.request.query_params.get('assigned_staff_id')
@@ -671,7 +677,9 @@ class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
         if recipe_id:
             queryset = queryset.filter(recipe_id=recipe_id)
         
-        # Filter by date range
+        # Filter by single date (exact) or date range
+        if date_param:
+            queryset = queryset.filter(scheduled_start_time__date=date_param)
         if start_date:
             queryset = queryset.filter(scheduled_start_time__date__gte=start_date)
         if end_date:

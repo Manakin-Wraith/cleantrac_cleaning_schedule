@@ -81,6 +81,7 @@ export default function EventChip({
   let primaryLabel = isCompact && time ? `${title} • ${time}` : title; // label remains
 
   // recurrence chip mapping
+  const recurrenceKey = (recurrenceType || '').toLowerCase();
   const recurrenceMap = {
     daily: { label: 'Daily', icon: <RepeatOneIcon sx={{ fontSize: 14 }} /> },
     weekly: { label: 'Weekly', icon: <CalendarViewWeekIcon sx={{ fontSize: 14 }} /> },
@@ -94,11 +95,11 @@ export default function EventChip({
         <Typography variant="caption" fontWeight={600} sx={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', textDecoration: ((type==='recipe' || type==='cleaning') && ['completed','done'].includes(status?.toLowerCase?.())) ? 'line-through' : 'none' }}>
           {primaryLabel}
         </Typography>
-        {recurrenceType && recurrenceMap[recurrenceType] && (
+        {recurrenceType && recurrenceMap[recurrenceKey] && (
           <Chip
             size="small"
-            icon={recurrenceMap[recurrenceType].icon}
-            label={recurrenceMap[recurrenceType].label}
+            icon={recurrenceMap[recurrenceKey].icon}
+            label={recurrenceMap[recurrenceKey].label}
             sx={{ bgcolor: alpha(typeColour, 0.25), fontSize: 10, height:18 }}
           />
         )}

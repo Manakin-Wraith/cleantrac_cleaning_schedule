@@ -14,6 +14,7 @@ export default function RecipeEventContent({ eventInfo }) {
       time={time}
       assignee={p.assigned_staff_name}
       notesCount={p.notes_count}
+      recurrenceType={p.recurrence_type}
       dense={eventInfo.view?.type === 'dayGridMonth'}
       compact={eventInfo.view?.type?.startsWith('timeGrid')}
       tooltipContent={`${eventInfo.event.title} • ${p.status}`}

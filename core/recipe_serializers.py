@@ -160,13 +160,17 @@ class ProductionScheduleSerializer(serializers.ModelSerializer):
     # Preserving existing get_assigned_staff_details method
     def get_assigned_staff_details(self, obj):
         """Get details of assigned staff"""
+        if not obj.assigned_staff:
+            return []
+        # For ManyToMany field return list of staff details
+        staff_qs = obj.assigned_staff.all() if hasattr(obj.assigned_staff, 'all') else [obj.assigned_staff]
         return [
             {
                 'id': user.id,
                 'username': user.username,
                 'name': f"{user.first_name} {user.last_name}".strip() or user.username
             }
-            for user in obj.assigned_staff.all()
+            for user in staff_qs
         ]
         
     def to_representation(self, instance):
@@ -516,9 +520,11 @@ class RecipeProductionTaskSerializer(serializers.ModelSerializer):
         write_only=True
     )
     department_name = serializers.CharField(source='department.name', read_only=True)
-    assigned_staff_id = serializers.PrimaryKeyRelatedField(
+    # Accept multiple staff IDs instead of a single ID
+    assigned_staff_ids = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
         source='assigned_staff',
+        many=True,
         write_only=True,
         required=False,
         allow_null=True
@@ -535,14 +541,19 @@ class RecipeProductionTaskSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
+    # Alias fields accepted from frontend but not stored directly on the model
+    batch_size = serializers.DecimalField(max_digits=10, decimal_places=2, write_only=True, required=False)
+    batch_unit = serializers.CharField(max_length=20, write_only=True, required=False, allow_blank=True)
+    # Make scheduled_quantity optional (will be set from batch_size if missing)
+    scheduled_quantity = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
     
     class Meta:
         model = RecipeProductionTask
         fields = [
             'id', 'recipe_id', 'recipe_details', 'department_id', 'department_name',
-            'scheduled_start_time', 'scheduled_end_time', 'scheduled_quantity',
+            'scheduled_start_time', 'scheduled_end_time', 'scheduled_quantity', 'batch_size', 'batch_unit',
             'task_type', 'task_type_display', 'description',
-            'status', 'status_display', 'assigned_staff_id', 'assigned_staff_details',
+            'status', 'status_display', 'assigned_staff_ids', 'assigned_staff_details',
             'is_recurring', 'recurrence_type', 'recurrence_type_display', 'recurrence_pattern',
             'parent_task_id', 'duration_minutes',
             'notes', 'created_by', 'created_by_username',
@@ -561,58 +572,71 @@ class RecipeProductionTaskSerializer(serializers.ModelSerializer):
         }
     
     def get_assigned_staff_details(self, obj):
-        """Get details of assigned staff"""
-        staff_details = []
-        for staff in obj.assigned_staff.all():
-            staff_details.append({
-                'id': staff.id,
-                'username': staff.username,
-                'first_name': staff.first_name,
-                'last_name': staff.last_name,
-                'title': f"{staff.first_name} {staff.last_name}".strip() or staff.username
-            })
-        return staff_details
+        """Return details of the assigned staff member (FK) or empty list"""
+        staff = obj.assigned_staff
+        if not staff:
+            return []
+        return [{
+            'id': staff.id,
+            'username': staff.username,
+            'first_name': staff.first_name,
+            'last_name': staff.last_name,
+            'title': f"{staff.first_name} {staff.last_name}".strip() or staff.username
+        }]
         
     def to_representation(self, instance):
-        """Add scheduled_start_time and scheduled_end_time to the representation."""
-        # Get the default representation
-        representation = super().to_representation(instance)
-        
-        # Only proceed if we have both date and time
-        if instance.scheduled_date and instance.start_time:
-            # Import datetime and timezone utilities
-            from datetime import datetime, time
-            from django.utils import timezone
-            import pytz
-            
-            # Get the timezone from settings or use UTC
-            try:
-                from django.conf import settings
-                tz = pytz.timezone(settings.TIME_ZONE)
-            except (ImportError, AttributeError):
-                tz = pytz.UTC
-            
-            # Create a datetime object by combining date and time
-            start_datetime = datetime.combine(instance.scheduled_date, instance.start_time)
-            # Make it timezone-aware
-            start_datetime = timezone.make_aware(start_datetime, timezone=tz)
-            # Add to representation as ISO format
-            representation['scheduled_start_time'] = start_datetime.isoformat()
-            
-            # Do the same for end time if it exists
-            if instance.end_time:
-                end_datetime = datetime.combine(instance.scheduled_date, instance.end_time)
-                end_datetime = timezone.make_aware(end_datetime, timezone=tz)
-                representation['scheduled_end_time'] = end_datetime.isoformat()
-        
-        return representation
+        """Return representation and remove empty objects that confuse frontend rendering."""
+        rep = super().to_representation(instance)
+        # Remove empty recurrence_pattern dict
+        if isinstance(rep.get('recurrence_pattern'), dict) and not rep['recurrence_pattern']:
+            rep['recurrence_pattern'] = None
+        return rep
     
     def validate(self, data):
-        """Validate that scheduled_end_time is after scheduled_start_time"""
-        start_time = data.get('scheduled_start_time')
-        end_time = data.get('scheduled_end_time')
-        
-        if start_time and end_time and end_time <= start_time:
+        """Map frontend alias fields and basic time validation"""
+        # Map batch_size -> scheduled_quantity
+        if 'batch_size' in data and not data.get('scheduled_quantity'):
+            data['scheduled_quantity'] = data.pop('batch_size')
+        # Remove fields not used in model but harmless if included
+        data.pop('batch_unit', None)
+        data.pop('recipe_name', None)
+        # Build scheduled_start/end if provided as date + time pieces
+        from datetime import datetime
+        from django.utils import timezone
+        if not data.get('scheduled_start_time') and data.get('scheduled_date') and data.get('start_time'):
+            data['scheduled_start_time'] = timezone.make_aware(datetime.combine(data.pop('scheduled_date'), data.pop('start_time')))
+        if not data.get('scheduled_end_time') and data.get('scheduled_date') and data.get('end_time'):
+            data['scheduled_end_time'] = timezone.make_aware(datetime.combine(data.pop('scheduled_date'), data.pop('end_time')))
+        # Basic ordering validation
+        start = data.get('scheduled_start_time')
+        end = data.get('scheduled_end_time')
+        if start and end and end <= start:
             raise serializers.ValidationError("End time must be after start time")
-            
         return data
+
+    # ------------------------------------------------------------------
+    # Override create/update to properly assign ManyToMany `assigned_staff`
+    # ------------------------------------------------------------------
+    def create(self, validated_data):
+        # Handle list coming from assigned_staff_ids or single assigned_staff
+        staff_list = validated_data.pop('assigned_staff_ids', validated_data.pop('assigned_staff', []))
+        # If list provided, pick the first user; else None
+        if isinstance(staff_list, list):
+            staff_value = staff_list[0] if staff_list else None
+        else:
+            staff_value = staff_list
+        if staff_value is not None:
+            validated_data['assigned_staff'] = staff_value
+        instance = super().create(validated_data)
+        return instance
+
+    def update(self, instance, validated_data):
+        staff_list = validated_data.pop('assigned_staff_ids', validated_data.pop('assigned_staff', None))
+        if isinstance(staff_list, list):
+            staff_value = staff_list[0] if staff_list else None
+        else:
+            staff_value = staff_list
+        if staff_value is not None:
+            validated_data['assigned_staff'] = staff_value
+        instance = super().update(instance, validated_data)
+        return instance

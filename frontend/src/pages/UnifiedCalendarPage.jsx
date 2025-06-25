@@ -228,6 +228,7 @@ const UnifiedCalendarPage = () => {
           yield_unit: ev.yield_unit || '',
           subtasks_completed: ev.subtasks_completed || 0,
           subtasks_total: ev.subtasks_total || 0,
+          recurrence_type: ev.recurrence_type,
           assigned_staff_name: assignedName || 'Unassigned',
           notes_count: ev.notes_count || 0,
         },
