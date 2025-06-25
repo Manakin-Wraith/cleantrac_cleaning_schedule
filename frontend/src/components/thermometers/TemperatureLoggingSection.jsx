@@ -26,7 +26,8 @@ const TemperatureLoggingSection = ({
   isLoading: isLoadingFromProps,
   staffId, // Prop from StaffTasksPage
   departmentId, // Prop from StaffTasksPage
-  currentUser // Prop from StaffTasksPage
+  currentUser, // Prop from StaffTasksPage
+  onLoggingSuccess
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [componentLoading, setComponentLoading] = useState(true); // For areaUnits fetch
@@ -237,6 +238,11 @@ const TemperatureLoggingSection = ({
         ...formData
       });
       
+      // Notify parent that a log was successful
+      if (onLoggingSuccess) {
+        onLoggingSuccess(selectedAreaUnit.id);
+      }
+      
       // Refresh data using the new API endpoint
       try {
         // Get areas with their logged status
@@ -397,7 +403,7 @@ const TemperatureLoggingSection = ({
                 No verified thermometers available. Please verify a thermometer first.
               </Alert>
             ) : (
-              <Grid container spacing={2}>
+              <Grid container spacing={2} alignItems="stretch">
                 {verifiedThermometers && verifiedThermometers.map((thermometer) => (
                   <Grid item xs={12} sm={6} md={4} key={thermometer.id}>
                     <Card 
@@ -411,17 +417,17 @@ const TemperatureLoggingSection = ({
                       }}
                       onClick={() => handleSelectThermometer(thermometer)}
                     >
-                      <CardContent>
+                      <CardContent sx={{ flexGrow: 1 }}>
                         <Typography variant="h6" gutterBottom>
                           {thermometer.serial_number}
                         </Typography>
-                        <Typography component="span" variant="body2" color="text.secondary">
+                        <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                           Model: {thermometer.model_identifier}
                         </Typography>
-                        <Typography component="span" variant="body2" color="text.secondary">
+                        <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                           Last Verified: {thermometer.last_verification_date}
                         </Typography>
-                        <Typography component="span" variant="body2" color="text.secondary">
+                        <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                           Expires: {thermometer.verification_expiry_date}
                         </Typography>
                       </CardContent>
@@ -456,7 +462,7 @@ const TemperatureLoggingSection = ({
                       <CheckCircleIcon sx={{ mr: 1, color: theme.palette.success.main }} />
                       Today's Logged Areas ({loggedAreas.length})
                     </Typography>
-                    <Grid container spacing={2}>
+                    <Grid container spacing={2} alignItems="stretch">
                       {areaUnits.filter(area => loggedAreas.includes(area.id)).map((area) => {
                         const recentLog = getMostRecentLog(area.id);
                         const isWithinRange = recentLog ? 
@@ -470,11 +476,16 @@ const TemperatureLoggingSection = ({
                         const isLoggedPM = hasLoggedForTimePeriod(area.id, 'PM');
                         
                         return (
-                          <Grid item xs={12} sm={6} md={4} key={area.id}>
+                          <Grid item xs={12} sm={6} md={4} key={area.id} sx={{ display: 'flex' }}>
                             <Card 
                               variant="outlined" 
                               sx={{ 
                                 position: 'relative',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                height: 240,
+                                overflow: 'hidden',
+                                justifyContent: 'space-between',
                                 borderLeft: '4px solid',
                                 borderColor: isWithinRange ? theme.palette.success.main : theme.palette.error.main,
                                 backgroundColor: alpha(isWithinRange ? theme.palette.success.light : theme.palette.error.light, 0.05),
@@ -495,13 +506,17 @@ const TemperatureLoggingSection = ({
                                 />
                               </Box>
                               
-                              <CardContent>
+                              <CardContent sx={{ flexGrow: 1 }}>
                                 <Typography variant="h6" gutterBottom>
                                   {area.name}
                                 </Typography>
-                                <Typography component="span" variant="body2" color="text.secondary">
-                                  {area.description}
-                                </Typography>
+                                {area.description && area.description !== area.name && (
+                                  <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    {area.description}
+                                  </Typography>
+                                )}
+                                <Divider sx={{ my: 1, flexShrink: 0 }} />
+                                <Chip size="small" label={`Target ${area.target_temperature_min}° – ${area.target_temperature_max}°`} color="warning" variant="outlined" sx={{ mt: 0.5 }} />
                                 
                                 {recentLog && (
                                   <Box sx={{ 
@@ -534,10 +549,7 @@ const TemperatureLoggingSection = ({
                                   />
                                 </Box>
                                 
-                                <Divider sx={{ my: 1 }} />
-                                <Typography variant="body2">
-                                  Target Range: {area.target_temperature_min}°C - {area.target_temperature_max}°C
-                                </Typography>
+                                <Divider sx={{ my: 1, flexShrink: 0 }} />
                                 
                                 {recentLog && (
                                   <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>
@@ -582,7 +594,7 @@ const TemperatureLoggingSection = ({
                     ))}
                   </Box>
                   
-                  <Grid container spacing={2}>
+                  <Grid container spacing={2} alignItems="stretch">
                     {areaUnits
                       .filter(area => {
                         // For AM period, show areas not logged in AM
@@ -603,17 +615,25 @@ const TemperatureLoggingSection = ({
                           (formData.time_period === 'PM' && area.am_logged);
                         
                         return (
-                          <Grid item xs={12} sm={6} md={4} key={area.id}>
+                        
+<Grid item xs={12} sm={6} md={4} key={area.id} sx={{ display: 'flex' }}>
                             <Card 
                               variant="outlined" 
                               sx={{ 
+                                display: 'flex',
+                                flexDirection: 'column',
+                                width: '100%',
+                                height: 240,
+                                overflow: 'hidden',
+                                justifyContent: 'space-between',
                                 cursor: 'pointer',
                                 borderLeft: loggedInOtherPeriod ? '4px solid' : 'none',
                                 borderColor: loggedInOtherPeriod ? theme.palette.info.main : 'inherit',
                                 '&:hover': { 
                                   borderColor: theme.palette.primary.main,
                                   boxShadow: 1
-                                }
+                                },
+                                p: 2
                               }}
                               onClick={() => handleSelectArea(area)}
                             >
@@ -627,17 +647,17 @@ const TemperatureLoggingSection = ({
                                 </Box>
                               )}
                               
-                              <CardContent>
+                              <CardContent sx={{ flexGrow: 1 }}>
                                 <Typography variant="h6" gutterBottom>
                                   {area.name}
                                 </Typography>
-                                <Typography component="span" variant="body2" color="text.secondary">
-                                  {area.description}
-                                </Typography>
-                                <Divider sx={{ my: 1 }} />
-                                <Typography variant="body2">
-                                  Target Range: {area.target_temperature_min}°C - {area.target_temperature_max}°C
-                                </Typography>
+                                {area.description && area.description !== area.name && (
+                                  <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    {area.description}
+                                  </Typography>
+                                )}
+                                <Divider sx={{ my: 1, flexShrink: 0 }} />
+                                <Chip size="small" label={`Target ${area.target_temperature_min}° – ${area.target_temperature_max}°`} color="warning" variant="outlined" sx={{ mt: 0.5 }} />
                                 
                                 {/* Show AM/PM status indicators */}
                                 <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
@@ -677,10 +697,10 @@ const TemperatureLoggingSection = ({
             </Typography>
             
             <Card variant="outlined" sx={{ mb: 3 }}>
-              <CardContent>
-                <Grid container spacing={2}>
+              <CardContent sx={{ flexGrow: 1 }}>
+                <Grid container spacing={2} alignItems="stretch">
                   <Grid item xs={12} sm={6}>
-                    <Typography component="span" variant="body2" color="text.secondary">
+                    <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       Thermometer:
                     </Typography>
                     <Typography variant="body1">
@@ -688,7 +708,7 @@ const TemperatureLoggingSection = ({
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Typography component="span" variant="body2" color="text.secondary">
+                    <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       Area:
                     </Typography>
                     <Typography variant="body1">
@@ -696,7 +716,7 @@ const TemperatureLoggingSection = ({
                     </Typography>
                   </Grid>
                   <Grid item xs={12}>
-                    <Typography component="span" variant="body2" color="text.secondary">
+                    <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       Target Temperature Range:
                     </Typography>
                     <Typography variant="body1" color="primary">
@@ -710,7 +730,7 @@ const TemperatureLoggingSection = ({
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             
             <form onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
+              <Grid container spacing={2} alignItems="stretch">
                 <Grid item xs={12} sm={6}>
                   <TextField
                     name="temperature_reading"

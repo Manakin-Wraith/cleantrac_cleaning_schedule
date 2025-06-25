@@ -53,6 +53,11 @@ function StaffTasksPage() {
     // State for temperature logging data
     const [todaysLogs, setTodaysLogs] = useState([]);
     const [loggedAreas, setLoggedAreas] = useState([]);
+
+    // Callback when a temperature log is successfully submitted in child component
+    const handleLoggingSuccess = (areaId) => {
+        setLoggedAreas(prev => (prev.includes(areaId) ? prev : [...prev, areaId]));
+    };
     const [loadingLogs, setLoadingLogs] = useState(true);
     const [areaUnits, setAreaUnits] = useState([]);
     const [verificationAssignment, setVerificationAssignment] = useState(null);
@@ -283,7 +288,7 @@ function StaffTasksPage() {
                         {activeThermometerTask === null && (
                         <Paper elevation={2} sx={{ p: 2 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                <Typography variant="h6">Thermometer Tasks</Typography>
+                                <Typography variant="h6">Thermometer &amp; Temperature Checks</Typography>
                                 {temperatureCheckAssignment && (
                                     <Chip 
                                         label={temperatureCheckAssignment.time_period === 'AM' ? 'Morning (AM)' : 
@@ -333,6 +338,7 @@ function StaffTasksPage() {
                                     departmentId={user?.profile?.department}
                                     staffId={user?.id}
                                     currentUser={user}
+                                    onLoggingSuccess={handleLoggingSuccess}
                                 />
                             </Paper>
                         )}
