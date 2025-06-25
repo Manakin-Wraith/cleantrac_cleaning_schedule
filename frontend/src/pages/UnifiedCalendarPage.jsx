@@ -228,6 +228,7 @@ const UnifiedCalendarPage = () => {
           yield_unit: ev.yield_unit || '',
           subtasks_completed: ev.subtasks_completed || 0,
           subtasks_total: ev.subtasks_total || 0,
+          recurrence_type: ev.recurrence_type,
           assigned_staff_name: assignedName || 'Unassigned',
           notes_count: ev.notes_count || 0,
         },
@@ -414,13 +415,22 @@ const UnifiedCalendarPage = () => {
         saved = await createProductionSchedule(taskData);
       }
 
-      setRecipeEvents(prev => {
-        const withoutOld = prev.filter(ev => ev.id !== saved.id && ev.id !== existingId);
-        return [...withoutOld, saved];
-      });
+      // If backend returned an array (recurring tasks)
+      if (Array.isArray(saved)) {
+        setRecipeEvents(prev => {
+          const withoutOld = prev.filter(ev => !saved.some(t => t.id === ev.id));
+          return [...withoutOld, ...saved];
+        });
+        enqueueSnackbar('Recurring production tasks scheduled', { variant: 'success' });
+      } else {
+        setRecipeEvents(prev => {
+          const withoutOld = prev.filter(ev => ev.id !== saved.id && ev.id !== existingId);
+          return [...withoutOld, saved];
+        });
+        enqueueSnackbar(existingId ? 'Recipe updated' : 'Recipe scheduled', { variant: 'success' });
+      }
 
       await fetchAllData();
-      enqueueSnackbar(existingId ? 'Recipe updated' : 'Recipe scheduled', { variant: 'success' });
       setRecipeAssignmentModalOpen(false);
       setDrawerOpen(false);
     } catch (err) {

@@ -192,7 +192,7 @@ const ProductionSchedulerCalendar = ({
                     initialDate={currentDate}
                     events={filteredEvents} // Use filtered events
                     resources={resources}
-                    eventContent={RecipeEventContent} // Use the new event rendering component
+                    eventContent={(eventInfo) => <RecipeEventContent eventInfo={eventInfo} />} // Use new event rendering component
                     eventClick={handleEventClick}
                     eventDrop={(info) => onEventDrop && onEventDrop(info)}
                     eventResize={(info) => eventResize && eventResize(info)}
@@ -240,7 +240,7 @@ const ProductionSchedulerCalendar = ({
                     initialDate={currentDate}
                     events={filteredEvents} // Use filtered events
                     resources={resources}
-                    eventContent={RecipeEventContent} // Use the new event rendering component
+                    eventContent={(eventInfo) => <RecipeEventContent eventInfo={eventInfo} />} // Use new event rendering component
                     eventClick={handleEventClick}
                     eventDrop={(info) => onEventDrop && onEventDrop(info)}
                     eventResize={(info) => eventResize && eventResize(info)}

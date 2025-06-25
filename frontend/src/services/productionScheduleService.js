@@ -8,7 +8,7 @@ import { extractNumericId } from '../utils/idUtils';
  */
 export const getProductionSchedules = async (params = {}) => {
   try {
-    const response = await api.get('/production-schedules/', { params });
+    const response = await api.get('/recipe-production-tasks/', { params });
     return response.data;
   } catch (error) {
     console.error('Error fetching production schedules:', error);
@@ -19,7 +19,7 @@ export const getProductionSchedules = async (params = {}) => {
 // Create a production schedule (recipe production task)
 export const createProductionSchedule = async (payload) => {
   try {
-    const response = await api.post('/production-schedules/', payload);
+    const response = await api.post('/recipe-production-tasks/', payload);
     return response.data;
   } catch (error) {
     console.error('Error creating production schedule:', error.response?.data || error.message);
@@ -31,7 +31,7 @@ export const createProductionSchedule = async (payload) => {
 export const updateProductionSchedule = async (id, payload) => {
   const numericId = extractNumericId(id);
   try {
-    const response = await api.patch(`/production-schedules/${numericId}/`, payload);
+    const response = await api.patch(`/recipe-production-tasks/${numericId}/`, payload);
     return response.data;
   } catch (error) {
     console.error(`Error updating production schedule ${id}:`, error.response?.data || error.message);
@@ -42,7 +42,7 @@ export const updateProductionSchedule = async (id, payload) => {
 // Delete a production schedule
 export const deleteProductionSchedule = async (id) => {
   try {
-    await api.delete(`/production-schedules/${id}/`);
+    await api.delete(`/recipe-production-tasks/${id}/`);
   } catch (error) {
     console.error(`Error deleting production schedule ${id}:`, error.response?.data || error.message);
     throw error.response?.data || new Error('Failed to delete production schedule');

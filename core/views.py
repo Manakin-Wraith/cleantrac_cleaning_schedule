@@ -383,8 +383,9 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                 recurrence_type=recurrence_type,
                 created_by=request.user,
             )
-            # Generate initial instances
-            schedule.generate_instances()
+            # Generate initial instances – daily only one week ahead
+            days_ahead = 6 if recurrence_type == 'daily' else 30
+            schedule.generate_instances(days_ahead=days_ahead)
 
             instances = TaskInstance.objects.filter(notes__contains=f"[RecurringSchedule:{schedule.id}]")
             serializer = self.get_serializer(instances, many=True)

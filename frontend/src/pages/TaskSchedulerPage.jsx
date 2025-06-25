@@ -308,6 +308,7 @@ export default function TaskSchedulerPage() {
           ...t,
           status: t.status || 'Pending',
           department: t.department || 'General',
+          recurrence_type: t.recurrence_type,
         },
       })),
     [tasks, resolveItemName],

@@ -61,7 +61,8 @@ const ProductionAssignmentModal = ({
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
-  const [recurrenceType, setRecurrenceType] = useState('none');
+  // Default to 'daily'; will be ignored unless isRecurring is true
+  const [recurrenceType, setRecurrenceType] = useState('daily');
   const [recurrencePattern, setRecurrencePattern] = useState({});
   const [taskType] = useState('production'); // default, not shown in UI
   const [description, setDescription] = useState('');
@@ -578,8 +579,10 @@ const ProductionAssignmentModal = ({
       description: description,
       notes: notes,
       is_recurring: isRecurring,
-      recurrence_type: recurrenceType, 
-      recurrence_pattern: recurrenceType !== 'none' ? recurrencePattern : null,
+      ...(isRecurring ? {
+        recurrence_type: recurrenceType,
+        recurrence_pattern: recurrenceType !== 'none' ? recurrencePattern : null,
+      } : {}),
       status: 'scheduled',
     };
     
@@ -803,7 +806,13 @@ const ProductionAssignmentModal = ({
             <FormControlLabel
                 control={<Checkbox 
                   checked={isRecurring} 
-                  onChange={(e) => setIsRecurring(e.target.checked)}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIsRecurring(checked);
+                    if (checked && !['daily','weekly','monthly'].includes(recurrenceType)) {
+                      setRecurrenceType('daily');
+                    }
+                  }}
                 />}
                 label={<Typography variant="body1" fontWeight={isRecurring ? 'medium' : 'normal'}>
                   Recurring Task
