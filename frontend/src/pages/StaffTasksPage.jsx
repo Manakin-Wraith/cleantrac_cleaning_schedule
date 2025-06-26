@@ -6,6 +6,8 @@ import { getTaskInstances, updateTaskInstance } from '../services/taskService';
 import { updateProductionSchedule } from '../services/productionScheduleService';
 import { getRecipe } from '../services/recipeService';
 import RecipeIngredientsDialog from '../components/recipes/RecipeIngredientsDialog';
+import TaskSection from '../components/tasks/TaskSection';
+import TaskDrawer from '../components/tasks/TaskDrawer';
 import { getProductionSchedules } from '../services/productionScheduleService';
 import { getCurrentUser } from '../services/authService';
 import {
@@ -35,8 +37,141 @@ function StaffTasksPage() {
     const [loadingUser, setLoadingUser] = useState(true);
     const [loadingTasks, setLoadingTasks] = useState(false); 
     const [todaysRecipeTasks, setTodaysRecipeTasks] = useState([]);
+
+    // Tablet simple view flag & drawer state
+    const tabletSimpleView = import.meta.env.VITE_TABLET_SIMPLE_VIEW === 'true';
+    const [drawerOpen, setDrawerOpen] = useState(false);
+    const [drawerTask, setDrawerTask] = useState(null);
+    const [drawerRecipe, setDrawerRecipe] = useState(null);
+    const [loadingDrawerRecipe, setLoadingDrawerRecipe] = useState(false);
     const [error, setError] = useState(''); // General page error
     const [updatingTask, setUpdatingTask] = useState(null);
+    // Helper to render a task card (cleaning or recipe)
+    const renderTaskCard = (task) => (
+        <Card
+            onClick={() => handleCardClick(task)}
+            sx={{
+                cursor: task.__type === 'recipe' ? 'pointer' : 'default',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                height: '100%',
+                ...(task.status === 'completed' && {
+                    backgroundColor: theme.palette.grey[100],
+                }),
+                ...(task.status === 'pending_review' && {
+                    backgroundColor: alpha(theme.palette.info.main, 0.12),
+                }),
+            }}
+        >
+            <CardContent sx={{ flexGrow: 1, padding: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography 
+                        variant="h6" 
+                        component="div" 
+                        sx={{
+                            ...(task.status === 'completed' && {
+                                textDecoration: 'line-through', 
+                                color: theme.palette.text.disabled 
+                            }),
+                        }}
+                    >
+                        {task.__type === 'recipe' ? (task.recipe_details?.name || task.recipe?.name || 'Unnamed Recipe') : (task.cleaning_item?.name || 'Unnamed Task')}
+                    </Typography>
+                    <Chip 
+                        label={(task.status || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        size="small"
+                        color={task.status === 'completed' ? 'success' : task.status === 'pending' ? 'warning' : 'default'}
+                        sx={{ fontWeight: 'medium' }}
+                    />
+                    {task.status === 'completed' && <CheckCircleOutlineIcon sx={{ color: theme.palette.success.main, ml: 1 }} />}
+                </Box>
+
+                <Box sx={{ my: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                        <EventIcon sx={{ mr: 1, color: 'text.secondary' }} fontSize="small" />
+                        <Typography variant="body2" color="text.secondary">
+                            <strong>Scheduled Date:</strong> {task.__type === 'recipe' ? (task.scheduled_date ? formatDate(task.scheduled_date) : 'N/A') : (task.due_date ? formatDate(task.due_date) : 'N/A')}
+                        </Typography>
+                    </Box>
+                    {(task.start_time || task.end_time || task.timeslot || task.scheduled_start_time) && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                            <AccessTimeIcon sx={{ mr: 1, color: 'text.secondary' }} fontSize="small" />
+                            <Typography variant="body2" color="text.secondary">
+                                <strong>Timeslot:</strong> {task.__type === 'recipe' ? (
+                                    task.start_time && task.end_time ? `${task.start_time.substring(0, 5)} - ${task.end_time.substring(0, 5)}` :
+                                    task.scheduled_start_time && task.scheduled_end_time ? `${task.scheduled_start_time.substring(11, 16)} - ${task.scheduled_end_time.substring(11, 16)}` : 'N/A'
+                                ) : (
+                                    task.start_time && task.end_time ? `${task.start_time.substring(0, 5)} - ${task.end_time.substring(0, 5)}` : (task.timeslot || 'N/A')
+                                )}
+                            </Typography>
+                        </Box>
+                    )}
+                </Box>
+
+                <Divider sx={{ my: 1.5 }} />
+
+                <Box sx={{ mb: 1 }}>
+                    {task.__type === 'cleaning' && task.cleaning_item?.equipment && (
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 0.5 }}>
+                            <BuildIcon sx={{ mr: 1, mt: 0.5, color: 'text.secondary' }} fontSize="small" />
+                            <Typography variant="body2" color="text.secondary">
+                                <strong>Equipment:</strong> {task.cleaning_item.equipment}
+                            </Typography>
+                        </Box>
+                    )}
+                    {task.__type === 'cleaning' && task.cleaning_item?.chemical && (
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 0.5 }}>
+                            <ScienceIcon sx={{ mr: 1, mt: 0.5, color: 'text.secondary' }} fontSize="small" />
+                            <Typography variant="body2" color="text.secondary">
+                                <strong>Chemicals:</strong> {task.cleaning_item.chemical}
+                            </Typography>
+                        </Box>
+                    )}
+                    {task.__type === 'cleaning' && task.cleaning_item?.method && (
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 0.5 }}>
+                            <ListAltIcon sx={{ mr: 1, mt: 0.5, color: 'text.secondary' }} fontSize="small" />
+                            <Typography variant="body2" color="text.secondary">
+                                <strong>Method:</strong> {task.cleaning_item.method}
+                            </Typography>
+                        </Box>
+                    )}
+                </Box>
+
+                {task.__type === 'recipe' && (
+                    <Typography variant="body2" color="text.secondary">
+                        <strong>Quantity:</strong> {task.batch_size ? `${task.batch_size} ${task.batch_unit || ''}` : (task.quantity || task.batch_quantity || 'N/A')}
+                    </Typography>
+                )}
+
+                {task.notes && (
+                    <>
+                        <Divider sx={{ my: 1.5 }} />
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                            <NotesIcon sx={{ mr: 1, mt: 0.5, color: 'text.secondary' }} fontSize="small" />
+                            <Typography variant="body2" color="text.secondary">
+                                <strong>Notes:</strong> {task.notes}
+                            </Typography>
+                        </Box>
+                    </>
+                )}
+            </CardContent>
+            {['pending', 'in_progress'].includes(task.status) && (
+                <CardActions sx={{ justifyContent: 'flex-end', pt: 0 }}>
+                    <Button 
+                        variant="contained" 
+                        color="primary" 
+                        size="small"
+                        onClick={(e) => { e.stopPropagation(); handleSubmitForReview(task); }}
+                        disabled={updatingTask === task.id}
+                    >
+                        {updatingTask === task.id ? <CircularProgress size={20} color="inherit" /> : 'Completed'}
+                    </Button>
+                </CardActions>
+            )}
+        </Card>
+    );
+
     // dialog state
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogLoading, setDialogLoading] = useState(false);
@@ -53,6 +188,11 @@ function StaffTasksPage() {
     // State for temperature logging data
     const [todaysLogs, setTodaysLogs] = useState([]);
     const [loggedAreas, setLoggedAreas] = useState([]);
+
+    // Callback when a temperature log is successfully submitted in child component
+    const handleLoggingSuccess = (areaId) => {
+        setLoggedAreas(prev => (prev.includes(areaId) ? prev : [...prev, areaId]));
+    };
     const [loadingLogs, setLoadingLogs] = useState(true);
     const [areaUnits, setAreaUnits] = useState([]);
     const [verificationAssignment, setVerificationAssignment] = useState(null);
@@ -196,6 +336,32 @@ function StaffTasksPage() {
         }
     }, [user, fetchThermometerData]); // Re-run if user or the callback itself changes
 
+    // Row/card click handlers
+    const handleTaskSelect = async (task) => {
+        setDrawerTask(task);
+        setDrawerOpen(true);
+        if (task.__type === 'recipe') {
+            setLoadingDrawerRecipe(true);
+            try {
+                const data = await getRecipe(task.recipe_details.id, { expand: 'ingredients' });
+                setDrawerRecipe(data);
+            } catch (err) {
+                console.error('Failed to load recipe:', err);
+            } finally {
+                setLoadingDrawerRecipe(false);
+            }
+        } else {
+            setDrawerRecipe(null);
+        }
+    };
+
+
+    const handleDrawerClose = () => {
+        setDrawerOpen(false);
+        setDrawerTask(null);
+        setDrawerRecipe(null);
+    };
+
     const handleCardClick = async (task) => {
         if (task.__type !== 'recipe') return;
         setSelectedTask(task);
@@ -283,7 +449,7 @@ function StaffTasksPage() {
                         {activeThermometerTask === null && (
                         <Paper elevation={2} sx={{ p: 2 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                <Typography variant="h6">Thermometer Tasks</Typography>
+                                <Typography variant="h6">Thermometer &amp; Temperature Checks</Typography>
                                 {temperatureCheckAssignment && (
                                     <Chip 
                                         label={temperatureCheckAssignment.time_period === 'AM' ? 'Morning (AM)' : 
@@ -333,6 +499,7 @@ function StaffTasksPage() {
                                     departmentId={user?.profile?.department}
                                     staffId={user?.id}
                                     currentUser={user}
+                                    onLoggingSuccess={handleLoggingSuccess}
                                 />
                             </Paper>
                         )}
@@ -353,137 +520,74 @@ function StaffTasksPage() {
             ) : error ? (
                 <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
             ) : (todaysTasks.length + todaysRecipeTasks.length) > 0 ? (
-                <Grid container spacing={3} sx={{ mt: 2 }}> 
-                    {[...todaysTasks.map(t=>({...t, __type:'cleaning'})), ...todaysRecipeTasks.map(t=>({...t, __type:'recipe'}))]
-                        .sort((a,b)=> ((a.due_date||a.scheduled_date||'').localeCompare(b.due_date||b.scheduled_date||'')))
-                        .map(task => (
-                        <Grid item xs={12} sm={6} md={4} key={task.id}>
-                            <Card
-                                onClick={() => handleCardClick(task)}
-                                sx={{
-                                    cursor: task.__type==='recipe' ? 'pointer' : 'default',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    justifyContent: 'space-between',
-                                    height: '100%',
-                                ...(task.status === 'completed' && {
-                                    backgroundColor: theme.palette.grey[100], 
-                                }),
-                                ...(task.status === 'pending_review' && {
-                                    backgroundColor: alpha(theme.palette.info.main, 0.12), 
-                                }),
-                                // 'pending' tasks will use the default card background
-                                }}>
-
-                                <CardContent sx={{ flexGrow: 1, padding: 2 }}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                        <Typography 
-                                            variant="h6" 
-                                            component="div" 
-                                            sx={{
-                                                ...(task.status === 'completed' && {
-                                                    textDecoration: 'line-through', 
-                                                    color: theme.palette.text.disabled 
-                                                }),
-                                            }}
-                                        >
-                                             {task.__type==='recipe' ? (task.recipe_details?.name || task.recipe?.name || 'Unnamed Recipe') : (task.cleaning_item?.name || 'Unnamed Task')}
-                                        </Typography>
-                                        <Chip 
-                                            label={(task.status||'').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                            size="small"
-                                            color={task.status === 'completed' ? 'success' : task.status === 'pending' ? 'warning' : 'default'}
-                                            sx={{ fontWeight: 'medium' }}
-                                        />
-                                        {task.status === 'completed' && <CheckCircleOutlineIcon sx={{ color: theme.palette.success.main, ml: 1 }} />}
-                                    </Box>
-
-                                    <Box sx={{ my: 2 }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                            <EventIcon sx={{ mr: 1, color: 'text.secondary' }} fontSize="small" />
-                                            <Typography variant="body2" color="text.secondary">
-                                                 <strong>Scheduled Date:</strong> {task.__type==='recipe' ? (task.scheduled_date ? formatDate(task.scheduled_date) : 'N/A') : (task.due_date ? formatDate(task.due_date) : 'N/A')}
-                                            </Typography>
-                                        </Box>
-                                        {(task.start_time || task.end_time || task.timeslot) && (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                                                <AccessTimeIcon sx={{ mr: 1, color: 'text.secondary' }} fontSize="small" />
-                                                <Typography variant="body2" color="text.secondary">
-                                                     <strong>Timeslot:</strong> {task.__type==='recipe' ? (task.start_time && task.end_time ? `${task.start_time.substring(0,5)} - ${task.end_time.substring(0,5)}` : (task.scheduled_start_time && task.scheduled_end_time ? `${task.scheduled_start_time.substring(11,16)} - ${task.scheduled_end_time.substring(11,16)}` : 'N/A')) : (task.start_time && task.end_time ? `${task.start_time.substring(0,5)} - ${task.end_time.substring(0,5)}` : (task.timeslot || 'N/A'))}
-                                                </Typography>
-                                            </Box>
-                                        )}
-                                    </Box>
-
-                                    <Divider sx={{ my: 1.5 }} />
-                                    
-                                    <Box sx={{ mb: 1 }}>
-                                         {task.__type==='cleaning' && task.cleaning_item?.equipment && (
-                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 0.5 }}>
-                                                <BuildIcon sx={{ mr: 1, mt: 0.5, color: 'text.secondary' }} fontSize="small" />
-                                                <Typography variant="body2" color="text.secondary">
-                                                    <strong>Equipment:</strong> {task.cleaning_item.equipment}
-                                                </Typography>
-                                            </Box>
-                                        )}
-                                         {task.__type==='cleaning' && task.cleaning_item?.chemical && (
-                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 0.5 }}>
-                                                <ScienceIcon sx={{ mr: 1, mt: 0.5, color: 'text.secondary' }} fontSize="small" />
-                                                <Typography variant="body2" color="text.secondary">
-                                                    <strong>Chemicals:</strong> {task.cleaning_item.chemical}
-                                                </Typography>
-                                            </Box>
-                                        )}
-                                         {task.__type==='cleaning' && task.cleaning_item?.method && (
-                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 0.5 }}>
-                                                <ListAltIcon sx={{ mr: 1, mt: 0.5, color: 'text.secondary' }} fontSize="small" />
-                                                <Typography variant="body2" color="text.secondary">
-                                                    <strong>Method:</strong> {task.cleaning_item.method}
-                                                </Typography>
-                                            </Box>
-                                        )}
-                                    </Box>
-
-                                     {task.__type==='recipe' && (
-                                         <Typography variant="body2" color="text.secondary">
-                                             <strong>Quantity:</strong> {task.batch_size ? `${task.batch_size} ${task.batch_unit || ''}` : (task.quantity || task.batch_quantity || 'N/A')}
-                                         </Typography>
-                                     )}
-
-                                     {task.notes && (
-                                        <>
-                                            <Divider sx={{ my: 1.5 }} />
-                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
-                                                <NotesIcon sx={{ mr: 1, mt: 0.5, color: 'text.secondary' }} fontSize="small" />
-                                                <Typography variant="body2" color="text.secondary">
-                                                    <strong>Notes:</strong> {task.notes}
-                                                </Typography>
-                                            </Box>
-                                        </>
-                                    )}
-                                </CardContent>
-                                {['pending', 'in_progress'].includes(task.status) && (
-                                    <CardActions sx={{ justifyContent: 'flex-end', pt: 0 }}>
-                                        <Button 
-                                            variant="contained" 
-                                            color="primary" 
-                                            size="small"
-                                            onClick={(e) => { e.stopPropagation(); handleSubmitForReview(task); }}
-                                            disabled={updatingTask === task.id}
-                                        >
-                                            {updatingTask === task.id ? <CircularProgress size={20} color="inherit" /> : 'Completed'}
-                                        </Button>
-                                    </CardActions>
+                <Box>
+                    {tabletSimpleView && (
+                            <>
+                                {todaysTasks.length > 0 && (
+                                    <TaskSection
+                                        title="Cleaning Tasks"
+                                        tasks={todaysTasks.map(t => ({ ...t, __type: 'cleaning' })).sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||''))}
+                                        onSelect={handleTaskSelect}
+                                        defaultExpanded
+                                    />
                                 )}
-                            </Card>
-                        </Grid>
-                    ))}
-                </Grid>
+                                {todaysRecipeTasks.length > 0 && (
+                                    <TaskSection
+                                        title="Recipe Production"
+                                        tasks={todaysRecipeTasks.map(t => ({ ...t, __type: 'recipe' })).sort((a,b)=>(a.scheduled_date||'').localeCompare(b.scheduled_date||''))}
+                                        onSelect={handleTaskSelect}
+                                    />
+                                )}
+                            </>
+                        )}
+
+                        {!tabletSimpleView && todaysTasks.length > 0 && (
+                        <>
+                            <Typography variant="h5" sx={{ mt: 2, mb: 1 }}>Cleaning Tasks ({todaysTasks.length})</Typography>
+                            <Grid container spacing={3} sx={{ mb: 3 }}>
+                                {todaysTasks.map(t => ({ ...t, __type: 'cleaning' }))
+                                    .sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''))
+                                    .map(task => (
+                                        <Grid item xs={12} sm={6} md={4} key={`clean_${task.id}`}>
+                                            {renderTaskCard(task)}
+                                        </Grid>
+                                    ))}
+                            </Grid>
+                        </>
+                    )}
+                    {!tabletSimpleView && todaysRecipeTasks.length > 0 && (
+                        <>
+                            <Typography variant="h5" sx={{ mt: 2, mb: 1 }}>Recipe Production ({todaysRecipeTasks.length})</Typography>
+                            <Grid container spacing={3} sx={{ mb: 3 }}>
+                                {todaysRecipeTasks.map(t => ({ ...t, __type: 'recipe' }))
+                                    .sort((a, b) => (a.scheduled_date || '').localeCompare(b.scheduled_date || ''))
+                                    .map(task => (
+                                        <Grid item xs={12} sm={6} md={4} key={`recipe_${task.id}`}>
+                                            {renderTaskCard(task)}
+                                        </Grid>
+                                    ))}
+                            </Grid>
+                        </>
+                    )}
+                </Box>
             ) : (
                 <Paper elevation={1} sx={{ p: 3, mt: 2, textAlign: 'center' }}>
                     <Typography variant="subtitle1">No tasks assigned for today.</Typography>
                 </Paper>
             )}
+            {/* Detail drawer for task */}
+            <TaskDrawer
+                open={drawerOpen}
+                onClose={handleDrawerClose}
+                onOpen={() => {}}
+                task={drawerTask}
+                onMarkDone={handleSubmitForReview}
+                updating={updatingTask}
+                recipe={drawerRecipe}
+                loadingRecipe={loadingDrawerRecipe}
+            />
+
+            {/* Fallback modal for full ingredient list (legacy) */}
             <RecipeIngredientsDialog
                 open={dialogOpen}
                 onClose={handleDialogClose}

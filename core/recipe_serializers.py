@@ -534,6 +534,9 @@ class RecipeProductionTaskSerializer(serializers.ModelSerializer):
     task_type_display = serializers.CharField(source='get_task_type_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     recurrence_type_display = serializers.CharField(source='get_recurrence_type_display', read_only=True)
+    # New helper fields
+    is_child = serializers.SerializerMethodField(read_only=True)
+    scheduled_date = serializers.SerializerMethodField(read_only=True)
     parent_task_id = serializers.PrimaryKeyRelatedField(
         queryset=RecipeProductionTask.objects.all(),
         source='parent_task',
@@ -554,7 +557,7 @@ class RecipeProductionTaskSerializer(serializers.ModelSerializer):
             'scheduled_start_time', 'scheduled_end_time', 'scheduled_quantity', 'batch_size', 'batch_unit',
             'task_type', 'task_type_display', 'description',
             'status', 'status_display', 'assigned_staff_ids', 'assigned_staff_details',
-            'is_recurring', 'recurrence_type', 'recurrence_type_display', 'recurrence_pattern',
+            'is_recurring', 'recurrence_type', 'recurrence_type_display', 'is_child', 'scheduled_date', 'recurrence_pattern',
             'parent_task_id', 'duration_minutes',
             'notes', 'created_by', 'created_by_username',
             'created_at', 'updated_at'
@@ -587,6 +590,17 @@ class RecipeProductionTaskSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         """Return representation and remove empty objects that confuse frontend rendering."""
         rep = super().to_representation(instance)
+        # Map scheduled_quantity back to batch_size for frontend compatibility
+        if rep.get('scheduled_quantity') is not None and rep.get('batch_size') is None:
+            rep['batch_size'] = rep['scheduled_quantity']
+        # Preserve batch_unit passthrough if present on instance via extra attribute
+        if getattr(instance, 'batch_unit', None) and not rep.get('batch_unit'):
+            rep['batch_unit'] = getattr(instance, 'batch_unit')
+        # Fallback: use recipe's yield_unit
+        if not rep.get('batch_unit') and instance.recipe:
+            rep['batch_unit'] = instance.recipe.yield_unit or ''
+        if getattr(instance, 'batch_unit', None) and not rep.get('batch_unit'):
+            rep['batch_unit'] = getattr(instance, 'batch_unit')
         # Remove empty recurrence_pattern dict
         if isinstance(rep.get('recurrence_pattern'), dict) and not rep['recurrence_pattern']:
             rep['recurrence_pattern'] = None
@@ -639,4 +653,16 @@ class RecipeProductionTaskSerializer(serializers.ModelSerializer):
         if staff_value is not None:
             validated_data['assigned_staff'] = staff_value
         instance = super().update(instance, validated_data)
+        return instance
+
+    # ------------------ Helper SerializerMethodField getters ------------------
+    def get_is_child(self, obj):
+        """Return True if this task is a child of a recurring parent"""
+        return obj.parent_task is not None
+
+    def get_scheduled_date(self, obj):
+        """Return the date portion of scheduled_start_time for easy grouping on the frontend"""
+        if obj.scheduled_start_time:
+            return obj.scheduled_start_time.date().isoformat()
+        return None
         return instance
