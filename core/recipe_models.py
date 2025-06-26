@@ -298,12 +298,20 @@ class RecipeProductionTask(models.Model):
         ('custom', 'Custom'),
     ]
     
+    UNIT_CHOICES = [
+        ('kg', 'Kilogram'),
+        ('L', 'Litre'),
+        ('ea', 'Each'),
+        ('case', 'Case'),
+    ]
+    
     # Fields from the original migration
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='production_tasks')
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='recipe_production_tasks')
     scheduled_start_time = models.DateTimeField()
     scheduled_end_time = models.DateTimeField()
     scheduled_quantity = models.DecimalField(max_digits=10, decimal_places=2)
+
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
     is_recurring = models.BooleanField(default=False)
     recurrence_type = models.CharField(max_length=10, choices=RECURRENCE_TYPE_CHOICES, default='none')
