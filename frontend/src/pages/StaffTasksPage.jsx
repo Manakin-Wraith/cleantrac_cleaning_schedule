@@ -45,6 +45,7 @@ function StaffTasksPage() {
     const [drawerRecipe, setDrawerRecipe] = useState(null);
     const [loadingDrawerRecipe, setLoadingDrawerRecipe] = useState(false);
     const [error, setError] = useState(''); // General page error
+    const [successMsg, setSuccessMsg] = useState('');
     const [updatingTask, setUpdatingTask] = useState(null);
     // Helper to render a task card (cleaning or recipe)
     const renderTaskCard = (task) => (
@@ -391,15 +392,25 @@ function StaffTasksPage() {
         const taskId = taskObj.id;
         const isRecipe = taskObj.__type === 'recipe';
         setUpdatingTask(taskId);
+        let updatedTaskObj = null;
         setError('');
         try {
             if (isRecipe) {
                 await updateProductionSchedule(taskId, { status: 'pending_review' });
-                setTodaysRecipeTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'pending_review' } : t));
+                updatedTaskObj = { ...taskObj, status: 'pending_review' };
+                setTodaysRecipeTasks(prev => prev.map(t => t.id === taskId ? updatedTaskObj : t));
             } else {
                 await updateTaskInstance(taskId, { status: 'pending_review' });
-                setTodaysTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'pending_review' } : t));
+                updatedTaskObj = { ...taskObj, status: 'pending_review' };
+                setTodaysTasks(prev => prev.map(t => t.id === taskId ? updatedTaskObj : t));
             }
+            // reflect in drawer if open
+            if (drawerTask && drawerTask.id === taskId) {
+                setDrawerTask(updatedTaskObj);
+            }
+            // feedback & close
+            setSuccessMsg('Task submitted for review');
+            setTimeout(() => setDrawerOpen(false), 800);
         } catch (err) {
             console.error(`Failed to submit task ${taskId} for review:`, err);
             setError(err.response?.data?.detail || err.message || 'Failed to update task. Please try again.');

@@ -72,9 +72,9 @@ const TaskDrawer = ({ open, onClose, onOpen, task, onMarkDone, updating, recipe,
               color="primary"
               fullWidth
               onClick={() => onMarkDone(task)}
-              disabled={updating === task.id}
+              disabled={updating === task.id || ['pending_review','completed'].includes(task.status)}
             >
-              {updating === task.id ? <CircularProgress size={20} color="inherit" /> : 'Mark Completed'}
+              {updating === task.id ? <CircularProgress size={20} color="inherit" /> : task.status === 'pending_review' ? 'Submitted' : task.status === 'completed' ? 'Completed' : 'Mark Completed'}
             </Button>
           </CardActions>
         )}
