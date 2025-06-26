@@ -1,6 +1,7 @@
 import React from 'react';
 import { CardContent, Box, Typography, Chip, Divider } from '@mui/material';
 import { CheckCircleOutline as CheckCircleOutlineIcon, Event as EventIcon, AccessTime as AccessTimeIcon, Build as BuildIcon, Science as ScienceIcon, ListAlt as ListAltIcon, Notes as NotesIcon } from '@mui/icons-material';
+import RecurrenceChip from './RecurrenceChip';
 import { alpha, useTheme } from '@mui/material/styles';
 import dayjs from 'dayjs';
 
@@ -33,6 +34,9 @@ const TaskCardContent = ({ task }) => {
           color={task.status === 'completed' ? 'success' : task.status === 'pending' ? 'warning' : 'default'}
           sx={{ fontWeight: 'medium' }}
         />
+        {task.recurrence_type && (
+          <RecurrenceChip type={task.recurrence_type} />
+        )}
         {task.status === 'completed' && (
           <CheckCircleOutlineIcon sx={{ color: theme.palette.success.main, ml: 1 }} />
         )}
