@@ -6,6 +6,8 @@ import { getTaskInstances, updateTaskInstance } from '../services/taskService';
 import { updateProductionSchedule } from '../services/productionScheduleService';
 import { getRecipe } from '../services/recipeService';
 import RecipeIngredientsDialog from '../components/recipes/RecipeIngredientsDialog';
+import TaskSection from '../components/tasks/TaskSection';
+import TaskDrawer from '../components/tasks/TaskDrawer';
 import { getProductionSchedules } from '../services/productionScheduleService';
 import { getCurrentUser } from '../services/authService';
 import {
@@ -35,6 +37,13 @@ function StaffTasksPage() {
     const [loadingUser, setLoadingUser] = useState(true);
     const [loadingTasks, setLoadingTasks] = useState(false); 
     const [todaysRecipeTasks, setTodaysRecipeTasks] = useState([]);
+
+    // Tablet simple view flag & drawer state
+    const tabletSimpleView = import.meta.env.VITE_TABLET_SIMPLE_VIEW === 'true';
+    const [drawerOpen, setDrawerOpen] = useState(false);
+    const [drawerTask, setDrawerTask] = useState(null);
+    const [drawerRecipe, setDrawerRecipe] = useState(null);
+    const [loadingDrawerRecipe, setLoadingDrawerRecipe] = useState(false);
     const [error, setError] = useState(''); // General page error
     const [updatingTask, setUpdatingTask] = useState(null);
     // Helper to render a task card (cleaning or recipe)
@@ -327,6 +336,32 @@ function StaffTasksPage() {
         }
     }, [user, fetchThermometerData]); // Re-run if user or the callback itself changes
 
+    // Row/card click handlers
+    const handleTaskSelect = async (task) => {
+        setDrawerTask(task);
+        setDrawerOpen(true);
+        if (task.__type === 'recipe') {
+            setLoadingDrawerRecipe(true);
+            try {
+                const data = await getRecipe(task.recipe_details.id, { expand: 'ingredients' });
+                setDrawerRecipe(data);
+            } catch (err) {
+                console.error('Failed to load recipe:', err);
+            } finally {
+                setLoadingDrawerRecipe(false);
+            }
+        } else {
+            setDrawerRecipe(null);
+        }
+    };
+
+
+    const handleDrawerClose = () => {
+        setDrawerOpen(false);
+        setDrawerTask(null);
+        setDrawerRecipe(null);
+    };
+
     const handleCardClick = async (task) => {
         if (task.__type !== 'recipe') return;
         setSelectedTask(task);
@@ -486,7 +521,27 @@ function StaffTasksPage() {
                 <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
             ) : (todaysTasks.length + todaysRecipeTasks.length) > 0 ? (
                 <Box>
-                    {todaysTasks.length > 0 && (
+                    {tabletSimpleView && (
+                            <>
+                                {todaysTasks.length > 0 && (
+                                    <TaskSection
+                                        title="Cleaning Tasks"
+                                        tasks={todaysTasks.map(t => ({ ...t, __type: 'cleaning' })).sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||''))}
+                                        onSelect={handleTaskSelect}
+                                        defaultExpanded
+                                    />
+                                )}
+                                {todaysRecipeTasks.length > 0 && (
+                                    <TaskSection
+                                        title="Recipe Production"
+                                        tasks={todaysRecipeTasks.map(t => ({ ...t, __type: 'recipe' })).sort((a,b)=>(a.scheduled_date||'').localeCompare(b.scheduled_date||''))}
+                                        onSelect={handleTaskSelect}
+                                    />
+                                )}
+                            </>
+                        )}
+
+                        {!tabletSimpleView && todaysTasks.length > 0 && (
                         <>
                             <Typography variant="h5" sx={{ mt: 2, mb: 1 }}>Cleaning Tasks ({todaysTasks.length})</Typography>
                             <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -500,7 +555,7 @@ function StaffTasksPage() {
                             </Grid>
                         </>
                     )}
-                    {todaysRecipeTasks.length > 0 && (
+                    {!tabletSimpleView && todaysRecipeTasks.length > 0 && (
                         <>
                             <Typography variant="h5" sx={{ mt: 2, mb: 1 }}>Recipe Production ({todaysRecipeTasks.length})</Typography>
                             <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -520,6 +575,19 @@ function StaffTasksPage() {
                     <Typography variant="subtitle1">No tasks assigned for today.</Typography>
                 </Paper>
             )}
+            {/* Detail drawer for task */}
+            <TaskDrawer
+                open={drawerOpen}
+                onClose={handleDrawerClose}
+                onOpen={() => {}}
+                task={drawerTask}
+                onMarkDone={handleSubmitForReview}
+                updating={updatingTask}
+                recipe={drawerRecipe}
+                loadingRecipe={loadingDrawerRecipe}
+            />
+
+            {/* Fallback modal for full ingredient list (legacy) */}
             <RecipeIngredientsDialog
                 open={dialogOpen}
                 onClose={handleDialogClose}
