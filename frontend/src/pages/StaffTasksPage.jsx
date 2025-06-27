@@ -457,10 +457,10 @@ function StaffTasksPage() {
             {thermometerError && <Alert severity="error" sx={{ mb: 2 }}>{thermometerError}</Alert>}
             {/* Thermometer Tasks Summary */}
             {!loadingUser && !loadingThermometers && (verificationAssignment || temperatureCheckAssignment) && (
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                    <Grid item xs={12} md={6}>
+                <Box sx={{ mb: 4 }}>
+                    
                         {activeThermometerTask === null && (
-                        <Paper elevation={2} sx={{ p: 2 }}>
+                        <Paper elevation={2} sx={{ p: 2, width:'100%', maxWidth:'100%', flexGrow:1, display:'block', boxSizing:'border-box' }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                                 <Typography variant="h6">Thermometer &amp; Temperature Checks</Typography>
                                 {temperatureCheckAssignment && (
@@ -486,7 +486,7 @@ function StaffTasksPage() {
                         </Paper>)}
 
                         {activeThermometerTask === 'verification' && (
-                            <Paper elevation={2} sx={{ p:2 }}>
+                            <Paper elevation={2} sx={{ p:2, width:'100%', maxWidth:'100%', flexGrow:1, display:'block', boxSizing:'border-box' }}>
                                 <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:2 }}>
                                     <Typography variant="h6">Thermometer Verification</Typography>
                                     <Button size="small" onClick={closeThermometerTask}>Back</Button>
@@ -501,7 +501,7 @@ function StaffTasksPage() {
                         )}
 
                         {activeThermometerTask === 'logging' && (
-                            <Paper elevation={2} sx={{ p:2 }}>
+                            <Paper elevation={2} sx={{ p:2, width:'100%', maxWidth:'100%', flexGrow:1, display:'block', boxSizing:'border-box' }}>
                                 <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:2 }}>
                                     <Typography variant="h6">Temperature Logging</Typography>
                                     <Button size="small" onClick={closeThermometerTask}>Back</Button>
@@ -516,8 +516,7 @@ function StaffTasksPage() {
                                 />
                             </Paper>
                         )}
-                    </Grid>
-                </Grid>
+                    </Box>
             )}
             {/* Show a message when no assignments exist */}
             {!loadingUser && !loadingThermometers && !verificationAssignment && !temperatureCheckAssignment && (

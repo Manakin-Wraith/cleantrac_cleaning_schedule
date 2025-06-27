@@ -27,8 +27,15 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import RecurrenceChip from '../../tasks/RecurrenceChip';
 import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
 import ErrorIcon from '@mui/icons-material/ErrorOutline';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { useSchedule } from '../../../context/ScheduleContext';
+
+const safeFormat = (val, fmt) => {
+  if (!val) return '-';
+  const d = typeof val === 'string' ? parseISO(val) : val;
+  if (!isValid(d)) return '-';
+  return format(d, fmt);
+};
 
 const statusIcon = (status) => {
   switch (status?.toLowerCase()) {
@@ -174,7 +181,7 @@ const ScheduleListPanel = ({ onRowClick }) => {
                     <RecurrenceChip type={first.recurrence_type} size="small" sx={{ flexShrink: 0, fontSize:11 }} />
                   </Stack>
                   <Typography variant="caption" sx={{ color:'text.secondary' }} noWrap>
-                    {format(first.start, 'MMM d')} · {format(first.start, 'p')} – {format(first.end, 'p')} · {resolveAssignee(first)}
+                    {safeFormat(first.start, 'MMM d')} · {safeFormat(first.start, 'p')} – {safeFormat(first.end, 'p')} · {resolveAssignee(first)}
                   </Typography>
                 </Box>
               </AccordionSummary>
@@ -183,8 +190,8 @@ const ScheduleListPanel = ({ onRowClick }) => {
                   <React.Fragment key={ev.id}>
                     <ListItemButton onClick={() => onRowClick?.(ev)} sx={{ pl: 4 }}>
                       <Stack direction="row" alignItems="center" spacing={1} sx={{ width:'100%', pr:1 }}>
-                        <Typography variant="caption" sx={{ width: 80, flexShrink:0 }} noWrap>{format(ev.start, 'MMM d')}</Typography>
-                        <Typography variant="caption" sx={{ width: 85, flexShrink:0 }} noWrap>{format(ev.start, 'p')} – {format(ev.end, 'p')}</Typography>
+                        <Typography variant="caption" sx={{ width: 80, flexShrink:0 }} noWrap>{safeFormat(ev.start, 'MMM d')}</Typography>
+                        <Typography variant="caption" sx={{ width: 85, flexShrink:0 }} noWrap>{safeFormat(ev.start, 'p')} – {safeFormat(ev.end, 'p')}</Typography>
                         <Typography variant="caption" sx={{ flexGrow:1 }} noWrap>{resolveAssignee(ev)}</Typography>
                       </Stack>
                     </ListItemButton>
