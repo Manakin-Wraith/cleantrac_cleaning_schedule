@@ -52,14 +52,13 @@ export default function CalendarHeaderControls({
     <Box
       sx={{
         display: 'flex',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
         alignItems: 'center',
         width: '100%',
-        pl: { xs: 7 }, // ensure left nav buttons are pushed away from sidebar
       }}
     >
       {/* Left side: Navigation and Date */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ display:'flex', alignItems:'center', gap:1, mx:'auto' }}>
         <ButtonGroup variant="outlined" aria-label="date navigation group">
           <Button onClick={() => onNavigate('prev')}>
             <ArrowBackIosNewIcon fontSize="small" />
@@ -69,7 +68,7 @@ export default function CalendarHeaderControls({
             <ArrowForwardIosIcon fontSize="small" />
           </Button>
         </ButtonGroup>
-        <Typography variant="h6" component="div" sx={{ ml: 2 }}>
+        <Typography variant="h6" component="div" sx={{ ml:2 }}>
           {formattedDate()}
         </Typography>
       </Box>
