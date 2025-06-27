@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { useAuth } from '../../context/AuthContext';
 import {
   Drawer,
   Box,
@@ -8,8 +9,11 @@ import {
   Divider,
   Stack,
   Button,
+  Chip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import TaskTypeIcon from '../tasks/TaskTypeIcon';
+import RecurrenceChip from '../tasks/RecurrenceChip';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
@@ -25,8 +29,12 @@ export default function TaskDrawer({
   onDelete,
   onComplete,
 }) {
-  if (!task) return null;
+  if (!task || task.status === 'archived') return null;
 
+    const { currentUser } = useAuth();
+  const roleRaw = currentUser?.profile?.role || currentUser?.role || 'staff';
+  const role = String(roleRaw).toLowerCase();
+  const isManager = role === 'manager';
   // Helpers
   const formatDate = (d) => {
     if (!d) return '';
@@ -41,12 +49,26 @@ export default function TaskDrawer({
       <Box sx={{ width: { xs: '100vw', sm: 480 }, p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">
+          <Box sx={{ display:'flex', alignItems:'center' }}>
+            <TaskTypeIcon task={task} sx={{ mr:1 }} />
+            <Typography variant="h6" sx={{ mr:1 }}>
             {task.type === 'cleaning' ? 'Cleaning Task' : 'Recipe Production'}
           </Typography>
-          <IconButton onClick={onClose} aria-label="close drawer">
+            {task.recurrence_type && (
+              <RecurrenceChip type={task.recurrence_type} sx={{ mr:1 }} />
+            )}
+          </Box>
+          <Box sx={{ display:'flex', alignItems:'center', gap:1 }}>
+            <Chip
+              label={(task.status || '').replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}
+              size="small"
+              color={task.status==='completed'?'success':task.status==='pending'?'warning':'default'}
+              sx={{ fontWeight:'medium' }}
+            />
+            <IconButton onClick={onClose} aria-label="close drawer">
             <CloseIcon />
           </IconButton>
+          </Box>
         </Box>
 
         <Divider sx={{ my: 2 }} />
@@ -129,16 +151,18 @@ export default function TaskDrawer({
 
         {/* Actions */}
         <Box sx={{ pt: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-          {task.type === 'cleaning' && task.status === 'pending_review' && (
+          {(!isManager && ['pending','scheduled'].includes(String(task.status).toLowerCase())) ||
+            (isManager && String(task.status).toLowerCase() === 'pending_review') ? (
+            
             <Button
               variant="contained"
               color="success"
-              onClick={() => onComplete && onComplete(task)}
+              onClick={onComplete ? () => onComplete(task) : null}
               sx={{ mr: 1 }}
             >
-              Completed
+              Mark Completed
             </Button>
-          )}
+          ) : null}
           <Button variant="outlined" startIcon={<EditIcon />} onClick={() => onEdit(task)}>
             Edit
           </Button>

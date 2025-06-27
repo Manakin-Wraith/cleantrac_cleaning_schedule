@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import RecurrenceChip from './RecurrenceChip';
+import TaskTypeIcon from './TaskTypeIcon';
 
 /**
  * Accordion-based section with count badge & compact task rows.
@@ -32,6 +33,7 @@ const TaskSection = ({ title, tasks, defaultExpanded = false, onSelect }) => {
         <List disablePadding>
           {tasks.map((t) => (
             <ListItemButton key={t.id} onClick={() => onSelect(t)} divider>
+              <TaskTypeIcon task={t} showLabel={false} />
               <ListItemText
                 primary={
                   <> {
@@ -45,18 +47,6 @@ const TaskSection = ({ title, tasks, defaultExpanded = false, onSelect }) => {
                   </>
                 }
                 secondary={(t.status || '').replace(/_/g, ' ')}
-              />
-              {/* status dot */}
-              <Chip
-                size="small"
-                color={
-                  t.status === 'completed'
-                    ? 'success'
-                    : t.status === 'pending'
-                    ? 'warning'
-                    : 'default'
-                }
-                label=""
               />
             </ListItemButton>
           ))}

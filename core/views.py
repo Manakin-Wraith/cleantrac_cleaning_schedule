@@ -396,8 +396,33 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_superuser:
-            return TaskInstance.objects.all()
+        base_qs = TaskInstance.objects.all()
+        if not user.is_superuser:
+            # Restrict by department/assignment first as before (we'll reapply filters later)
+            try:
+                user_profile = user.profile
+                if user_profile.role == 'manager' and user_profile.department:
+                    base_qs = base_qs.filter(department=user_profile.department)
+                elif user_profile.role == 'staff':
+                    if user_profile.department:
+                        base_qs = base_qs.filter(assigned_to=user_profile, department=user_profile.department)
+                    else:
+                        base_qs = base_qs.filter(assigned_to=user_profile)
+                else:
+                    base_qs = TaskInstance.objects.none()
+            except UserProfile.DoesNotExist:
+                base_qs = TaskInstance.objects.none()
+        # Status filter: comma-separated list via ?status=pending,completed
+        status_param = self.request.query_params.get('status')
+        if status_param is not None:
+            status_values = [s.strip() for s in status_param.split(',') if s.strip()]
+            if status_values:
+                base_qs = base_qs.filter(status__in=status_values)
+        else:
+            # Default: for staff hide archived unless explicitly requested
+            if not user.is_superuser and getattr(user.profile, 'role', None) == 'staff':
+                base_qs = base_qs.exclude(status='archived')
+        return base_qs
         try:
             user_profile = user.profile
             if user_profile.role == 'manager' and user_profile.department:

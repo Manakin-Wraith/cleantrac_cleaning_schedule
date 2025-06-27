@@ -65,6 +65,7 @@ class TaskInstance(models.Model):
         ('completed', 'Completed'),
         ('missed', 'Missed'), 
         ('requires_attention', 'Requires Attention'),
+        ('archived', 'Archived'),
     ]
 
     cleaning_item = models.ForeignKey(CleaningItem, on_delete=models.CASCADE, related_name='task_instances')
@@ -79,6 +80,7 @@ class TaskInstance(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True, null=True)
 
     def __str__(self):

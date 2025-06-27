@@ -653,6 +653,21 @@ class RecipeProductionTaskSerializer(serializers.ModelSerializer):
         if staff_value is not None:
             validated_data['assigned_staff'] = staff_value
         instance = super().update(instance, validated_data)
+
+        # Auto-archive when manager marks completed
+        request = self.context.get('request')
+        new_status = validated_data.get('status')
+        if request and new_status == 'completed':
+            try:
+                profile = request.user.profile
+                if profile.role == 'manager':
+                    from django.utils import timezone
+                    instance.status = 'archived'
+                    instance.completed_at = timezone.now()
+                    instance.save(update_fields=["status", "completed_at"])
+            except AttributeError:
+                pass
+
         return instance
 
     # ------------------ Helper SerializerMethodField getters ------------------

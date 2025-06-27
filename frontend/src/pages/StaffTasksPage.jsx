@@ -307,23 +307,25 @@ function StaffTasksPage() {
 
                     const prodParams = {
                         assigned_to: userData.id,
-                        due_date: todayStr,
+                        scheduled_date: todayStr,
                     };
-                    const prodData = await getProductionSchedules(prodParams);
-                    const recipeTasks = prodData?.results || prodData || [];
+                    const prodResp = await getProductionSchedules(prodParams);
+                    const recipeTasks = prodResp?.results || prodResp || [];
 
-                    setTodaysTasks(tasks || []);
-                    setTodaysRecipeTasks(recipeTasks);
-                    
-                    // Fetch thermometer data after user is loaded
-                    // await fetchThermometerData(); // fetchThermometerData will be called in its own useEffect triggered by user change
+                    // Show only today's instance for recurring tasks
+                    const filteredTasks = (tasks || []).filter(t => !t.recurrence_type || t.due_date === todayStr);
+                    const filteredRecipeTasks = (recipeTasks || []).filter(t => !t.recurrence_type || t.scheduled_date === todayStr);
+
+                    setTodaysTasks(filteredTasks);
+                    setTodaysRecipeTasks(filteredRecipeTasks);
+                    setLoadingTasks(false);
                 }
             } catch (err) {
-                console.error("Failed to load page data:", err);
+                console.error('Failed to load page data:', err);
                 setError(err.message || 'Failed to load page data. Please try refreshing.');
-                setTodaysTasks([]); // Ensure tasks is an array on error
+                setTodaysTasks([]);
             } finally {
-                setLoadingUser(false); 
+                setLoadingUser(false);
                 setLoadingTasks(false);
             }
         };

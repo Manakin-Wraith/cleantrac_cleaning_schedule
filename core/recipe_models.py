@@ -288,6 +288,7 @@ class RecipeProductionTask(models.Model):
         ('cancelled', 'Cancelled'),
         ('pending_review', 'Pending Review'),
         ('on_hold', 'On Hold'),
+        ('archived', 'Archived'),
     ]
     
     RECURRENCE_TYPE_CHOICES = [
@@ -323,6 +324,7 @@ class RecipeProductionTask(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    completed_at = models.DateTimeField(null=True, blank=True)
     # New fields for enhanced functionality
     task_type = models.CharField(max_length=20, choices=[
         ('prep', 'Preparation'),
