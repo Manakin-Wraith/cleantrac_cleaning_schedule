@@ -34,7 +34,7 @@ function toAbsoluteUrl(path) {
 
 export default function DocumentPreviewDrawer({ open, onClose, doc }) {
   return (
-    <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: { xs: '100%', sm: 400, md: 500 } } }}>
+    <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: { xs: '100%', sm: 480, md: 600 } } }}>
       <Box sx={{ position: 'relative', p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
         <IconButton onClick={onClose} sx={{ position: 'absolute', top: 8, right: 8 }} aria-label="Close preview drawer">
           <CloseIcon />
