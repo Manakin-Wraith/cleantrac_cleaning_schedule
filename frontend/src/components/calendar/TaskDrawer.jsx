@@ -45,8 +45,9 @@ export default function TaskDrawer({
   };
 
   return (
-    <Drawer anchor="right" open={open} onClose={onClose} sx={{ zIndex: 1200 }}>
-      <Box sx={{ width: { xs: '100vw', sm: 480 }, p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Drawer anchor="right" open={open} onClose={onClose} sx={{ zIndex: 1200 }}
+      PaperProps={{ sx: { width: { xs: '100%', sm: 600, md: 640 } } }}>
+      <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display:'flex', alignItems:'center' }}>
