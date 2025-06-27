@@ -45,6 +45,7 @@ function StaffTasksPage() {
     const [drawerRecipe, setDrawerRecipe] = useState(null);
     const [loadingDrawerRecipe, setLoadingDrawerRecipe] = useState(false);
     const [error, setError] = useState(''); // General page error
+    const [successMsg, setSuccessMsg] = useState('');
     const [updatingTask, setUpdatingTask] = useState(null);
     // Helper to render a task card (cleaning or recipe)
     const renderTaskCard = (task) => (
@@ -306,23 +307,25 @@ function StaffTasksPage() {
 
                     const prodParams = {
                         assigned_to: userData.id,
-                        due_date: todayStr,
+                        scheduled_date: todayStr,
                     };
-                    const prodData = await getProductionSchedules(prodParams);
-                    const recipeTasks = prodData?.results || prodData || [];
+                    const prodResp = await getProductionSchedules(prodParams);
+                    const recipeTasks = prodResp?.results || prodResp || [];
 
-                    setTodaysTasks(tasks || []);
-                    setTodaysRecipeTasks(recipeTasks);
-                    
-                    // Fetch thermometer data after user is loaded
-                    // await fetchThermometerData(); // fetchThermometerData will be called in its own useEffect triggered by user change
+                    // Show only today's instance for recurring tasks
+                    const filteredTasks = (tasks || []).filter(t => !t.recurrence_type || t.due_date === todayStr);
+                    const filteredRecipeTasks = (recipeTasks || []).filter(t => !t.recurrence_type || t.scheduled_date === todayStr);
+
+                    setTodaysTasks(filteredTasks);
+                    setTodaysRecipeTasks(filteredRecipeTasks);
+                    setLoadingTasks(false);
                 }
             } catch (err) {
-                console.error("Failed to load page data:", err);
+                console.error('Failed to load page data:', err);
                 setError(err.message || 'Failed to load page data. Please try refreshing.');
-                setTodaysTasks([]); // Ensure tasks is an array on error
+                setTodaysTasks([]);
             } finally {
-                setLoadingUser(false); 
+                setLoadingUser(false);
                 setLoadingTasks(false);
             }
         };
@@ -391,15 +394,25 @@ function StaffTasksPage() {
         const taskId = taskObj.id;
         const isRecipe = taskObj.__type === 'recipe';
         setUpdatingTask(taskId);
+        let updatedTaskObj = null;
         setError('');
         try {
             if (isRecipe) {
                 await updateProductionSchedule(taskId, { status: 'pending_review' });
-                setTodaysRecipeTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'pending_review' } : t));
+                updatedTaskObj = { ...taskObj, status: 'pending_review' };
+                setTodaysRecipeTasks(prev => prev.map(t => t.id === taskId ? updatedTaskObj : t));
             } else {
                 await updateTaskInstance(taskId, { status: 'pending_review' });
-                setTodaysTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'pending_review' } : t));
+                updatedTaskObj = { ...taskObj, status: 'pending_review' };
+                setTodaysTasks(prev => prev.map(t => t.id === taskId ? updatedTaskObj : t));
             }
+            // reflect in drawer if open
+            if (drawerTask && drawerTask.id === taskId) {
+                setDrawerTask(updatedTaskObj);
+            }
+            // feedback & close
+            setSuccessMsg('Task submitted for review');
+            setTimeout(() => setDrawerOpen(false), 800);
         } catch (err) {
             console.error(`Failed to submit task ${taskId} for review:`, err);
             setError(err.response?.data?.detail || err.message || 'Failed to update task. Please try again.');

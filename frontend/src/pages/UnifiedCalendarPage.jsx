@@ -17,10 +17,16 @@ import {
   createTaskInstance,
   deleteTaskInstance,
 } from '../services/taskService';
+import { updateRecipeProductionTask } from '../services/recipeService';
 import { getCleaningItems } from '../services/cleaningItemService';
 import { getUsers } from '../services/userService';
 import apiClient from '../services/api'; // still used elsewhere if needed
-import { getProductionSchedules, createProductionSchedule, updateProductionSchedule, deleteProductionSchedule } from '../services/productionScheduleService';
+import { 
+  getProductionSchedules, 
+  createProductionSchedule, 
+  updateProductionSchedule, 
+  deleteProductionSchedule 
+} from '../services/productionScheduleService';
 
 // Import calendar components
 import CalendarPageLayout from '../components/calendar/layout/CalendarPageLayout';
@@ -659,9 +665,16 @@ const UnifiedCalendarPage = () => {
     if (!task) return;
     try {
       const [prefix, rawId] = (task.id || '').toString().split('-');
-      if (prefix !== 'cleaning' || !rawId) return;
-      await updateTaskInstance(rawId, { status: 'completed' });
-      setCleaningEvents(prev => prev.map(ev => ev.id === task.id ? { ...ev, status: 'completed' } : ev));
+      if (!rawId) return;
+      if (prefix === 'cleaning') {
+        await updateTaskInstance(rawId, { status: 'completed' });
+        setCleaningEvents(prev => prev.map(ev => (ev.id === task.id ? { ...ev, status: 'completed' } : ev)));
+      } else if (prefix === 'recipe') {
+        await updateRecipeProductionTask(rawId, { status: 'completed' });
+        setRecipeEvents(prev => prev.map(ev => (ev.id === task.id ? { ...ev, status: 'completed' } : ev)));
+      } else {
+        return;
+      }
       enqueueSnackbar('Task marked as completed.', { variant: 'success' });
       setDrawerOpen(false);
     } catch (err) {

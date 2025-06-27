@@ -11,6 +11,8 @@ import {
   Box,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import RecurrenceChip from './RecurrenceChip';
+import TaskTypeIcon from './TaskTypeIcon';
 
 /**
  * Accordion-based section with count badge & compact task rows.
@@ -31,26 +33,20 @@ const TaskSection = ({ title, tasks, defaultExpanded = false, onSelect }) => {
         <List disablePadding>
           {tasks.map((t) => (
             <ListItemButton key={t.id} onClick={() => onSelect(t)} divider>
+              <TaskTypeIcon task={t} showLabel={false} />
               <ListItemText
                 primary={
-                  t.__type === 'recipe'
-                    ? t.recipe_details?.name || t.recipe?.name || 'Unnamed Recipe'
-                    : t.cleaning_item?.name || 'Unnamed Task'
+                  <> {
+                    t.__type === 'recipe'
+                      ? t.recipe_details?.name || t.recipe?.name || 'Unnamed Recipe'
+                      : t.cleaning_item?.name || 'Unnamed Task'
+                  }
+                  {t.recurrence_type && (
+                    <RecurrenceChip type={t.recurrence_type} sx={{ ml: 0.5 }} />
+                  )}
+                  </>
                 }
                 secondary={(t.status || '').replace(/_/g, ' ')}
-              />
-              {/* simple colored dot using chip */}
-              <Chip
-                size="small"
-                color={
-                  t.status === 'completed'
-                    ? 'success'
-                    : t.status === 'pending'
-                    ? 'warning'
-                    : 'default'
-                }
-                label=""
-                sx={{ width: 8, height: 8, borderRadius: '50%' }}
               />
             </ListItemButton>
           ))}

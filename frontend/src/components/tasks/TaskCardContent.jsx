@@ -1,6 +1,8 @@
 import React from 'react';
 import { CardContent, Box, Typography, Chip, Divider } from '@mui/material';
-import { CheckCircleOutline as CheckCircleOutlineIcon, Event as EventIcon, AccessTime as AccessTimeIcon, Build as BuildIcon, Science as ScienceIcon, ListAlt as ListAltIcon, Notes as NotesIcon } from '@mui/icons-material';
+import { CheckCircleOutline as CheckCircleOutlineIcon, Event as EventIcon, AccessTime as AccessTimeIcon, Build as BuildIcon, Science as ScienceIcon, ListAlt as ListAltIcon, Notes as NotesIcon, HourglassBottom as HourglassBottomIcon } from '@mui/icons-material';
+import RecurrenceChip from './RecurrenceChip';
+import TaskTypeIcon from './TaskTypeIcon';
 import { alpha, useTheme } from '@mui/material/styles';
 import dayjs from 'dayjs';
 
@@ -13,29 +15,41 @@ const TaskCardContent = ({ task }) => {
   return (
     <CardContent sx={{ padding: 2, pb: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography
-          variant="h6"
-          component="div"
-          sx={{
-            ...(task.status === 'completed' && {
-              textDecoration: 'line-through',
-              color: theme.palette.text.disabled,
-            }),
-          }}
-        >
-          {task.__type === 'recipe'
-            ? task.recipe_details?.name || task.recipe?.name || 'Unnamed Recipe'
-            : task.cleaning_item?.name || 'Unnamed Task'}
-        </Typography>
-        <Chip
-          label={(task.status || '').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-          size="small"
-          color={task.status === 'completed' ? 'success' : task.status === 'pending' ? 'warning' : 'default'}
-          sx={{ fontWeight: 'medium' }}
-        />
-        {task.status === 'completed' && (
-          <CheckCircleOutlineIcon sx={{ color: theme.palette.success.main, ml: 1 }} />
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <TaskTypeIcon task={task} />
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{
+              ...(task.status === 'completed' && {
+                textDecoration: 'line-through',
+                color: theme.palette.text.disabled,
+              }),
+              ml: 0.5,
+            }}
+          >
+            {task.__type === 'recipe'
+              ? task.recipe_details?.name || task.recipe?.name || 'Unnamed Recipe'
+              : task.cleaning_item?.name || 'Unnamed Task'}
+          </Typography>
+          {task.recurrence_type && (
+            <RecurrenceChip type={task.recurrence_type} sx={{ ml: 0.5 }} />
+          )}
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Chip
+            label={(task.status || '').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+            size="small"
+            color={task.status === 'completed' ? 'success' : task.status === 'pending_review' ? 'info' : task.status === 'pending' ? 'warning' : 'default'}
+            sx={{ fontWeight: 'medium' }}
+          />
+          {task.status === 'completed' && (
+            <CheckCircleOutlineIcon sx={{ color: theme.palette.success.main, ml: 1 }} />
+          )}
+          {task.status === 'pending_review' && (
+            <HourglassBottomIcon sx={{ color: theme.palette.info.main, ml: 1 }} />
+          )}
+        </Box>
       </Box>
 
       <Box sx={{ my: 2 }}>

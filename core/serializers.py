@@ -344,7 +344,28 @@ class TaskInstanceSerializer(serializers.ModelSerializer):
         if 'status' not in self.initial_data:
             validated_data.pop('status', None)
 
-        return super().update(instance, validated_data)
+        # Perform the normal update first
+        instance = super().update(instance, validated_data)
+
+        # ------------------------------------------------------------------
+        # Auto-archive: when a MANAGER sets status to completed, immediately
+        # change to archived and stamp completed_at.
+        # ------------------------------------------------------------------
+        request = self.context.get('request')
+        new_status = validated_data.get('status')
+        if request and new_status == 'completed':
+            try:
+                profile = request.user.profile
+                if profile.role == 'manager':
+                    from django.utils import timezone
+                    instance.status = 'archived'
+                    instance.completed_at = timezone.now()
+                    instance.save(update_fields=["status", "completed_at"])
+            except AttributeError:
+                # If profile missing, skip auto-archive
+                pass
+
+        return instance
 
 class CompletionLogSerializer(serializers.ModelSerializer):
     task_instance_id = serializers.PrimaryKeyRelatedField(

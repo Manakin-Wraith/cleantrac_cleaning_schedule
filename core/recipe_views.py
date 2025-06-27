@@ -644,73 +644,57 @@ class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
                 current_end += delta
     
     def get_queryset(self):
-        """
-        Filter tasks based on user's department and query parameters.
-        Supports filtering by date range, status, department, and recipe.
-        """
+        """Return recipe production tasks filtered by role and query params."""
         user = self.request.user
         if not user.is_authenticated:
             return RecipeProductionTask.objects.none()
-        
-        # Start with all tasks
-        queryset = RecipeProductionTask.objects.all()
-        
-        # Apply filters from query parameters
-        department_id = self.request.query_params.get('department_id')
-        status = self.request.query_params.get('status')
-        recipe_id = self.request.query_params.get('recipe_id')
-        date_param = self.request.query_params.get('date')
-        start_date = self.request.query_params.get('start_date')
-        end_date = self.request.query_params.get('end_date')
-        assigned_staff_id = self.request.query_params.get('assigned_staff_id')
-        is_recurring = self.request.query_params.get('is_recurring')
-        
-        # Filter by department
-        if department_id:
-            queryset = queryset.filter(department_id=department_id)
-        
-        # Filter by status
-        if status:
-            queryset = queryset.filter(status=status)
-        
-        # Filter by recipe
-        if recipe_id:
-            queryset = queryset.filter(recipe_id=recipe_id)
-        
-        # Filter by single date (exact) or date range
-        if date_param:
-            queryset = queryset.filter(scheduled_start_time__date=date_param)
-        if start_date:
-            queryset = queryset.filter(scheduled_start_time__date__gte=start_date)
-        if end_date:
-            queryset = queryset.filter(scheduled_start_time__date__lte=end_date)
-        
-        # Filter by assigned staff
-        if assigned_staff_id:
-            queryset = queryset.filter(assigned_staff_id=assigned_staff_id)
-        
-        # Filter by recurrence
-        if is_recurring is not None:
-            is_recurring_bool = is_recurring.lower() == 'true'
-            queryset = queryset.filter(is_recurring=is_recurring_bool)
-        
-        # If user is not superuser, restrict to their department
+
+        qs = RecipeProductionTask.objects.all()
+
+        # Role/department scoping (non-superusers)
         if not user.is_superuser:
             try:
-                user_profile = user.profile
-                if user_profile.department:
-                    queryset = queryset.filter(department=user_profile.department)
+                profile = user.profile
+                if profile.role == 'manager' and profile.department:
+                    qs = qs.filter(department=profile.department)
+                elif profile.role == 'staff' and profile.department:
+                    qs = qs.filter(department=profile.department)
                 else:
                     return RecipeProductionTask.objects.none()
-            except:
+            except UserProfile.DoesNotExist:
                 return RecipeProductionTask.objects.none()
-        
-        return queryset.order_by('scheduled_start_time')
-    
-    def perform_create(self, serializer):
-        """Set created_by to current user when creating a production task"""
-        serializer.save(created_by=self.request.user)
-    
+
+        params = self.request.query_params
+
+        # Status filtering (comma-separated)
+        status_param = params.get('status')
+        if status_param is not None:
+            statuses = [s.strip() for s in status_param.split(',') if s.strip()]
+            if statuses:
+                qs = qs.filter(status__in=statuses)
+        else:
+            # Default for staff: hide archived
+            if not user.is_superuser and getattr(user.profile, 'role', None) == 'staff':
+                qs = qs.exclude(status='archived')
+
+        # Additional filters
+        if dept_id := params.get('department_id'):
+            qs = qs.filter(department_id=dept_id)
+        if recipe_id := params.get('recipe_id'):
+            qs = qs.filter(recipe_id=recipe_id)
+        if date_exact := params.get('date'):
+            qs = qs.filter(scheduled_start_time__date=date_exact)
+        if start_date := params.get('start_date'):
+            qs = qs.filter(scheduled_start_time__date__gte=start_date)
+        if end_date := params.get('end_date'):
+            qs = qs.filter(scheduled_start_time__date__lte=end_date)
+        if staff_id := params.get('assigned_staff_id'):
+            qs = qs.filter(assigned_staff_id=staff_id)
+        if recur_param := params.get('is_recurring'):
+            qs = qs.filter(is_recurring=(recur_param.lower() == 'true'))
+
+        return qs.order_by('scheduled_start_time')
+
     @action(detail=False, methods=['get'])
     def today(self, request):
         """Get production tasks scheduled for today"""

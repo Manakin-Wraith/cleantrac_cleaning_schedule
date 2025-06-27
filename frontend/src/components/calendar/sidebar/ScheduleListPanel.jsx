@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import {
   Box,
@@ -11,23 +11,28 @@ import {
   ListItemIcon,
   Typography,
   Stack,
-  FormControlLabel,
-  Switch,
+  
+  
 } from '@mui/material';
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import ViewAgendaIcon from '@mui/icons-material/ViewAgenda';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/PendingActions';
+import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
 import ErrorIcon from '@mui/icons-material/ErrorOutline';
 import { format } from 'date-fns';
 import { useSchedule } from '../../../context/ScheduleContext';
 
 const statusIcon = (status) => {
   switch (status?.toLowerCase()) {
+    case 'archived':
+      return <CheckCircleIcon color="disabled" fontSize="small" />;
     case 'completed':
     case 'done':
       return <CheckCircleIcon color="success" fontSize="small" />;
+    case 'pending_review':
+      return <HourglassBottomIcon color="info" fontSize="small" />;
     case 'pending':
     case 'in progress':
       return <PendingIcon color="warning" fontSize="small" />;
@@ -79,12 +84,13 @@ const resolveAssignee = (ev) => {
 
 const ScheduleListPanel = ({ onRowClick }) => {
   const { events, visibleEvents: visibleEventsRaw, listFilter, setListFilter } = useSchedule();
-  const [showCompleted, setShowCompleted] = useState(false);
-  const visibleEvents = useMemo(() => {
-    return visibleEventsRaw.filter((ev) => showCompleted || !['completed', 'done'].includes(ev.status?.toLowerCase?.()));
-  }, [visibleEventsRaw, showCompleted]);
+  
+  const visibleEvents = useMemo(
+    () => visibleEventsRaw.filter((ev) => !['completed', 'done', 'archived'].includes(ev.status?.toLowerCase?.())),
+    [visibleEventsRaw]
+  );
 
-  const done = (e)=> ['completed','done'].includes(e.status?.toLowerCase?.());
+  const done = (e)=> ['completed','done','archived'].includes(e.status?.toLowerCase?.());
   const counts = React.useMemo(() => {
     const totalCleaning = events.filter(e=> e.type==='cleaning').length;
     const totalProduction = events.filter(e=> e.type==='production').length;
@@ -108,26 +114,22 @@ const ScheduleListPanel = ({ onRowClick }) => {
         fullWidth
       >
         <ToggleButton value="all">
-          <Badge badgeContent={showCompleted ? counts.total.all : counts.active.all} color="secondary">
+          <Badge badgeContent={counts.active.all} color="secondary">
             <ViewAgendaIcon />
           </Badge>
         </ToggleButton>
         <ToggleButton value="cleaning">
-          <Badge badgeContent={showCompleted ? counts.total.cleaning : counts.active.cleaning} color="secondary">
+          <Badge badgeContent={counts.active.cleaning} color="secondary">
             <CleaningServicesIcon />
           </Badge>
         </ToggleButton>
         <ToggleButton value="production">
-          <Badge badgeContent={showCompleted ? counts.total.production : counts.active.production} color="secondary">
+          <Badge badgeContent={counts.active.production} color="secondary">
             <RestaurantMenuIcon />
           </Badge>
         </ToggleButton>
       </ToggleButtonGroup>
-      <FormControlLabel
-        control={<Switch size="small" checked={showCompleted} onChange={(e)=>setShowCompleted(e.target.checked)} />}
-        label="Show completed"
-        sx={{ ml:1 }}
-      />
+      
 
       {/* List */}
       <List dense sx={{ mt: 1, maxHeight: 'calc(100vh - 200px)', overflow: 'auto' }}>
