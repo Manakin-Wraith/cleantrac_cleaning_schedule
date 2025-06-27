@@ -11,6 +11,10 @@ import {
   ListItemIcon,
   Typography,
   Stack,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Divider,
   
   
 } from '@mui/material';
@@ -19,6 +23,8 @@ import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import ViewAgendaIcon from '@mui/icons-material/ViewAgenda';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/PendingActions';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import RecurrenceChip from '../../tasks/RecurrenceChip';
 import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
 import ErrorIcon from '@mui/icons-material/ErrorOutline';
 import { format } from 'date-fns';
@@ -85,13 +91,33 @@ const resolveAssignee = (ev) => {
 const ScheduleListPanel = ({ onRowClick }) => {
   const { events, visibleEvents: visibleEventsRaw, listFilter, setListFilter } = useSchedule();
   
-  const visibleEvents = useMemo(
+  // Build visible events (excluding done) first
+  const visibleEventsFlat = useMemo(
     () => visibleEventsRaw.filter((ev) => !['completed', 'done', 'archived'].includes(ev.status?.toLowerCase?.())),
     [visibleEventsRaw]
   );
 
+  // Group recurring events
+  const groupedEvents = useMemo(() => {
+    const groups = {};
+    const singles = [];
+
+    visibleEventsFlat.forEach((ev) => {
+      if (ev.recurrence_type) {
+        const key = `${ev.recurrence_type}-${resolveTitle(ev)}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(ev);
+      } else {
+        singles.push(ev);
+      }
+    });
+
+    const total = singles.length + Object.values(groups).reduce((sum, arr) => sum + arr.length, 0);
+    return { groups, singles, total };
+  }, [visibleEventsFlat]);
+
   const done = (e)=> ['completed','done','archived'].includes(e.status?.toLowerCase?.());
-  const counts = React.useMemo(() => {
+    const counts = React.useMemo(() => {
     const totalCleaning = events.filter(e=> e.type==='cleaning').length;
     const totalProduction = events.filter(e=> e.type==='production').length;
     const activeCleaning = events.filter(e=> e.type==='cleaning' && !done(e)).length;
@@ -133,7 +159,45 @@ const ScheduleListPanel = ({ onRowClick }) => {
 
       {/* List */}
       <List dense sx={{ mt: 1, maxHeight: 'calc(100vh - 200px)', overflow: 'auto' }}>
-        {visibleEvents.map((ev) => (
+        {/* Recurring groups */}
+        {Object.entries(groupedEvents.groups).map(([key, group]) => {
+          const first = group[0];
+          return (
+            <Accordion key={key} disableGutters sx={{ bgcolor: 'background.paper' }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon fontSize="small" />}>
+                <ListItemIcon sx={{ minWidth: 28 }}>{statusIcon(first.status)}</ListItemIcon>
+                <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ overflow: 'hidden' }}>
+                    <Typography variant="body2" fontWeight={500} noWrap>
+                      {resolveTitle(first)}
+                    </Typography>
+                    <RecurrenceChip type={first.recurrence_type} size="small" sx={{ flexShrink: 0, fontSize:11 }} />
+                  </Stack>
+                  <Typography variant="caption" sx={{ color:'text.secondary' }} noWrap>
+                    {format(first.start, 'MMM d')} · {format(first.start, 'p')} – {format(first.end, 'p')} · {resolveAssignee(first)}
+                  </Typography>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails sx={{ p: 0 }}>
+                {group.map((ev, idx) => (
+                  <React.Fragment key={ev.id}>
+                    <ListItemButton onClick={() => onRowClick?.(ev)} sx={{ pl: 4 }}>
+                      <Stack direction="row" alignItems="center" spacing={1} sx={{ width:'100%', pr:1 }}>
+                        <Typography variant="caption" sx={{ width: 80, flexShrink:0 }} noWrap>{format(ev.start, 'MMM d')}</Typography>
+                        <Typography variant="caption" sx={{ width: 85, flexShrink:0 }} noWrap>{format(ev.start, 'p')} – {format(ev.end, 'p')}</Typography>
+                        <Typography variant="caption" sx={{ flexGrow:1 }} noWrap>{resolveAssignee(ev)}</Typography>
+                      </Stack>
+                    </ListItemButton>
+                    {idx !== group.length -1 && <Divider component="li" />}
+                  </React.Fragment>
+                ))}
+              </AccordionDetails>
+            </Accordion>
+          );
+        })}
+
+        {/* Single (non-recurring) events */}
+        {groupedEvents.singles.map((ev) => (
           <ListItemButton key={ev.id} onClick={() => onRowClick?.(ev)}>
             <ListItemIcon>{statusIcon(ev.status)}</ListItemIcon>
             <ListItemText
@@ -156,7 +220,7 @@ const ScheduleListPanel = ({ onRowClick }) => {
             />
           </ListItemButton>
         ))}
-        {visibleEvents.length === 0 && (
+        {groupedEvents.total === 0 && (
           <Box sx={{ p: 2 }}>
             <Typography variant="body2" color="text.secondary" align="center">
               No tasks in this view
