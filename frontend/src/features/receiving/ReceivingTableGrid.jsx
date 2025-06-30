@@ -32,7 +32,7 @@ function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000 }
       const resp = await fetchReceivingRecords(params);
       const dataList = Array.isArray(resp) ? resp : resp.results || [];
       const total = Array.isArray(resp) ? resp.length : resp.count || dataList.length;
-      const mapped = dataList.map((r) => ({ id: r.inventory_id, ...r }));
+      const mapped = dataList.map((r) => ({ id: r.id || r.tracking_id || r.inventory_id, ...r }));
       setRows(mapped);
       setRowCount(total);
     } catch (err) {
@@ -74,7 +74,7 @@ function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000 }
     { field: 'quantity_remaining', headerName: 'Qty', type: 'number', width: 90 },
     { field: 'unit', headerName: 'Unit', width: 80 },
     { field: 'supplier_code', headerName: 'Supplier', flex: 1 },
-    { field: 'department_name', headerName: 'Department', flex: 1.2 },
+    { field: 'storage_location', headerName: 'Department', flex: 1.2 },
     { field: 'received_date', headerName: 'Received Date', flex: 1.4,
        renderCell: (params) => {
          const raw = params.row?.received_date;

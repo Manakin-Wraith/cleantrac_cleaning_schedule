@@ -35,7 +35,7 @@ import CloseIcon from '@mui/icons-material/Close';
 
 // Placeholder for actual API calls
 import { getCurrentUser } from '../services/authService';
-import ReceivingTableGrid from '../features/receiving/ReceivingTableGrid';
+import ReceivingDashboard from '../features/receiving/ReceivingDashboard';
 import { getTemperatureLoggingManagerSummary, getCurrentTemperatureCheckAssignments } from '../services/thermometerService';
 import dayjs from 'dayjs';
 import { getProductionSchedules } from '../services/productionScheduleService';
@@ -408,7 +408,7 @@ function ManagerDashboardPage() {
                 <Typography variant="h4" sx={{ fontWeight: 500, mb: 2 }}>
                     Recieved Products
                 </Typography>
-                <ReceivingTableGrid pageSize={25} />
+                <ReceivingDashboard />
             </Box>
         </Container>
     );
