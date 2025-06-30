@@ -10,7 +10,7 @@ import { fetchReceivingRecords } from '../../services/receivingService';
 
 const defaultPageSize = 25;
 
-function ReceivingTableGrid({ pageSize = defaultPageSize }) {
+function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000 }) {
   const [rows, setRows] = useState([]);
   const [rowCount, setRowCount] = useState(0);
   const [page, setPage] = useState(0); // DataGrid is 0-based
@@ -45,6 +45,15 @@ function ReceivingTableGrid({ pageSize = defaultPageSize }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // ----------------------- Polling -----------------------
+  useEffect(() => {
+    const id = setInterval(() => {
+      // always reload current page
+      load();
+    }, pollInterval);
+    return () => clearInterval(id);
+  }, [load, pollInterval]);
 
   const handleSearchChange = (e) => {
     debouncedSearch(e.target.value);
@@ -113,6 +122,8 @@ function ReceivingTableGrid({ pageSize = defaultPageSize }) {
 
 ReceivingTableGrid.propTypes = {
   pageSize: PropTypes.number,
+  /** Polling interval in milliseconds (default 30000) */
+  pollInterval: PropTypes.number,
 };
 
 export default ReceivingTableGrid;

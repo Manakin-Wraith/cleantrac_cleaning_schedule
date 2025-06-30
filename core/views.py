@@ -1268,7 +1268,8 @@ class ReceivingRecordViewSet(viewsets.ReadOnlyModelViewSet):
             return ReceivingRecord.objects.all()
         try:
             if user.profile and user.profile.department:
-                return ReceivingRecord.objects.filter(department=user.profile.department)
+                dept = user.profile.department.name
+                return ReceivingRecord.objects.filter(storage_location__icontains=dept)
         except UserProfile.DoesNotExist:
             return ReceivingRecord.objects.none()
         return ReceivingRecord.objects.none()
