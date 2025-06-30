@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTheme } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 import { DataGrid } from '@mui/x-data-grid';
 import { Box, TextField, Stack } from '@mui/material';
@@ -10,8 +11,9 @@ import { fetchReceivingRecords } from '../../services/receivingService';
 
 const defaultPageSize = 25;
 
-function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000 }) {
-  const [rows, setRows] = useState([]);
+function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000, staticRows = null }) {
+  const theme = useTheme();
+  const [rows, setRows] = useState(staticRows || []);
   const [rowCount, setRowCount] = useState(0);
   const [page, setPage] = useState(0); // DataGrid is 0-based
   const [loading, setLoading] = useState(false);
@@ -42,18 +44,18 @@ function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000 }
     }
   }, [page, pageSize, sortModel, search]);
 
+  // Fetch only when not using static rows
   useEffect(() => {
-    load();
-  }, [load]);
+    if (!staticRows) load();
+  }, [load, staticRows]);
 
   // ----------------------- Polling -----------------------
+  // Poll only when not using static rows
   useEffect(() => {
-    const id = setInterval(() => {
-      // always reload current page
-      load();
-    }, pollInterval);
+    if (staticRows) return undefined;
+    const id = setInterval(load, pollInterval);
     return () => clearInterval(id);
-  }, [load, pollInterval]);
+  }, [load, pollInterval, staticRows]);
 
   const handleSearchChange = (e) => {
     debouncedSearch(e.target.value);
@@ -86,6 +88,34 @@ function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000 }
          }
          return formatted;
        } },
+    {
+      field: 'expiry_date',
+      headerName: 'Expiry / Best-before',
+      flex: 1.4,
+
+      renderCell: (params) => {
+        const raw = params.row?.expiry_date || params.row?.best_before_date || params.row?.sell_by_date;
+        if (!raw) return '-';
+        const dateObj = dayjs.utc(raw);
+        if (!dateObj.isValid()) return raw;
+        const days = dateObj.diff(dayjs().utc().startOf('day'), 'day');
+        const color = days <= 3 ? theme.palette.error.main : days <= 7 ? theme.palette.warning.dark : undefined;
+        const formatted = dateObj.format('DD MMM YYYY');
+        return (
+          <span title={`${formatted} (${days}d)`} style={{ color, fontWeight: 500 }}>
+            {formatted}
+          </span>
+        );
+      },
+      sortComparator: (v1, v2, param1, param2) => {
+        const d1 = dayjs.utc(param1.row?.expiry_date || param1.row?.best_before_date || param1.row?.sell_by_date);
+        const d2 = dayjs.utc(param2.row?.expiry_date || param2.row?.best_before_date || param2.row?.sell_by_date);
+        if (!d1.isValid() && !d2.isValid()) return 0;
+        if (!d1.isValid()) return 1;
+        if (!d2.isValid()) return -1;
+        return d1.diff(d2);
+      },
+    },
     { field: 'status', headerName: 'Status', flex: 1 },
   ];
 
@@ -124,6 +154,12 @@ ReceivingTableGrid.propTypes = {
   pageSize: PropTypes.number,
   /** Polling interval in milliseconds (default 30000) */
   pollInterval: PropTypes.number,
+};
+
+ReceivingTableGrid.propTypes = {
+  pageSize: PropTypes.number,
+  pollInterval: PropTypes.number,
+  staticRows: PropTypes.array,
 };
 
 export default ReceivingTableGrid;

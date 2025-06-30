@@ -18,16 +18,27 @@ import ReceivingTableGrid from './ReceivingTableGrid';
 
 dayjs.extend(utc);
 
-const AccentPaper = styled(Paper)(({ theme, accent }) => ({
-  padding: theme.spacing(2),
-  color: theme.palette.getContrastText(accent || theme.palette.primary.main),
-  backgroundColor: accent || theme.palette.primary.main,
-  height: '100%',
-}));
+const AccentPaper = styled(Paper)(({ theme, accent }) => {
+  const background = accent || theme.palette.primary.main;
+  // Get the contrast text calculated by MUI
+  const muiContrast = theme.palette.getContrastText(background);
+  // Force white text if MUI chooses a dark text colour (black/rgba black) which
+  // can be hard to read on certain accent colours like red.
+  const textColor = muiContrast.startsWith('#000') || muiContrast.startsWith('rgba(0, 0, 0')
+    ? theme.palette.common.white
+    : muiContrast;
 
-function KPI({ title, value, loading, accent }) {
+  return {
+    padding: theme.spacing(2),
+    color: textColor,
+    backgroundColor: background,
+    height: '100%',
+  };
+});
+
+function KPI({ title, value, loading, accent, onClick }) {
   return (
-    <AccentPaper elevation={3} accent={accent}>
+    <AccentPaper elevation={3} accent={accent} sx={{ cursor: onClick ? 'pointer' : 'default' }} onClick={onClick}>
       {loading ? (
         <Skeleton variant="rectangular" height={60} />
       ) : (
@@ -49,6 +60,7 @@ KPI.propTypes = {
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   loading: PropTypes.bool,
   accent: PropTypes.string,
+  onClick: PropTypes.func,
 };
 
 function a11yProps(index) {
@@ -83,6 +95,7 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
   const accent = accentColor || theme.palette.primary.main;
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState([]);
+  const [expiringRows, setExpiringRows] = useState([]);
   const [tab, setTab] = useState(0);
 
   const load = useCallback(async () => {
@@ -93,6 +106,12 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
       const resp = await fetchReceivingRecords(params);
       const dataList = Array.isArray(resp) ? resp : resp.results || [];
       setRows(dataList);
+      // pre-compute expiring rows list (≤7 days)
+      const today = dayjs().utc().startOf('day');
+      setExpiringRows(dataList.filter((r)=>{
+        const expiry=r.expiry_date?dayjs.utc(r.expiry_date):null;
+        return expiry && expiry.isBefore(today.add(7,'day'));
+      }));
     } catch (err) {
       console.error('Error loading dashboard data', err);
     } finally {
@@ -121,6 +140,13 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
     return expiry && expiry.isBefore(today.add(7, 'day'));
   }).length;
 
+  const tabSx = {
+    color: theme.palette.common.black,
+    '&.Mui-selected': {
+      color: theme.palette.common.white,
+    },
+  };
+
   return (
     <Box sx={{ width: '100%' }}>
       {/* KPI Grid */}
@@ -139,6 +165,7 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
             value={expiringSoon}
             loading={loading}
             accent={accent}
+            onClick={()=>setTab(1)}
           />
         </Grid>
         {/* Add empty grid items to keep layout pleasant */}
@@ -149,15 +176,18 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
         value={tab}
         onChange={(_, v) => setTab(v)}
         sx={{ mt: 3 }}
-        textColor="primary"
+        textColor="inherit"
         indicatorColor="primary"
       >
-        <Tab label="All Deliveries" {...a11yProps(0)} />
+        <Tab label="All Deliveries" sx={tabSx} {...a11yProps(0)} />
+        <Tab label="Expiring Soon" sx={tabSx} {...a11yProps(1)} />
       </Tabs>
 
       <TabPanel value={tab} index={0}>
-        {/* Re-use existing grid */}
         <ReceivingTableGrid pollInterval={pollInterval} />
+      </TabPanel>
+      <TabPanel value={tab} index={1}>
+        <ReceivingTableGrid staticRows={expiringRows} />
       </TabPanel>
     </Box>
   );
