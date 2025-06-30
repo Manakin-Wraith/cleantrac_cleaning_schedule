@@ -843,13 +843,39 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class ReceivingRecordSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.name', read_only=True, default=None)
-    product_description = serializers.CharField(source='product.description', read_only=True, default=None)
+    # Provide generic 'id' field for frontend DataGrid (maps to tracking_id)
+    id = serializers.CharField(source='tracking_id', read_only=True)
+    # Look up optional product details via product_code (foreign table)
+    product_name = serializers.SerializerMethodField()
+    product_description = serializers.SerializerMethodField()
 
-    department_name = serializers.CharField(source='department.name', read_only=True)
+    def _get_or_create_product(self, obj):
+        """Return product; if it doesn't exist yet, create a placeholder row."""
+        product, created = Product.objects.get_or_create(
+            product_code=obj.product_code,
+            defaults={
+                "name": obj.product_code,  # placeholder; can be updated later
+                "supplier_code": obj.supplier_code,
+            },
+        )
+        return product
+
+    def get_product_name(self, obj):
+        product = self._get_or_create_product(obj)
+        return product.name
+
+    def get_product_description(self, obj):
+        product = Product.objects.filter(product_code=obj.product_code).first()
+        return product.description
 
     class Meta:
         model = ReceivingRecord
-        fields = ['inventory_id', 'product_code', 'product', 'product_name', 'product_description', 'batch_number', 'supplier_code', 'tracking_id', 'quantity_remaining', 'unit', 'storage_location', 'expiry_date', 'best_before_date', 'received_date', 'status', 'last_updated', 'department', 'department_name']
+        fields = [
+            'id',  # MUI DataGrid expects a top-level id
+            'tracking_id', 'product_code', 'product_name', 'product_description',
+            'batch_number', 'supplier_code', 'quantity_remaining', 'unit',
+            'storage_location', 'expiry_date', 'best_before_date',
+            'received_date', 'status', 'last_updated', 'department'
+        ]
 
 

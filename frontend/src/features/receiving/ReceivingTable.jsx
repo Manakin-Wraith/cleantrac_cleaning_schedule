@@ -8,12 +8,15 @@ import { fetchReceivingRecords } from '../../services/receivingService';
  * Props:
  *  - pageSize (number): rows per page (default 20)
  */
-function ReceivingTable({ pageSize = 20 }) {
+function ReceivingTable({ pageSize = 20, pollInterval = 30000 }) {
   const [records, setRecords] = useState([]);
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const totalPages = Math.ceil(count / pageSize);
+  // ------------------------------------------------------------------
+  // Polling: automatically refresh the first page every `pollInterval`
+  // ------------------------------------------------------------------
 
   const fetchPage = async (pageNumber) => {
     setLoading(true);
@@ -37,9 +40,19 @@ function ReceivingTable({ pageSize = 20 }) {
   };
 
   useEffect(() => {
+    // initial fetch
     fetchPage(1);
+
+    // set up polling
+    const intervalId = setInterval(() => {
+      // always refresh the current page (default 1)
+      fetchPage(1);
+    }, pollInterval);
+
+    // cleanup
+    return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pollInterval]);
 
   const handlePrev = () => {
     if (page > 1) fetchPage(page - 1);
@@ -100,6 +113,8 @@ function ReceivingTable({ pageSize = 20 }) {
 
 ReceivingTable.propTypes = {
   pageSize: PropTypes.number,
+  /** Polling interval in milliseconds (default 30000 = 30 s) */
+  pollInterval: PropTypes.number,
 };
 
 export default ReceivingTable;

@@ -154,7 +154,7 @@ admin.site.register(GeneratedDocument, GeneratedDocumentAdmin)
 @admin.register(ReceivingRecord)
 class ReceivingRecordAdmin(admin.ModelAdmin):
     list_display = (
-        "inventory_id",
+        "tracking_id",
         "product_code",
         "batch_number",
         "supplier_code",
