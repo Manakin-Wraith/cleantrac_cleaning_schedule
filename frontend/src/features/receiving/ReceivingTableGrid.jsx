@@ -14,7 +14,7 @@ const defaultPageSize = 25;
 function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000, staticRows = null }) {
   const theme = useTheme();
   const [rows, setRows] = useState(staticRows || []);
-  const [rowCount, setRowCount] = useState(0);
+  const [rowCount, setRowCount] = useState(staticRows ? staticRows.length : 0);
   const [page, setPage] = useState(0); // DataGrid is 0-based
   const [loading, setLoading] = useState(false);
   const [sortModel, setSortModel] = useState([{
@@ -46,7 +46,13 @@ function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000, 
 
   // Fetch only when not using static rows
   useEffect(() => {
-    if (!staticRows) load();
+    if (!staticRows) {
+      load();
+    } else {
+      // ensure counts stay in sync if staticRows prop changes
+      setRows(staticRows);
+      setRowCount(staticRows.length);
+    }
   }, [load, staticRows]);
 
   // ----------------------- Polling -----------------------
@@ -120,7 +126,7 @@ function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000, 
   ];
 
   return (
-    <Box sx={{ height: 600, width: '100%' }}>
+    <Box sx={{ height: 600, width: '100%', overflowX: 'auto', pb: 4 }}>
       <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
         <TextField
           size="small"
@@ -131,30 +137,58 @@ function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000, 
         />
       </Stack>
       <DataGrid
+        autoHeight={false}
+        sx={{
+          minWidth: 800,
+          fontSize: 13,
+          '& .MuiDataGrid-columnHeaders': {
+            bgcolor: 'rgba(255,255,255,0.6)',
+            fontWeight: 600,
+            borderTopLeftRadius: 6,
+            borderTopRightRadius: 6,
+          },
+          '& .MuiDataGrid-columnSeparator': { display: 'none' },
+          '& .MuiDataGrid-row': {
+            '&:nth-of-type(odd)': {
+              bgcolor: 'rgba(255,255,255,0.04)',
+            },
+            '&:hover': {
+              bgcolor: 'rgba(255,255,255,0.1)',
+            },
+          },
+          '& .MuiDataGrid-cell': { borderBottom: '1px solid rgba(255,255,255,0.08)' },
+          '& .MuiDataGrid-footerContainer': {
+            bgcolor: 'rgba(255,255,255,0.75)',
+            color: 'text.primary',
+            borderTop: 'none',
+            borderBottomLeftRadius: 6,
+            borderBottomRightRadius: 6,
+          },
+          '& .MuiTablePagination-root, & .MuiTablePagination-displayedRows, & .MuiTablePagination-selectLabel': {
+            color: 'text.primary',
+          },
+          '& .Mui-disabled svg': { color: 'grey.500' },
+        }}
         rows={rows}
         columns={columns}
         pagination
         pageSizeOptions={[10, 25, 50, 100]}
         pageSize={pageSize}
-        paginationMode="server"
+        paginationMode={staticRows ? 'client' : 'server'}
         rowCount={rowCount}
         onPaginationModelChange={(model) => setPage(model.page)}
-        sortingMode="server"
+        sortingMode={staticRows ? 'client' : 'server'}
         sortModel={sortModel}
         onSortModelChange={(m) => setSortModel(m)}
         loading={loading}
         disableColumnMenu
-        sx={{ '& .MuiDataGrid-columnHeaders': { bgcolor: 'grey.100' } }}
+
       />
     </Box>
   );
 }
 
-ReceivingTableGrid.propTypes = {
-  pageSize: PropTypes.number,
-  /** Polling interval in milliseconds (default 30000) */
-  pollInterval: PropTypes.number,
-};
+
 
 ReceivingTableGrid.propTypes = {
   pageSize: PropTypes.number,
