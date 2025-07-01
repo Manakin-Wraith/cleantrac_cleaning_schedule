@@ -36,13 +36,47 @@ const AccentPaper = styled(Paper)(({ theme, accent }) => {
   };
 });
 
+import { useRef } from 'react';
+
 function KPI({ title, value, loading, accent, onClick }) {
+  const prevValueRef = useRef(value);
+  // Persist the last non-loading value so we can keep it during a refetch
+  if (!loading) {
+    prevValueRef.current = value;
+  }
+  const displayValue = loading ? prevValueRef.current : value;
   return (
-    <AccentPaper elevation={3} accent={accent} sx={{ cursor: onClick ? 'pointer' : 'default' }} onClick={onClick}>
+    <AccentPaper
+      elevation={3}
+      accent={accent}
+      sx={{
+        position: 'relative',
+        cursor: onClick ? 'pointer' : 'default',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        // Ensures the card keeps its height whether loading or not
+        minHeight: 120,
+        transition: 'opacity 0.3s ease-in-out',
+      }}
+      onClick={onClick}
+    >
       {loading ? (
-        <Skeleton variant="rectangular" height={60} />
+        // Overlay skeleton but keep previous value underneath to preserve size
+        <>
+          <Skeleton variant="rectangular" sx={{ position:'absolute', inset:0, width:'100%', height:'100%' }} />
+          <Box sx={{ visibility:'hidden' }}>
+            <Typography variant="subtitle2" sx={{ opacity: 0.8 }}>
+              {title}
+            </Typography>
+            <Typography variant="h4" sx={{ mt: 1 }}>
+              {displayValue}
+            </Typography>
+          </Box>
+        </>
       ) : (
         <>
+          
           <Typography variant="subtitle2" sx={{ opacity: 0.8 }}>
             {title}
           </Typography>
@@ -179,8 +213,8 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
         textColor="inherit"
         indicatorColor="primary"
       >
-        <Tab label="All Deliveries" sx={tabSx} {...a11yProps(0)} />
-        <Tab label="Expiring Soon" sx={tabSx} {...a11yProps(1)} />
+        <Tab label={`All Deliveries (${rows.length})`} sx={tabSx} {...a11yProps(0)} />
+        <Tab label={`Expiring Soon (${expiringRows.length})`} sx={tabSx} {...a11yProps(1)} />
       </Tabs>
 
       <TabPanel value={tab} index={0}>
