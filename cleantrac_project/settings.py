@@ -137,15 +137,35 @@ DATABASES["import_receiving"] = {
     "PORT": "5432",
 }
 
-# Live SPATRAC traceability database (read-only)
-DATABASES["traceability_source"] = {
-    "ENGINE": "django.db.backends.postgresql",
-    "NAME": "traceability_db",
-    "USER": "postgres",
-    "PASSWORD": "postgres",
-    "HOST": "localhost",
-    "PORT": "5432",
+# Database Configuration
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    },
+    "traceability_source": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("TRACEABILITY_DB_NAME", "traceability_db"),
+        "USER": os.getenv("TRACEABILITY_DB_USER"),
+        "PASSWORD": os.getenv("TRACEABILITY_DB_PASSWORD"),
+        "HOST": os.getenv("TRACEABILITY_DB_HOST"),
+        "PORT": os.getenv("TRACEABILITY_DB_PORT", "5432"),
+        "OPTIONS": {
+            "sslmode": "require",  # Require SSL
+            "options": "-c default_transaction_read_only=on",  # Read-only safety
+            "connect_timeout": 5,  # 5 second timeout
+        }
+    }
 }
+
+# Optional: Add validation for required DB settings
+if not all(DATABASES["traceability_source"][key] for key in ["NAME", "USER", "PASSWORD", "HOST"]):
+    raise ValueError("Missing required database configuration in environment variables")
+
+# Route receiving app models to traceability_source DB
+DATABASE_ROUTERS = [
+    "cleantrac_project.db_routers.TraceabilityRouter",
+]
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
