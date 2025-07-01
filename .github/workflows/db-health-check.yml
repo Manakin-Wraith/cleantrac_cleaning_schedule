@@ -15,7 +15,7 @@ jobs:
       TRACEABILITY_DB_USER: ${{ secrets.TRACEABILITY_DB_USER }}
       TRACEABILITY_DB_PASSWORD: ${{ secrets.TRACEABILITY_DB_PASSWORD }}
       TRACEABILITY_DB_HOST: ${{ secrets.TRACEABILITY_DB_HOST }}
-      TRACEABILITY_DB_PORT: ${{ secrets.TRACEABILITY_DB_PORT || '5432' }}
+      TRACEABILITY_DB_PORT: ${{ secrets.TRACEABILITY_DB_PORT }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
