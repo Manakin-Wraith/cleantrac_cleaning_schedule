@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api';
+const API_URL = import.meta.env.VITE_API_BASE; // defined in Vercel/ .env files
 
 const apiClient = axios.create({
     baseURL: API_URL,
