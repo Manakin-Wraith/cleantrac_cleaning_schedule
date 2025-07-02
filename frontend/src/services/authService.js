@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api'; // Use env variable, fallback for safety
+const API_BASE_URL = import.meta.env.VITE_API_BASE; // provided via Vite env
 
 // Function to log in a user and get the auth token
 export const loginUser = async (username, password) => {
