@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -49,6 +50,15 @@ ALLOWED_HOSTS = [
     "0.0.0.0",
 ]
 
+# Extend ALLOWED_HOSTS with values from environment, e.g. when running on EC2
+_extra_hosts = os.getenv("ALLOWED_HOSTS")
+if _extra_hosts:
+    # Split by comma, strip whitespace, and ignore empty strings
+    ALLOWED_HOSTS += [h.strip() for h in _extra_hosts.split(",") if h.strip()]
+    # Deduplicate while preserving order
+    seen = set()
+    ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if not (h in seen or seen.add(h))]
+
 
 # Application definition
 
@@ -71,6 +81,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",       # Also for local frontend development
     "http://10.0.0.42:5173",       # For accessing frontend from other devices on the network
 ]
+
+# Allow extra origins from env (comma-separated)
+_extra_origins = os.getenv("CORS_ALLOWED_ORIGINS")
+if _extra_origins:
+    CORS_ALLOWED_ORIGINS += [o.strip() for o in _extra_origins.split(",") if o.strip()]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -121,51 +136,41 @@ WSGI_APPLICATION = "cleantrac_project.wsgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+    # CleanTrac primary DB
+    "default": (
+        dj_database_url.parse(
+            os.environ["DATABASE_CLEANTRAC_URL"], conn_max_age=600, ssl_require=True
+        )
+        if os.getenv("DATABASE_CLEANTRAC_URL")
+        else {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    ),
 
-# cleantrac_project/settings.py
-DATABASES["import_receiving"] = {
-    "ENGINE": "django.db.backends.postgresql",
-    "NAME": "import_receiving_db",
-    "USER": "postgres",
-    "PASSWORD": "postgres",
-    "HOST": "localhost",
-    "PORT": "5432",
-}
-
-# Database Configuration
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    },
-    "traceability_source": {
+    # Read-only Traceability database on the same RDS instance
+    "traceability": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("TRACEABILITY_DB_NAME", "traceability_db"),
+        "NAME": os.getenv("TRACEABILITY_DB_NAME"),
         "USER": os.getenv("TRACEABILITY_DB_USER"),
         "PASSWORD": os.getenv("TRACEABILITY_DB_PASSWORD"),
         "HOST": os.getenv("TRACEABILITY_DB_HOST"),
         "PORT": os.getenv("TRACEABILITY_DB_PORT", "5432"),
         "OPTIONS": {
-            "sslmode": "require",  # Require SSL
-            "options": "-c default_transaction_read_only=on",  # Read-only safety
-            "connect_timeout": 5,  # 5 second timeout
-        }
-    }
+            "sslmode": "require",
+            "options": "-c default_transaction_read_only=on",
+            "connect_timeout": 5,
+        },
+    },
 }
 
-# Optional: Add validation for required DB settings
-if not all(DATABASES["traceability_source"][key] for key in ["NAME", "USER", "PASSWORD", "HOST"]):
-    raise ValueError("Missing required database configuration in environment variables")
+# Validate that required env vars for the traceability DB are present
+_required_keys = ["NAME", "USER", "PASSWORD", "HOST"]
+if not all(DATABASES["traceability"][k] for k in _required_keys):
+    raise ValueError("Missing TRACEABILITY_DB_* environment variables")
 
-# Route receiving app models to traceability_source DB
-DATABASE_ROUTERS = [
-    "cleantrac_project.db_routers.TraceabilityRouter",
-]
+# Route traceability app models to the read-only DB
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators

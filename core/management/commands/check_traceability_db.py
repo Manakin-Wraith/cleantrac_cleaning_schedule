@@ -30,7 +30,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):  # noqa: D401
         expected = options["expected"]
         try:
-            count = ReceivingRecord.objects.using("traceability_source").count()
+            count = ReceivingRecord.objects.using("traceability").count()
         except DatabaseError as exc:
             raise CommandError(f"Could not query traceability_source DB: {exc}") from exc
 
