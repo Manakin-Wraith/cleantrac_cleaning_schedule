@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -121,48 +122,40 @@ WSGI_APPLICATION = "cleantrac_project.wsgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+    # CleanTrac primary DB
+    "default": (
+        dj_database_url.parse(
+            os.environ["DATABASE_CLEANTRAC_URL"], conn_max_age=600, ssl_require=True
+        )
+        if os.getenv("DATABASE_CLEANTRAC_URL")
+        else {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    ),
 
-# cleantrac_project/settings.py
-DATABASES["import_receiving"] = {
-    "ENGINE": "django.db.backends.postgresql",
-    "NAME": "import_receiving_db",
-    "USER": "postgres",
-    "PASSWORD": "postgres",
-    "HOST": "localhost",
-    "PORT": "5432",
-}
-
-# Database Configuration
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    },
-    "traceability_source": {
+    # Read-only Traceability database on the same RDS instance
+    "traceability": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("TRACEABILITY_DB_NAME", "traceability_db"),
+        "NAME": os.getenv("TRACEABILITY_DB_NAME"),
         "USER": os.getenv("TRACEABILITY_DB_USER"),
         "PASSWORD": os.getenv("TRACEABILITY_DB_PASSWORD"),
         "HOST": os.getenv("TRACEABILITY_DB_HOST"),
         "PORT": os.getenv("TRACEABILITY_DB_PORT", "5432"),
         "OPTIONS": {
-            "sslmode": "require",  # Require SSL
-            "options": "-c default_transaction_read_only=on",  # Read-only safety
-            "connect_timeout": 5,  # 5 second timeout
-        }
-    }
+            "sslmode": "require",
+            "options": "-c default_transaction_read_only=on",
+            "connect_timeout": 5,
+        },
+    },
 }
 
-# Optional: Add validation for required DB settings
-if not all(DATABASES["traceability_source"][key] for key in ["NAME", "USER", "PASSWORD", "HOST"]):
-    raise ValueError("Missing required database configuration in environment variables")
+# Validate that required env vars for the traceability DB are present
+_required_keys = ["NAME", "USER", "PASSWORD", "HOST"]
+if not all(DATABASES["traceability"][k] for k in _required_keys):
+    raise ValueError("Missing TRACEABILITY_DB_* environment variables")
 
-# Route receiving app models to traceability_source DB
+# Route traceability app models to the read-only DB
 DATABASE_ROUTERS = [
     "cleantrac_project.db_routers.TraceabilityRouter",
 ]
