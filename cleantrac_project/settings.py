@@ -50,6 +50,15 @@ ALLOWED_HOSTS = [
     "0.0.0.0",
 ]
 
+# Extend ALLOWED_HOSTS with values from environment, e.g. when running on EC2
+_extra_hosts = os.getenv("ALLOWED_HOSTS")
+if _extra_hosts:
+    # Split by comma, strip whitespace, and ignore empty strings
+    ALLOWED_HOSTS += [h.strip() for h in _extra_hosts.split(",") if h.strip()]
+    # Deduplicate while preserving order
+    seen = set()
+    ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if not (h in seen or seen.add(h))]
+
 
 # Application definition
 
@@ -156,9 +165,7 @@ if not all(DATABASES["traceability"][k] for k in _required_keys):
     raise ValueError("Missing TRACEABILITY_DB_* environment variables")
 
 # Route traceability app models to the read-only DB
-DATABASE_ROUTERS = [
-    "cleantrac_project.db_routers.TraceabilityRouter",
-]
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
