@@ -82,6 +82,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://10.0.0.42:5173",       # For accessing frontend from other devices on the network
 ]
 
+# Allow extra origins from env (comma-separated)
+_extra_origins = os.getenv("CORS_ALLOWED_ORIGINS")
+if _extra_origins:
+    CORS_ALLOWED_ORIGINS += [o.strip() for o in _extra_origins.split(",") if o.strip()]
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",  # CORS middleware - place it high, especially before CommonMiddleware
