@@ -154,6 +154,12 @@ admin.site.register(GeneratedDocument, GeneratedDocumentAdmin)
 
 @admin.register(ReceivingRecord)
 class ReceivingRecordAdmin(admin.ModelAdmin):
+    """Read-only admin for inventory rows imported from the external traceability DB.
+
+    The underlying database is a read-only replica, so any write attempts (add/change/
+    delete) will fail.  We therefore expose the model purely for inspection.
+    """
+
     list_display = (
         "tracking_id",
         "product_code",
@@ -167,6 +173,32 @@ class ReceivingRecordAdmin(admin.ModelAdmin):
     )
     list_filter = ("department", "status", "supplier_code")
     search_fields = ("product_code", "batch_number", "supplier_code", "tracking_id")
+
+    # ------------------------------------------------------------------
+    # Read-only behaviour
+    # ------------------------------------------------------------------
+    # Make every field read-only so the detail page can be viewed safely
+    readonly_fields = [f.name for f in ReceivingRecord._meta.fields]
+
+    def has_add_permission(self, request):
+        """Disallow adding new records from the admin."""
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        """Allow GET (view) but block POST/PUT editing attempts."""
+        if request.method in ("POST", "PUT", "PATCH"):
+            return False
+        return True
+
+    def has_delete_permission(self, request, obj=None):
+        """Disallow deletes to avoid writes against the read-only DB."""
+        return False
+
+    def get_actions(self, request):
+        """Strip the bulk-delete action from the changelist."""
+        actions = super().get_actions(request)
+        actions.pop("delete_selected", None)
+        return actions
 
 # Register Folder and Document models
 admin.site.register(Folder)
