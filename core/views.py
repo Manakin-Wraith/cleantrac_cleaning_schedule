@@ -1261,18 +1261,30 @@ class ReceivingRecordViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        """Always read receiving records from the read-only traceability DB.
+
+        Superusers get the full list; regular users get rows filtered to their
+        department (case-insensitive substring match on ``storage_location``).
+        If the user has no department or the profile is missing, return an
+        empty queryset to avoid leaking data.
+        """
         user = self.request.user
+        # Base queryset always comes from the traceability database
+        base_qs = ReceivingRecord.objects.using("traceability")
+
         if not user.is_authenticated:
-            return ReceivingRecord.objects.none()
+            return base_qs.none()
+
         if user.is_superuser:
-            return ReceivingRecord.objects.all()
+            return base_qs.all()
+
         try:
-            if user.profile and user.profile.department:
-                dept = user.profile.department.name
-                return ReceivingRecord.objects.filter(storage_location__icontains=dept)
-        except UserProfile.DoesNotExist:
-            return ReceivingRecord.objects.none()
-        return ReceivingRecord.objects.none()
+            dept = user.profile.department.name  # type: ignore[attr-defined]
+        except (AttributeError, UserProfile.DoesNotExist):
+            return base_qs.none()
+
+        # Limit to rows that mention the department name in storage_location
+        return base_qs.filter(storage_location__icontains=dept)
 
 
 class SupplierViewSet(viewsets.ModelViewSet):
