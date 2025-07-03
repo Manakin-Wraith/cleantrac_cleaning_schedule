@@ -5,7 +5,8 @@ import { useTheme, alpha } from '@mui/material/styles';
 import { getTaskInstances, updateTaskInstance } from '../services/taskService';
 import { updateProductionSchedule } from '../services/productionScheduleService';
 import { getRecipe } from '../services/recipeService';
-import RecipeIngredientsDialog from '../components/recipes/RecipeIngredientsDialog';
+// Legacy modal import removed – recipe tasks now use the new TaskDrawer
+// import RecipeIngredientsDialog from '../components/recipes/RecipeIngredientsDialog';
 import TaskSection from '../components/tasks/TaskSection';
 import TaskDrawer from '../components/tasks/TaskDrawer';
 import { getProductionSchedules } from '../services/productionScheduleService';
@@ -365,23 +366,9 @@ function StaffTasksPage() {
         setDrawerRecipe(null);
     };
 
-    const handleCardClick = async (task) => {
-        if (task.__type !== 'recipe') return;
-        setSelectedTask(task);
-        setDialogOpen(true);
-        setDialogLoading(true);
-        try {
-            const data = await getRecipe(task.recipe_details.id, { expand: 'ingredients' });
-            if (Array.isArray(data?.ingredients) && data.ingredients.length) {
-                // eslint-disable-next-line no-console
-                console.log('Sample ingredient object:', data.ingredients[0]);
-            }
-            setDialogRecipe(data);
-        } catch (err) {
-            console.error('Failed to fetch recipe ingredients:', err);
-        } finally {
-            setDialogLoading(false);
-        }
+    // Unified click handler – open drawer for both cleaning and recipe tasks
+    const handleCardClick = (task) => {
+        handleTaskSelect(task);
     };
 
     const handleDialogClose = () => {
@@ -599,14 +586,6 @@ function StaffTasksPage() {
                 loadingRecipe={loadingDrawerRecipe}
             />
 
-            {/* Fallback modal for full ingredient list (legacy) */}
-            <RecipeIngredientsDialog
-                open={dialogOpen}
-                onClose={handleDialogClose}
-                recipe={dialogRecipe}
-                task={selectedTask}
-                loading={dialogLoading}
-            />
         </Container>
     );
 }
