@@ -27,7 +27,10 @@ class Product(models.Model):
 class ReceivingRecordManager(models.Manager):
     """All queries for ReceivingRecord should hit the Postgres traceability source DB."""
     def get_queryset(self):
-        return super().get_queryset().using("traceability_source")
+        # Use the read-only replica that actually contains the copied rows
+        # The import_receiving_data command copies rows into the "traceability" alias,
+        # so the manager should query the same DB. Otherwise admin/API will see no data.
+        return super().get_queryset().using("traceability")
 
 
 class ReceivingRecord(models.Model):
