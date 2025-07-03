@@ -9,10 +9,11 @@ if (typeof localStorage !== 'undefined' && localStorage.getItem('tabletSimpleVie
   localStorage.removeItem('tabletSimpleView');
   // also purge entire storage if flag is present (safety)
   // localStorage.clear(); // uncomment if broader reset becomes necessary
-// Unregister any existing service workers so clients always load the latest bundle
+// Unregister any existing service workers so clients always load the latest bundle (run unconditionally)
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(reg => reg.unregister()));
 }
+
 
 }
 
