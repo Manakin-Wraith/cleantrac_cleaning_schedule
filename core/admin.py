@@ -233,13 +233,13 @@ admin.site.register(ProductionRecord, ProductionRecordAdmin)
 @admin.register(RecipeProductionTask)
 class RecipeProductionTaskAdmin(admin.ModelAdmin):
     list_display = (
-        'recipe', 'department', 'scheduled_date', 'status',
-        'batch_size', 'created_by'
+        'recipe', 'department', 'scheduled_start_time', 'status',
+        'scheduled_quantity', 'created_by'
     )
-    list_filter = ('department', 'status', 'scheduled_date')
+    list_filter = ('department', 'status', 'scheduled_start_time')
     search_fields = ('recipe__name', 'notes')
-    date_hierarchy = 'scheduled_date'
-    filter_horizontal = ('assigned_staff',)
+    date_hierarchy = 'scheduled_start_time'
+    # assigned_staff is a ForeignKey, so no filter_horizontal
 
 class InventoryItemAdmin(admin.ModelAdmin):
     list_display = ('ingredient_code', 'ingredient_name', 'department', 'current_stock', 'unit', 'unit_cost', 'last_updated')
