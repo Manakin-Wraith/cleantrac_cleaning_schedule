@@ -1,8 +1,8 @@
 {
-  "name": "cleantrac-root-build",
-  "private": true,
-  "scripts": {
-    "build": "cd frontend && npm install --legacy-peer-deps && npm run build && cp -r dist ../dist",
-    "postbuild": "cp vercel.json dist/"
+    "name": "cleantrac-root-build",
+    "private": true,
+    "scripts": {
+      "build": "cd frontend && npm install --legacy-peer-deps && npm run build && cp -r dist ../dist && cp ../dist/index.html ../dist/404.html",
+      "postbuild": "cp vercel.json dist/"
+    }
   }
-}
