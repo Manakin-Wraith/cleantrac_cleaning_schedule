@@ -9,7 +9,8 @@ from .models import (
 )
 from .recipe_models import (
     Recipe, RecipeIngredient, RecipeVersion, ProductionSchedule,
-    ProductionRecord, InventoryItem, InventoryTransaction, WasteRecord
+    ProductionRecord, InventoryItem, InventoryTransaction, WasteRecord,
+    RecipeProductionTask
 )
 
 # Basic registration
@@ -227,6 +228,18 @@ class ProductionRecordAdmin(admin.ModelAdmin):
     date_hierarchy = 'actual_start_time'
 
 admin.site.register(ProductionRecord, ProductionRecordAdmin)
+
+# Recipe Production Task Admin
+@admin.register(RecipeProductionTask)
+class RecipeProductionTaskAdmin(admin.ModelAdmin):
+    list_display = (
+        'recipe', 'department', 'scheduled_date', 'status',
+        'batch_size', 'created_by'
+    )
+    list_filter = ('department', 'status', 'scheduled_date')
+    search_fields = ('recipe__name', 'notes')
+    date_hierarchy = 'scheduled_date'
+    filter_horizontal = ('assigned_staff',)
 
 class InventoryItemAdmin(admin.ModelAdmin):
     list_display = ('ingredient_code', 'ingredient_name', 'department', 'current_stock', 'unit', 'unit_cost', 'last_updated')
