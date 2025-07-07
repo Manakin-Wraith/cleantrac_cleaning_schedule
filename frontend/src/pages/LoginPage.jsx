@@ -152,7 +152,7 @@ function LoginPage() {
     const renderLoginForm = () => (
         <>
             <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
-                CleanTrack - Sign In
+                CleenTrac - Sign In
             </Typography>
             <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
                 <TextField

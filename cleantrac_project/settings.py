@@ -44,10 +44,9 @@ X_FRAME_OPTIONS = "SAMEORIGIN"
 
 
 ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "10.0.0.42",  # your local IP
-    "0.0.0.0",
+    "localhost", "127.0.0.1", "10.0.0.42", "0.0.0.0",
+    "cleentrac.com", "www.cleentrac.com",          # front-end
+    "api.cleentrac.com",                           # back-end
 ]
 
 # Extend ALLOWED_HOSTS with values from environment, e.g. when running on EC2
@@ -79,13 +78,20 @@ INSTALLED_APPS = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",         # For local frontend development (same machine)
     "http://127.0.0.1:5173",       # Also for local frontend development
-    "http://10.0.0.42:5173",       # For accessing frontend from other devices on the network
+    "http://10.0.0.42:5173",
+    "https://cleentrac.com",
+    "https://www.cleentrac.com",       # For accessing frontend from other devices on the network
 ]
 
 # Allow extra origins from env (comma-separated)
 _extra_origins = os.getenv("CORS_ALLOWED_ORIGINS")
 if _extra_origins:
     CORS_ALLOWED_ORIGINS += [o.strip() for o in _extra_origins.split(",") if o.strip()]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://cleentrac.com",
+    "https://www.cleentrac.com",
+]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

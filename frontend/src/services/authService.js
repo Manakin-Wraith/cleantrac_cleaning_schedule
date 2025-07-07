@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE; // provided via Vite env
+// Base API URL provided via Vite env files (.env, .env.local, .env.production)
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Function to log in a user and get the auth token
 export const loginUser = async (username, password) => {

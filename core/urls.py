@@ -80,6 +80,7 @@ router.register(r'recipe-production-tasks', RecipeProductionTaskViewSet, basenam
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [
+    path('health/', health, name='health'),
     path('users/me/', CurrentUserView.as_view(), name='current-user'), # Specific path first
     path('auth/password-reset/request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('auth/password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
