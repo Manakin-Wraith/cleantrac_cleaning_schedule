@@ -80,7 +80,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",       # Also for local frontend development
     "http://10.0.0.42:5173",
     "https://cleentrac.com",
-    "https://www.cleentrac.com",       # For accessing frontend from other devices on the network
+    "https://www.cleentrac.com",
+    "https://cleentrac-alb-1566483969.eu-north-1.elb.amazonaws.com",       # For accessing frontend from other devices on the network
 ]
 
 # Allow extra origins from env (comma-separated)
