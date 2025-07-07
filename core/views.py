@@ -12,7 +12,9 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 
 
-@require_GET
+from django.views.decorators.http import require_http_methods
+
+@require_http_methods(["GET", "HEAD"])
 def health(request):
     """Simple unauthenticated endpoint for load-balancer health checks."""
     return JsonResponse({"status": "ok"}) 

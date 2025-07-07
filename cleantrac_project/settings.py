@@ -54,7 +54,7 @@ ALLOWED_HOSTS = [
 ]
 
 # Extend ALLOWED_HOSTS with values from environment, e.g. when running on EC2
-_extra_hosts = os.getenv("ALLOWED_HOSTS")
+_extra_hosts = os.getenv("ALLOWED_HOSTS") 
 if _extra_hosts:
     # Split by comma, strip whitespace, and ignore empty strings
     ALLOWED_HOSTS += [h.strip() for h in _extra_hosts.split(",") if h.strip()]
