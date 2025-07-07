@@ -47,6 +47,9 @@ ALLOWED_HOSTS = [
     "localhost", "127.0.0.1", "10.0.0.42", "0.0.0.0",
     "cleentrac.com", "www.cleentrac.com",          # front-end
     "api.cleentrac.com",                           # back-end
+    "ip-172-31-42-178",          # private hostname is ok
+    "172.31.42.178",
+    "https://cleentrac-alb-1566483969.eu-north-1.elb.amazonaws.com",       # For accessing frontend from other devices on the network
 ]
 
 # Extend ALLOWED_HOSTS with values from environment, e.g. when running on EC2
@@ -81,7 +84,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://10.0.0.42:5173",
     "https://cleentrac.com",
     "https://www.cleentrac.com",
-    "https://cleentrac-alb-1566483969.eu-north-1.elb.amazonaws.com",       # For accessing frontend from other devices on the network
+    
 ]
 
 # Allow extra origins from env (comma-separated)
