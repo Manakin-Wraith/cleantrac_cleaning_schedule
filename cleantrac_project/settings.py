@@ -49,7 +49,8 @@ ALLOWED_HOSTS = [
     "api.cleentrac.com",                           # back-end
     "ip-172-31-42-178",          # private hostname is ok
     "172.31.42.178",
-    "cleentrac-alb-1566483969.eu-north-1.elb.amazonaws.com",       # For accessing frontend from other devices on the network
+    "cleentrac-alb-1566483969.eu-north-1.elb.amazonaws.com",
+    "ip-172-31-42-178.eu-north-1.compute.internal",       # For accessing frontend from other devices on the network
 ]
 
 # Extend ALLOWED_HOSTS with values from environment, e.g. when running on EC2
