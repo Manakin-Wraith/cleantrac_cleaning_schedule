@@ -658,7 +658,8 @@ class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
                 if profile.role == 'manager' and profile.department:
                     qs = qs.filter(department=profile.department)
                 elif profile.role == 'staff' and profile.department:
-                    qs = qs.filter(department=profile.department)
+                    # Staff should only see tasks that are assigned specifically to them within their department
+                    qs = qs.filter(department=profile.department, assigned_staff=profile)
                 else:
                     return RecipeProductionTask.objects.none()
             except UserProfile.DoesNotExist:
