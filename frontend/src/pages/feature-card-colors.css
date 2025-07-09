@@ -1,0 +1,37 @@
+/* Additional feature card colors for Audit Trails (teal) and Flagging System (amber) */
+
+/* Teal Feature Card */
+.feature-teal .feature-icon-wrapper svg {
+    color: #14b8a6;
+}
+
+.feature-teal {
+    background-color: rgba(20, 184, 166, 0.1);
+    border-color: rgba(20, 184, 166, 0.2);
+}
+
+.feature-teal::before {
+    background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%);
+}
+
+.feature-teal .feature-card-overlay {
+    background: linear-gradient(90deg, #14b8a6 0%, #2dd4bf 100%);
+}
+
+/* Amber Feature Card */
+.feature-amber .feature-icon-wrapper svg {
+    color: #f59e0b;
+}
+
+.feature-amber {
+    background-color: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.feature-amber::before {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+}
+
+.feature-amber .feature-card-overlay {
+    background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+}

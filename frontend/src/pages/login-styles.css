@@ -1,0 +1,197 @@
+/* Login Page Styles */
+
+:root {
+    --primary-color-rgb: 63, 81, 181; /* Default MUI primary blue in RGB format */
+}
+
+/* Mobile-first responsive variables */
+:root {
+    --login-form-width: 90%;
+    --login-form-max-width: 450px;
+    --login-form-vertical-margin: 0;
+}
+
+@media (min-width: 600px) {
+    :root {
+        --login-form-width: 80%;
+        --login-form-vertical-margin: 0;
+    }
+}
+
+/* Make all container elements transparent */
+/* Global approach to ensure all containers are transparent */
+body .MuiContainer-root,
+body .MuiBox-root,
+body main,
+body div[class*="MuiBox"],
+body div[class*="MuiContainer"],
+body form[class*="MuiBox"],
+body div[class*="css-"] {
+    background-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Specific classes from DOM */
+.css-1ip2z7y,
+.css-17yanad-MuiContainer-root,
+.css-1ogjlw5,
+.css-164r41r {
+    background-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Exception for the login form container itself */
+.login-form-container {
+    background: rgba(255, 255, 255, 0.4) !important; /* Keep the semi-transparent background */
+}
+
+/* Geometric background pattern */
+.login-page-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    min-height: 100vh;
+    width: 100%;
+    overflow-y: auto;
+    z-index: 1;
+}
+
+/* Login form wrapper for proper centering */
+.login-form-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    padding: 20px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.login-page-container::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+        linear-gradient(30deg, var(--primary-color) 12%, transparent 12.5%, transparent 87%, var(--primary-color) 87.5%, var(--primary-color)),
+        linear-gradient(150deg, var(--primary-color) 12%, transparent 12.5%, transparent 87%, var(--primary-color) 87.5%, var(--primary-color)),
+        linear-gradient(30deg, var(--primary-color) 12%, transparent 12.5%, transparent 87%, var(--primary-color) 87.5%, var(--primary-color)),
+        linear-gradient(150deg, var(--primary-color) 12%, transparent 12.5%, transparent 87%, var(--primary-color) 87.5%, var(--primary-color)),
+        linear-gradient(60deg, var(--secondary-color) 25%, transparent 25.5%, transparent 75%, var(--secondary-color) 75%, var(--secondary-color)),
+        linear-gradient(60deg, var(--secondary-color) 25%, transparent 25.5%, transparent 75%, var(--secondary-color) 75%, var(--secondary-color));
+    background-position: 0 0, 0 0, 40px 70px, 40px 70px, 0 0, 40px 70px;
+    background-size: 80px 140px;
+    opacity: 0.15; /* Slightly increased opacity for better visibility */
+    z-index: -100;
+    pointer-events: none;
+    transform: translateZ(0);
+    animation: patternFadeIn 1.2s ease-out;
+}
+
+@keyframes patternFadeIn {
+    from { opacity: 0; }
+    to { opacity: 0.15; }
+}
+
+.login-form-container {
+    background: rgba(255, 255, 255, 0.4) !important; /* Much more transparent background */
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: var(--login-form-width);
+    max-width: var(--login-form-max-width);
+    margin: auto;
+    transition: all 0.3s ease;
+    animation: slideUp 0.5s ease-out;
+    z-index: 10;
+    /* Center the form regardless of viewport changes */
+    position: relative;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+
+.login-form-container:hover {
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    transform: translateY(-5px);
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Style overrides for Material UI components */
+.login-form-container h1 {
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    text-align: center;
+    font-size: 1.8rem;
+}
+
+.login-form-container .MuiTextField-root {
+    margin-bottom: 1.2rem;
+}
+
+.login-form-container .MuiOutlinedInput-root {
+    background: rgba(255, 255, 255, 0.6);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.login-form-container .MuiOutlinedInput-root:hover {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.login-form-container .MuiOutlinedInput-root.Mui-focused {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(var(--primary-color-rgb), 0.5);
+}
+
+.login-form-container .MuiButton-contained {
+    padding: 0.8rem;
+    font-weight: 600;
+    text-transform: none;
+    font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.login-form-container .MuiButton-contained:hover {
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.login-form-container .MuiLink-root {
+    color: var(--primary-color);
+    transition: all 0.2s ease;
+}
+
+.login-form-container .MuiLink-root:hover {
+    color: var(--secondary-color);
+    text-decoration: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .login-form-container {
+        margin: 1rem;
+        padding: 1.8rem;
+        border-radius: 16px;
+    }
+    
+    .login-form-container h1 {
+        font-size: 1.5rem;
+    }
+}

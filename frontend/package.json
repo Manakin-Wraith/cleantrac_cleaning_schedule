@@ -13,10 +13,10 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@fullcalendar/core": "^6.1.17",
     "@fullcalendar/daygrid": "^6.1.17",
     "@fullcalendar/interaction": "^6.1.17",
     "@fullcalendar/react": "^6.1.17",
-    "@fullcalendar/core": "^6.1.17",
     "@fullcalendar/resource": "^6.1.17",
     "@fullcalendar/resource-timegrid": "^6.1.17",
     "@fullcalendar/resource-timeline": "^6.1.17",
@@ -43,7 +43,8 @@
     "react-spreadsheet": "^0.10.1",
     "react-swipeable": "^7.0.2",
     "react-to-print": "^3.1.0",
-    "recharts": "^2.15.3"
+    "recharts": "^2.15.3",
+    "styled-components": "^6.1.19"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

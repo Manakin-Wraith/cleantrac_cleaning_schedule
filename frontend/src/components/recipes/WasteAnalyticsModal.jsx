@@ -24,7 +24,7 @@ import {
   Close as CloseIcon,
   CalendarToday as CalendarIcon,
   BarChart as BarChartIcon,
-  PieChart as PieChartIcon,
+  PieChartOutline as PieChartIcon,
   Timeline as TimelineIcon,
   TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';

@@ -2,8 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { baseTheme, butcheryTheme, bakeryTheme, hmrTheme } from './theme';
-
+import { baseTheme, butcheryTheme, bakeryTheme, hmrTheme } from "./theme";
+import CleentracLandingPage from "./pages/CleentracLandingPage";
 import LoginPage from './pages/LoginPage';
 import ManagerDashboardPage from './pages/ManagerDashboardPage';
 import StaffTasksPage from './pages/StaffTasksPage';
@@ -54,6 +54,8 @@ const ThemedApp = () => {
     <ThemeProvider theme={selectedTheme}>
       <CssBaseline />
       <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<CleentracLandingPage />} />
         <Route path="/login" element={<PageLayout showSidebar={false}><LoginPage /></PageLayout>} />
         
         {/* Protected Routes */}
@@ -77,8 +79,6 @@ const ThemedApp = () => {
           <Route path="/admin/departments" element={<PageLayout><DepartmentManagementPage /></PageLayout>} />
           <Route path="/manager-schedule" element={<PageLayout showHeaderBar={false}><UnifiedCalendarPage /></PageLayout>} />
         </Route>
-
-        <Route path="/" element={<Navigate replace to="/login" />} />
       </Routes>
     </ThemeProvider>
   );

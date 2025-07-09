@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import './login-styles.css';
+import PieChartOutlineIcon from '@mui/icons-material/PieChartOutline';
 import { useNavigate } from 'react-router-dom'; 
 import { useSnackbar } from 'notistack'; 
 import {
@@ -151,9 +153,12 @@ function LoginPage() {
 
     const renderLoginForm = () => (
         <>
-            <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
-                CleenTrac - Sign In
-            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+                <PieChartOutlineIcon sx={{ fontSize: 40, color: 'var(--primary-color)', mb: 1 }} />
+                <Typography component="h1" variant="h5" className="login-title">
+                    CLEENTRAC
+                </Typography>
+            </Box>
             <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
                 <TextField
                     margin="normal"
@@ -369,21 +374,15 @@ function LoginPage() {
     );
 
     return (
-        <Container component="main" maxWidth={{ xs: 'xs', sm: 'sm' }}>
-            <Box
-                sx={{
-                    // marginTop: 8, // Removed for better centering by parent
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    width: '100%', // Ensure Box takes full width for Alert
-                }}
-            >
-                {resetStep === 'login' && renderLoginForm()}
-                {resetStep === 'request' && renderRequestResetForm()}
-                {resetStep === 'confirm' && renderConfirmResetForm()}
-            </Box>
-        </Container>
+        <div className="login-page-container">
+            <div className="login-form-wrapper">
+                <div className="login-form-container">
+                    {resetStep === 'login' && renderLoginForm()}
+                    {resetStep === 'request' && renderRequestResetForm()}
+                    {resetStep === 'confirm' && renderConfirmResetForm()}
+                </div>
+            </div>
+        </div>
     );
 }
 

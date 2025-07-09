@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLEENTRAC - Food Safety & Production Compliance Management</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="piechart_icon.svg">
+    <link rel="icon" type="image/svg+xml" sizes="16x16" href="piechart_icon.svg">
+    <link rel="icon" type="image/svg+xml" sizes="32x32" href="piechart_icon.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="piechart_icon.svg">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            emailjs.init("hq7dSeC7TQRSmywTN");
+        })();
+    </script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="toast-container"></div>
+    <header class="header">
+        <div class="container">
+            <nav class="nav-container">
+                <div class="logo-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="logo">
+                        <path d="M11 2v20c-5.07-.5-9-4.79-9-10s3.93-9.5 9-10zm2.03 0v8.99H22c-.47-4.74-4.24-8.52-8.97-8.99zm0 11.01V22c4.74-.47 8.5-4.25 8.97-8.99h-8.97z"/>
+                    </svg>
+                    <span class="logo-text">CLEENTRAC</span>
+                </div>
+                <button class="hamburger">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
+                <div class="nav-menu">
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#workflow" class="nav-link">How it Works</a>
+                    <a href="#waitlist" class="nav-link">Join Waitlist</a>
+                    <a href="mailto:demo@cleantrac.co.za?subject=Book%20a%20Call%20Request&body=I'm%20interested%20in%20booking%20a%20call%20with%20CleanTrac.%20Please%20contact%20me%20with%20available%20time%20slots." class="nav-link">Contact</a>
+                </div>
+            </nav>
+            <div class="nav-overlay"></div>
+            <div class="header-content">
+                <div class="header-text">
+                    <h1>Effortless Food Safety & Production Compliance Management</h1>
+                    <p>CleanTrac unifies cleaning schedules, recipe production, temperature monitoring, and supplier management—keeping your team audit-ready every day.</p>
+                    <div class="header-cta">
+                        <a href="mailto:demo@cleantrac.co.za?subject=Book%20a%20Call%20Request&body=I'm%20interested%20in%20booking%20a%20call%20with%20CleanTrac.%20Please%20contact%20me%20with%20available%20time%20slots." class="cta-button primary">
+                            <span>Book a Demo</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="icon">
+                                <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        <p class="cta-note">Experience the future of food safety compliance</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section id="features" class="features-section">
+        <div class="container">
+            <h2>Features</h2>
+            <p class="section-description">Discover how CleanTrac revolutionizes food safety and production compliance</p>
+            
+            <div class="features-accordion">
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2.25 2.25a.75.75 0 000 1.5h1.386c.17 0 .318.114.362.278l2.558 9.592a3.752 3.752 0 00-2.806 3.63c0 .414.336.75.75.75h15.75a.75.75 0 000-1.5H5.378A2.25 2.25 0 017.5 15h11.218a.75.75 0 00.674-.421 60.358 60.358 0 002.96-7.228.75.75 0 00-.525-.965A60.864 60.864 0 005.68 4.509l-.232-.867A1.875 1.875 0 003.636 2.25H2.25zM3.75 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM16.5 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z" />
+                            </svg>
+                        </div>
+                        <div class="feature-title">
+                            <h3>Smart Inventory Management</h3>
+                        </div>
+                        <span class="feature-toggle">+</span>
+                    </div>
+                    <div class="feature-content">
+                        <p>Real-time tracking and management of your food inventory with advanced analytics and predictive insights.</p>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" d="M2.25 13.5a8.25 8.25 0 018.25-8.25.75.75 0 01.75.75v6.75H18a.75.75 0 01.75.75 8.25 8.25 0 01-16.5 0z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M12.75 3a.75.75 0 01.75-.75 8.25 8.25 0 018.25 8.25.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75V3z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="feature-title">
+                            <h3>Real-Time Monitoring</h3>
+                        </div>
+                        <span class="feature-toggle">+</span>
+                    </div>
+                    <div class="feature-content">
+                        <p>Track your food products in real-time throughout the supply chain with detailed monitoring and alerts.</p>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6zm4.5 7.5a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0v-2.25a.75.75 0 01.75-.75zm3.75-1.5a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0V12zm2.25-3a.75.75 0 01.75.75v6.75a.75.75 0 01-1.5 0V9.75A.75.75 0 0113.5 9zm3.75-1.5a.75.75 0 00-1.5 0v9a.75.75 0 001.5 0v-9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="feature-title">
+                            <h3>Analytics Dashboard</h3>
+                        </div>
+                        <span class="feature-toggle">+</span>
+                    </div>
+                    <div class="feature-content">
+                        <p>Comprehensive analytics and reporting tools for data-driven decision making and performance tracking.</p>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="feature-title">
+                            <h3>Secure Data Management</h3>
+                        </div>
+                        <span class="feature-toggle">+</span>
+                    </div>
+                    <div class="feature-content">
+                        <p>Advanced security protocols and data encryption to protect sensitive information and ensure data integrity.</p>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="feature-title">
+                            <h3>Recall Management</h3>
+                        </div>
+                        <span class="feature-toggle">+</span>
+                    </div>
+                    <div class="feature-content">
+                        <p>Efficient recall process management with product ID-based batch location and forward traceability for customer identification.</p>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+                                <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875V3.375c0-1.036.84-1.875 1.875-1.875zm6 16.5c.66 0 1.277-.19 1.797-.518l1.048 1.048a.75.75 0 001.06-1.06l-1.047-1.048A3.375 3.375 0 1011.625 18z" />
+                            </svg>
+                        </div>
+                        <div class="feature-title">
+                            <h3>Audit Trails</h3>
+                        </div>
+                        <span class="feature-toggle">+</span>
+                    </div>
+                    <div class="feature-content">
+                        <p>Comprehensive audit trail system with timestamped digital records for compliance and full product journey reporting.</p>
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-header">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="feature-title">
+                            <h3>Flagging System</h3>
+                        </div>
+                        <span class="feature-toggle">+</span>
+                    </div>
+                    <div class="feature-content">
+                        <p>Advanced flagging system with automated alerts for expired products and a quarantine system for flagged batches.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="workflow" class="workflow-section">
+        <div class="container">
+            <div class="section-header">
+                <h2><i class="fas fa-route"></i> Complete Traceability Journey</h2>
+                <p>Follow your products through every step of their journey with our comprehensive traceability system.</p>
+            </div>
+            
+            <div class="workflow-accordion">
+                <div class="workflow-item">
+                    <div class="workflow-header">
+                        <div class="workflow-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886V4.533zM12.75 20.636A8.214 8.214 0 0118 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0018 3a9.707 9.707 0 00-5.25 1.533v16.103z" />
+                            </svg>
+                        </div>
+                        <div class="workflow-title">
+                            <h3>Receiving & Documentation</h3>
+                            <h4>Initial Product Entry</h4>
+                        </div>
+                        <span class="workflow-toggle">+</span>
+                    </div>
+                    <div class="workflow-content">
+                        <div class="workflow-details">
+                            <h5>Traceability Actions:</h5>
+                            <ul>
+                                <li>Record supplier details and certifications</li>
+                                <li>Document batch numbers and expiry dates</li>
+                                <li>Generate unique product identifiers (UPID)</li>
+                                <li>Capture temperature logs for cold chain verification</li>
+                                <li>Store supplier documentation and certificates</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workflow-item">
+                    <div class="workflow-header">
+                        <div class="workflow-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M5.507 4.048A3 3 0 017.785 3h8.43a3 3 0 012.278 1.048l1.722 2.008A4.533 4.533 0 0019.5 6h-15c-.243 0-.482.02-.715.056l1.722-2.008z" />
+                                <path fill-rule="evenodd" d="M1.5 10.5a3 3 0 013-3h15a3 3 0 110 6h-15a3 3 0 01-3-3zm15 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm2.25.75a.75.75 0 100-1.5.75.75 0 000 1.5zM4.5 15a3 3 0 100 6h15a3 3 0 100-6h-15zm11.25 3.75a.75.75 0 100-1.5.75.75 0 000 1.5zM19.5 18a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="workflow-title">
+                            <h3>Storage Management</h3>
+                            <h4>Inventory Tracking</h4>
+                        </div>
+                        <span class="workflow-toggle">+</span>
+                    </div>
+                    <div class="workflow-content">
+                        <div class="workflow-details">
+                            <h5>Traceability Actions:</h5>
+                            <ul>
+                                <li>Track product locations within storage areas</li>
+                                <li>Monitor storage conditions and temperatures</li>
+                                <li>Record internal movements between departments</li>
+                                <li>Implement FIFO/FEFO inventory management</li>
+                                <li>Alert system for approaching expiry dates</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workflow-item">
+                    <div class="workflow-header">
+                        <div class="workflow-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18.375 2.25c-1.035 0-1.875.84-1.875 1.875v15.75c0 1.035.84 1.875 1.875 1.875h.75c1.035 0 1.875-.84 1.875-1.875V4.125c0-1.036-.84-1.875-1.875-1.875h-.75zM9.75 8.625c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-.75c-1.036 0-1.875-.84-1.875-1.875V8.625zM3 13.125c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v6.75c0 1.035-.84 1.875-1.875 1.875h-.75C3.84 21.75 3 20.91 3 19.875v-6.75z" />
+                            </svg>
+                        </div>
+                        <div class="workflow-title">
+                            <h3>Production Process</h3>
+                            <h4>Recipe & Batch Tracking</h4>
+                        </div>
+                        <span class="workflow-toggle">+</span>
+                    </div>
+                    <div class="workflow-content">
+                        <div class="workflow-details">
+                            <h5>Traceability Actions:</h5>
+                            <ul>
+                                <li>Link ingredients to specific recipes and batches</li>
+                                <li>Record processing parameters and conditions</li>
+                                <li>Track allergen controls and cross-contamination prevention</li>
+                                <li>Document quality control checks</li>
+                                <li>Maintain processing equipment records</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workflow-item">
+                    <div class="workflow-header">
+                        <div class="workflow-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" d="M2.25 13.5a5.25 5.25 0 018.25-8.25.75.75 0 01.75.75v6.75H18a.75.75 0 01.75.75 8.25 8.25 0 01-16.5 0z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M12.75 3a.75.75 0 01.75-.75 8.25 8.25 0 018.25 8.25.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75V3z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="workflow-title">
+                            <h3>Quality Assurance</h3>
+                            <h4>Continuous Monitoring</h4>
+                        </div>
+                        <span class="workflow-toggle">+</span>
+                    </div>
+                    <div class="workflow-content">
+                        <div class="workflow-details">
+                            <h5>Traceability Actions:</h5>
+                            <ul>
+                                <li>Perform and record regular quality checks</li>
+                                <li>Monitor critical control points (CCPs)</li>
+                                <li>Document corrective actions taken</li>
+                                <li>Maintain calibration records for measuring equipment</li>
+                                <li>Generate compliance reports for audits</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workflow-item">
+                    <div class="workflow-header">
+                        <div class="workflow-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M3.375 4.5C2.339 4.5 1.5 5.34 1.5 6.375V13.5h12V6.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM13.5 3A1.5 1.5 0 0012 4.5h4.5A1.5 1.5 0 0015 3h-1.5z" />
+                                <path d="M8.25 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0zM15.75 6.75a.75.75 0 00-1.172-.938l-2.476 3.096-.908-.907a.75.75 0 00-1.06 1.06l1.5 1.5a.75.75 0 001.116-.062l3-3.75z" />
+                                <path d="M19.5 19.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
+                            </svg>
+                        </div>
+                        <div class="workflow-title">
+                            <h3>Distribution & Logistics</h3>
+                            <h4>Product Movement Tracking</h4>
+                        </div>
+                        <span class="workflow-toggle">+</span>
+                    </div>
+                    <div class="workflow-content">
+                        <div class="workflow-details">
+                            <h5>Traceability Actions:</h5>
+                            <ul>
+                                <li>Track final product batch numbers and destinations</li>
+                                <li>Monitor transportation conditions and temperatures</li>
+                                <li>Record delivery timestamps and recipient details</li>
+                                <li>Maintain chain of custody documentation</li>
+                                <li>Enable rapid product recall capabilities</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workflow-item">
+                    <div class="workflow-header">
+                        <div class="workflow-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" d="M7.502 6h7.128A3.375 3.375 0 0118 9.375v9.375a3 3 0 003-3V6.108c0-1.505-1.125-2.811-2.664-2.94a48.972 48.972 0 00-.673-.05A3 3 0 0015 1.5h-1.5a3 3 0 00-2.663 1.618c-.225.015-.45.032-.673.05C8.662 3.295 7.554 4.542 7.502 6zM13.5 3A1.5 1.5 0 0012 4.5h4.5A1.5 1.5 0 0015 3h-1.5z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd" d="M3 9.375C3 8.339 3.84 7.5 4.875 7.5h9.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V9.375zm9.586 4.594a.75.75 0 00-1.172-.938l-2.476 3.096-.908-.907a.75.75 0 00-1.06 1.06l1.5 1.5a.75.75 0 001.116-.062l3-3.75z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="workflow-title">
+                            <h3>Compliance & Reporting</h3>
+                            <h4>Audit & Documentation</h4>
+                        </div>
+                        <span class="workflow-toggle">+</span>
+                    </div>
+                    <div class="workflow-content">
+                        <div class="workflow-details">
+                            <h5>Traceability Actions:</h5>
+                            <ul>
+                                <li>Generate comprehensive traceability reports</li>
+                                <li>Maintain regulatory compliance documentation</li>
+                                <li>Track staff training and certification records</li>
+                                <li>Document food safety incidents and resolutions</li>
+                                <li>Prepare audit-ready documentation packages</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="waitlist" id="waitlist">
+        <div class="container">
+            <div class="section-header">
+                <h2><i class="fas fa-envelope-open-text"></i> Join the Waitlist</h2>
+                <p>Be among the first to experience CLEENTRAC. Sign up now and get early access to our revolutionary food production management system.</p>
+            </div>
+            <div class="waitlist-container">
+                <form id="waitlistForm" class="waitlist-form">
+                    <div class="form-group">
+                        <input type="text" id="name" name="name" placeholder="Full Name" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" id="email" name="email" placeholder="Email Address" required>
+                    </div>
+                    <div class="form-group">
+                        <select id="role" name="role" required>
+                            <option value="">Select Your Role</option>
+                            <option value="business_owner">Business Owner</option>
+                            <option value="manager">Manager</option>
+                            <option value="chef">Chef</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <textarea id="message" name="message" placeholder="Tell us about your business needs (optional)"></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Join Waitlist</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <div class="container">
+            <h2>Ready to Transform Your Food Safety Management?</h2>
+            <p>Experience the power of CLEENTRAC and take control of your business operations.</p>
+            <a href="mailto:demo@cleentrac.co.za?subject=Book%20a%20Call%20Request&body=I'm%20interested%20in%20booking%20a%20call%20with%20CLEENTRAC.%20Please%20contact%20me%20with%20available%20time%20slots." class="cta-button"><span>Learn More</span></a>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="logo">
+                        <path d="M11 2v20c-5.07-.5-9-4.79-9-10s3.93-9.5 9-10zm2.03 0v8.99H22c-.47-4.74-4.24-8.52-8.97-8.99zm0 11.01V22c4.74-.47 8.5-4.25 8.97-8.99h-8.97z"/>
+                    </svg>
+                    <span class="logo-text">CLEENTRAC</span>
+                </div>
+                <div class="footer-text">
+                    <p>Made with lots of ❤️ and ☕️</p>
+                    <p class="copyright"> 2024 CLEENTRAC. All rights reserved.</p>
+                </div>
+            </div>
+            <a href="https://www.lovecode.co.za" target="_blank" rel="noopener noreferrer">
+                <img src="❤️code.png" alt="DevHouse Logo" class="devhouse-logo">
+            </a>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" aria-label="Back to top">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <script src="script.js"></script>
+</body>
+</html>
