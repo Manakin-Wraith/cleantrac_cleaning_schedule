@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme, alpha } from '@mui/material/styles';
 import { red, amber, grey } from '@mui/material/colors';
 
 // --- BASE THEME --- 
@@ -18,6 +18,7 @@ const baseThemeConfig = {
       paper: '#ffffff',
     },
     sidebarBackground: grey[100], // Added for the new sidebar design
+    surfaceHigh: alpha('#ffffff', 0.88),
     text: {
       primary: 'rgba(0, 0, 0, 0.87)',
       secondary: 'rgba(0, 0, 0, 0.6)',
@@ -85,9 +86,12 @@ const baseThemeConfig = {
     },
     MuiDialog: {
       styleOverrides: {
-        paper: {
+        paper: ({ theme }) => ({
           borderRadius: 12,
-        },
+          backgroundColor: theme.palette.surfaceHigh,
+          backdropFilter: 'blur(4px)',
+          color: theme.palette.getContrastText(theme.palette.surfaceHigh),
+        }),
       },
     },
     MuiTextField: {
