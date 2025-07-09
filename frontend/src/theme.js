@@ -18,7 +18,7 @@ const baseThemeConfig = {
       paper: '#ffffff',
     },
     sidebarBackground: grey[100], // Added for the new sidebar design
-    surfaceHigh: alpha('#ffffff', 0.88),
+    surfaceHigh: alpha('#ffffff', 0.95),
     text: {
       primary: 'rgba(0, 0, 0, 0.87)',
       secondary: 'rgba(0, 0, 0, 0.6)',
@@ -89,6 +89,8 @@ const baseThemeConfig = {
         paper: ({ theme }) => ({
           borderRadius: 12,
           backgroundColor: theme.palette.surfaceHigh,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+          border: '1px solid rgba(255,255,255,0.6)',
           backdropFilter: 'blur(4px)',
           color: theme.palette.getContrastText(theme.palette.surfaceHigh),
         }),
