@@ -62,7 +62,8 @@ const baseThemeConfig = {
       },
       styleOverrides: {
         root: {
-          backgroundColor: '#ffffff',
+          backgroundColor: (theme) => alpha('#ffffff', 0.75),
+          backdropFilter: 'blur(8px)',
         },
       },
     },
@@ -74,7 +75,7 @@ const baseThemeConfig = {
         root: {
           borderRadius: 8,
           backgroundColor: (theme) => theme.palette.surfaceHigh,
-          backdropFilter: 'blur(2px)',
+          backdropFilter: 'blur(6px)',
         },
       },
     },
@@ -84,7 +85,7 @@ const baseThemeConfig = {
           borderRadius: 12,
           boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
           backgroundColor: (theme) => theme.palette.surfaceHigh,
-          backdropFilter: 'blur(2px)',
+          backdropFilter: 'blur(6px)',
         },
       },
     },
@@ -95,7 +96,7 @@ const baseThemeConfig = {
           backgroundColor: theme.palette.surfaceHigh,
           boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
           border: '1px solid rgba(255,255,255,0.6)',
-          backdropFilter: 'blur(4px)',
+          backdropFilter: 'blur(12px)',
           color: theme.palette.getContrastText(theme.palette.surfaceHigh),
         }),
       },
