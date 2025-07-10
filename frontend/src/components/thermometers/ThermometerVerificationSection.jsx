@@ -3,9 +3,10 @@ import {
   Typography, Box, Paper, Button, CircularProgress, Alert,
   Chip, List, ListItemButton, ListItemText, ListItemIcon, Divider, Card, CardContent, CardActions, TextField, Grid
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, alpha } from '@mui/material/styles';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { 
@@ -142,13 +143,21 @@ const ThermometerVerificationSection = ({
                       key={thermometer.id}
                       onClick={() => handleSelectThermometer(thermometer)}
                       divider
-                      sx={{
+                      sx={(theme) => ({
                         display: 'flex',
                         alignItems: 'center',
+                        borderLeft: '4px solid transparent',
+                        transition: 'background-color 0.2s, border-color 0.2s',
                         '&:hover': {
-                          bgcolor: theme.palette.action.selected,
+                          bgcolor: alpha(theme.palette.primary.main, 0.12),
+                          borderLeftColor: theme.palette.primary.main,
+                          '.fade-icon': { opacity: 1 },
                         },
-                      }}
+                        '&.Mui-focusVisible': {
+                          outline: '2px solid',
+                          outlineColor: theme.palette.primary.main,
+                        },
+                      })}
                     >
                       <ListItemIcon>
                         <DeviceThermostatIcon color="action" />
@@ -157,16 +166,19 @@ const ThermometerVerificationSection = ({
                         primary={thermometer.serial_number || thermometer.model_identifier}
                         secondary={`Last verified: ${thermometer.last_verification_date || 'Never'}`}
                       />
-                      <Chip
-                        label="Pending"
-                        size="small"
-                        variant="outlined"
-                        sx={(theme) => ({
-                          bgcolor: theme.palette.warning.light,
-                          color: theme.palette.getContrastText(theme.palette.warning.light),
-                          fontWeight: 600,
-                        })}
-                      />
+                      <Box sx={{ display:'flex', alignItems:'center', gap:1 }}>
+                        <Chip
+                          label="Pending"
+                          size="small"
+                          variant="outlined"
+                          sx={(theme) => ({
+                            bgcolor: theme.palette.warning.light,
+                            color: theme.palette.getContrastText(theme.palette.warning.light),
+                            fontWeight: 600,
+                          })}
+                        />
+                        <ChevronRightIcon className="fade-icon" sx={{ opacity: 0, transition: 'opacity 0.2s', color:'text.secondary' }} />
+                      </Box>
                     </ListItemButton>
                   ))}
                 </List>
