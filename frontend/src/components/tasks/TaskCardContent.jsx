@@ -2,7 +2,6 @@ import React from 'react';
 import { CardContent, Box, Typography, Chip, Divider } from '@mui/material';
 import { CheckCircleOutline as CheckCircleOutlineIcon, Event as EventIcon, AccessTime as AccessTimeIcon, Build as BuildIcon, Science as ScienceIcon, ListAlt as ListAltIcon, Notes as NotesIcon, HourglassBottom as HourglassBottomIcon } from '@mui/icons-material';
 import RecurrenceChip from './RecurrenceChip';
-import TaskTypeIcon from './TaskTypeIcon';
 import { alpha, useTheme } from '@mui/material/styles';
 import dayjs from 'dayjs';
 
@@ -16,7 +15,7 @@ const TaskCardContent = ({ task }) => {
     <CardContent sx={{ padding: 2, pb: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <TaskTypeIcon task={task} />
+          
           <Typography
             variant="h6"
             component="div"
@@ -40,8 +39,19 @@ const TaskCardContent = ({ task }) => {
           <Chip
             label={(task.status || '').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
             size="small"
-            color={task.status === 'completed' ? 'success' : task.status === 'pending_review' ? 'info' : task.status === 'pending' ? 'warning' : 'default'}
-            sx={{ fontWeight: 'medium' }}
+            variant={['pending','scheduled'].includes(task.status) ? 'outlined' : 'filled'}
+            color={task.status === 'completed' ? 'success' : task.status === 'pending_review' ? 'info' : task.status === 'pending' ? 'warning' : task.status === 'scheduled' ? 'info' : 'default'}
+            sx={{
+              fontWeight: 'medium',
+              ...(task.status === 'pending' && {
+                bgcolor: theme.palette.warning.light,
+                color: theme.palette.getContrastText(theme.palette.warning.light),
+              }),
+              ...(task.status === 'scheduled' && {
+                bgcolor: theme.palette.info.light,
+                color: theme.palette.getContrastText(theme.palette.info.light),
+              }),
+            }}
           />
           {task.status === 'completed' && (
             <CheckCircleOutlineIcon sx={{ color: theme.palette.success.main, ml: 1 }} />
