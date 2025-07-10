@@ -102,14 +102,16 @@ function StaffTasksPage() {
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                             <AccessTimeIcon sx={{ mr: 1, color: 'text.secondary' }} fontSize="small" />
                             <Typography variant="body2" color="text.secondary">
-                                <strong>Timeslot:</strong> {task.__type === 'recipe' ? (
-                                    task.start_time && task.end_time ? `${task.start_time.substring(0, 5)} - ${task.end_time.substring(0, 5)}` :
-                                    task.scheduled_start_time && task.scheduled_end_time ? `${task.scheduled_start_time.substring(11, 16)} - ${task.scheduled_end_time.substring(11, 16)}` : 'N/A'
-                               )
-                </Box>
-            ) : (
-                                    task.start_time && task.end_time ? `${task.start_time.substring(0, 5)} - ${task.end_time.substring(0, 5)}` : (task.timeslot || 'N/A')
-                                )}
+                                <strong>Timeslot:</strong>{' '}
+                                {task.__type === 'recipe'
+                                    ? (task.start_time && task.end_time
+                                        ? `${task.start_time.substring(0, 5)} - ${task.end_time.substring(0, 5)}`
+                                        : task.scheduled_start_time && task.scheduled_end_time
+                                            ? `${task.scheduled_start_time.substring(11, 16)} - ${task.scheduled_end_time.substring(11, 16)}`
+                                            : 'N/A')
+                                    : (task.start_time && task.end_time
+                                        ? `${task.start_time.substring(0, 5)} - ${task.end_time.substring(0, 5)}`
+                                        : task.timeslot || 'N/A')}
                             </Typography>
                         </Box>
                     )}
