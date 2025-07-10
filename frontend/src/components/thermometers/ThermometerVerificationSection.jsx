@@ -90,7 +90,12 @@ const ThermometerVerificationSection = ({
               Thermometer Verification
             </Typography>
         </Box>
-        <Chip label={`${thermometersFromProps.length} Pending`} color={thermometersFromProps.length ? 'warning' : 'success'} variant="outlined" />
+        <Chip
+          label={thermometersFromProps.length ? `${thermometersFromProps.length} Pending` : 'All Verified'}
+          color={thermometersFromProps.length ? 'warning' : 'success'}
+          variant="filled"
+          sx={{ fontWeight: 600 }}
+        />
       </Box>
       {isLoadingFromProps || componentLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -126,7 +131,18 @@ const ThermometerVerificationSection = ({
               ) : (
                 <List disablePadding sx={{ mb:2 }}>
                   {thermometersFromProps.map((thermometer) => (
-                    <ListItemButton key={thermometer.id} onClick={() => handleSelectThermometer(thermometer)} divider sx={{display:'flex',alignItems:'center'}}>
+                    <ListItemButton
+                      key={thermometer.id}
+                      onClick={() => handleSelectThermometer(thermometer)}
+                      divider
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        '&:hover': {
+                          bgcolor: theme.palette.action.hover,
+                        },
+                      }}
+                    >
                       <ListItemIcon>
                         <DeviceThermostatIcon color="action" />
                       </ListItemIcon>
@@ -134,7 +150,9 @@ const ThermometerVerificationSection = ({
                         primary={thermometer.serial_number || thermometer.model_identifier}
                         secondary={`Last verified: ${thermometer.last_verification_date || 'Never'}`}
                       />
-                      <Button variant="outlined" size="small">Verify</Button>
+                      <Button variant="contained" color="primary" size="small" sx={{ textTransform: 'none', fontWeight: 600 }}>
+                        Verify
+                      </Button>
                     </ListItemButton>
                   ))}
                 </List>
