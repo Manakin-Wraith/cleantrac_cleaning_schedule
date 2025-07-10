@@ -149,8 +149,8 @@ const ThermometerVerificationSection = ({
                         borderLeft: '4px solid transparent',
                         transition: 'background-color 0.2s, border-color 0.2s',
                         '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.12),
-                          borderLeftColor: theme.palette.primary.main,
+                          bgcolor: `${alpha(theme.palette.primary.main, 0.22)} !important`,
+                          borderLeftColor: `${theme.palette.primary.dark} !important`,
                           '.fade-icon': { opacity: 1 },
                         },
                         '&.Mui-focusVisible': {
