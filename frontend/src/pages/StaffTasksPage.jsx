@@ -438,10 +438,10 @@ function StaffTasksPage() {
     return (
         <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
             <Fade in timeout={350}>
-                <Paper elevation={0} sx={{ px: 3, py: 2, mb:4, mx: 'auto', maxWidth: 600, backdropFilter: 'blur(8px)', backgroundColor: (t)=>t.palette.surfaceHigh, textAlign: 'center', position: 'relative' }}>
+                <Paper elevation={0} sx={{ px: { xs:2, sm:4 }, py: { xs:2, sm:3 }, mb:4, mx: 'auto', maxWidth: 560, backdropFilter: 'blur(8px)', backgroundColor: (t)=>t.palette.surfaceHigh, textAlign: 'center', position: 'relative', boxShadow: '0 6px 18px rgba(0,0,0,0.06)', border: '1px solid rgba(255,255,255,0.2)', borderRadius:{ xs:2, sm:3 }, '&:before': { content:'""', position:'absolute', left:0, top:0, bottom:0, width:4, bgcolor: (t)=>t.palette.primary.main, borderRadius:'4px 0 0 4px' } }}>
                     <Stack spacing={0.5}>
-                        <Typography variant="h4" fontWeight={600}>{userName}'s Tasks</Typography>
-                        <Typography variant="subtitle1" color="text.secondary">{departmentName} · Today ({getTodayDateString()})</Typography>
+                        <Typography variant="h4" fontWeight={600} sx={{ fontSize:{ xs:'1.5rem', sm:'2.125rem' }, wordBreak:'break-word' }}>{userName}'s Tasks</Typography>
+                        <Typography variant="subtitle1" color="text.secondary" sx={{ fontSize:{ xs:'0.875rem', sm:'1rem' } }}>{departmentName} · Today ({getTodayDateString()})</Typography>
                     </Stack>
                 </Paper>
             </Fade>
