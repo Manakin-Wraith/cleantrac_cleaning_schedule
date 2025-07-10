@@ -27,6 +27,8 @@ import EventIcon from '@mui/icons-material/Event';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import BuildIcon from '@mui/icons-material/Build'; // For Equipment
 import ScienceIcon from '@mui/icons-material/Science'; // For Chemicals
+import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
+import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import ListAltIcon from '@mui/icons-material/ListAlt'; // For Method
 import NotesIcon from '@mui/icons-material/Notes'; // For Notes
 import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
@@ -103,7 +105,9 @@ function StaffTasksPage() {
                                 <strong>Timeslot:</strong> {task.__type === 'recipe' ? (
                                     task.start_time && task.end_time ? `${task.start_time.substring(0, 5)} - ${task.end_time.substring(0, 5)}` :
                                     task.scheduled_start_time && task.scheduled_end_time ? `${task.scheduled_start_time.substring(11, 16)} - ${task.scheduled_end_time.substring(11, 16)}` : 'N/A'
-                                ) : (
+                               )
+                </Box>
+            ) : (
                                     task.start_time && task.end_time ? `${task.start_time.substring(0, 5)} - ${task.end_time.substring(0, 5)}` : (task.timeslot || 'N/A')
                                 )}
                             </Typography>
@@ -526,24 +530,27 @@ function StaffTasksPage() {
             ) : (todaysTasks.length + todaysRecipeTasks.length) > 0 ? (
                 <Box>
                     {tabletSimpleView && (
-                            <>
-                                {todaysTasks.length > 0 && (
-                                    <TaskSection
-                                        title="Cleaning Tasks"
-                                        tasks={todaysTasks.map(t => ({ ...t, __type: 'cleaning' })).sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||''))}
-                                        onSelect={handleTaskSelect}
-                                        defaultExpanded
-                                    />
-                                )}
-                                {todaysRecipeTasks.length > 0 && (
-                                    <TaskSection
-                                        title="Recipe Production"
-                                        tasks={todaysRecipeTasks.map(t => ({ ...t, __type: 'recipe' })).sort((a,b)=>(a.scheduled_date||'').localeCompare(b.scheduled_date||''))}
-                                        onSelect={handleTaskSelect}
-                                    />
-                                )}
-                            </>
-                        )}
+                        <>
+                            {todaysTasks.length > 0 && (
+                                <TaskSection
+                                    title="Cleaning Tasks"
+                                    icon={CleaningServicesIcon}
+                                    tasks={todaysTasks.map(t => ({ ...t, __type: 'cleaning' })).sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||''))}
+                                    onSelect={handleTaskSelect}
+                                    defaultExpanded
+                                />
+                            )}
+                            {todaysRecipeTasks.length > 0 && (
+                                <TaskSection
+                                    title="Recipe Production"
+                                    icon={RestaurantMenuIcon}
+                                    tasks={todaysRecipeTasks.map(t => ({ ...t, __type: 'recipe' })).sort((a,b)=>(a.scheduled_date||'').localeCompare(b.scheduled_date||''))}
+                                    onSelect={handleTaskSelect}
+                                />
+                            )}
+                        </>
+                    )}
+
 
                         {!tabletSimpleView && todaysTasks.length > 0 && (
                         <>
