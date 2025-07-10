@@ -54,7 +54,7 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
       position="fixed" 
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 1,
-        backgroundColor: '#F5F6F8',
+        
         color: '#333',
         boxShadow: 'none',
         borderBottom: `1px solid ${theme.palette.divider}`, // Added for visual separation
@@ -99,11 +99,13 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
           </IconButton>
         )}
 
-        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
-          <Typography variant="h6" noWrap component={RouterLink} to={currentUser ? (currentUser.profile?.role === 'manager' ? '/manager-dashboard' : '/staff-tasks') : '/login'} sx={{ color: 'inherit', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: showSidebar ? 'flex-start' : 'center', alignItems: 'center' }}>
+          <RouterLink to={currentUser ? (currentUser.profile?.role === 'manager' ? '/manager-dashboard' : '/staff-tasks') : '/login'} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
             <PieChartOutlineIcon sx={{ mr: 1 }} />
-            CLEENTRAC
-          </Typography>
+            <Typography variant="h6" sx={{ lineHeight: 1, fontWeight: 600 }}>
+              CLEENTRAC
+            </Typography>
+          </RouterLink>
         </Box>
 
         {isLoading ? (
