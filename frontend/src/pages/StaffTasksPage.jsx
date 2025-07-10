@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, Grid, Paper, Typography, Box, Button, Chip, CircularProgress, Alert, List, ListItem, ListItemText, Divider, Badge, Card, CardContent, CardActions, Stack } from '@mui/material';
+import { Container, Grid, Paper, Typography, Box, Button, Chip, CircularProgress, Alert, List, ListItem, ListItemText, Divider, Badge, Card, CardContent, CardActions, Stack, Fade } from '@mui/material';
 
 import { useTheme, alpha } from '@mui/material/styles';
 import { getTaskInstances, updateTaskInstance } from '../services/taskService';
@@ -29,6 +29,7 @@ import BuildIcon from '@mui/icons-material/Build'; // For Equipment
 import ScienceIcon from '@mui/icons-material/Science'; // For Chemicals
 import ListAltIcon from '@mui/icons-material/ListAlt'; // For Method
 import NotesIcon from '@mui/icons-material/Notes'; // For Notes
+import PieChartOutlineIcon from '@mui/icons-material/PieChartOutline';
 import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 
@@ -437,9 +438,15 @@ function StaffTasksPage() {
 
     return (
         <Container component="main" maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            <Typography component="h1" variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 4 }}>
-                {userName}'s Tasks - {departmentName} - Today ({getTodayDateString()})
-            </Typography>
+            <Fade in timeout={350}>
+                <Paper elevation={0} sx={{ px: 3, py: 2, mb:4, mx: 'auto', maxWidth: 600, backdropFilter: 'blur(8px)', backgroundColor: (t)=>t.palette.surfaceHigh, textAlign: 'center', position: 'relative' }}>
+                    <PieChartOutlineIcon sx={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', opacity: 0.6, fontSize: 32 }} />
+                    <Stack spacing={0.5}>
+                        <Typography variant="h4" fontWeight={600}>{userName}'s Tasks</Typography>
+                        <Typography variant="subtitle1" color="text.secondary">{departmentName} · Today ({getTodayDateString()})</Typography>
+                    </Stack>
+                </Paper>
+            </Fade>
             {error && <Alert severity="warning" sx={{ mb: 2 }}>{error}</Alert>}
             {thermometerError && <Alert severity="error" sx={{ mb: 2 }}>{thermometerError}</Alert>}
             {/* Thermometer Tasks Summary */}
