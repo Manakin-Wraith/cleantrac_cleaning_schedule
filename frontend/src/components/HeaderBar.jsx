@@ -99,10 +99,12 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
           </IconButton>
         )}
 
-        <Typography variant="h6" noWrap component={RouterLink} to={currentUser ? (currentUser.profile?.role === 'manager' ? '/manager-dashboard' : '/staff-tasks') : '/login'} sx={{ flexGrow: 1, color: 'inherit', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-          <PieChartOutlineIcon sx={{ mr: 1 }} />
-          CLEENTRAC
-        </Typography>
+        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
+          <Typography variant="h6" noWrap component={RouterLink} to={currentUser ? (currentUser.profile?.role === 'manager' ? '/manager-dashboard' : '/staff-tasks') : '/login'} sx={{ color: 'inherit', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <PieChartOutlineIcon sx={{ mr: 1 }} />
+            CLEENTRAC
+          </Typography>
+        </Box>
 
         {isLoading ? (
           <CircularProgress color="inherit" size={24} />
@@ -121,7 +123,7 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
               aria-haspopup="true"
               aria-expanded={menuOpen ? 'true' : undefined}
             >
-              <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.primary.main, color: theme.palette.getContrastText(theme.palette.primary.main) }}>
+              <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.primary.main, color: theme.palette.getContrastText(theme.palette.primary.main), border: `2px solid ${theme.palette.getContrastText(theme.palette.primary.main)}` }}>
                 {currentUser.username ? currentUser.username[0].toUpperCase() : <AccountCircleIcon />}
               </Avatar>
             </IconButton>
