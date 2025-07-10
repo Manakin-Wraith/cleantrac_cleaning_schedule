@@ -5,6 +5,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
+import PieChartOutlineIcon from '@mui/icons-material/PieChartOutline';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { drawerWidth as expandedDrawerWidthValue } from './Sidebar'; 
@@ -74,15 +75,17 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
       }}
     >
       <Toolbar sx={{ minHeight: { xs: '56px', sm: '56px', md: '56px' }, alignItems: 'center' }}>
-        <IconButton
-          color="inherit"
-          aria-label="open drawer"
-          edge="start"
-          onClick={handleDrawerToggle} 
-          sx={{ mr: 2, display: { md: 'none' } }} 
-        >
-          <MenuIcon />
-        </IconButton>
+        {showSidebar && (
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle} 
+            sx={{ mr: 2, display: { md: 'none' } }} 
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
 
         {showSidebar && (
           <IconButton
@@ -96,8 +99,9 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
           </IconButton>
         )}
 
-        <Typography variant="h6" noWrap component={RouterLink} to={currentUser ? (currentUser.profile?.role === 'manager' ? '/manager-dashboard' : '/staff-tasks') : '/login'} sx={{ flexGrow: 1, color: 'inherit', textDecoration: 'none' }}>
-          CleanTrac
+        <Typography variant="h6" noWrap component={RouterLink} to={currentUser ? (currentUser.profile?.role === 'manager' ? '/manager-dashboard' : '/staff-tasks') : '/login'} sx={{ flexGrow: 1, color: 'inherit', textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+          <PieChartOutlineIcon sx={{ mr: 1 }} />
+          CLEENTRAC
         </Typography>
 
         {isLoading ? (
