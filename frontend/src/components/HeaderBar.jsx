@@ -6,6 +6,7 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import PieChartOutlineIcon from '@mui/icons-material/PieChartOutline';
+import { alpha as muiAlpha } from '@mui/material/styles';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { drawerWidth as expandedDrawerWidthValue } from './Sidebar'; 
@@ -54,7 +55,7 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
       position="fixed" 
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 1,
-        
+        backgroundColor: muiAlpha('#ffffff', 0.4),
         color: '#333',
         boxShadow: 'none',
         borderBottom: `1px solid ${theme.palette.divider}`, // Added for visual separation
@@ -99,14 +100,10 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
           </IconButton>
         )}
 
-        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: showSidebar ? 'flex-start' : 'center', alignItems: 'center' }}>
-          <RouterLink to={currentUser ? (currentUser.profile?.role === 'manager' ? '/manager-dashboard' : '/staff-tasks') : '/login'} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
-            <PieChartOutlineIcon sx={{ mr: 1 }} />
-            <Typography variant="h6" sx={{ lineHeight: 1, fontWeight: 600 }}>
-              CLEENTRAC
-            </Typography>
-          </RouterLink>
-        </Box>
+        <Typography variant="h6" noWrap component={RouterLink} to={currentUser ? (currentUser.profile?.role === 'manager' ? '/manager-dashboard' : '/staff-tasks') : '/login'} sx={{ flexGrow: 1, color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 1, lineHeight: 1 }}>
+          <PieChartOutlineIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
+          CLEENTRAC
+        </Typography>
 
         {isLoading ? (
           <CircularProgress color="inherit" size={24} />

@@ -62,7 +62,7 @@ const baseThemeConfig = {
       },
       styleOverrides: {
         root: {
-          backgroundColor: (theme) => alpha('#ffffff', 0.6),
+          backgroundColor: (theme) => alpha('#ffffff', 0.3),
           backdropFilter: 'blur(8px)',
         },
       },
