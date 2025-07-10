@@ -47,13 +47,17 @@ const TaskSection = ({ title, tasks, icon: SectionIcon, defaultExpanded = false,
               <Chip
                 label={(t.status || '').replace(/_/g, ' ')}
                 size="small"
-                variant={t.status === 'pending' ? 'outlined' : 'filled'}
-                color={t.status === 'completed' ? 'success' : t.status === 'pending' ? 'warning' : 'default'}
+                variant={['pending','scheduled'].includes(t.status) ? 'outlined' : 'filled'}
+                color={t.status === 'completed' ? 'success' : t.status === 'pending' ? 'warning' : t.status === 'scheduled' ? 'info' : 'default'}
                 sx={{
                   textTransform: 'capitalize',
                   ...(t.status === 'pending' && {
                     bgcolor: theme.palette.warning.light,
                     color: theme.palette.getContrastText(theme.palette.warning.light),
+                  }),
+                  ...(t.status === 'scheduled' && {
+                    bgcolor: theme.palette.info.light,
+                    color: theme.palette.getContrastText(theme.palette.info.light),
                   }),
                 }}
               />
