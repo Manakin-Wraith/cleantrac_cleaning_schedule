@@ -82,11 +82,22 @@ function StaffTasksPage() {
                     >
                         {task.__type === 'recipe' ? (task.recipe_details?.name || task.recipe?.name || 'Unnamed Recipe') : (task.cleaning_item?.name || 'Unnamed Task')}
                     </Typography>
-                    <Chip 
+                    <Chip
                         label={(task.status || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         size="small"
-                        color={task.status === 'completed' ? 'success' : task.status === 'pending' ? 'warning' : 'default'}
-                        sx={{ fontWeight: 'medium' }}
+                        variant={['pending', 'scheduled'].includes(task.status) ? 'outlined' : 'filled'}
+                        color={task.status === 'completed' ? 'success' : task.status === 'pending' ? 'warning' : task.status === 'scheduled' ? 'info' : 'default'}
+                        sx={{
+                            fontWeight: 'medium',
+                            ...(task.status === 'pending' && {
+                                bgcolor: theme.palette.warning.light,
+                                color: theme.palette.getContrastText(theme.palette.warning.light),
+                            }),
+                            ...(task.status === 'scheduled' && {
+                                bgcolor: theme.palette.info.light,
+                                color: theme.palette.getContrastText(theme.palette.info.light),
+                            }),
+                        }}
                     />
                     {task.status === 'completed' && <CheckCircleOutlineIcon sx={{ color: theme.palette.success.main, ml: 1 }} />}
                 </Box>
