@@ -92,9 +92,16 @@ const ThermometerVerificationSection = ({
         </Box>
         <Chip
           label={thermometersFromProps.length ? `${thermometersFromProps.length} Pending` : 'All Verified'}
-          color={thermometersFromProps.length ? 'warning' : 'success'}
-          variant="filled"
-          sx={{ fontWeight: 600 }}
+          variant="outlined"
+          size="small"
+          sx={(theme) => ({
+            fontWeight: 600,
+            bgcolor: thermometersFromProps.length ? theme.palette.warning.light : theme.palette.success.light,
+            color: thermometersFromProps.length
+              ? theme.palette.getContrastText(theme.palette.warning.light)
+              : theme.palette.getContrastText(theme.palette.success.light),
+            borderColor: 'transparent',
+          })}
         />
       </Box>
       {isLoadingFromProps || componentLoading ? (
@@ -139,7 +146,7 @@ const ThermometerVerificationSection = ({
                         display: 'flex',
                         alignItems: 'center',
                         '&:hover': {
-                          bgcolor: theme.palette.action.hover,
+                          bgcolor: theme.palette.action.selected,
                         },
                       }}
                     >
@@ -150,9 +157,16 @@ const ThermometerVerificationSection = ({
                         primary={thermometer.serial_number || thermometer.model_identifier}
                         secondary={`Last verified: ${thermometer.last_verification_date || 'Never'}`}
                       />
-                      <Button variant="contained" color="primary" size="small" sx={{ textTransform: 'none', fontWeight: 600 }}>
-                        Verify
-                      </Button>
+                      <Chip
+                        label="Pending"
+                        size="small"
+                        variant="outlined"
+                        sx={(theme) => ({
+                          bgcolor: theme.palette.warning.light,
+                          color: theme.palette.getContrastText(theme.palette.warning.light),
+                          fontWeight: 600,
+                        })}
+                      />
                     </ListItemButton>
                   ))}
                 </List>
