@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Typography, Box, Paper, Button, CircularProgress, Alert, 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Chip, Divider, Card, CardContent, CardActions, TextField, Grid
+  Typography, Box, Paper, Button, CircularProgress, Alert,
+  Chip, List, ListItemButton, ListItemText, ListItemIcon, Divider, Card, CardContent, CardActions, TextField, Grid
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
+import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
 import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { 
@@ -83,11 +83,14 @@ const ThermometerVerificationSection = ({
 
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent:'space-between', mb: 2 }}>
+        <Box sx={{display:'flex',alignItems:'center'}}>
         <ThermostatIcon sx={{ fontSize: 28, mr: 1, color: theme.palette.primary.main }} />
-        <Typography variant="h5" component="h2">
-          Thermometer Verification
-        </Typography>
+            <Typography variant="h6" component="h2" sx={{fontWeight:600}}>
+              Thermometer Verification
+            </Typography>
+        </Box>
+        <Chip label={`${thermometersFromProps.length} Pending`} color={thermometersFromProps.length ? 'warning' : 'success'} variant="outlined" />
       </Box>
       {isLoadingFromProps || componentLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -121,47 +124,20 @@ const ThermometerVerificationSection = ({
                   All thermometers are currently verified. Great job!
                 </Alert>
               ) : (
-                <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ backgroundColor: theme.palette.grey[100] }}>
-                        <TableCell><strong>Serial Number</strong></TableCell>
-                        <TableCell><strong>Model</strong></TableCell>
-                        <TableCell><strong>Status</strong></TableCell>
-                        <TableCell><strong>Last Verified</strong></TableCell>
-                        <TableCell><strong>Actions</strong></TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {thermometersFromProps.map((thermometer) => (
-                        <TableRow key={thermometer.id}>
-                          <TableCell>{thermometer.serial_number}</TableCell>
-                          <TableCell>{thermometer.model_identifier}</TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={thermometer.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                              size="small"
-                              color="warning"
-                              icon={<WarningIcon />}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            {thermometer.last_verification_date || 'Never'}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              onClick={() => handleSelectThermometer(thermometer)}
-                            >
-                              Verify
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                <List disablePadding sx={{ mb:2 }}>
+                  {thermometersFromProps.map((thermometer) => (
+                    <ListItemButton key={thermometer.id} onClick={() => handleSelectThermometer(thermometer)} divider sx={{display:'flex',alignItems:'center'}}>
+                      <ListItemIcon>
+                        <DeviceThermostatIcon color="action" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={thermometer.serial_number || thermometer.model_identifier}
+                        secondary={`Last verified: ${thermometer.last_verification_date || 'Never'}`}
+                      />
+                      <Button variant="outlined" size="small">Verify</Button>
+                    </ListItemButton>
+                  ))}
+                </List>
               )}
             </>
           )}
