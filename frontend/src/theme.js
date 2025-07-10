@@ -73,6 +73,8 @@ const baseThemeConfig = {
       styleOverrides: {
         root: {
           borderRadius: 8,
+          backgroundColor: (theme) => theme.palette.surfaceHigh,
+          backdropFilter: 'blur(2px)',
         },
       },
     },
@@ -81,6 +83,8 @@ const baseThemeConfig = {
         root: {
           borderRadius: 12,
           boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          backgroundColor: (theme) => theme.palette.surfaceHigh,
+          backdropFilter: 'blur(2px)',
         },
       },
     },

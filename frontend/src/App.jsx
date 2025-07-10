@@ -61,7 +61,7 @@ const ThemedApp = () => {
         {/* Protected Routes */}
         <Route element={<PrivateRoute allowedRoles={['manager', 'staff']} />}>
           <Route path="/manager-dashboard" element={<PageLayout><ManagerDashboardPage /></PageLayout>} />
-          <Route path="/staff-tasks" element={<PageLayout><StaffTasksPage /></PageLayout>} />
+          <Route path="/staff-tasks" element={<PageLayout showSidebar={false} showHeaderBar={true}><StaffTasksPage /></PageLayout>} />
           <Route path="/recipe-management" element={<PageLayout><RecipeManagementPage /></PageLayout>} />
           <Route path="/production-scheduler" element={<PageLayout showHeaderBar={false}><ProductionSchedulerPage /></PageLayout>} />
         </Route>
