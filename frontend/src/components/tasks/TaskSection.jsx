@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme } from '@mui/material/styles';
 import {
   Accordion,
   AccordionSummary,
@@ -12,13 +13,13 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import RecurrenceChip from './RecurrenceChip';
-import TaskTypeIcon from './TaskTypeIcon';
 
 /**
  * Accordion-based section with count badge & compact task rows.
  * Row click calls onSelect(task).
  */
 const TaskSection = ({ title, tasks, icon: SectionIcon, defaultExpanded = false, onSelect }) => {
+  const theme = useTheme();
   return (
     <Accordion defaultExpanded={defaultExpanded}> 
       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -34,7 +35,7 @@ const TaskSection = ({ title, tasks, icon: SectionIcon, defaultExpanded = false,
         <List disablePadding>
           {tasks.map((t) => (
             <ListItemButton key={t.id} onClick={() => onSelect(t)} divider sx={{ display:'flex', alignItems:'center', gap:1 }}>
-              <TaskTypeIcon task={t} showLabel={false} />
+              
               <Typography sx={{ flexGrow:1 }}>
                 {t.__type === 'recipe'
                   ? t.recipe_details?.name || t.recipe?.name || 'Unnamed Recipe'
@@ -43,7 +44,19 @@ const TaskSection = ({ title, tasks, icon: SectionIcon, defaultExpanded = false,
                   <RecurrenceChip type={t.recurrence_type} sx={{ ml: 0.5 }} />
                 )}
               </Typography>
-              <Chip label={(t.status || '').replace(/_/g,' ')} size="small" color={t.status==='completed' ? 'success' : t.status==='pending' ? 'warning' : 'default'} sx={{ textTransform:'capitalize' }} />
+              <Chip
+                label={(t.status || '').replace(/_/g, ' ')}
+                size="small"
+                variant={t.status === 'pending' ? 'outlined' : 'filled'}
+                color={t.status === 'completed' ? 'success' : t.status === 'pending' ? 'warning' : 'default'}
+                sx={{
+                  textTransform: 'capitalize',
+                  ...(t.status === 'pending' && {
+                    bgcolor: theme.palette.warning.light,
+                    color: theme.palette.getContrastText(theme.palette.warning.light),
+                  }),
+                }}
+              />
             </ListItemButton>
           ))}
         </List>
