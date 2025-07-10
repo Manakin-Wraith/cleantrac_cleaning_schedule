@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '@mui/material/styles';
 import {
   Drawer,
   Box,
@@ -12,7 +13,7 @@ import {
   Chip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import TaskTypeIcon from '../tasks/TaskTypeIcon';
+
 import RecurrenceChip from '../tasks/RecurrenceChip';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -29,6 +30,7 @@ export default function TaskDrawer({
   onDelete,
   onComplete,
 }) {
+  const theme = useTheme();
   if (!task || task.status === 'archived') return null;
 
     const { currentUser } = useAuth();
@@ -51,10 +53,9 @@ export default function TaskDrawer({
         {/* Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box sx={{ display:'flex', alignItems:'center' }}>
-            <TaskTypeIcon task={task} sx={{ mr:1 }} />
             <Typography variant="h6" sx={{ mr:1 }}>
-            {task.type === 'cleaning' ? 'Cleaning Task' : 'Recipe Production'}
-          </Typography>
+              {task.title || task.cleaning_item_name || task.cleaning_item?.name || task.recipe_details?.name || 'Task'}
+            </Typography>
             {task.recurrence_type && (
               <RecurrenceChip type={task.recurrence_type} sx={{ mr:1 }} />
             )}
@@ -63,8 +64,19 @@ export default function TaskDrawer({
             <Chip
               label={(task.status || '').replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}
               size="small"
-              color={task.status==='completed'?'success':task.status==='pending'?'warning':'default'}
-              sx={{ fontWeight:'medium' }}
+              variant={['pending','scheduled'].includes(task.status) ? 'outlined' : 'filled'}
+              color={task.status==='completed' ? 'success' : task.status==='pending' ? 'warning' : task.status==='scheduled' ? 'info' : 'default'}
+              sx={{
+                fontWeight:'medium',
+                ...(task.status==='pending' && {
+                  bgcolor: theme.palette.warning.light,
+                  color: theme.palette.getContrastText(theme.palette.warning.light),
+                }),
+                ...(task.status==='scheduled' && {
+                  bgcolor: theme.palette.info.light,
+                  color: theme.palette.getContrastText(theme.palette.info.light),
+                }),
+              }}
             />
             <IconButton onClick={onClose} aria-label="close drawer">
             <CloseIcon />
