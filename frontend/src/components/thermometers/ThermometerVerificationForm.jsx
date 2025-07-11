@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { 
-  Typography, Box, Paper, Button, CircularProgress, Alert, 
+  Typography, Box, Button, CircularProgress, Alert,
   TextField, Grid, Card, CardContent, CardActions, Divider,
-  FormControl, InputLabel, MenuItem, Select
+  InputAdornment
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { LocalizationProvider } from '@mui/x-date-pickers';
 import { format } from 'date-fns';
+import ThermostatIcon from '@mui/icons-material/Thermostat';
 
 const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
   const today = new Date();
@@ -14,7 +15,7 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
     date_verified: today,
     calibrated_instrument_no: '',
     reading_after_verification: '',
-    corrective_action: '',
+    
     serial_number: thermometer?.serial_number || '',
     model_identifier: thermometer?.model_identifier || ''
   });
@@ -120,7 +121,7 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
               </Typography>
             </Grid>
 
-            <Grid xs={12} sm={6}>
+            <Grid xs={12} sm={4}>
               <TextField
                 label="Serial Number"
                 value={thermometer.serial_number}
@@ -129,7 +130,7 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
                 InputProps={{ readOnly: true }}
               />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid xs={12} sm={4}>
               <TextField
                 label="Model Identifier"
                 value={thermometer.model_identifier}
@@ -146,7 +147,7 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
               </Typography>
             </Grid>
 
-            <Grid xs={12} sm={6}>
+            <Grid xs={12} sm={4}>
               <TextField
                 name="calibrated_instrument_no"
                 label="Calibrated Instrument Number"
@@ -159,10 +160,10 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
               />
             </Grid>
             
-            <Grid xs={12} sm={6}>
+            <Grid xs={12} sm={4}>
               <TextField
                 name="reading_after_verification"
-                label="Reading After Verification (°C)"
+                label="Temperature (°C)"
                 value={formData.reading_after_verification}
                 onChange={handleChange}
                 fullWidth
@@ -170,68 +171,24 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
                 error={!!fieldErrors.reading_after_verification}
                 type="number"
                 inputProps={{ step:'0.1', inputMode:'decimal' }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <ThermostatIcon fontSize="small" />
+                    </InputAdornment>
+                  )
+                }}
                 helperText={fieldErrors.reading_after_verification}
               />
             </Grid>
 
-            <Grid xs={12} sm={6}>
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DatePicker
-                  label="Date Verified"
-                  value={formData.date_verified}
-                  onChange={handleDateChange}
-                  maxDate={today}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      required: true,
-                      error: !!fieldErrors.date_verified,
-                      helperText: fieldErrors.date_verified
-                    }
-                  }}
-                />
-              </LocalizationProvider>
-            </Grid>
-            
-            <Grid xs={12} sm={6}>
+            <Grid xs={12} sm={4}>
               <TextField
-                name="calibrated_instrument_no"
-                label="Calibrated Instrument Number"
-                value={formData.calibrated_instrument_no}
-                onChange={handleChange}
+                label="Date Verified"
+                value={format(today, 'dd/MM/yyyy')}
                 fullWidth
-                required
-                error={!!fieldErrors.calibrated_instrument_no}
-                helperText={fieldErrors.calibrated_instrument_no}
-              />
-            </Grid>
-            
-            <Grid xs={12} sm={6}>
-              <TextField
-                name="reading_after_verification"
-                label="Reading After Verification (°C)"
-                value={formData.reading_after_verification}
-                onChange={handleChange}
-                fullWidth
-                required
-                type="number"
-                inputProps={{ step: "0.1" }}
-                error={!!fieldErrors.reading_after_verification}
-                helperText={fieldErrors.reading_after_verification}
-              />
-            </Grid>
-            
-            <Grid xs={12}>
-              <TextField
-                name="corrective_action"
-                label="Corrective Action (if needed)"
-                value={formData.corrective_action}
-                onChange={handleChange}
-                fullWidth
-                multiline
-                rows={3}
-                error={!!fieldErrors.corrective_action}
-                helperText={fieldErrors.corrective_action}
+                InputProps={{ readOnly: true }}
+                
               />
             </Grid>
           </Grid>
