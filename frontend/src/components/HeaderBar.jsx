@@ -122,9 +122,7 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
               aria-haspopup="true"
               aria-expanded={menuOpen ? 'true' : undefined}
             >
-              <Avatar sx={{ width: 32, height: 32, bgcolor: theme.palette.primary.main, color: theme.palette.getContrastText(theme.palette.primary.main), border: `2px solid ${theme.palette.getContrastText(theme.palette.primary.main)}` }}>
-                {currentUser.username ? currentUser.username[0].toUpperCase() : <AccountCircleIcon />}
-              </Avatar>
+              <AccountCircleIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
             </IconButton>
             <Menu
               anchorEl={anchorEl}
