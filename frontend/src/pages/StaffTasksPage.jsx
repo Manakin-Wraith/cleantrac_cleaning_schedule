@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, Grid, Paper, Typography, Box, Button, Chip, CircularProgress, Alert, List, ListItem, ListItemText, Divider, Badge, Card, CardContent, CardActions, Stack, Fade } from '@mui/material';
+import { Container, Grid, Paper, Typography, Box, Button, Chip, CircularProgress, Alert, List, ListItem, ListItemText, ListItemButton, ListItemIcon, Divider, Badge, Card, CardContent, CardActions, Stack, Fade } from '@mui/material';
 
 import { useTheme, alpha } from '@mui/material/styles';
 import { getTaskInstances, updateTaskInstance } from '../services/taskService';
@@ -482,15 +482,63 @@ function StaffTasksPage() {
                             </Box>
                             <Stack spacing={1}>
                                 {/* Verification row */}
-                                <Box onClick={openVerification} sx={{ cursor:'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1, borderRadius: 1, bgcolor: alpha(theme.palette.grey[200], 0.3) }}>
-                                    <Typography variant="body2">Verification</Typography>
-                                    <Chip label={`${verifiedThermometers.length}/${verifiedThermometers.length + thermometersNeedingVerification.length}`} size="small" color={thermometersNeedingVerification.length === 0 ? 'success' : 'warning'} />
-                                </Box>
+                                <ListItemButton
+                                    onClick={openVerification}
+                                    divider
+                                    sx={(theme) => ({
+                                        borderLeft: '4px solid transparent',
+                                        transition: 'all .2s',
+                                        '&:hover, &.Mui-focusVisible': {
+                                            backgroundColor: `${alpha(theme.palette.primary.main, 0.32)} !important`,
+                                            borderLeftColor: `${theme.palette.primary.dark} !important`,
+                                        },
+                                        '&.Mui-focusVisible': {
+                                            outline: `2px solid ${theme.palette.primary.main}`,
+                                        },
+                                    })}
+                                >
+                                    <ListItemText primary={<Typography variant="body2" fontWeight={600}>Verification</Typography>} />
+                                    <Chip
+                                        label={`${verifiedThermometers.length}/${verifiedThermometers.length + thermometersNeedingVerification.length}`}
+                                        size="small"
+                                        variant="outlined"
+                                        sx={(t) => ({
+                                            fontWeight:600,
+                                            bgcolor: thermometersNeedingVerification.length === 0 ? t.palette.success.light : t.palette.warning.light,
+                                            color: thermometersNeedingVerification.length === 0 ? t.palette.getContrastText(t.palette.success.light) : t.palette.getContrastText(t.palette.warning.light),
+                                            borderColor:'transparent'
+                                        })}
+                                    />
+                                </ListItemButton>
                                 {/* Logging row */}
-                                <Box onClick={openLogging} sx={{ cursor:'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1, borderRadius: 1, bgcolor: alpha(theme.palette.grey[200], 0.3) }}>
-                                    <Typography variant="body2">Logging</Typography>
-                                    <Chip label={`${loggedAreas.length}/${allowedTimePeriods.length}`} size="small" color={loggedAreas.length === allowedTimePeriods.length ? 'success' : 'warning'} />
-                                </Box>
+                                <ListItemButton
+                                    onClick={openLogging}
+                                    divider={false}
+                                    sx={(theme) => ({
+                                        borderLeft: '4px solid transparent',
+                                        transition: 'all .2s',
+                                        '&:hover, &.Mui-focusVisible': {
+                                            backgroundColor: `${alpha(theme.palette.primary.main, 0.32)} !important`,
+                                            borderLeftColor: `${theme.palette.primary.dark} !important`,
+                                        },
+                                        '&.Mui-focusVisible': {
+                                            outline: `2px solid ${theme.palette.primary.main}`,
+                                        },
+                                    })}
+                                >
+                                    <ListItemText primary={<Typography variant="body2" fontWeight={600}>Logging</Typography>} />
+                                    <Chip
+                                        label={`${loggedAreas.length}/${allowedTimePeriods.length}`}
+                                        size="small"
+                                        variant="outlined"
+                                        sx={(t) => ({
+                                            fontWeight:600,
+                                            bgcolor: loggedAreas.length === allowedTimePeriods.length ? t.palette.success.light : t.palette.warning.light,
+                                            color: loggedAreas.length === allowedTimePeriods.length ? t.palette.getContrastText(t.palette.success.light) : t.palette.getContrastText(t.palette.warning.light),
+                                            borderColor:'transparent'
+                                        })}
+                                    />
+                                </ListItemButton>
                             </Stack>
                         </Paper>)}
 
