@@ -15,8 +15,8 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
     calibrated_instrument_no: '',
     reading_after_verification: '',
     corrective_action: '',
-    serial_number: '',
-    model_identifier: ''
+    serial_number: thermometer?.serial_number || '',
+    model_identifier: thermometer?.model_identifier || ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -97,10 +97,14 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
   return (
     <Card variant="outlined" sx={{ mb: 3 }}>
       <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Verify Thermometer: {thermometer.serial_number}
-        </Typography>
-        
+        <Box sx={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:1, mb:3 }}>
+          <Typography variant="h6" sx={{fontWeight:600}}>
+            Verify Thermometer
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Serial #: {thermometer.serial_number}
+          </Typography>
+        </Box>
         <Divider sx={{ mb: 3 }} />
         
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -109,7 +113,7 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
           <Grid container spacing={2}>
             <Grid xs={12}>
               <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium', color: 'primary.main' }}>
-                Verification Details
+                Thermometer Details
               </Typography>
               <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
                 Please verify the thermometer by confirming its serial number and model identifier.
@@ -118,37 +122,58 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
 
             <Grid xs={12} sm={6}>
               <TextField
-                name="serial_number"
                 label="Serial Number"
-                value={formData.serial_number}
-                onChange={handleChange}
+                value={thermometer.serial_number}
                 fullWidth
-                required
-                error={!!fieldErrors.serial_number}
-                helperText={fieldErrors.serial_number || 'Enter the exact serial number as shown on the thermometer'}
+                disabled
+                InputProps={{ readOnly: true }}
               />
             </Grid>
-            
             <Grid xs={12} sm={6}>
               <TextField
-                name="model_identifier"
                 label="Model Identifier"
-                value={formData.model_identifier}
-                onChange={handleChange}
+                value={thermometer.model_identifier}
                 fullWidth
-                required
-                error={!!fieldErrors.model_identifier}
-                helperText={fieldErrors.model_identifier || 'Enter the exact model identifier as shown on the thermometer'}
+                disabled
+                InputProps={{ readOnly: true }}
               />
             </Grid>
 
             <Grid xs={12}>
               <Divider sx={{ my: 2 }} />
               <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium', color: 'primary.main' }}>
-                Calibration Information
+                Verification Data
               </Typography>
             </Grid>
+
+            <Grid xs={12} sm={6}>
+              <TextField
+                name="calibrated_instrument_no"
+                label="Calibrated Instrument Number"
+                value={formData.calibrated_instrument_no}
+                onChange={handleChange}
+                fullWidth
+                required
+                error={!!fieldErrors.calibrated_instrument_no}
+                helperText={fieldErrors.calibrated_instrument_no}
+              />
+            </Grid>
             
+            <Grid xs={12} sm={6}>
+              <TextField
+                name="reading_after_verification"
+                label="Reading After Verification (°C)"
+                value={formData.reading_after_verification}
+                onChange={handleChange}
+                fullWidth
+                required
+                error={!!fieldErrors.reading_after_verification}
+                type="number"
+                inputProps={{ step:'0.1', inputMode:'decimal' }}
+                helperText={fieldErrors.reading_after_verification}
+              />
+            </Grid>
+
             <Grid xs={12} sm={6}>
               <LocalizationProvider dateAdapter={AdapterDateFns}>
                 <DatePicker
@@ -213,11 +238,8 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
         </form>
       </CardContent>
       
-      <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
-        <Button 
-          onClick={onCancel}
-          disabled={loading}
-        >
+      <CardActions sx={{ justifyContent: { xs:'center', sm:'flex-end' }, flexWrap:'wrap', gap:1, p: 2 }}>
+        <Button onClick={onCancel} disabled={loading}>
           Cancel
         </Button>
         <Button 
