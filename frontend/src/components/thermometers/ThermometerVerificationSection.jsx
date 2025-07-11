@@ -147,15 +147,14 @@ const ThermometerVerificationSection = ({
                         display: 'flex',
                         alignItems: 'center',
                         borderLeft: '4px solid transparent',
-                        transition: 'background-color 0.2s, border-color 0.2s',
-                        '&:hover': {
-                          bgcolor: `${alpha(theme.palette.primary.main, 0.22)} !important`,
+                        transition: 'all .2s',
+                        '&:hover, &.Mui-focusVisible': {
+                          backgroundColor: `${alpha(theme.palette.primary.main, 0.32)} !important`,
                           borderLeftColor: `${theme.palette.primary.dark} !important`,
                           '.fade-icon': { opacity: 1 },
                         },
                         '&.Mui-focusVisible': {
-                          outline: '2px solid',
-                          outlineColor: theme.palette.primary.main,
+                          outline: `2px solid ${theme.palette.primary.main}`,
                         },
                       })}
                     >
