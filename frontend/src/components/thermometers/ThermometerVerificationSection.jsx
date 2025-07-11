@@ -84,14 +84,15 @@ const ThermometerVerificationSection = ({
   }
 
   return (
-    <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+    <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 }, mb: 4 }}>
       <Box sx={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: { xs: 'flex-start', sm: 'center' },
         flexDirection: { xs: 'column', sm: 'row' },
         gap: 1,
-        mb: 2,
+        mb: { xs: 2.5, sm: 3 },
+        gap: { xs: 1.5, sm: 2 },
       }}>
         <Box sx={{display:'flex',alignItems:'center'}}>
         <ThermostatIcon sx={{ fontSize: 28, mr: 1, color: theme.palette.primary.main }} />
@@ -149,7 +150,7 @@ const ThermometerVerificationSection = ({
       ) : (
         <>
           {assignment && (
-            <Alert severity="info" sx={{ mb: 3 }}>
+            <Alert severity="info" sx={{ my: { xs: 2.5, sm: 3 } }}>
               You are assigned to thermometer verification duties for the {assignment.department_name} department.
             </Alert>
           )}
@@ -162,7 +163,7 @@ const ThermometerVerificationSection = ({
             />
           ) : (
             <>
-              <Typography variant="subtitle1" sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ mb: { xs: 2.5, sm: 3 } }}>
                 Thermometers Requiring Verification
               </Typography>
               
@@ -172,13 +173,14 @@ const ThermometerVerificationSection = ({
                   All thermometers are currently verified. Great job!
                 </Alert>
               ) : (
-                <List disablePadding sx={{ mb:2 }}>
+                <List disablePadding sx={{ mb: { xs: 1, sm: 2 } }}>
                   {thermometersFromProps.map((thermometer) => (
                     <ListItemButton
                       key={thermometer.id}
                       onClick={() => handleSelectThermometer(thermometer)}
                       divider
                       sx={(theme) => ({
+                        my: { xs: 0.5, sm: 1 },
                         display: 'flex',
                         alignItems: 'center',
                         borderLeft: '4px solid transparent',
