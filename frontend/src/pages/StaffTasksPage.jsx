@@ -32,6 +32,7 @@ import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import ListAltIcon from '@mui/icons-material/ListAlt'; // For Method
 import NotesIcon from '@mui/icons-material/Notes'; // For Notes
 import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 
 function StaffTasksPage() {
@@ -546,7 +547,16 @@ function StaffTasksPage() {
                             <Paper elevation={2} sx={{ p:2, width:'100%', maxWidth:'100%', flexGrow:1, display:'block', boxSizing:'border-box' }}>
                                 <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:2 }}>
                                     <Typography variant="h6">Thermometer Verification</Typography>
-                                    <Button size="small" onClick={closeThermometerTask}>Back</Button>
+                                    <Button
+                                            size="small"
+                                            variant="outlined"
+                                            color="primary"
+                                            startIcon={<ArrowBackIosNewIcon fontSize="inherit" />}
+                                            onClick={closeThermometerTask}
+                                            sx={{ px: 1.5, minHeight: 32, fontWeight: 600 }}
+                                        >
+                                            Back
+                                        </Button>
                                 </Box>
                                 <ThermometerVerificationSection
                                     thermometers={thermometersNeedingVerification}
@@ -561,7 +571,16 @@ function StaffTasksPage() {
                             <Paper elevation={2} sx={{ p:2, width:'100%', maxWidth:'100%', flexGrow:1, display:'block', boxSizing:'border-box' }}>
                                 <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:2 }}>
                                     <Typography variant="h6">Temperature Logging</Typography>
-                                    <Button size="small" onClick={closeThermometerTask}>Back</Button>
+                                    <Button
+                                            size="small"
+                                            variant="outlined"
+                                            color="primary"
+                                            startIcon={<ArrowBackIosNewIcon fontSize="inherit" />}
+                                            onClick={closeThermometerTask}
+                                            sx={{ px: 1.5, minHeight: 32, fontWeight: 600 }}
+                                        >
+                                            Back
+                                        </Button>
                                 </Box>
                                 <TemperatureLoggingSection
                                     verifiedThermometers={verifiedThermometers}

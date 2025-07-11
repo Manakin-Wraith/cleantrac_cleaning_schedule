@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
+import { Badge } from '@mui/material';
 import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import WarningIcon from '@mui/icons-material/Warning';
@@ -84,26 +85,60 @@ const ThermometerVerificationSection = ({
 
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent:'space-between', mb: 2 }}>
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: { xs: 'flex-start', sm: 'center' },
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: 1,
+        mb: 2,
+      }}>
         <Box sx={{display:'flex',alignItems:'center'}}>
         <ThermostatIcon sx={{ fontSize: 28, mr: 1, color: theme.palette.primary.main }} />
             <Typography variant="h6" component="h2" sx={{fontWeight:600}}>
               Thermometer Verification
             </Typography>
         </Box>
-        <Chip
-          label={thermometersFromProps.length ? `${thermometersFromProps.length} Pending` : 'All Verified'}
-          variant="outlined"
-          size="small"
-          sx={(theme) => ({
-            fontWeight: 600,
-            bgcolor: thermometersFromProps.length ? theme.palette.warning.light : theme.palette.success.light,
-            color: thermometersFromProps.length
-              ? theme.palette.getContrastText(theme.palette.warning.light)
-              : theme.palette.getContrastText(theme.palette.success.light),
-            borderColor: 'transparent',
-          })}
-        />
+        {thermometersFromProps.length ? (
+          <Badge
+            badgeContent={thermometersFromProps.length}
+            color="warning"
+            overlap="rectangular"
+            sx={{
+              '.MuiBadge-badge': {
+                right: -6,
+                top: 6,
+                fontWeight: 600,
+              },
+            }}
+          >
+            <Chip
+              label="Pending"
+              variant="outlined"
+              size="small"
+              sx={(theme) => ({
+                fontWeight: 600,
+                bgcolor: theme.palette.warning.light,
+                color: theme.palette.getContrastText(theme.palette.warning.light),
+                borderColor: 'transparent',
+                borderRadius: 9999,
+              })}
+            />
+          </Badge>
+        ) : (
+          <Chip
+            label="All Verified"
+            variant="outlined"
+            size="small"
+            sx={(theme) => ({
+              fontWeight: 600,
+              bgcolor: theme.palette.success.light,
+              color: theme.palette.getContrastText(theme.palette.success.light),
+              borderColor: 'transparent',
+              borderRadius: 9999,
+            })}
+          />
+        )}
       </Box>
       {isLoadingFromProps || componentLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
