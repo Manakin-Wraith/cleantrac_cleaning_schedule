@@ -333,10 +333,26 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed, onCollapseToggle
         <Toolbar 
           sx={{ display: 'flex', alignItems: 'center', justifyContent: isPermanentDrawerEffectivelyOpen ? 'flex-start' : 'center', px: 2 }}
         >
-          <img src={appLogo} alt="CleanTrack Logo" style={{ height: '32px', marginRight: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? '8px' : '0' }} /> 
+          <PieChartOutlineIcon 
+            sx={{ 
+              fontSize: '1.5rem',
+              color: theme.palette.primary.main,
+              mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 1 : 0
+            }} 
+          />
           {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && (
-            <Typography variant="h6" component="div" sx={{ color: theme.palette.text.primary, whiteSpace: 'nowrap', overflow: 'hidden' }}>
-              CleanTrac
+            <Typography 
+              variant="h6" 
+              component="div" 
+              sx={{ 
+                color: theme.palette.text.primary, 
+                whiteSpace: 'nowrap', 
+                overflow: 'hidden',
+                fontWeight: 600,
+                letterSpacing: '0.5px',
+              }}
+            >
+              CLEENTRAC
             </Typography>
           )}
         </Toolbar>
