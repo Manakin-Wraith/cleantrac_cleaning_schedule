@@ -16,17 +16,17 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' && pr
   theme, open, sidebarWidth = 0 },
 ) => ({
   flexGrow: 1,
-  padding: theme.spacing(3),
-  paddingTop: theme.spacing(2),
-  minHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing(2)})`,
+  padding: theme.spacing(1),
+  paddingTop: theme.spacing(1),
+  minHeight: `calc(100vh - 48px)`, // Use exact header height for maximum space
   overflowX: 'visible',
   overflowY: 'auto',
   transition: theme.transitions.create(['margin', 'padding'], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
-  marginRight: -drawerWidth,
-  marginLeft: `${sidebarWidth + parseInt(theme.spacing(2))}px`, // Respect sidebar width plus margin
+  marginRight: theme.spacing(0.5), // Minimal margin when drawer is closed
+  marginLeft: `${sidebarWidth + parseInt(theme.spacing(0.5))}px`, // Minimal margin from sidebar
   position: 'relative',
   zIndex: 1, // Ensure proper stacking context
   ...(open && {
@@ -34,11 +34,11 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' && pr
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
     }),
-    marginRight: 0,
+    marginRight: theme.spacing(0.5), // Minimal margin when drawer is open
   }),
   [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(1.5),
-    marginLeft: sidebarWidth ? `${sidebarWidth}px` : theme.spacing(1),
+    padding: theme.spacing(0.5),
+    marginLeft: sidebarWidth ? `${sidebarWidth}px` : theme.spacing(0.5),
   },
 }));
 
@@ -76,9 +76,9 @@ const AppBar = styled(MuiAppBar, {
 const DrawerHeader = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
-  padding: theme.spacing(0, 1),
-  // necessary for content to be below app bar
-  ...theme.mixins.toolbar,
+  padding: 0,
+  // necessary for content to be below app bar, but minimized
+  height: '48px',
   justifyContent: 'flex-start',
 }));
 
@@ -109,7 +109,7 @@ export default function CalendarPageLayout({
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
       <AppBar position="fixed" open={open} sidebarWidth={sidebarWidth}>
-        <Toolbar>
+        <Toolbar sx={{ minHeight: '48px', py: 0.5, px: 1 }}>
           {/* Custom Header Content is rendered here */}
           {React.cloneElement(headerContent, { sidebarWidth })}
           <IconButton
@@ -132,7 +132,7 @@ export default function CalendarPageLayout({
       </Main>
       <Drawer
         sx={{
-          width: drawerWidth,
+          width: open ? drawerWidth : 0,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: drawerWidth,
