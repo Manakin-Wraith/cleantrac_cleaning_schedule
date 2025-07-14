@@ -15,23 +15,23 @@ export default function CalendarRightSidebar({
   legendContent,
 }) {
   return (
-    <Box sx={{ p: 1, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <Box sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Section for Quick Actions */}
-      <Box mb={1}>
-        <Typography variant="subtitle1" sx={{ mb: 0.5 }} component="div">
+      <Box mb={2}>
+        <Typography variant="h6" gutterBottom component="div">
           Actions
         </Typography>
         {quickActionsContent}
       </Box>
 
-      <Divider sx={{ my: 0.5, opacity: 0.6 }} />
+      <Divider sx={{ my: 1 }} />
 
       {/* Section for Schedule List */}
       {listContent && (
         <>
-          <Divider sx={{ my: 0.5 }} />
-          <Box mt={0.5} sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-            <Typography variant="subtitle1" sx={{ mb: 0.5 }} component="div">
+          <Divider sx={{ my: 1 }} />
+          <Box my={2} sx={{ flex: 1, overflowY: 'auto' }}>
+            <Typography variant="h6" gutterBottom component="div">
               Scheduled Tasks
             </Typography>
             {listContent}

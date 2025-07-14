@@ -22,7 +22,6 @@ export default function CalendarHeaderControls({
   onNavigate,
   onViewChange,
   onToggleFilters,
-  sidebarWidth = 0,
   availableViews = [
     { name: 'dayGridMonth', label: 'Month' },
     { name: 'timeGridWeek', label: 'Week' },

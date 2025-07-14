@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Box, CssBaseline, Toolbar, useTheme, IconButton } from '@mui/material';
+import { Box, CssBaseline, Toolbar, useTheme, Container, IconButton } from '@mui/material';
 import HeaderBar from './HeaderBar';
 import Sidebar, { drawerWidth as expandedSidebarWidthValue } from './Sidebar'; 
 import MenuIcon from '@mui/icons-material/Menu';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
-const PageLayout = ({ children, showHeaderBar = true, showSidebar = true, disableMaxWidth = false }) => {
+const PageLayout = ({ children, showSidebar = true, showHeaderBar = false }) => {
   const theme = useTheme();
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
@@ -86,9 +86,9 @@ const PageLayout = ({ children, showHeaderBar = true, showSidebar = true, disabl
             <MenuIcon />
           </IconButton>
         )}
-                        <Box sx={{ flexGrow: 1, py: 3, px: { xs: 2, sm: 3 } }}>
+        <Container maxWidth="lg" sx={{ flexGrow: 1, py: 3, px: { xs: 2, sm: 3 } }}>
           {children}
-        </Box>
+        </Container>
       </Box>
     </Box>
   );

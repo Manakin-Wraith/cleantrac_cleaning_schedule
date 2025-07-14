@@ -77,7 +77,7 @@ const ThemedApp = () => {
           <Route path="/manager-documents-library" element={<PageLayout><DocumentsManagementPage /></PageLayout>} />
 
           <Route path="/admin/departments" element={<PageLayout><DepartmentManagementPage /></PageLayout>} />
-          <Route path="/manager-schedule" element={<PageLayout showHeaderBar={false} disableMaxWidth={true}><UnifiedCalendarPage /></PageLayout>} />
+          <Route path="/manager-schedule" element={<PageLayout showHeaderBar={false}><UnifiedCalendarPage /></PageLayout>} />
         </Route>
       </Routes>
     </ThemeProvider>

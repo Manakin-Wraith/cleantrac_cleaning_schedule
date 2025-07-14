@@ -28,45 +28,6 @@ body {
 
 /* Let the EventChip control its own spacing */
 .fc-event { padding: 0 !important; }
-
-/* Ensure FullCalendar takes up all available space */
-.fc { 
-  height: 100% !important; 
-  flex: 1 1 auto !important; 
-  min-height: 0 !important; 
-  max-height: none !important;
-}
-.fc-view-harness { 
-  height: 100% !important; 
-  flex: 1 1 auto !important;
-}
-.fc-scroller { 
-  height: auto !important; 
-}
-.fc-view { 
-  height: 100% !important; 
-  min-height: 600px !important;
-}
-.fc-view-harness-active { 
-  height: 100% !important; 
-}
-.fc-daygrid-body { 
-  height: 100% !important; 
-}
-.fc-scrollgrid { 
-  height: 100% !important; 
-}
-.fc-scrollgrid-sync-table { 
-  height: 100% !important; 
-}
-
-/* Fix for potential scrollbar issues */
-.fc-scrollgrid-section-header, .fc-scrollgrid-section-body { overflow: hidden !important; }
-
-/* Remove any extra margins/padding from calendar cells */
-.fc-daygrid-day-frame { padding: 0 !important; }
-.fc-daygrid-day-events { margin: 0 !important; padding: 0 2px !important; }
-.fc-timegrid-slots { margin: 0 !important; }
 /* 
   Global styles for a, h1, button, and color schemes have been removed.
   These should be handled by Material-UI's ThemeProvider, CssBaseline,
