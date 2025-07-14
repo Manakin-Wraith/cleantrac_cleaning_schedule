@@ -16,10 +16,10 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' && pr
   theme, open, sidebarWidth = 0 },
 ) => ({
   flexGrow: 1,
-  padding: 0,
-  height: `calc(100vh - 40px)`, // Use exact header height for maximum space
+  padding: theme.spacing(3),
+  height: `calc(100vh - 48px)`,
   overflowX: 'hidden',
-  overflowY: 'hidden',
+  overflowY: 'auto',
   transition: theme.transitions.create(['margin', 'padding'], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,

@@ -27,12 +27,10 @@ const UnifiedCalendarComponent = ({
   calendarRef,
 }) => {
   return (
-    <div style={{ height: 'calc(100vh - 40px)', width: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', margin: 0, padding: 0 }}>
+    <div style={{ height: 'calc(100vh - 48px)', width: '100%' }}>
       <FullCalendar
         height="100%"
         expandRows={true}
-        stickyHeaderDates={false}
-        contentHeight="auto"
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, interactionPlugin]}
         headerToolbar={false} // Header is handled by CalendarHeaderControls
