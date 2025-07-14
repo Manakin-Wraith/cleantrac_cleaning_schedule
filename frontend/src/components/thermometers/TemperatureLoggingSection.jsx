@@ -563,7 +563,7 @@ const TemperatureLoggingSection = ({
                             </Card>
                           </Box>
                         );
-                      })
+                      })}
                     </Box>
                   </Box>
                 )}
