@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { styled, useTheme } from '@mui/material/styles';
+import { styled, useTheme, alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -37,14 +37,21 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })((
 const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== 'open',
 })(({ theme, open }) => ({
-  transition: theme.transitions.create(['margin', 'width'], {
+  backgroundColor: 'transparent',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
+  background: `${alpha(theme.palette.background.default, 0.65)}`,
+  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+  boxShadow: theme.shadows[1],
+  zIndex: theme.zIndex.drawer + 1,
+  transition: theme.transitions.create(['margin', 'width', 'background'], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
   ...(open && {
     width: `calc(100% - ${drawerWidth}px)`,
     marginRight: `${drawerWidth}px`,
-    transition: theme.transitions.create(['margin', 'width'], {
+    transition: theme.transitions.create(['margin', 'width', 'background'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
     }),
