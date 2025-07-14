@@ -406,25 +406,26 @@ const TemperatureLoggingSection = ({
               <Grid container spacing={2} alignItems="stretch">
                 {verifiedThermometers && verifiedThermometers.map((thermometer) => (
                   <Grid item xs={12} sm={6} md={4} key={thermometer.id}>
-                    <Card 
-                      variant="outlined" 
-                      sx={{ 
-                        cursor: 'pointer',
-                        '&:hover': { 
-                          borderColor: theme.palette.primary.main,
-                          boxShadow: 1
-                        }
-                      }}
+                    <Card
+                      variant="outlined"
                       onClick={() => handleSelectThermometer(thermometer)}
+                      sx={{
+                        cursor: 'pointer',
+                        px: 2,
+                        py: 1.5,
+                        bgcolor: 'rgba(255,255,255,0.65)',
+                        backdropFilter: 'blur(6px)',
+                        transition: 'border-color 0.2s, box-shadow 0.2s',
+                        '&:hover': {
+                          borderColor: theme.palette.primary.main,
+                          boxShadow: 2,
+                        },
+                      }}
                     >
-                      <CardContent sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6" gutterBottom>
-                          {thermometer.serial_number}
-                        </Typography>
-                        <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                          Model: {thermometer.model_identifier}
-                        </Typography>
-                        <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                      <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <DeviceThermostatIcon fontSize="small" color="primary" />
+                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
                           Last Verified: {thermometer.last_verification_date}
                         </Typography>
                         <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
