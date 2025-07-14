@@ -393,9 +393,9 @@ const TemperatureLoggingSection = ({
                 No verified thermometers available. Please verify a thermometer first.
               </Alert>
             ) : (
-              <Grid container spacing={2} alignItems="stretch">
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: { xs: 2, sm: 3 } }}>
                 {verifiedThermometers && verifiedThermometers.map((thermometer) => (
-                  <Grid item xs={12} sm={6} md={4} key={thermometer.id}>
+                  <Box key={thermometer.id} sx={{ display: 'flex' }}>
                   <Card
                     variant="outlined"
                     onClick={() => handleSelectThermometer(thermometer)}
@@ -428,9 +428,9 @@ const TemperatureLoggingSection = ({
                       </Typography>
                     </CardContent>
                   </Card>
-                </Grid>
+                </Box>
                 ))}
-              </Grid>
+              </Box>
             )}
           </Box>
         );
@@ -458,7 +458,7 @@ const TemperatureLoggingSection = ({
                       <CheckCircleIcon sx={{ mr: 1, color: theme.palette.success.main }} />
                       Today's Logged Areas ({loggedAreas.length})
                     </Typography>
-                    <Grid container spacing={2} alignItems="stretch">
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: { xs: 2, sm: 3 } }}>
                       {areaUnits.filter(area => loggedAreas.includes(area.id)).map((area) => {
                         const recentLog = getMostRecentLog(area.id);
                         const isWithinRange = recentLog ? 
@@ -472,7 +472,7 @@ const TemperatureLoggingSection = ({
                         const isLoggedPM = hasLoggedForTimePeriod(area.id, 'PM');
                         
                         return (
-                          <Grid item xs={12} sm={6} md={4} key={area.id} sx={{ display: 'flex' }}>
+                          <Box key={area.id} sx={{ display: 'flex' }}>
                             <Card 
                               variant="outlined" 
                               sx={{ 
@@ -563,10 +563,10 @@ const TemperatureLoggingSection = ({
                                 </Button>
                               </CardActions>
                             </Card>
-                          </Grid>
+                          </Box>
                         );
                       })}
-                    </Grid>
+                    </Box>
                   </Box>
                 )}
                 
@@ -590,7 +590,7 @@ const TemperatureLoggingSection = ({
                     ))}
                   </Box>
                   
-                  <Grid container spacing={2} alignItems="stretch">
+                  <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
                     {areaUnits
                       .filter(area => {
                         // For AM period, show areas not logged in AM
@@ -612,7 +612,7 @@ const TemperatureLoggingSection = ({
                         
                         return (
                         
-<Grid item xs={12} sm={6} md={4} key={area.id} sx={{ display: 'flex' }}>
+                          <Box key={area.id} sx={{ display: 'flex' }}>
                             <Card 
                               variant="outlined" 
                               sx={{ 
@@ -674,11 +674,11 @@ const TemperatureLoggingSection = ({
                                 </Box>
                               </CardContent>
                             </Card>
-                          </Grid>
+                          </Box>
                         );
                       })
                     }
-                  </Grid>
+                  </Box>
                 </Box>
               </>
             )}
@@ -694,40 +694,40 @@ const TemperatureLoggingSection = ({
             
             <Card variant="outlined" sx={{ mb: 3 }}>
               <CardContent sx={{ flexGrow: 1 }}>
-                <Grid container spacing={2} alignItems="stretch">
-                  <Grid item xs={12} sm={6}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: { xs: 2, sm: 3 } }}>
+                  <Box sx={{ gridColumn: '1 / 2' }}>
                     <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       Thermometer:
                     </Typography>
                     <Typography variant="body1">
                       {selectedThermometer.serial_number} ({selectedThermometer.model_identifier})
                     </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
+                  </Box>
+                  <Box sx={{ gridColumn: '2 / 3' }}>
                     <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       Area:
                     </Typography>
                     <Typography variant="body1">
                       {selectedAreaUnit.name}
                     </Typography>
-                  </Grid>
-                  <Grid item xs={12}>
+                  </Box>
+                  <Box sx={{ gridColumn: '1 / 3' }}>
                     <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       Target Temperature Range:
                     </Typography>
                     <Typography variant="body1" color="primary">
                       {selectedAreaUnit.target_temperature_min}°C - {selectedAreaUnit.target_temperature_max}°C
                     </Typography>
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
               </CardContent>
             </Card>
             
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             
             <form onSubmit={handleSubmit}>
-              <Grid container spacing={2} alignItems="stretch">
-                <Grid item xs={12} sm={6}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: { xs: 2, sm: 3 } }}>
+                <Box sx={{ gridColumn: '1 / 2' }}>
                   <TextField
                     name="temperature_reading"
                     label="Temperature Reading (°C)"
@@ -738,8 +738,8 @@ const TemperatureLoggingSection = ({
                     type="number"
                     inputProps={{ step: "0.1" }}
                   />
-                </Grid>
-                <Grid item xs={12} sm={6}>
+                </Box>
+                <Box sx={{ gridColumn: '2 / 3' }}>
                   <FormControl fullWidth>
                     <InputLabel id="time-period-label">Time Period</InputLabel>
                     <Select
@@ -763,8 +763,8 @@ const TemperatureLoggingSection = ({
                       </Typography>
                     )}
                   </FormControl>
-                </Grid>
-                <Grid item xs={12}>
+                </Box>
+                <Box sx={{ gridColumn: '1 / 3' }}>
                   <TextField
                     name="corrective_action"
                     label="Corrective Action (if needed)"
@@ -774,8 +774,8 @@ const TemperatureLoggingSection = ({
                     multiline
                     rows={3}
                   />
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             </form>
           </Box>
         );
