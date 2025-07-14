@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import { 
   Typography, Box, Button, CircularProgress, Alert,
   TextField, Grid, Card, CardContent, CardActions, Divider,
-  InputAdornment, Avatar, FormControl, InputLabel, Select, MenuItem
+  InputAdornment
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { format } from 'date-fns';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 
 const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
@@ -101,15 +100,10 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
     <Card variant="outlined" sx={{ mb: 3, bgcolor: theme => theme.palette.background.default, borderRadius: 2, p:{ xs:2.5, sm:3 } }}>
       <CardContent>
         <Box sx={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:1, mb:2 }}>
-          <Box sx={{ display:'flex', alignItems:'center' }}>
-            <Avatar sx={{ bgcolor:'grey.200', width:32, height:32 }}>
-              <ThermostatIcon fontSize="small" />
-            </Avatar>
-            <Typography variant="h6" sx={{fontWeight:600, ml:1}}>
-              Verify Thermometer
-            </Typography>
-          </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ ml:'auto' }}>
+          <Typography variant="h6" sx={{fontWeight:600}}>
+            Verify Thermometer
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
             Serial #: {thermometer.serial_number}
           </Typography>
         </Box>
@@ -118,101 +112,90 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         
         <form onSubmit={handleSubmit}>
-          <Grid container spacing={2}>
-            <Grid xs={12}>
-              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium', color: 'primary.main' }}>
-                Thermometer Details
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-                Please verify the thermometer by confirming its serial number and model identifier.
-              </Typography>
+          <Box sx={{ mt: 3 }}>
+            {/* Thermometer Details Section */}
+            <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+              Thermometer Details
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+              Please verify the thermometer by confirming its serial number and model identifier.
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Serial Number"
+                  value={thermometer.serial_number}
+                  fullWidth
+                  InputProps={{ readOnly: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Model Identifier"
+                  value={thermometer.model_identifier}
+                  fullWidth
+                  InputProps={{ readOnly: true }}
+                />
+              </Grid>
             </Grid>
 
-            <Grid xs={12} sm={4}>
-              <TextField
-                label="Serial Number"
-                value={thermometer.serial_number}
-                fullWidth
-                disabled
-                InputProps={{ readOnly: true }}
-              />
-            </Grid>
-            <Grid xs={12} sm={4}>
-              <TextField
-                label="Model Identifier"
-                value={thermometer.model_identifier}
-                fullWidth
-                disabled
-                InputProps={{ readOnly: true }}
-              />
-            </Grid>
+            <Divider sx={{ my: 3 }} />
 
-            <Grid xs={12}>
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium', color: 'primary.main' }}>
-                Verification Data
-              </Typography>
-            </Grid>
-
-            <Grid xs={12} sm={4}>
-              <FormControl fullWidth required error={!!fieldErrors.calibrated_instrument_no}>
-                <InputLabel id="calibrated-select-label">Calibrated Instrument</InputLabel>
-                <Select
-                  labelId="calibrated-select-label"
+            {/* Verification Data Section */}
+            <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
+              Verification Data
+            </Typography>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12} sm={4}>
+                <TextField
                   name="calibrated_instrument_no"
-                  label="Calibrated Instrument"
+                  label="Calibrated Instrument No."
                   value={formData.calibrated_instrument_no}
                   onChange={handleChange}
-                  IconComponent={ArrowDropDownIcon}
-                >
-                  <MenuItem value="">
-                    <em>None</em>
-                  </MenuItem>
-                  <MenuItem value={"Instrument 1"}>Instrument 1</MenuItem>
-                  <MenuItem value={"Instrument 2"}>Instrument 2</MenuItem>
-                  <MenuItem value={"Instrument 3"}>Instrument 3</MenuItem>
-                </Select>
-              </FormControl>
+                  fullWidth
+                  required
+                  error={!!fieldErrors.calibrated_instrument_no}
+                  helperText={fieldErrors.calibrated_instrument_no}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  name="reading_after_verification"
+                  label="Temperature (°C)"
+                  value={formData.reading_after_verification}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  error={!!fieldErrors.reading_after_verification}
+                  type="number"
+                  inputProps={{ step: '0.1', inputMode: 'decimal' }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <ThermostatIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  helperText={fieldErrors.reading_after_verification}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  label="Date Verified"
+                  value={format(today, 'yyyy/MM/dd')}
+                  fullWidth
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <CalendarTodayIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
             </Grid>
-            
-            <Grid xs={12} sm={4}>
-              <TextField
-                name="reading_after_verification"
-                label="Temperature (°C)"
-                value={formData.reading_after_verification}
-                onChange={handleChange}
-                fullWidth
-                required
-                error={!!fieldErrors.reading_after_verification}
-                type="number"
-                inputProps={{ step:'0.1', inputMode:'decimal' }}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <ThermostatIcon fontSize="small" />
-                    </InputAdornment>
-                  )
-                }}
-                helperText={fieldErrors.reading_after_verification}
-              />
-            </Grid>
-
-            <Grid xs={12} sm={4}>
-              <TextField
-                label="Date Verified"
-                InputProps={{
-                  readOnly: true,
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <CalendarTodayIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-                value={format(today, 'yyyy/MM/dd')}
-                fullWidth
-              />
-            </Grid>
-          </Grid>
+          </Box>
         </form>
         <Divider sx={{ mt:3 }} />
       </CardContent>
