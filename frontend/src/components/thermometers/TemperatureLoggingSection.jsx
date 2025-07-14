@@ -84,16 +84,6 @@ const TemperatureLoggingSection = ({
                   target_temperature_max: area.target_temperature_max
                 });
               }
-              
-              if (area.pm_log_details) {
-                logsMap[area.id].push({
-                  ...area.pm_log_details,
-                  area_unit_id: area.id,
-                  area_unit_name: area.name,
-                  target_temperature_min: area.target_temperature_min,
-                  target_temperature_max: area.target_temperature_max
-                });
-              }
             }
           });
           
@@ -406,34 +396,39 @@ const TemperatureLoggingSection = ({
               <Grid container spacing={2} alignItems="stretch">
                 {verifiedThermometers && verifiedThermometers.map((thermometer) => (
                   <Grid item xs={12} sm={6} md={4} key={thermometer.id}>
-                    <Card
-                      variant="outlined"
-                      onClick={() => handleSelectThermometer(thermometer)}
-                      sx={{
-                        cursor: 'pointer',
-                        px: 2,
-                        py: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.65)',
-                        backdropFilter: 'blur(6px)',
-                        transition: 'border-color 0.2s, box-shadow 0.2s',
-                        '&:hover': {
-                          borderColor: theme.palette.primary.main,
-                          boxShadow: 2,
-                        },
-                      }}
-                    >
-                      <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <DeviceThermostatIcon fontSize="small" color="primary" />
-                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          Last Verified: {thermometer.last_verification_date}
+                  <Card
+                    variant="outlined"
+                    onClick={() => handleSelectThermometer(thermometer)}
+                    sx={{
+                      cursor: 'pointer',
+                      px: 2,
+                      py: 1.5,
+                      bgcolor: 'rgba(255,255,255,0.65)',
+                      backdropFilter: 'blur(6px)',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        boxShadow: 2,
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <DeviceThermostatIcon fontSize="small" color="primary" />
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {thermometer.serial_number}
                         </Typography>
-                        <Typography component="span" variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                          Expires: {thermometer.verification_expiry_date}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                      >
+                        Model {thermometer.model_identifier} • Verified {thermometer.last_verification_date} • Expires {thermometer.verification_expiry_date}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
                 ))}
               </Grid>
             )}
