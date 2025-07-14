@@ -15,7 +15,8 @@ const drawerWidth = 280; // Reduced sidebar width for more calendar space
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' && prop !== 'sidebarWidth' })(({
   theme, open, sidebarWidth = 0 },
 ) => ({
-  flexGrow: 1,
+  flex: '1 1 auto',
+  minWidth: 0,
   padding: theme.spacing(1),
   height: `calc(100vh - 48px)`,
   overflowX: 'hidden',
