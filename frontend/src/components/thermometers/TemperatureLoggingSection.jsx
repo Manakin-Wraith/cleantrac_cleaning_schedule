@@ -448,6 +448,7 @@ const TemperatureLoggingSection = ({
               </Alert>
             ) : (
               <>
+  
                 {/* Areas with logs today */}
                 {loggedAreas.length > 0 && (
                   <Box sx={{ mb: 4 }}>
@@ -520,7 +521,7 @@ const TemperatureLoggingSection = ({
                                     backgroundColor: theme.palette.background.default,
                                     borderRadius: 1
                                   }}>
-                                    <DeviceThermostatIcon sx={{ mr: 1, color: isWithinRange ? theme.palette.success.main : theme.palette.error.main }} />
+                                    
                                     <Typography variant="h4" component="span" sx={{ fontWeight: 'bold' }}>
                                       {recentLog.temperature_reading}°C
                                     </Typography>
@@ -562,31 +563,30 @@ const TemperatureLoggingSection = ({
                             </Card>
                           </Box>
                         );
-                      })}
+                      })
                     </Box>
                   </Box>
                 )}
-                
-                {/* Areas needing temperature logs */}
-                <Box>
-                  <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                    <DeviceThermostatIcon sx={{ mr: 1, color: theme.palette.info.main }} />
-                    {loggedAreas.length > 0 ? 'Areas Needing Temperature Logs' : 'Select an area to log temperature for:'}
-                  </Typography>
-                  
-                  {/* Tabs to filter by time period */}
-                  <Box sx={{ display: 'flex', mb: 2 }}>
-                    {allowedTimePeriods.map(period => (
-                      <Chip
-                        key={period}
-                        label={period === 'AM' ? 'Morning (AM)' : 'Afternoon (PM)'}
-                        color={formData.time_period === period ? 'primary' : 'default'}
-                        onClick={() => setFormData(prev => ({ ...prev, time_period: period }))}
-                        sx={{ mr: 1 }}
-                      />
-                    ))}
+                  {/* Area selection heading and period tabs */}
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="h6" gutterBottom>
+                      {loggedAreas.length > 0 ? 'Areas Needing Temperature Logs' : 'Select an area:'}
+                    </Typography>
+                    <Box sx={{ display: 'flex', mb: 2 }}>
+                      {allowedTimePeriods.map((period) => (
+                        <Chip
+                          key={period}
+                          label={period === 'AM' ? 'Morning (AM)' : 'Afternoon (PM)'}
+                          color={formData.time_period === period ? 'primary' : 'default'}
+                          onClick={() =>
+                            setFormData((prev) => ({ ...prev, time_period: period }))
+                          }
+                          sx={{ mr: 1 }}
+                        />
+                      ))}
+                    </Box>
                   </Box>
-                  
+
                   <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}>
                     {areaUnits
                       .filter(area => {
@@ -672,15 +672,13 @@ const TemperatureLoggingSection = ({
                               </CardContent>
                             </Card>
                           </Box>
-                        );
-                      })
-                    }
-                  </Box>
-                </Box>
-              </>
-            )}
-          </Box>
-        );
+                        )
+                      })}
+           </Box> 
+        </> 
+      )} 
+    </Box>
+  );
       
       case 2:
         return (
@@ -815,7 +813,7 @@ const TemperatureLoggingSection = ({
           <CircularProgress />
         </Box>
       ) : error && activeStep < steps.length -1 ? ( // Show general error only if not on success step
-        (<Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>)
+        <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
       ) : (
         <Box sx={{ width: '100%' }}>
           <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
