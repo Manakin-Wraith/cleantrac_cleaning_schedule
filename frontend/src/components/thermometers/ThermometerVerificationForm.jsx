@@ -8,6 +8,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { format } from 'date-fns';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 
 const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
   const today = new Date();
@@ -96,9 +97,9 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
   };
 
   return (
-    <Card variant="outlined" sx={{ mb: 3 }}>
+    <Card variant="outlined" sx={{ mb: 3, bgcolor: theme => theme.palette.background.default, borderRadius: 2, p:{ xs:2.5, sm:3 } }}>
       <CardContent>
-        <Box sx={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:1, mb:3 }}>
+        <Box sx={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:1, mb:2 }}>
           <Typography variant="h6" sx={{fontWeight:600}}>
             Verify Thermometer
           </Typography>
@@ -106,7 +107,7 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
             Serial #: {thermometer.serial_number}
           </Typography>
         </Box>
-        <Divider sx={{ mb: 3 }} />
+        <Divider />
         
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         
@@ -172,8 +173,8 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
                 type="number"
                 inputProps={{ step:'0.1', inputMode:'decimal' }}
                 InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
+                  endAdornment: (
+                    <InputAdornment position="end">
                       <ThermostatIcon fontSize="small" />
                     </InputAdornment>
                   )
@@ -185,18 +186,25 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
             <Grid xs={12} sm={4}>
               <TextField
                 label="Date Verified"
-                value={format(today, 'dd/MM/yyyy')}
+                InputProps={{
+                  readOnly: true,
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <CalendarTodayIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+                value={format(today, 'yyyy/MM/dd')}
                 fullWidth
-                InputProps={{ readOnly: true }}
-                
               />
             </Grid>
           </Grid>
         </form>
+        <Divider sx={{ mt:3 }} />
       </CardContent>
       
       <CardActions sx={{ justifyContent: { xs:'center', sm:'flex-end' }, flexWrap:'wrap', gap:1, p: 2 }}>
-        <Button onClick={onCancel} disabled={loading}>
+        <Button variant="contained" sx={{ bgcolor:'grey.300', color:'text.primary', '&:hover':{ bgcolor:'grey.400' } }} onClick={onCancel} disabled={loading}>
           Cancel
         </Button>
         <Button 
