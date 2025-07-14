@@ -2,7 +2,7 @@ import React from 'react';
 import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, Box, Divider, useTheme, useMediaQuery, Tooltip, Collapse, IconButton, Paper } from '@mui/material';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import appLogo from '../assets/box_icon.png'; 
+import { alpha as muiAlpha } from '@mui/material/styles'; // Add muiAlpha for styling consistency
 
 // Import icons
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -25,6 +25,7 @@ import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu'; // For Reci
 import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits'; // For Production Scheduler
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import PieChartOutlineIcon from '@mui/icons-material/PieChartOutline'; // For logo
 
 export const drawerWidth = 240;
 const collapsedDrawerWidth = (theme) => theme.spacing(7); 
@@ -186,10 +187,26 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed, onCollapseToggle
           px: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 2.5 : 2, 
         }}
       >
-        <img src={appLogo} alt="CleanTrack Logo" style={{ height: '32px', marginRight: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? '8px' : '0' }} /> 
+        <PieChartOutlineIcon 
+          sx={{ 
+            fontSize: '1.5rem',
+            color: theme.palette.primary.main,
+            mr: (isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) ? 1 : 0
+          }} 
+        />
         {(isPermanentDrawerEffectivelyOpen || isMobileDrawerOpen) && (
-          <Typography variant="h6" component="div" sx={{ color: theme.palette.text.primary, whiteSpace: 'nowrap', overflow: 'hidden' }}>
-            CleanTrac
+          <Typography 
+            variant="h6" 
+            component="div" 
+            sx={{ 
+              color: theme.palette.text.primary, 
+              whiteSpace: 'nowrap', 
+              overflow: 'hidden',
+              fontWeight: 600,
+              letterSpacing: '0.5px',
+            }}
+          >
+            CLEENTRAC
           </Typography>
         )}
       </Toolbar>
@@ -276,9 +293,14 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed, onCollapseToggle
         PaperProps={{
           sx: {
             width: drawerWidth,
-            backgroundColor: theme.palette.sidebarBackground, // Use new sidebar background
-            borderRight: `1px solid ${theme.palette.divider}`,
+            backgroundColor: 'transparent', // Remove solid background
+            backdropFilter: 'blur(8px)', // Add frosted glass effect
+            WebkitBackdropFilter: 'blur(8px)', // For Safari support
+            background: muiAlpha(theme.palette.background.default, 0.65), // Semi-transparent background
+            borderRight: `1px solid ${muiAlpha(theme.palette.divider, 0.3)}`, // Softer border
+            boxShadow: theme.shadows[1], // Subtle shadow for depth
             boxSizing: 'border-box',
+            zIndex: theme.zIndex.modal - 1, // Ensure proper z-index for mobile drawer
           }
         }}
       >
@@ -291,17 +313,20 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, isCollapsed, onCollapseToggle
         open // Permanent drawers are typically 'open' and their visibility/width is controlled by styles
         PaperProps={{
           sx: {
-            backgroundColor: theme.palette.sidebarBackground, // Use new sidebar background
+            backgroundColor: 'transparent', // Remove solid background
+            backdropFilter: 'blur(8px)', // Add frosted glass effect
+            WebkitBackdropFilter: 'blur(8px)', // For Safari support
+            background: muiAlpha(theme.palette.background.default, 0.65), // Semi-transparent background
             width: isPermanentDrawerEffectivelyOpen ? drawerWidth : collapsedDrawerWidth(theme),
-            borderRight: 'none', 
-            transition: theme.transitions.create('width', {
+            borderRight: `1px solid ${muiAlpha(theme.palette.divider, 0.3)}`, // Softer border
+            transition: theme.transitions.create(['width', 'background'], {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.enteringScreen,
             }),
             overflowX: 'hidden',
             boxSizing: 'border-box',
-            backdropFilter: showTooltip ? 'blur(6px)' : 'none',
-            boxShadow: showTooltip ? theme.shadows[4] : 'none',
+            boxShadow: theme.shadows[1], // Subtle shadow for depth
+            zIndex: theme.zIndex.drawer, // Ensure proper z-index
           }
         }}
       >

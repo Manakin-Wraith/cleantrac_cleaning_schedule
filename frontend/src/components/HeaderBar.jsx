@@ -54,12 +54,15 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
     <AppBar 
       position="fixed" 
       sx={{
-        zIndex: (theme) => theme.zIndex.drawer + 1,
-        backgroundColor: muiAlpha('#ffffff', 0.4),
-        color: '#333',
-        boxShadow: 'none',
-        borderBottom: `1px solid ${theme.palette.divider}`, // Added for visual separation
-        transition: theme.transitions.create(['width', 'margin'], { 
+        zIndex: (theme) => theme.zIndex.drawer + 2, // Increased z-index to ensure it's above all drawer elements
+        backgroundColor: 'transparent', // Remove solid background
+        backdropFilter: 'blur(8px)', // Add frosted glass effect
+        WebkitBackdropFilter: 'blur(8px)', // For Safari support
+        background: muiAlpha(theme.palette.background.default, 0.65), // Semi-transparent background
+        color: theme.palette.text.primary,
+        boxShadow: theme.shadows[1], // Subtle shadow for depth
+        borderBottom: `1px solid ${muiAlpha(theme.palette.divider, 0.3)}`, // Even softer border
+        transition: theme.transitions.create(['width', 'margin', 'background'], { 
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.enteringScreen,
         }),
@@ -75,7 +78,12 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
         }),
       }}
     >
-      <Toolbar sx={{ minHeight: { xs: '56px', sm: '56px', md: '56px' }, alignItems: 'center' }}>
+      <Toolbar sx={{ 
+        minHeight: { xs: '56px', sm: '56px', md: '56px' }, 
+        alignItems: 'center',
+        px: { xs: 2, sm: 3 }, // Increased horizontal padding
+        gap: 1, // Add spacing between toolbar items
+      }}>
         {showSidebar && (
           <IconButton
             color="inherit"
@@ -100,8 +108,31 @@ const HeaderBar = ({ handleDrawerToggle, handleSidebarToggle, isSidebarCollapsed
           </IconButton>
         )}
 
-        <Typography variant="h6" noWrap component={RouterLink} to={currentUser ? (currentUser.profile?.role === 'manager' ? '/manager-dashboard' : '/staff-tasks') : '/login'} sx={{ flexGrow: 1, color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 1, lineHeight: 1 }}>
-          <PieChartOutlineIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
+        <Typography 
+          variant="h6" 
+          noWrap 
+          component={RouterLink} 
+          to={currentUser ? (currentUser.profile?.role === 'manager' ? '/manager-dashboard' : '/staff-tasks') : '/login'} 
+          sx={{ 
+            flexGrow: 1, 
+            color: 'inherit', 
+            textDecoration: 'none', 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: 1, 
+            lineHeight: 1,
+            fontWeight: 600, // Make text bolder
+            letterSpacing: '0.5px', // Add slight letter spacing
+          }}
+        >
+          <PieChartOutlineIcon 
+            sx={{ 
+              mr: 1, 
+              verticalAlign: 'middle',
+              color: theme.palette.primary.main, // Use primary color for the icon
+              fontSize: '1.5rem', // Slightly larger icon
+            }} 
+          />
           CLEENTRAC
         </Typography>
 
