@@ -438,9 +438,6 @@ const TemperatureLoggingSection = ({
       case 1:
         return (
           <Box>
-            <Typography variant="subtitle1" gutterBottom>
-              Select an area to log temperature for:
-            </Typography>
             
             {componentLoading ? (
               <CircularProgress />
