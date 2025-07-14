@@ -16,7 +16,7 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' && pr
   theme, open, sidebarWidth = 0 },
 ) => ({
   flexGrow: 1,
-  padding: theme.spacing(3),
+  padding: theme.spacing(1),
   height: `calc(100vh - 48px)`,
   overflowX: 'hidden',
   overflowY: 'auto',
@@ -24,8 +24,8 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' && pr
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
+  marginLeft: sidebarWidth ? `${sidebarWidth}px` : 0, // Account for sidebar width
   marginRight: 0, // No margin when drawer is closed
-  marginLeft: `${sidebarWidth}px`, // No extra margin from sidebar
   position: 'relative',
   zIndex: 1, // Ensure proper stacking context
   ...(open && {
