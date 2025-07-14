@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useContext } from 'react';
 import {
   Box,
   Snackbar,
@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '../context/AuthContext';
+import { drawerWidth as sidebarWidth } from '../components/Sidebar';
 import { ScheduleProvider } from '../context/ScheduleContext'; // Filters bar removed – CollapsibleFiltersDisplay no longer used
 
 // Import services
@@ -711,6 +712,7 @@ const UnifiedCalendarPage = () => {
     <ScheduleProvider externalEvents={allEvents}>
       <Box sx={{ display: 'flex', height: '100vh', flexDirection: 'column', flexGrow: 1, width: '100%', maxWidth: '100vw' }}>
         <CalendarPageLayout
+          sidebarWidth={sidebarWidth}
           headerContent={
             <CalendarHeaderControls
               onViewChange={handleViewChange}

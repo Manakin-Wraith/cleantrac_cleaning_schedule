@@ -12,8 +12,8 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 const drawerWidth = 300; // Sidebar width
 
-const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(({
-  theme, open },
+const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' && prop !== 'sidebarWidth' })(({
+  theme, open, sidebarWidth = 0 },
 ) => ({
   flexGrow: 1,
   padding: theme.spacing(3),
@@ -26,7 +26,7 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(({
     duration: theme.transitions.duration.leavingScreen,
   }),
   marginRight: -drawerWidth,
-  marginLeft: theme.spacing(2), // Add left margin for separation from sidebar
+  marginLeft: `${sidebarWidth + parseInt(theme.spacing(2))}px`, // Respect sidebar width plus margin
   position: 'relative',
   zIndex: 1, // Ensure proper stacking context
   ...(open && {
@@ -38,32 +38,39 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(({
   }),
   [theme.breakpoints.down('sm')]: {
     padding: theme.spacing(1.5),
-    marginLeft: theme.spacing(1),
+    marginLeft: sidebarWidth ? `${sidebarWidth}px` : theme.spacing(1),
   },
 }));
 
 const AppBar = styled(MuiAppBar, {
-  shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }) => ({
+  shouldForwardProp: (prop) => prop !== 'open' && prop !== 'sidebarWidth',
+})(({ theme, open, sidebarWidth = 0 }) => ({
   backgroundColor: 'transparent',
   backdropFilter: 'blur(8px)',
   WebkitBackdropFilter: 'blur(8px)',
   background: `${alpha(theme.palette.background.default, 0.65)}`,
-  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
-  boxShadow: theme.shadows[1],
+  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+  boxShadow: 'none',
   zIndex: theme.zIndex.drawer + 1,
+  width: `calc(100% - ${sidebarWidth}px)`,
+  marginLeft: `${sidebarWidth}px`,
   transition: theme.transitions.create(['margin', 'width', 'background'], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
+  // marginLeft is now set above
   ...(open && {
-    width: `calc(100% - ${drawerWidth}px)`,
+    width: `calc(100% - ${drawerWidth + sidebarWidth}px)`,
     marginRight: `${drawerWidth}px`,
-    transition: theme.transitions.create(['margin', 'width', 'background'], {
+    transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
     }),
   }),
+  [theme.breakpoints.down('sm')]: {
+    width: '100%',
+    marginLeft: 0,
+  },
 }));
 
 const DrawerHeader = styled('div')(({ theme }) => ({
@@ -85,6 +92,7 @@ export default function CalendarPageLayout({
   sidebarContent,
   filtersBarContent,
   initialSidebarOpen = true,
+  sidebarWidth = 0, // Add sidebarWidth prop with default value
 }) {
   const theme = useTheme();
   const [open, setOpen] = useState(initialSidebarOpen);
@@ -100,11 +108,10 @@ export default function CalendarPageLayout({
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      <AppBar position="fixed" open={open}>
+      <AppBar position="fixed" open={open} sidebarWidth={sidebarWidth}>
         <Toolbar>
           {/* Custom Header Content is rendered here */}
-          {headerContent}
-          {/* This is a placeholder for the sidebar toggle button, can be moved into headerContent */}
+          {React.cloneElement(headerContent, { sidebarWidth })}
           <IconButton
             color="inherit"
             aria-label="open drawer"
@@ -112,11 +119,11 @@ export default function CalendarPageLayout({
             onClick={handleDrawerOpen}
             sx={{ ...(open && { display: 'none' }) }}
           >
-            <ChevronLeftIcon />
+            {theme.direction === 'rtl' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
           </IconButton>
         </Toolbar>
       </AppBar>
-      <Main open={open}>
+      <Main open={open} sidebarWidth={sidebarWidth}>
         <DrawerHeader /> {/* This is a spacer to push content below the AppBar */}
         {/* Optional Filters Bar content rendered here */}
         {filtersBarContent}
