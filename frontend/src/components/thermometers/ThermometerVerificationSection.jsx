@@ -12,7 +12,8 @@ import WarningIcon from '@mui/icons-material/Warning';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { 
   getMyAssignment,
-  createVerificationRecord
+  createVerificationRecord,
+  getThermometers
 } from '../../services/thermometerService';
 import ThermometerVerificationForm from './ThermometerVerificationForm';
 
@@ -24,6 +25,7 @@ const ThermometerVerificationSection = ({
   const [componentLoading, setComponentLoading] = useState(true); 
   const [error, setError] = useState('');
   const [assignment, setAssignment] = useState(null);
+  const [allThermometers, setAllThermometers] = useState([]);
   const [selectedThermometer, setSelectedThermometer] = useState(null);
   const [showVerificationForm, setShowVerificationForm] = useState(false);
   const theme = useTheme();
@@ -33,8 +35,12 @@ const ThermometerVerificationSection = ({
       try {
         setComponentLoading(true);
         setError('');
-        const assignmentData = await getMyAssignment();
+        const [assignmentData, allThermometersData] = await Promise.all([
+          getMyAssignment(),
+          getThermometers()
+        ]);
         setAssignment(assignmentData);
+        setAllThermometers(allThermometersData.results || []);
       } catch (err) {
         console.error("Failed to load thermometer assignment data:", err);
         if (err.response?.status === 404) {
@@ -158,6 +164,7 @@ const ThermometerVerificationSection = ({
           {showVerificationForm ? (
             <ThermometerVerificationForm 
               thermometer={selectedThermometer}
+              calibratedInstruments={allThermometers.filter(t => t.id !== selectedThermometer.id)}
               onSubmit={handleVerificationSubmit}
               onCancel={handleCancelVerification}
             />

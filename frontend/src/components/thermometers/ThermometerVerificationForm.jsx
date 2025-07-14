@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Typography, Box, Button, CircularProgress, Alert,
   TextField, Grid, Card, CardContent, CardActions, Divider,
-  InputAdornment
+  InputAdornment, Select, MenuItem, FormControl, InputLabel, FormHelperText
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 
-const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
+const ThermometerVerificationForm = ({ thermometer, calibratedInstruments = [], onSubmit, onCancel }) => {
   const today = new Date();
   const [formData, setFormData] = useState({
     date_verified: today,
@@ -147,16 +147,27 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
             </Typography>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12} sm={4}>
-                <TextField
-                  name="calibrated_instrument_no"
-                  label="Calibrated Instrument No."
-                  value={formData.calibrated_instrument_no}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                  error={!!fieldErrors.calibrated_instrument_no}
-                  helperText={fieldErrors.calibrated_instrument_no}
-                />
+                <FormControl fullWidth required error={!!fieldErrors.calibrated_instrument_no}>
+                  <InputLabel id="calibrated-instrument-select-label">Calibrated Instrument No.</InputLabel>
+                  <Select
+                    labelId="calibrated-instrument-select-label"
+                    id="calibrated-instrument-select"
+                    name="calibrated_instrument_no"
+                    value={formData.calibrated_instrument_no}
+                    label="Calibrated Instrument No."
+                    onChange={handleChange}
+                  >
+                    <MenuItem value="">
+                      <em>None</em>
+                    </MenuItem>
+                    {calibratedInstruments.map((inst) => (
+                      <MenuItem key={inst.id} value={inst.id}>
+                        {`${inst.serial_number} / ${inst.model_identifier}`}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {fieldErrors.calibrated_instrument_no && <FormHelperText>{fieldErrors.calibrated_instrument_no}</FormHelperText>}
+                </FormControl>
               </Grid>
               <Grid item xs={12} sm={4}>
                 <TextField
