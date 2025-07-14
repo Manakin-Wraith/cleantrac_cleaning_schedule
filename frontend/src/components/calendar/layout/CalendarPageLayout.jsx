@@ -10,23 +10,22 @@ import IconButton from '@mui/material/IconButton';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
-const drawerWidth = 300; // Sidebar width
+const drawerWidth = 280; // Reduced sidebar width for more calendar space
 
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' && prop !== 'sidebarWidth' })(({
   theme, open, sidebarWidth = 0 },
 ) => ({
   flexGrow: 1,
-  padding: theme.spacing(1),
-  paddingTop: theme.spacing(1),
-  minHeight: `calc(100vh - 48px)`, // Use exact header height for maximum space
-  overflowX: 'visible',
-  overflowY: 'auto',
+  padding: 0,
+  height: `calc(100vh - 40px)`, // Use exact header height for maximum space
+  overflowX: 'hidden',
+  overflowY: 'hidden',
   transition: theme.transitions.create(['margin', 'padding'], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
-  marginRight: theme.spacing(0.5), // Minimal margin when drawer is closed
-  marginLeft: `${sidebarWidth + parseInt(theme.spacing(0.5))}px`, // Minimal margin from sidebar
+  marginRight: 0, // No margin when drawer is closed
+  marginLeft: `${sidebarWidth}px`, // No extra margin from sidebar
   position: 'relative',
   zIndex: 1, // Ensure proper stacking context
   ...(open && {
@@ -34,11 +33,11 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' && pr
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
     }),
-    marginRight: theme.spacing(0.5), // Minimal margin when drawer is open
+    marginRight: drawerWidth, // Exact drawer width when open
   }),
   [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(0.5),
-    marginLeft: sidebarWidth ? `${sidebarWidth}px` : theme.spacing(0.5),
+    padding: 0,
+    marginLeft: sidebarWidth ? `${sidebarWidth}px` : 0,
   },
 }));
 
@@ -78,7 +77,7 @@ const DrawerHeader = styled('div')(({ theme }) => ({
   alignItems: 'center',
   padding: 0,
   // necessary for content to be below app bar, but minimized
-  height: '48px',
+  height: '40px',
   justifyContent: 'flex-start',
 }));
 
@@ -109,7 +108,7 @@ export default function CalendarPageLayout({
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
       <AppBar position="fixed" open={open} sidebarWidth={sidebarWidth}>
-        <Toolbar sx={{ minHeight: '48px', py: 0.5, px: 1 }}>
+        <Toolbar sx={{ minHeight: '40px', py: 0.25, px: 0.5 }}>
           {/* Custom Header Content is rendered here */}
           {React.cloneElement(headerContent, { sidebarWidth })}
           <IconButton
@@ -124,7 +123,6 @@ export default function CalendarPageLayout({
         </Toolbar>
       </AppBar>
       <Main open={open} sidebarWidth={sidebarWidth}>
-        <DrawerHeader /> {/* This is a spacer to push content below the AppBar */}
         {/* Optional Filters Bar content rendered here */}
         {filtersBarContent}
         {/* Main page content (e.g., the FullCalendar component) rendered here */}
@@ -133,6 +131,7 @@ export default function CalendarPageLayout({
       <Drawer
         sx={{
           width: open ? drawerWidth : 0,
+          display: open ? 'block' : 'none',
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: drawerWidth,
@@ -143,6 +142,11 @@ export default function CalendarPageLayout({
             borderLeft: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
             boxShadow: theme.shadows[1],
             zIndex: theme.zIndex.drawer - 1, // Lower than main sidebar
+            transition: theme.transitions.create(['transform', 'width'], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.leavingScreen,
+            }),
+            transform: open ? 'translateX(0)' : `translateX(${drawerWidth}px)`,
           },
         }}
         variant="persistent"

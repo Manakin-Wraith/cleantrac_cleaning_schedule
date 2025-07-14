@@ -27,43 +27,44 @@ const UnifiedCalendarComponent = ({
   calendarRef,
 }) => {
   return (
-    <FullCalendar
-      ref={calendarRef}
-      plugins={[dayGridPlugin, timeGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, interactionPlugin]}
-      headerToolbar={false} // Header is handled by CalendarHeaderControls
-      initialView={currentView}
-      initialDate={currentDate}
-      schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
-      events={events}
-      resources={resources}
-      editable={true}
-      droppable={true}
-      selectable={true}
-      eventContent={(eventInfo) => <UnifiedEventContent eventInfo={eventInfo} />}
-      eventClassNames={({ event }) => {
-        const type = event.extendedProps?.originalType;
-        return type === 'recipe' ? ['production-chip'] : ['cleaning-chip'];
-      }}
-      eventClick={onEventClick}
-      eventDrop={onEventDrop}
-      eventResize={onEventResize}
-      dateClick={onDateClick}
-      dayMaxEvents={currentView.startsWith('timeGrid') ? 1 : 2}
-      dayMaxEventRows={currentView.startsWith('timeGrid') ? 1 : 2}
-      moreLinkClick="popover"
-      eventMaxStack={currentView.startsWith('timeGrid') ? 1 : undefined}
-      datesSet={(arg) => {
-        if (typeof onDateChange === 'function') {
-          onDateChange(arg.view.currentStart);
-        }
-        if (typeof onViewChange === 'function') {
-          onViewChange(arg.view.type);
-        }
-      }}
-      resourceAreaHeaderContent="Resources"
-      resourceOrder="title"
-      // Add any other FullCalendar options you need
-    />
+    <div style={{ height: 'calc(100vh - 40px)', width: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', margin: 0, padding: 0 }}>
+      <FullCalendar
+        height="100%"
+        expandRows={true}
+        stickyHeaderDates={false}
+        contentHeight="auto"
+        ref={calendarRef}
+        plugins={[dayGridPlugin, timeGridPlugin, resourceTimeGridPlugin, resourceTimelinePlugin, interactionPlugin]}
+        headerToolbar={false} // Header is handled by CalendarHeaderControls
+        initialView={currentView}
+        initialDate={currentDate}
+        schedulerLicenseKey="CC-Attribution-NonCommercial-NoDerivatives"
+        events={events}
+        resources={resources}
+        editable={true}
+        droppable={true}
+        selectable={true}
+        eventContent={(eventInfo) => <UnifiedEventContent eventInfo={eventInfo} />}
+        eventClassNames={({ event }) => {
+          const type = event.extendedProps?.originalType;
+          return type === 'recipe' ? ['production-chip'] : ['cleaning-chip'];
+        }}
+        eventClick={onEventClick}
+        eventDrop={onEventDrop}
+        eventResize={onEventResize}
+        dateClick={onDateClick}
+        dayMaxEvents={currentView.startsWith('timeGrid') ? 1 : 2}
+        dayMaxEventRows={currentView.startsWith('timeGrid') ? 1 : 2}
+        moreLinkClick="popover"
+        eventMaxStack={currentView.startsWith('timeGrid') ? 1 : undefined}
+        datesSet={({ view }) => {
+          onDateChange?.(view.currentStart);
+          onViewChange?.(view.type);
+        }}
+        resourceAreaHeaderContent="Resources"
+        resourceOrder="title"
+      />
+    </div>
   );
 };
 
