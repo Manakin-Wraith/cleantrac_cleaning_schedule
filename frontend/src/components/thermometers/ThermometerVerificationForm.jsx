@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { 
   Typography, Box, Button, CircularProgress, Alert,
   TextField, Grid, Card, CardContent, CardActions, Divider,
-  InputAdornment
+  InputAdornment, Avatar, FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { format } from 'date-fns';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 
 const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
@@ -100,10 +101,15 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
     <Card variant="outlined" sx={{ mb: 3, bgcolor: theme => theme.palette.background.default, borderRadius: 2, p:{ xs:2.5, sm:3 } }}>
       <CardContent>
         <Box sx={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:1, mb:2 }}>
-          <Typography variant="h6" sx={{fontWeight:600}}>
-            Verify Thermometer
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Box sx={{ display:'flex', alignItems:'center' }}>
+            <Avatar sx={{ bgcolor:'grey.200', width:32, height:32 }}>
+              <ThermostatIcon fontSize="small" />
+            </Avatar>
+            <Typography variant="h6" sx={{fontWeight:600, ml:1}}>
+              Verify Thermometer
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ ml:'auto' }}>
             Serial #: {thermometer.serial_number}
           </Typography>
         </Box>
@@ -149,16 +155,24 @@ const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
             </Grid>
 
             <Grid xs={12} sm={4}>
-              <TextField
-                name="calibrated_instrument_no"
-                label="Calibrated Instrument Number"
-                value={formData.calibrated_instrument_no}
-                onChange={handleChange}
-                fullWidth
-                required
-                error={!!fieldErrors.calibrated_instrument_no}
-                helperText={fieldErrors.calibrated_instrument_no}
-              />
+              <FormControl fullWidth required error={!!fieldErrors.calibrated_instrument_no}>
+                <InputLabel id="calibrated-select-label">Calibrated Instrument</InputLabel>
+                <Select
+                  labelId="calibrated-select-label"
+                  name="calibrated_instrument_no"
+                  label="Calibrated Instrument"
+                  value={formData.calibrated_instrument_no}
+                  onChange={handleChange}
+                  IconComponent={ArrowDropDownIcon}
+                >
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
+                  <MenuItem value={"Instrument 1"}>Instrument 1</MenuItem>
+                  <MenuItem value={"Instrument 2"}>Instrument 2</MenuItem>
+                  <MenuItem value={"Instrument 3"}>Instrument 3</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
             
             <Grid xs={12} sm={4}>
