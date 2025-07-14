@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Typography, Box, Button, CircularProgress, Alert,
   TextField, Grid, Card, CardContent, CardActions, Divider,
-  InputAdornment, Select, MenuItem, FormControl, InputLabel, FormHelperText
+  InputAdornment, MenuItem
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -10,11 +10,11 @@ import { format } from 'date-fns';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 
-const ThermometerVerificationForm = ({ thermometer, calibratedInstruments = [], onSubmit, onCancel }) => {
+const ThermometerVerificationForm = ({ thermometer, onSubmit, onCancel }) => {
   const today = new Date();
   const [formData, setFormData] = useState({
     date_verified: today,
-    calibrated_instrument_no: '',
+    calibrated_instrument_no: `${thermometer?.serial_number || ''} - ${thermometer?.model_identifier || ''}` ,
     reading_after_verification: '',
     
     serial_number: thermometer?.serial_number || '',
@@ -147,24 +147,21 @@ const ThermometerVerificationForm = ({ thermometer, calibratedInstruments = [], 
             </Typography>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12} sm={4}>
-                <FormControl fullWidth required error={!!fieldErrors.calibrated_instrument_no}>
-                  <InputLabel id="calibrated-instrument-select-label">Calibrated Instrument No.</InputLabel>
-                  <Select
-                    labelId="calibrated-instrument-select-label"
-                    name="calibrated_instrument_no"
-                    value={formData.calibrated_instrument_no}
-                    onChange={handleChange}
-                    label="Calibrated Instrument No."
-                  >
-                    {/* This should be populated by a prop with available instruments */}
-                    {calibratedInstruments.map((inst) => (
-                      <MenuItem key={inst.id} value={inst.id}>
-                        {`SN: ${inst.serial_number} - ${inst.model_identifier}`}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {fieldErrors.calibrated_instrument_no && <FormHelperText>{fieldErrors.calibrated_instrument_no}</FormHelperText>}
-                </FormControl>
+                <TextField
+                  select
+                  name="calibrated_instrument_no"
+                  label="Calibrated Instrument"
+                  value={formData.calibrated_instrument_no}
+                  onChange={handleChange}
+                  fullWidth
+                  required
+                  error={!!fieldErrors.calibrated_instrument_no}
+                  helperText={fieldErrors.calibrated_instrument_no}
+                >
+                  <MenuItem value={formData.calibrated_instrument_no}>
+                    {formData.calibrated_instrument_no}
+                  </MenuItem>
+                </TextField>
               </Grid>
               <Grid item xs={12} sm={4}>
                 <TextField
