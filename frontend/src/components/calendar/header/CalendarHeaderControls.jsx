@@ -9,6 +9,7 @@ import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import Paper from '@mui/material/Paper';
+import { alpha } from '@mui/material/styles';
 import { format } from 'date-fns'; // A robust library for date formatting
 
 /**
@@ -52,30 +53,92 @@ export default function CalendarHeaderControls({
     <Box
       sx={{
         display: 'flex',
-        justifyContent: 'flex-start',
+        justifyContent: { xs: 'center', md: 'space-between' },
         alignItems: 'center',
         width: '100%',
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 2, sm: 0 },
+        py: 1,
+        px: { xs: 1, sm: 2, md: 3 },
       }}
     >
       {/* Left side: Navigation and Date */}
-      <Box sx={{ display:'flex', alignItems:'center', gap:1, mx:'auto' }}>
-        <ButtonGroup variant="outlined" aria-label="date navigation group">
-          <Button onClick={() => onNavigate('prev')}>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2,
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+        }}
+      >
+        <ButtonGroup 
+          variant="outlined" 
+          aria-label="date navigation group"
+          sx={{
+            '& .MuiButton-root': {
+              borderColor: (theme) => alpha(theme.palette.primary.main, 0.5),
+              color: 'primary.main',
+              px: { xs: 1.5, sm: 2 },
+              py: 0.75,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                borderColor: 'primary.main',
+                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+              },
+            },
+          }}
+        >
+          <Button 
+            onClick={() => onNavigate('prev')}
+            sx={{ borderTopLeftRadius: 20, borderBottomLeftRadius: 20 }}
+          >
             <ArrowBackIosNewIcon fontSize="small" />
           </Button>
-          <Button onClick={() => onNavigate('today')}>Today</Button>
-          <Button onClick={() => onNavigate('next')}>
+          <Button onClick={() => onNavigate('today')}>
+            <Typography variant="button" fontWeight="medium">Today</Typography>
+          </Button>
+          <Button 
+            onClick={() => onNavigate('next')}
+            sx={{ borderTopRightRadius: 20, borderBottomRightRadius: 20 }}
+          >
             <ArrowForwardIosIcon fontSize="small" />
           </Button>
         </ButtonGroup>
-        <Typography variant="h6" component="div" sx={{ ml:2 }}>
+        <Typography 
+          variant="h6" 
+          component="div" 
+          sx={{ 
+            fontWeight: 500,
+            color: 'text.primary',
+            minWidth: { xs: '100%', sm: 'auto' },
+            textAlign: { xs: 'center', sm: 'left' },
+          }}
+        >
           {formattedDate()}
         </Typography>
       </Box>
 
       {/* Right side: View Selectors and Filters */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Paper elevation={1} sx={{ borderRadius: 4, overflow: 'hidden' }}>
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 1.5,
+          mt: { xs: 1, sm: 0 },
+        }}
+      >
+        <Paper 
+          elevation={1} 
+          sx={{ 
+            borderRadius: 20, 
+            overflow: 'hidden',
+            background: (theme) => alpha(theme.palette.background.paper, 0.7),
+            backdropFilter: 'blur(8px)',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
           <ButtonGroup disableElevation size="small">
             {availableViews.map((view, idx) => (
               <Button
@@ -83,13 +146,25 @@ export default function CalendarHeaderControls({
                 onClick={() => onViewChange(view.name)}
                 sx={{
                   textTransform: 'none',
-                  px: 2,
-                  bgcolor: currentView === view.name ? 'primary.main' : 'transparent',
-                  color: currentView === view.name ? 'primary.contrastText' : 'text.secondary',
-                  borderRight: idx !== availableViews.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
+                  px: { xs: 1.5, sm: 2 },
+                  py: 0.75,
+                  minWidth: { xs: 'auto', sm: '60px' },
+                  bgcolor: currentView === view.name 
+                    ? 'primary.main' 
+                    : 'transparent',
+                  color: currentView === view.name 
+                    ? 'primary.contrastText' 
+                    : 'text.secondary',
+                  borderRight: idx !== availableViews.length - 1 
+                    ? '1px solid rgba(0,0,0,0.08)' 
+                    : 'none',
+                  transition: 'all 0.2s ease',
                   '&:hover': {
-                    bgcolor: currentView === view.name ? 'primary.dark' : 'action.hover',
+                    bgcolor: currentView === view.name 
+                      ? 'primary.dark' 
+                      : (theme) => alpha(theme.palette.action.hover, 0.8),
                   },
+                  fontWeight: currentView === view.name ? 500 : 400,
                 }}
               >
                 {view.label}
@@ -102,7 +177,18 @@ export default function CalendarHeaderControls({
           color="primary"
           aria-label="toggle filters"
           onClick={onToggleFilters}
-          sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
+          sx={{ 
+            bgcolor: (theme) => alpha(theme.palette.background.paper, 0.7),
+            backdropFilter: 'blur(8px)',
+            border: '1px solid', 
+            borderColor: 'divider',
+            borderRadius: 2,
+            p: 1,
+            '&:hover': {
+              bgcolor: (theme) => alpha(theme.palette.background.paper, 0.9),
+            },
+            transition: 'all 0.2s ease',
+          }}
         >
           <FilterListIcon />
         </IconButton>

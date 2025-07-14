@@ -12,26 +12,34 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 const drawerWidth = 300; // Sidebar width
 
-const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })((
-  { theme, open },
+const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(({
+  theme, open },
 ) => ({
   flexGrow: 1,
-  padding: 0,
-  minHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px)`,
+  padding: theme.spacing(3),
+  paddingTop: theme.spacing(2),
+  minHeight: `calc(100vh - ${theme.mixins.toolbar.minHeight}px - ${theme.spacing(2)})`,
   overflowX: 'visible',
-  overflowY: 'hidden',
-  transition: theme.transitions.create('margin', {
+  overflowY: 'auto',
+  transition: theme.transitions.create(['margin', 'padding'], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
   marginRight: -drawerWidth,
+  marginLeft: theme.spacing(2), // Add left margin for separation from sidebar
+  position: 'relative',
+  zIndex: 1, // Ensure proper stacking context
   ...(open && {
-    transition: theme.transitions.create('margin', {
+    transition: theme.transitions.create(['margin', 'padding'], {
       easing: theme.transitions.easing.easeOut,
       duration: theme.transitions.duration.enteringScreen,
     }),
     marginRight: 0,
   }),
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(1.5),
+    marginLeft: theme.spacing(1),
+  },
 }));
 
 const AppBar = styled(MuiAppBar, {
@@ -121,10 +129,13 @@ export default function CalendarPageLayout({
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: drawerWidth,
-            boxSizing: 'border-box',
-            backgroundColor: '#F5F6F8',
-            borderLeft: '1px solid rgba(0,0,0,0.08)',
-            boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
+            backgroundColor: 'transparent',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            background: alpha(theme.palette.background.default, 0.65),
+            borderLeft: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+            boxShadow: theme.shadows[1],
+            zIndex: theme.zIndex.drawer - 1, // Lower than main sidebar
           },
         }}
         variant="persistent"
