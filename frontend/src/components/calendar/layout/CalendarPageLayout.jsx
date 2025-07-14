@@ -10,75 +10,57 @@ import IconButton from '@mui/material/IconButton';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
-const drawerWidth = 280; // Reduced sidebar width for more calendar space
+const drawerWidth = 280;
 
-const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' && prop !== 'sidebarWidth' })(({
-  theme, open, sidebarWidth = 0 },
-) => ({
-  flex: '1 1 auto',
-  minWidth: 0,
-  padding: theme.spacing(1),
-  height: `calc(100vh - 48px)`,
-  overflowX: 'hidden',
-  overflowY: 'auto',
-  transition: theme.transitions.create(['margin', 'padding'], {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  marginLeft: sidebarWidth ? `${sidebarWidth}px` : 0, // Account for sidebar width
-  marginRight: 0, // No margin when drawer is closed
-  position: 'relative',
-  zIndex: 1, // Ensure proper stacking context
-  ...(open && {
-    transition: theme.transitions.create(['margin', 'padding'], {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-    marginRight: drawerWidth, // Exact drawer width when open
-  }),
-  [theme.breakpoints.down('sm')]: {
+const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
+  ({ theme, open }) => ({
+    flexGrow: 1,
     padding: 0,
-    marginLeft: sidebarWidth ? `${sidebarWidth}px` : 0,
-  },
-}));
-
-const AppBar = styled(MuiAppBar, {
-  shouldForwardProp: (prop) => prop !== 'open' && prop !== 'sidebarWidth',
-})(({ theme, open, sidebarWidth = 0 }) => ({
-  backgroundColor: 'transparent',
-  backdropFilter: 'blur(8px)',
-  WebkitBackdropFilter: 'blur(8px)',
-  background: `${alpha(theme.palette.background.default, 0.65)}`,
-  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
-  boxShadow: 'none',
-  zIndex: theme.zIndex.drawer + 1,
-  width: `calc(100% - ${sidebarWidth}px)`,
-  marginLeft: `${sidebarWidth}px`,
-  transition: theme.transitions.create(['margin', 'width', 'background'], {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  // marginLeft is now set above
-  ...(open && {
-    width: `calc(100% - ${drawerWidth + sidebarWidth}px)`,
-    marginRight: `${drawerWidth}px`,
-    transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
+    transition: theme.transitions.create('margin', {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+    marginRight: -drawerWidth,
+    height: '100%',
+    position: 'relative',
+    ...(open && {
+      transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      marginRight: 0,
     }),
   }),
-  [theme.breakpoints.down('sm')]: {
-    width: '100%',
-    marginLeft: 0,
-  },
-}));
+);
+
+const AppBar = styled(MuiAppBar, { shouldForwardProp: (prop) => prop !== 'open' })(
+  ({ theme, open }) => ({
+    backgroundColor: 'transparent',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    background: `${alpha(theme.palette.background.default, 0.65)}`,
+    borderBottom: `1px solid ${alpha(theme.palette.divider, 0.08)}`,
+    boxShadow: 'none',
+    transition: theme.transitions.create(['margin', 'width'], {
+      easing: theme.transitions.easing.sharp,
+      duration: theme.transitions.duration.leavingScreen,
+    }),
+    ...(open && {
+      width: `calc(100% - ${drawerWidth}px)`,
+      transition: theme.transitions.create(['margin', 'width'], {
+        easing: theme.transitions.easing.easeOut,
+        duration: theme.transitions.duration.enteringScreen,
+      }),
+      marginRight: drawerWidth,
+    }),
+  }),
+);
 
 const DrawerHeader = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
-  padding: 0,
-  // necessary for content to be below app bar, but minimized
-  height: '40px',
+  padding: theme.spacing(0, 1),
+  ...theme.mixins.toolbar,
   justifyContent: 'flex-start',
 }));
 
@@ -86,53 +68,46 @@ const DrawerHeader = styled('div')(({ theme }) => ({
  * A reusable layout component for calendar pages.
  * Manages a persistent right-hand sidebar, a main content area, and a header.
  */
-export default function CalendarPageLayout({
+function CalendarPageLayout({
   children,
   headerContent,
   sidebarContent,
   filtersBarContent,
   initialSidebarOpen = true,
-  sidebarWidth = 0, // Add sidebarWidth prop with default value
 }) {
   const theme = useTheme();
   const [open, setOpen] = useState(initialSidebarOpen);
 
-  const handleDrawerOpen = () => {
-    setOpen(true);
-  };
-
-  const handleDrawerClose = () => {
-    setOpen(false);
-  };
+  const handleDrawerOpen = () => setOpen(true);
+  const handleDrawerClose = () => setOpen(false);
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', height: '100vh', width: '100%' }}>
       <CssBaseline />
-      <AppBar position="fixed" open={open} sidebarWidth={sidebarWidth}>
-        <Toolbar sx={{ minHeight: '40px', py: 0.25, px: 0.5 }}>
-          {/* Custom Header Content is rendered here */}
-          {React.cloneElement(headerContent, { sidebarWidth })}
+      <AppBar position="fixed" open={open}>
+        <Toolbar sx={{ minHeight: '48px!important' }}>
+          {headerContent}
           <IconButton
             color="inherit"
             aria-label="open drawer"
-            edge="end"
             onClick={handleDrawerOpen}
-            sx={{ ...(open && { display: 'none' }) }}
+            edge="end"
+            sx={{ ml: 'auto', ...(open && { display: 'none' }) }}
           >
-            {theme.direction === 'rtl' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+            <ChevronRightIcon />
           </IconButton>
         </Toolbar>
       </AppBar>
-      <Main open={open} sidebarWidth={sidebarWidth}>
-        {/* Optional Filters Bar content rendered here */}
-        {filtersBarContent}
-        {/* Main page content (e.g., the FullCalendar component) rendered here */}
-        {children}
+      <Main open={open}>
+        <DrawerHeader />
+        <Box sx={{ p: 1, height: '100%', position: 'relative' }}>
+          {filtersBarContent}
+          {children}
+        </Box>
       </Main>
       <Drawer
         sx={{
-          width: open ? drawerWidth : 0,
-          display: open ? 'block' : 'none',
+          width: drawerWidth,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: drawerWidth,
@@ -141,25 +116,17 @@ export default function CalendarPageLayout({
             WebkitBackdropFilter: 'blur(8px)',
             background: alpha(theme.palette.background.default, 0.65),
             borderLeft: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
-            boxShadow: theme.shadows[1],
-            zIndex: theme.zIndex.drawer - 1, // Lower than main sidebar
-            transition: theme.transitions.create(['transform', 'width'], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.leavingScreen,
-            }),
-            transform: open ? 'translateX(0)' : `translateX(${drawerWidth}px)`,
           },
         }}
         variant="persistent"
         anchor="right"
         open={open}
       >
-        <DrawerHeader>
+        <DrawerHeader sx={{ justifyContent: 'flex-end' }}>
           <IconButton onClick={handleDrawerClose}>
-            {theme.direction === 'rtl' ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+            <ChevronLeftIcon />
           </IconButton>
         </DrawerHeader>
-        {/* Custom Sidebar Content is rendered here */}
         {sidebarContent}
       </Drawer>
     </Box>
@@ -172,19 +139,21 @@ CalendarPageLayout.propTypes = {
    */
   children: PropTypes.node.isRequired,
   /**
-   * The content to display in the header/AppBar.
+   * Content for the header/app bar, e.g., navigation controls.
    */
   headerContent: PropTypes.node,
   /**
-   * The content to display in the right-hand sidebar.
+   * Content for the right-hand sidebar.
    */
   sidebarContent: PropTypes.node,
   /**
-   * Optional content to display in a collapsible bar below the header.
+   * Optional content to display above the main children, like a filter bar.
    */
   filtersBarContent: PropTypes.node,
   /**
-   * The initial open state of the sidebar.
+   * Whether the sidebar is open by default.
    */
   initialSidebarOpen: PropTypes.bool,
 };
+
+export default CalendarPageLayout;
