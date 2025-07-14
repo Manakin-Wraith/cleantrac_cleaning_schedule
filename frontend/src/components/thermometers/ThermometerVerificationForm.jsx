@@ -151,18 +151,15 @@ const ThermometerVerificationForm = ({ thermometer, calibratedInstruments = [], 
                   <InputLabel id="calibrated-instrument-select-label">Calibrated Instrument No.</InputLabel>
                   <Select
                     labelId="calibrated-instrument-select-label"
-                    id="calibrated-instrument-select"
                     name="calibrated_instrument_no"
                     value={formData.calibrated_instrument_no}
-                    label="Calibrated Instrument No."
                     onChange={handleChange}
+                    label="Calibrated Instrument No."
                   >
-                    <MenuItem value="">
-                      <em>None</em>
-                    </MenuItem>
+                    {/* This should be populated by a prop with available instruments */}
                     {calibratedInstruments.map((inst) => (
                       <MenuItem key={inst.id} value={inst.id}>
-                        {`${inst.serial_number} / ${inst.model_identifier}`}
+                        {`SN: ${inst.serial_number} - ${inst.model_identifier}`}
                       </MenuItem>
                     ))}
                   </Select>

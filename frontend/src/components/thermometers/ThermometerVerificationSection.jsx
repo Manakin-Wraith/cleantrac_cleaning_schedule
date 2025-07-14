@@ -13,7 +13,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { 
   getMyAssignment,
   createVerificationRecord,
-  getThermometers
+  getVerifiedThermometers
 } from '../../services/thermometerService';
 import ThermometerVerificationForm from './ThermometerVerificationForm';
 
@@ -25,35 +25,37 @@ const ThermometerVerificationSection = ({
   const [componentLoading, setComponentLoading] = useState(true); 
   const [error, setError] = useState('');
   const [assignment, setAssignment] = useState(null);
-  const [allThermometers, setAllThermometers] = useState([]);
+  const [calibratedInstruments, setCalibratedInstruments] = useState([]);
   const [selectedThermometer, setSelectedThermometer] = useState(null);
   const [showVerificationForm, setShowVerificationForm] = useState(false);
   const theme = useTheme();
 
   useEffect(() => {
-    const fetchAssignment = async () => {
+    const fetchInitialData = async () => {
       try {
         setComponentLoading(true);
         setError('');
-        const [assignmentData, allThermometersData] = await Promise.all([
+        // Fetch assignment and available calibrated instruments concurrently
+        const [assignmentData, instrumentsData] = await Promise.all([
           getMyAssignment(),
-          getThermometers()
+          getVerifiedThermometers()
         ]);
         setAssignment(assignmentData);
-        setAllThermometers(allThermometersData.results || []);
+        setCalibratedInstruments(instrumentsData);
       } catch (err) {
-        console.error("Failed to load thermometer assignment data:", err);
+        console.error("Failed to load initial verification data:", err);
         if (err.response?.status === 404) {
+          // Handle case where assignment is not found, but still might have instruments
           setAssignment(null); 
         } else {
-          setError(err.message || 'Failed to load assignment data.');
+          setError(err.message || 'Failed to load required data.');
         }
       } finally {
         setComponentLoading(false);
       }
     };
 
-    fetchAssignment();
+    fetchInitialData();
   }, []);
 
   const handleSelectThermometer = (thermometer) => {
@@ -164,7 +166,7 @@ const ThermometerVerificationSection = ({
           {showVerificationForm ? (
             <ThermometerVerificationForm 
               thermometer={selectedThermometer}
-              calibratedInstruments={allThermometers.filter(t => t.id !== selectedThermometer.id)}
+              calibratedInstruments={calibratedInstruments}
               onSubmit={handleVerificationSubmit}
               onCancel={handleCancelVerification}
             />
