@@ -608,8 +608,11 @@ const UnifiedCalendarPage = () => {
       } else if (event.assigned_to_name) {
         assignedName = event.assigned_to_name;
       }
-      const start = dayjs(`${event.due_date || event.date || ''} ${event.start_time || ''}`).toDate();
-      const end = event.end_time ? dayjs(`${event.due_date || event.date || ''} ${event.end_time}`).toDate() : undefined;
+      // For pending review tasks, use today's date to ensure they're visible on the calendar
+      // Otherwise use the original due date
+      const useDate = event.status === 'pending_review' ? dayjs().format('YYYY-MM-DD') : (event.due_date || event.date || '');
+      const start = dayjs(`${useDate} ${event.start_time || ''}`).toDate();
+      const end = event.end_time ? dayjs(`${useDate} ${event.end_time}`).toDate() : undefined;
       return {
         ...event,
         id: `cleaning-${event.id}`,
