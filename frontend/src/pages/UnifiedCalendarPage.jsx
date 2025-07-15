@@ -540,25 +540,9 @@ const UnifiedCalendarPage = () => {
   const fetchAllData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Get regular tasks (which might be filtered by date on the backend)
-      const regularTasksData = await getTaskInstances();
-      
-      // Explicitly request pending review tasks with a separate call
-      const pendingReviewTasksData = await getTaskInstances({ status: 'pending_review' });
-      
-      // Combine both sets of tasks, avoiding duplicates
-      const allTasks = [...(regularTasksData.results || regularTasksData)];
-      const pendingReviewTasks = pendingReviewTasksData.results || pendingReviewTasksData;
-      
-      // Add pending review tasks that aren't already in the regular tasks
-      pendingReviewTasks.forEach(pendingTask => {
-        if (!allTasks.some(task => task.id === pendingTask.id)) {
-          allTasks.push(pendingTask);
-        }
-      });
-      
-      console.log('Raw Cleaning Task Instances:', allTasks);
-      setCleaningEvents(allTasks);
+      const cleaningData = await getTaskInstances();
+      console.log('Raw Cleaning Task Instances:', cleaningData);
+      setCleaningEvents(cleaningData.results || cleaningData);
 
       const scheduleData = await getProductionSchedules();
       console.log('Raw Production Schedules:', scheduleData);
@@ -608,11 +592,8 @@ const UnifiedCalendarPage = () => {
       } else if (event.assigned_to_name) {
         assignedName = event.assigned_to_name;
       }
-      // For pending review tasks, use today's date to ensure they're visible on the calendar
-      // Otherwise use the original due date
-      const useDate = event.status === 'pending_review' ? dayjs().format('YYYY-MM-DD') : (event.due_date || event.date || '');
-      const start = dayjs(`${useDate} ${event.start_time || ''}`).toDate();
-      const end = event.end_time ? dayjs(`${useDate} ${event.end_time}`).toDate() : undefined;
+      const start = dayjs(`${event.due_date || event.date || ''} ${event.start_time || ''}`).toDate();
+      const end = event.end_time ? dayjs(`${event.due_date || event.date || ''} ${event.end_time}`).toDate() : undefined;
       return {
         ...event,
         id: `cleaning-${event.id}`,
