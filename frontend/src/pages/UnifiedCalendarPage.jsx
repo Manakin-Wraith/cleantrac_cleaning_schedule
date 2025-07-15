@@ -174,7 +174,7 @@ const UnifiedCalendarPage = () => {
           assignedName = `${fname} ${lname}`.trim() || u.username || u.email || '';
         }
       }
-      const baseDateStr2 = (ev.status === 'pending_review') ? dayjs().format('YYYY-MM-DD') : (ev.due_date || ev.date || '');
+      const baseDateStr2 = ev.due_date || ev.date || '';
       const start = dayjs(`${baseDateStr2} ${ev.start_time || '00:00'}`, ['YYYY-MM-DD HH:mm', 'YYYY-MM-DD']).toDate();
       const end = ev.end_time ? dayjs(`${baseDateStr2} ${ev.end_time}`, 'YYYY-MM-DD HH:mm').toDate() : undefined;
       return {
@@ -216,7 +216,7 @@ const UnifiedCalendarPage = () => {
       } else if (ev.assigned_staff_name) {
         assignedName = ev.assigned_staff_name;
       }
-      const recipeBaseDate2 = (ev.status === 'pending_review') ? dayjs().format('YYYY-MM-DD') : (ev.scheduled_date || '');
+      const recipeBaseDate2 = ev.scheduled_date || '';
       const start = dayjs(`${recipeBaseDate2} ${ev.start_time || '00:00'}`, ['YYYY-MM-DD HH:mm', 'YYYY-MM-DD']).toDate();
       const end = ev.end_time ? dayjs(`${recipeBaseDate2} ${ev.end_time}`, 'YYYY-MM-DD HH:mm').toDate() : undefined;
       return {
@@ -595,8 +595,7 @@ const UnifiedCalendarPage = () => {
       } else if (event.assigned_to_name) {
         assignedName = event.assigned_to_name;
       }
-      // For tasks awaiting manager review, pin them to today to ensure visibility
-      const baseDateStr = (event.status === 'pending_review') ? dayjs().format('YYYY-MM-DD') : (event.due_date || event.date || '');
+      const baseDateStr = event.due_date || event.date || '';
       const startStr = `${baseDateStr} ${event.start_time || '00:00'}`.trim();
       const start = dayjs(startStr, ['YYYY-MM-DD HH:mm', 'YYYY-MM-DD']).toDate();
       let end;
@@ -631,8 +630,7 @@ const UnifiedCalendarPage = () => {
       } else if (event.assigned_staff_name) {
         assignedName = event.assigned_staff_name;
       }
-      // Ensure pending_review production tasks stay on today's date
-      const recipeBaseDate = (event.status === 'pending_review') ? dayjs().format('YYYY-MM-DD') : (event.scheduled_date || '');
+      const recipeBaseDate = event.scheduled_date || '';
       const recipeStartStr = event.scheduled_start_time ? null : `${recipeBaseDate} ${event.start_time || '00:00'}`.trim();
        const start = event.scheduled_start_time ? new Date(event.scheduled_start_time) : dayjs(recipeStartStr, ['YYYY-MM-DD HH:mm', 'YYYY-MM-DD']).toDate();
       let end;

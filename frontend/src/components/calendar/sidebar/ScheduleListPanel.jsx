@@ -147,6 +147,8 @@ const ScheduleListPanel = ({ onRowClick }) => {
       visibleEventsRaw
         .filter((ev) => !['completed', 'done', 'archived'].includes(ev.status?.toLowerCase?.()))
         .filter((ev) => {
+          // Always include pending review tasks regardless of date
+          if (String(ev.status).toLowerCase() === 'pending_review') return true;
           const d = ev.start || ev.scheduled_date || ev.date;
           if (!d) return false;
           const dt = typeof d === 'string' ? parseISO(d) : new Date(d);
