@@ -540,9 +540,25 @@ const UnifiedCalendarPage = () => {
   const fetchAllData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const cleaningData = await getTaskInstances();
-      console.log('Raw Cleaning Task Instances:', cleaningData);
-      setCleaningEvents(cleaningData.results || cleaningData);
+      // Get regular tasks (which might be filtered by date on the backend)
+      const regularTasksData = await getTaskInstances();
+      
+      // Explicitly request pending review tasks with a separate call
+      const pendingReviewTasksData = await getTaskInstances({ status: 'pending_review' });
+      
+      // Combine both sets of tasks, avoiding duplicates
+      const allTasks = [...(regularTasksData.results || regularTasksData)];
+      const pendingReviewTasks = pendingReviewTasksData.results || pendingReviewTasksData;
+      
+      // Add pending review tasks that aren't already in the regular tasks
+      pendingReviewTasks.forEach(pendingTask => {
+        if (!allTasks.some(task => task.id === pendingTask.id)) {
+          allTasks.push(pendingTask);
+        }
+      });
+      
+      console.log('Raw Cleaning Task Instances:', allTasks);
+      setCleaningEvents(allTasks);
 
       const scheduleData = await getProductionSchedules();
       console.log('Raw Production Schedules:', scheduleData);
