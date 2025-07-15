@@ -12,11 +12,12 @@ import {
   Button,
   Chip,
   Collapse,
-  Timeline,
-  TimelineItem,
-  TimelineContent,
   Alert,
 } from '@mui/material';
+// Timeline components are in MUI Lab, not core MUI
+import Timeline from '@mui/lab/Timeline';
+import TimelineItem from '@mui/lab/TimelineItem';
+import TimelineContent from '@mui/lab/TimelineContent';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -196,32 +197,26 @@ export default function TaskDrawer({
           {(task.created_at || task.review_requested_at || task.completed_at) && (
             <Box sx={{ mt: 2, mb: 1 }}>
               <Typography variant="subtitle2" gutterBottom>Status Timeline</Typography>
-              <Timeline sx={{ m: 0, p: 0 }}>
+              <Stack spacing={1} sx={{ pl: 1 }}>
                 {task.created_at && (
-                  <TimelineItem sx={{ minHeight: 'auto', '&:before': { display: 'none' } }}>
-                    <TimelineContent sx={{ py: 0.5, px: 1 }}>
-                      <Typography variant="body2">Created</Typography>
-                      <Typography variant="caption" color="text.secondary">{formatDate(task.created_at)}</Typography>
-                    </TimelineContent>
-                  </TimelineItem>
+                  <Box>
+                    <Typography variant="body2">Created</Typography>
+                    <Typography variant="caption" color="text.secondary">{formatDate(task.created_at)}</Typography>
+                  </Box>
                 )}
                 {isPendingReview && task.review_requested_at && (
-                  <TimelineItem sx={{ minHeight: 'auto', '&:before': { display: 'none' } }}>
-                    <TimelineContent sx={{ py: 0.5, px: 1 }}>
-                      <Typography variant="body2">Submitted for Review</Typography>
-                      <Typography variant="caption" color="text.secondary">{formatDate(task.review_requested_at)}</Typography>
-                    </TimelineContent>
-                  </TimelineItem>
+                  <Box>
+                    <Typography variant="body2">Submitted for Review</Typography>
+                    <Typography variant="caption" color="text.secondary">{formatDate(task.review_requested_at)}</Typography>
+                  </Box>
                 )}
                 {task.completed_at && (
-                  <TimelineItem sx={{ minHeight: 'auto', '&:before': { display: 'none' } }}>
-                    <TimelineContent sx={{ py: 0.5, px: 1 }}>
-                      <Typography variant="body2">Completed</Typography>
-                      <Typography variant="caption" color="text.secondary">{formatDate(task.completed_at)}</Typography>
-                    </TimelineContent>
-                  </TimelineItem>
+                  <Box>
+                    <Typography variant="body2">Completed</Typography>
+                    <Typography variant="caption" color="text.secondary">{formatDate(task.completed_at)}</Typography>
+                  </Box>
                 )}
-              </Timeline>
+              </Stack>
             </Box>
           )}
 
