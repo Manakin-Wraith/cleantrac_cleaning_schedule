@@ -592,13 +592,16 @@ const UnifiedCalendarPage = () => {
       } else if (event.assigned_to_name) {
         assignedName = event.assigned_to_name;
       }
-      const start = dayjs(`${event.due_date || event.date || ''} ${event.start_time || ''}`).toDate();
-      const end = event.end_time ? dayjs(`${event.due_date || event.date || ''} ${event.end_time}`).toDate() : undefined;
+      // For tasks awaiting manager review, pin them to today to ensure visibility
+      const baseDateStr = (event.status === 'pending_review') ? dayjs().format('YYYY-MM-DD') : (event.due_date || event.date || '');
+      const start = dayjs(`${baseDateStr} ${event.start_time || ''}`).toDate();
+      const end = event.end_time ? dayjs(`${baseDateStr} ${event.end_time}`).toDate() : undefined;
       return {
         ...event,
         id: `cleaning-${event.id}`,
         originalType: 'cleaning',
         assignedToName: assignedName || 'Unassigned',
+        isPendingReview: event.status === 'pending_review',
         start,
         end,
       };
@@ -619,9 +622,11 @@ const UnifiedCalendarPage = () => {
       } else if (event.assigned_staff_name) {
         assignedName = event.assigned_staff_name;
       }
-      const start = event.scheduled_start_time ? new Date(event.scheduled_start_time) : dayjs(`${event.scheduled_date || ''} ${event.start_time || ''}`).toDate();
-      const end = event.scheduled_end_time ? new Date(event.scheduled_end_time) : (event.end_time ? dayjs(`${event.scheduled_date || ''} ${event.end_time}`).toDate() : undefined);
-      return { ...event, id: `recipe-${event.id}`, originalType: 'recipe', assignedToName: assignedName || 'Unassigned', start, end };
+      // Ensure pending_review production tasks stay on today's date
+      const recipeBaseDate = (event.status === 'pending_review') ? dayjs().format('YYYY-MM-DD') : (event.scheduled_date || '');
+      const start = event.scheduled_start_time ? new Date(event.scheduled_start_time) : dayjs(`${recipeBaseDate} ${event.start_time || ''}`).toDate();
+      const end = event.scheduled_end_time ? new Date(event.scheduled_end_time) : (event.end_time ? dayjs(`${recipeBaseDate} ${event.end_time}`).toDate() : undefined);
+      return { ...event, id: `recipe-${event.id}`, originalType: 'recipe', assignedToName: assignedName || 'Unassigned', isPendingReview: event.status === 'pending_review', start, end };
     });
 
     // Filter based on selected event type

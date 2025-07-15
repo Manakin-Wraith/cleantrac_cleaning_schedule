@@ -63,7 +63,13 @@ export default function TaskDrawer({
               label={(task.status || '').replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}
               size="small"
               variant={['pending','scheduled'].includes(task.status) ? 'outlined' : 'filled'}
-              color={task.status==='completed' ? 'success' : task.status==='pending' ? 'warning' : task.status==='scheduled' ? 'info' : 'default'}
+              color={
+                task.status==='completed' ? 'success' :
+                task.status==='pending_review' ? 'warning' :
+                task.status==='pending' ? 'warning' :
+                task.status==='scheduled' ? 'info' :
+                'default'
+              }
               sx={{
                 fontWeight:'medium',
                 ...(task.status==='pending' && {
