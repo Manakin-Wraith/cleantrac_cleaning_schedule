@@ -116,6 +116,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://10.0.0.42:5173",
     "https://cleentrac.com",
     "https://www.cleentrac.com",
+    "https://api.cleentrac.com",     # Production API domain
     
 ]
 
@@ -127,6 +128,8 @@ if _extra_origins:
 CSRF_TRUSTED_ORIGINS = [
     "https://cleentrac.com",
     "https://www.cleentrac.com",
+    "https://api.cleentrac.com",     # Production API domain
+    "https://*.manager.13-60-56-181.nip.io",  # Manager subdomain pattern
 ]
 
 MIDDLEWARE = [
