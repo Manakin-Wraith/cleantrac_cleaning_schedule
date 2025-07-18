@@ -104,6 +104,11 @@ INSTALLED_APPS = SHARED_APPS + TENANT_APPS
 TENANT_MODEL = "customers.Store"
 TENANT_DOMAIN_MODEL = "customers.StoreDomain"
 
+# Database routing for django-tenants
+DATABASE_ROUTERS = [
+    'django_tenants.routers.TenantSyncRouter',
+]
+
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",         # For local frontend development (same machine)
