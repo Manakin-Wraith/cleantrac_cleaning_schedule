@@ -51,6 +51,10 @@ ALLOWED_HOSTS = [
     "172.31.42.178",
     "cleentrac-alb-1566483969.eu-north-1.elb.amazonaws.com",
     "ip-172-31-42-178.eu-north-1.compute.internal",       # For accessing frontend from other devices on the network
+    ".manager.13-60-56-181.nip.io",
+    # Tenant domains for multi-tenant setup
+    "capestation.receiving.cleentrac.com",
+    "capestation.manager.cleentrac.com",
 ]
 
 # Extend ALLOWED_HOSTS with values from environment, e.g. when running on EC2
@@ -65,18 +69,40 @@ if _extra_hosts:
 
 # Application definition
 
-INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
+# ------------------------------------------------------------------
+# Multi-tenant configuration
+# ------------------------------------------------------------------
+# Split apps into SHARED_APPS (live in the public schema) and
+# TENANT_APPS (installed in every tenant schema).  django-tenants
+# requires that "django_tenants" and the app containing the tenant
+# model ("customers" below) come first in SHARED_APPS.
+
+SHARED_APPS = [
+    "django_tenants",          # must be FIRST
+    "customers",               # holds Store & StoreDomain models
+    # Django foundational apps – live in public schema
     "django.contrib.contenttypes",
+    "django.contrib.auth",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.admin",
+    # Third-party apps
     "rest_framework",
-    "rest_framework.authtoken",  # Add this for token authentication
-    "corsheaders",  # For CORS
+    "rest_framework.authtoken",
+    "corsheaders",
+]
+
+# TENANT_APPS (installed in every tenant schema).  django-tenants
+TENANT_APPS = [
     "core.apps.CoreConfig",
 ]
+
+INSTALLED_APPS = SHARED_APPS + TENANT_APPS
+
+# Tenant configuration
+TENANT_MODEL = "customers.Store"
+TENANT_DOMAIN_MODEL = "customers.StoreDomain"
 
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
