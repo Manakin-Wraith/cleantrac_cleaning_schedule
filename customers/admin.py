@@ -23,7 +23,7 @@ class StoreAdmin(admin.ModelAdmin):
     search_fields = ('name', 'schema_name')
     readonly_fields = (
         'schema_name', 
-        'created_on', 
+        'created_at', 
         'get_user_count', 
         'get_data_summary',
         'get_domains_detail'
