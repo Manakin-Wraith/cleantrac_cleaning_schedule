@@ -191,10 +191,15 @@ WSGI_APPLICATION = "cleantrac_project.wsgi.application"
 # Environment variable must be set for production
 _database_url = os.getenv("DATABASE_CLEANTRAC_URL")
 if not _database_url:
-    raise ValueError(
-        "DATABASE_CLEANTRAC_URL environment variable is required for multi-tenant functionality. "
-        "Please ensure it's set in your environment configuration."
-    )
+    # Allow SQLite fallback for development and CI/CD testing only
+    if DEBUG or os.getenv('CI') or os.getenv('GITHUB_ACTIONS'):
+        print("WARNING: Using SQLite fallback for development/testing. Multi-tenant features will not work.")
+        _database_url = "sqlite:///" + str(BASE_DIR / "db.sqlite3")
+    else:
+        raise ValueError(
+            "DATABASE_CLEANTRAC_URL environment variable is required for multi-tenant functionality. "
+            "Please ensure it's set in your environment configuration."
+        )
 
 DATABASES = {
     # CleanTrac primary DB - always use PostgreSQL for multi-tenant functionality
