@@ -180,9 +180,9 @@ class OriginalSupplierAdmin(OriginalDataModelAdmin):
 
 class OriginalCleaningItemAdmin(OriginalDataModelAdmin):
     """Admin for original CleaningItem data."""
-    list_display = ('name', 'department', 'frequency', 'estimated_duration', 'created_at')
+    list_display = ('name', 'department', 'frequency', 'method', 'created_at')
     list_filter = ('department', 'frequency')
-    search_fields = ('name', 'description', 'department__name')
+    search_fields = ('name', 'method', 'department__name')
     readonly_fields = [f.name for f in CleaningItem._meta.fields]
 
 
