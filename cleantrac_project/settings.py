@@ -187,17 +187,16 @@ WSGI_APPLICATION = "cleantrac_project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# Database configuration - use PostgreSQL for multi-tenant setup
+_database_url = os.getenv("DATABASE_CLEANTRAC_URL")
+if not _database_url:
+    # Fallback to direct PostgreSQL configuration if environment variable is not available
+    _database_url = "postgres://cleantrac_app:Mostert51212!@database-receiving.cb8ak2ii610x.eu-north-1.rds.amazonaws.com:5432/cleantrac"
+
 DATABASES = {
-    # CleanTrac primary DB
-    "default": (
-        dj_database_url.parse(
-            os.environ["DATABASE_CLEANTRAC_URL"], conn_max_age=600, ssl_require=True
-        )
-        if os.getenv("DATABASE_CLEANTRAC_URL")
-        else {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+    # CleanTrac primary DB - always use PostgreSQL for multi-tenant functionality
+    "default": dj_database_url.parse(
+        _database_url, conn_max_age=600, ssl_require=True
     ),
 
     # Read-only Traceability database on the same RDS instance
