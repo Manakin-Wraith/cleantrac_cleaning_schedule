@@ -20,12 +20,18 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.authtoken import views as authtoken_views
+from core.auth_views import EnhancedObtainAuthToken
+from customers.views import tenant_dashboard, tenant_detail, tenant_health_check
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('admin/tenant-dashboard/', tenant_dashboard, name='tenant_dashboard'),
+    path('admin/tenant/<int:tenant_id>/', tenant_detail, name='tenant_detail'),
+    path('admin/tenant/<int:tenant_id>/health/', tenant_health_check, name='tenant_health_check'),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')), 
-    path('api/token-auth/', authtoken_views.obtain_auth_token), 
+    path('api/token-auth/', EnhancedObtainAuthToken.as_view(), name='api_token_auth'),
     path('api/', include('core.urls')), 
+    path('customers/', include('customers.urls')),
 ]
 
 # Serve media files during development

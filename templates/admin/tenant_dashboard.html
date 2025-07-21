@@ -1,0 +1,211 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Multi-Tenant Dashboard{% endblock %}
+
+{% block extrahead %}
+<style>
+    .tenant-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .tenant-card.active {
+        border-left: 4px solid #28a745;
+    }
+    .tenant-card.empty {
+        border-left: 4px solid #ffc107;
+    }
+    .tenant-card.error {
+        border-left: 4px solid #dc3545;
+    }
+    .tenant-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .tenant-name {
+        font-size: 1.4em;
+        font-weight: bold;
+        color: #333;
+    }
+    .tenant-schema {
+        background: #f8f9fa;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.9em;
+    }
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    .status-active { background: #d4edda; color: #155724; }
+    .status-empty { background: #fff3cd; color: #856404; }
+    .status-error { background: #f8d7da; color: #721c24; }
+    .data-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    .data-item {
+        text-align: center;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 6px;
+    }
+    .data-value {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #007cba;
+    }
+    .data-label {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 5px;
+    }
+    .domains-list {
+        margin-top: 10px;
+    }
+    .domain-item {
+        display: inline-block;
+        background: #e9ecef;
+        padding: 4px 8px;
+        margin: 2px;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+    .domain-primary {
+        background: #007cba;
+        color: white;
+    }
+    .summary-stats {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+    .stat-item {
+        text-align: center;
+    }
+    .stat-value {
+        font-size: 2em;
+        font-weight: bold;
+        color: #007cba;
+    }
+    .stat-label {
+        color: #666;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Multi-Tenant Dashboard</h1>
+    <p>Manage and monitor all CleanTrac tenants from this central dashboard.</p>
+</div>
+
+<div class="summary-stats">
+    <div class="stat-item">
+        <div class="stat-value">{{ total_tenants }}</div>
+        <div class="stat-label">Total Tenants</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-value">{{ active_tenants }}</div>
+        <div class="stat-label">Active Tenants</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-value">{{ total_tenants|add:"-"|add:active_tenants }}</div>
+        <div class="stat-label">Empty Tenants</div>
+    </div>
+</div>
+
+<div class="tenants-grid">
+    {% for tenant_info in tenant_data %}
+    <div class="tenant-card {{ tenant_info.status }}">
+        <div class="tenant-header">
+            <div>
+                <div class="tenant-name">{{ tenant_info.tenant.name }}</div>
+                <div class="tenant-schema">{{ tenant_info.tenant.schema_name }}</div>
+            </div>
+            <div>
+                <span class="status-badge status-{{ tenant_info.status }}">{{ tenant_info.status }}</span>
+            </div>
+        </div>
+        
+        {% if tenant_info.error %}
+            <div style="color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 4px;">
+                <strong>Error:</strong> {{ tenant_info.error }}
+            </div>
+        {% else %}
+            <div class="data-grid">
+                <div class="data-item">
+                    <div class="data-value">{{ tenant_info.users }}</div>
+                    <div class="data-label">Users</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-value">{{ tenant_info.departments }}</div>
+                    <div class="data-label">Departments</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-value">{{ tenant_info.tasks }}</div>
+                    <div class="data-label">Tasks</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-value">{{ tenant_info.receiving_records }}</div>
+                    <div class="data-label">Receiving</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-value">{{ tenant_info.temp_logs }}</div>
+                    <div class="data-label">Temp Logs</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-value">{{ tenant_info.cleaning_items }}</div>
+                    <div class="data-label">Cleaning Items</div>
+                </div>
+            </div>
+        {% endif %}
+        
+        <div class="domains-list">
+            <strong>Domains:</strong>
+            {% for domain in tenant_info.domains %}
+                <span class="domain-item {% if domain.is_primary %}domain-primary{% endif %}">
+                    {{ domain.domain }}
+                    {% if domain.is_primary %} (Primary){% endif %}
+                </span>
+            {% empty %}
+                <span style="color: #dc3545;">No domains configured</span>
+            {% endfor %}
+        </div>
+        
+        <div style="margin-top: 15px; text-align: right;">
+            <a href="{% url 'admin:tenant_detail' tenant_info.tenant.pk %}" class="button" style="margin-right: 10px;">View Details</a>
+            <a href="{% url 'admin:customers_store_change' tenant_info.tenant.pk %}" class="button default">Edit Tenant</a>
+        </div>
+    </div>
+    {% empty %}
+    <div style="text-align: center; padding: 40px; color: #666;">
+        <h3>No tenants found</h3>
+        <p>Create your first tenant to get started.</p>
+        <a href="{% url 'admin:customers_store_add' %}" class="button default">Add Tenant</a>
+    </div>
+    {% endfor %}
+</div>
+
+<div style="margin-top: 30px; text-align: center;">
+    <a href="{% url 'admin:customers_store_add' %}" class="button default">Add New Tenant</a>
+    <a href="{% url 'admin:index' %}" class="button">Back to Admin</a>
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        CleanTrac Multi-Tenant Admin
+    </a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}
+<div style="background: #417690; padding: 10px 20px; margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="color: white;">
+            <strong>Multi-Tenant Management</strong>
+            {% if request.session.current_tenant %}
+                | Current Context: <span style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px;">{{ request.session.current_tenant.name }}</span>
+            {% endif %}
+        </div>
+        <div>
+            <a href="{% url 'tenant_dashboard' %}" style="color: white; text-decoration: none; background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 4px; margin-right: 10px;">
+                📊 Tenant Dashboard
+            </a>
+            <a href="{% url 'admin:customers_store_changelist' %}" style="color: white; text-decoration: none; background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 4px;">
+                🏢 Manage Tenants
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* Custom styling for multi-tenant admin */
+    .tenant-context-bar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 8px 20px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+    
+    .tenant-selector {
+        display: inline-block;
+        margin-left: 15px;
+    }
+    
+    .tenant-selector select {
+        background: rgba(255,255,255,0.9);
+        border: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    
+    .admin-tenant-info {
+        position: fixed;
+        top: 0;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 0 0 4px 4px;
+        font-size: 12px;
+        z-index: 1000;
+    }
+    
+    /* Enhanced table styling */
+    .results table {
+        border-collapse: collapse;
+    }
+    
+    .results th {
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .results td {
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    /* Status indicators */
+    .status-active { color: #28a745; font-weight: bold; }
+    .status-inactive { color: #dc3545; font-weight: bold; }
+    .status-pending { color: #ffc107; font-weight: bold; }
+</style>
+
+<script>
+function switchTenant(tenantId) {
+    fetch('{% url "customers:switch_tenant_context" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: 'tenant_id=' + tenantId
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error switching tenant: ' + data.error);
+        }
+    });
+}
+</script>
+{% endblock %}
+
+{% block usertools %}
+{% if request.session.current_tenant %}
+<div class="admin-tenant-info">
+    🏢 {{ request.session.current_tenant.name }}
+</div>
+{% endif %}
+{{ block.super }}
+{% endblock %}
