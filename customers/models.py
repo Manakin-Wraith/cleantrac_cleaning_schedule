@@ -14,7 +14,7 @@ class Store(TenantMixin):
     auto_create_schema = True
     auto_drop_schema = False  # Safety: don't auto-drop schemas
     
-    created_on = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         verbose_name = "Store (Tenant)"
