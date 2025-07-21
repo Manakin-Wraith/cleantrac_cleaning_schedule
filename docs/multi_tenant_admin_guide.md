@@ -29,11 +29,13 @@ The CleanTrac admin interface was designed to provide administrators with:
 
 ## 🎨 Admin Interfaces
 
-### 1. Main Admin Interface (Tenant Data)
+### 1. Tenant Core Data Admin Interface
 
-**URL**: `https://api.cleentrac.com/admin/`
+**URL**: `https://capestation.manager.cleentrac.com/admin/` or `https://capestation.receiving.cleentrac.com/admin/`
 
-**Purpose**: Day-to-day operations and tenant-specific data management
+**Purpose**: Day-to-day operations and tenant-specific core data management
+
+**IMPORTANT**: Core models are only accessible through tenant domains, not through the main API domain.
 
 **Features**:
 - Beautiful dark theme UI with professional styling
@@ -106,7 +108,7 @@ The CleanTrac admin interface was designed to provide administrators with:
 
 ### Daily Operations Workflow
 
-1. **Access Tenant Admin**: Go to `https://api.cleentrac.com/admin/`
+1. **Access Tenant Core Data Admin**: Go to `https://capestation.manager.cleentrac.com/admin/`
 2. **Login**: Use your admin credentials
 3. **Navigate**: Use the enhanced dashboard to access core models
 4. **Manage Data**: Perform CRUD operations on tenant-specific data
@@ -274,7 +276,8 @@ The CleanTrac admin interface was designed to provide administrators with:
 ### Operational Guidelines
 
 **For Daily Operations**:
-- Use tenant admin (`/admin/`) for all operational tasks
+- Use tenant admin (`https://capestation.manager.cleentrac.com/admin/`) for all core data operational tasks
+- Use main admin (`https://api.cleentrac.com/admin/`) for multi-tenant system management
 - Regularly monitor user counts and tenant health
 - Use multi-tenant dashboard for overview information
 - Maintain proper user roles and department assignments
