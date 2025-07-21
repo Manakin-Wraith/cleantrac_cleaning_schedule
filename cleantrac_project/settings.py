@@ -221,11 +221,13 @@ if not _database_url:
             "Please ensure it's set in your environment configuration."
         )
 
+# Parse database URL but override the ENGINE for django-tenants compatibility
+_parsed_db = dj_database_url.parse(_database_url, conn_max_age=600, ssl_require=True)
+_parsed_db['ENGINE'] = 'django_tenants.postgresql_backend'
+
 DATABASES = {
-    # CleanTrac primary DB - always use PostgreSQL for multi-tenant functionality
-    "default": dj_database_url.parse(
-        _database_url, conn_max_age=600, ssl_require=True
-    ),
+    # CleanTrac primary DB - use django-tenants PostgreSQL backend for multi-tenant functionality
+    "default": _parsed_db,
 
     # Read-only Traceability database on the same RDS instance
     "traceability": {
