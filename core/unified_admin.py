@@ -221,8 +221,8 @@ class UnifiedThermometerAdmin(SchemaAwareModelAdmin):
 
 class UnifiedDepartmentAdmin(SchemaAwareModelAdmin):
     """Admin for Department data with schema switching."""
-    list_display = ('name', 'description', 'created_at')
-    search_fields = ('name', 'description')
+    list_display = ('name',)
+    search_fields = ('name',)
 
 
 # Create the unified admin site instance
