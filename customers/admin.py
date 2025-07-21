@@ -17,10 +17,9 @@ class StoreAdmin(admin.ModelAdmin):
         'get_domains', 
         'get_user_count',
         'get_data_summary',
-        'created_on',
-        'is_active'
+        'created_on'
     )
-    list_filter = ('created_on', 'auto_create_schema')
+    list_filter = ('created_on',)
     search_fields = ('name', 'schema_name')
     readonly_fields = (
         'schema_name', 
@@ -33,9 +32,6 @@ class StoreAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Tenant Information', {
             'fields': ('name', 'schema_name', 'created_on')
-        }),
-        ('Configuration', {
-            'fields': ('auto_create_schema', 'auto_drop_schema')
         }),
         ('Data Summary', {
             'fields': ('get_user_count', 'get_data_summary'),
