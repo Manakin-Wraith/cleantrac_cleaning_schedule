@@ -133,6 +133,10 @@ CSRF_TRUSTED_ORIGINS = [
     "https://www.cleentrac.com",
     "https://api.cleentrac.com",     # Production API domain
     "https://*.manager.13-60-56-181.nip.io",  # Manager subdomain pattern
+    "https://capestation.manager.cleentrac.com",  # Cape Station tenant admin
+    "https://capestation.receiving.cleentrac.com",  # Cape Station tenant receiving
+    "https://*.manager.cleentrac.com",  # All tenant manager domains
+    "https://*.receiving.cleentrac.com",  # All tenant receiving domains
 ]
 
 MIDDLEWARE = [
