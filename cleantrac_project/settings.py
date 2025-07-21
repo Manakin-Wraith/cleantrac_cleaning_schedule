@@ -86,6 +86,9 @@ SHARED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Admin theme - must be before django.contrib.admin
+    "admin_interface",
+    "colorfield",
     "django.contrib.admin",
     # Third-party apps
     "rest_framework",
