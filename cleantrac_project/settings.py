@@ -188,10 +188,13 @@ WSGI_APPLICATION = "cleantrac_project.wsgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 # Database configuration - use PostgreSQL for multi-tenant setup
+# Environment variable must be set for production
 _database_url = os.getenv("DATABASE_CLEANTRAC_URL")
 if not _database_url:
-    # Fallback to direct PostgreSQL configuration if environment variable is not available
-    _database_url = "postgres://cleantrac_app:Mostert51212!@database-receiving.cb8ak2ii610x.eu-north-1.rds.amazonaws.com:5432/cleantrac"
+    raise ValueError(
+        "DATABASE_CLEANTRAC_URL environment variable is required for multi-tenant functionality. "
+        "Please ensure it's set in your environment configuration."
+    )
 
 DATABASES = {
     # CleanTrac primary DB - always use PostgreSQL for multi-tenant functionality
