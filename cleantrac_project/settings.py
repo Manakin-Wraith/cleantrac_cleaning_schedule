@@ -86,10 +86,6 @@ SHARED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Admin theme - must be before django.contrib.admin
-    "admin_interface",
-    "colorfield",
-    "django.contrib.admin",
     # Third-party apps
     "rest_framework",
     "rest_framework.authtoken",
@@ -98,6 +94,11 @@ SHARED_APPS = [
 
 # TENANT_APPS (installed in every tenant schema).  django-tenants
 TENANT_APPS = [
+    # Admin interface - moved here to access tenant Core models
+    "admin_interface",
+    "colorfield",
+    "django.contrib.admin",
+    # Core app with all business models
     "core.apps.CoreConfig",
 ]
 
