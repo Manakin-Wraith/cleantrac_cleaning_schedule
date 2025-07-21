@@ -188,6 +188,23 @@ WSGI_APPLICATION = "cleantrac_project.wsgi.application"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 # Database configuration - use PostgreSQL for multi-tenant setup
+# Try to load environment variables from file if not available in environment
+if not os.getenv("DATABASE_CLEANTRAC_URL"):
+    try:
+        # Try to load from systemd environment file
+        env_file_path = "/etc/cleantrac.env"
+        if os.path.exists(env_file_path):
+            with open(env_file_path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        if key == 'DATABASE_CLEANTRAC_URL':
+                            os.environ[key] = value
+                            break
+    except Exception as e:
+        print(f"Warning: Could not load environment file: {e}")
+
 # Environment variable must be set for production
 _database_url = os.getenv("DATABASE_CLEANTRAC_URL")
 if not _database_url:
