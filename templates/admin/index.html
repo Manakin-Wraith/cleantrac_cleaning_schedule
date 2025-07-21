@@ -1,64 +1,75 @@
-{% extends "admin/index.html" %}
-{% load i18n admin_urls static %}
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a></h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
 
 {% block content %}
-{{ block.super }}
+<div id="content-main">
+    {% if app_list %}
+        {% for app in app_list %}
+            <div class="app-{{ app.app_label }} module">
+                <table>
+                    <caption>
+                        <a href="{{ app.app_url }}" class="section" title="{% blocktrans with name=app.name %}Models in the {{ name }} application{% endblocktrans %}">{{ app.name }}</a>
+                    </caption>
+                    {% for model in app.models %}
+                        <tr class="model-{{ model.object_name|lower }}">
+                            {% if model.admin_url %}
+                                <th scope="row"><a href="{{ model.admin_url }}">{{ model.name }}</a></th>
+                            {% else %}
+                                <th scope="row">{{ model.name }}</th>
+                            {% endif %}
 
-<div class="module">
-    <h2>Multi-Tenant Data Access</h2>
-    <div class="module">
-        <h3>Core Data Management</h3>
-        <p>Access both tenant-specific and original database core data:</p>
-        
-        <div style="display: flex; gap: 20px; margin: 20px 0;">
-            <div style="flex: 1; border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
-                <h4 style="color: #417690; margin-top: 0;">🏢 Tenant Core Data (Current)</h4>
-                <p>Access core models for the current tenant (Cape Station):</p>
-                <ul>
-                    <li><a href="{% url 'admin:core_userprofile_changelist' %}">User Profiles</a> - Tenant user data</li>
-                    <li><a href="{% url 'admin:core_taskinstance_changelist' %}">Task Instances</a> - Tenant tasks</li>
-                    <li><a href="{% url 'admin:core_temperaturelog_changelist' %}">Temperature Logs</a> - Tenant temperature data</li>
-                    <li><a href="{% url 'admin:core_supplier_changelist' %}">Suppliers</a> - Tenant suppliers</li>
-                    <li><a href="{% url 'admin:core_cleaningitem_changelist' %}">Cleaning Items</a> - Tenant cleaning tasks</li>
-                    <li><a href="{% url 'admin:core_thermometer_changelist' %}">Thermometers</a> - Tenant thermometer data</li>
-                </ul>
-                <p><strong>Schema:</strong> Cape Station tenant schema</p>
-                <p><strong>Data:</strong> Isolated tenant-specific data</p>
+                            {% if model.add_url %}
+                                <td><a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a></td>
+                            {% else %}
+                                <td>&nbsp;</td>
+                            {% endif %}
+
+                            {% if model.admin_url %}
+                                {% if model.view_only %}
+                                    <td><a href="{{ model.admin_url }}" class="viewlink">{% trans 'View' %}</a></td>
+                                {% else %}
+                                    <td><a href="{{ model.admin_url }}" class="changelink">{% trans 'Change' %}</a></td>
+                                {% endif %}
+                            {% else %}
+                                <td>&nbsp;</td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </table>
             </div>
-            
-            <div style="flex: 1; border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
-                <h4 style="color: #BA2121; margin-top: 0;">📊 Original Database (Public Schema)</h4>
-                <p>Access original production data from Streamlit app:</p>
-                <ul>
-                    <li><a href="/original-admin/core/userprofile/">User Profiles</a> - Original user data</li>
-                    <li><a href="/original-admin/core/taskinstance/">Task Instances</a> - Original tasks</li>
-                    <li><a href="/original-admin/core/temperaturelog/">Temperature Logs</a> - Original temperature data</li>
-                    <li><a href="/original-admin/core/supplier/">Suppliers</a> - Original suppliers</li>
-                    <li><a href="/original-admin/core/cleaningitem/">Cleaning Items</a> - Original cleaning tasks</li>
-                    <li><a href="/original-admin/core/thermometer/">Thermometers</a> - Original thermometer data</li>
-                </ul>
-                <p><strong>Schema:</strong> Public schema (read-only)</p>
-                <p><strong>Data:</strong> Source of truth / migration reference</p>
-            </div>
-        </div>
-        
-        <div style="margin: 20px 0;">
-            <h4>🔧 Data Management Tools</h4>
-            <ul class="actionlist">
-                <li><a href="/original-admin/" class="addlink">Access Original Database Admin</a></li>
-                <li><a href="/original-admin/data-comparison/" class="changelink">Compare Data Counts (Tenant vs Original)</a></li>
-                <li><a href="/original-admin/schema-info/" class="viewlink">View Schema Information</a></li>
-                <li><a href="{% url 'tenant_dashboard' %}" class="changelink">Multi-Tenant Dashboard</a></li>
+        {% endfor %}
+    {% else %}
+        <p>{% trans "You don't have permission to view or edit anything." %}</p>
+    {% endif %}
+</div>
+
+<!-- Multi-Tenant Tools Section -->
+<div class="module" style="margin-top: 30px;">
+    <h2>🔧 Multi-Tenant Management Tools</h2>
+    <div style="display: flex; gap: 20px; margin: 20px 0;">
+        <div style="flex: 1; border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+            <h4 style="color: #BA2121; margin-top: 0;">📊 Original Database Access</h4>
+            <ul>
+                <li><a href="/original-admin/" class="addlink">Original Database Admin</a></li>
+                <li><a href="/original-admin/data-comparison/" class="changelink">Data Comparison Tool</a></li>
+                <li><a href="/original-admin/schema-info/" class="viewlink">Schema Information</a></li>
             </ul>
         </div>
         
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h4 style="margin-top: 0;">💡 Usage Guide</h4>
+        <div style="flex: 1; border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+            <h4 style="color: #417690; margin-top: 0;">🏢 Tenant Management</h4>
             <ul>
-                <li><strong>Tenant Core Data:</strong> Use this for day-to-day operations, user management, and tenant-specific data</li>
-                <li><strong>Original Database:</strong> Use this for data verification, migration auditing, and accessing source data</li>
-                <li><strong>Data Comparison:</strong> Monitor migration status and data integrity between schemas</li>
-                <li><strong>Schema Info:</strong> Technical details about database structure and table relationships</li>
+                <li><a href="{% url 'tenant_dashboard' %}" class="changelink">Multi-Tenant Dashboard</a></li>
+                <li><a href="{% url 'admin:customers_store_changelist' %}" class="changelink">Manage Tenants</a></li>
+                <li><a href="{% url 'admin:customers_storedomain_changelist' %}" class="changelink">Manage Domains</a></li>
             </ul>
         </div>
     </div>
