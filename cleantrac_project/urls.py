@@ -24,10 +24,12 @@ from rest_framework.authtoken import views as authtoken_views
 from core.auth_views import EnhancedObtainAuthToken
 from customers.views import tenant_dashboard, tenant_detail, tenant_health_check
 from core.original_admin import original_admin_site
+from core.unified_admin import unified_admin_site
 import os
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('unified-admin/', unified_admin_site.urls),
     path('original-admin/', original_admin_site.urls),
     path('admin/tenant-dashboard/', tenant_dashboard, name='tenant_dashboard'),
     path('admin/tenant/<int:tenant_id>/', tenant_detail, name='tenant_detail'),

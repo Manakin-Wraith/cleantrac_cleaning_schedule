@@ -1,0 +1,211 @@
+{% extends "admin/index.html" %}
+{% load i18n static admin_urls %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .schema-switcher {
+        background: #417690;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        color: white;
+    }
+    
+    .schema-switcher h3 {
+        margin: 0 0 10px 0;
+        color: white;
+    }
+    
+    .schema-switcher .current-schema {
+        font-weight: bold;
+        font-size: 1.1em;
+        margin-bottom: 10px;
+    }
+    
+    .schema-switcher form {
+        display: inline-block;
+        margin-right: 15px;
+    }
+    
+    .schema-switcher select {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 4px;
+        margin-right: 10px;
+        font-size: 14px;
+    }
+    
+    .schema-switcher button {
+        background: #79aec8;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    
+    .schema-switcher button:hover {
+        background: #609ab6;
+    }
+    
+    .schema-indicator {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-left: 10px;
+    }
+    
+    .schema-tenant {
+        background: #28a745;
+        color: white;
+    }
+    
+    .schema-original {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .unified-tools {
+        background: #f8f9fa;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .unified-tools h3 {
+        margin: 0 0 10px 0;
+        color: #495057;
+    }
+    
+    .unified-tools a {
+        display: inline-block;
+        padding: 8px 16px;
+        background: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        margin-right: 10px;
+        margin-bottom: 5px;
+    }
+    
+    .unified-tools a:hover {
+        background: #0056b3;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="schema-switcher">
+    <h3>
+        <i class="icon-admin" style="margin-right: 8px;"></i>
+        Schema Data Selector
+    </h3>
+    
+    <div class="current-schema">
+        Currently viewing: 
+        {% if request.session.admin_schema_type == 'original' %}
+            <span class="schema-indicator schema-original">Original Data (Public Schema)</span>
+        {% else %}
+            <span class="schema-indicator schema-tenant">Cape Station Data (Tenant Schema)</span>
+        {% endif %}
+    </div>
+    
+    <form method="post" action="{% url 'unified_admin:switch_schema' %}">
+        {% csrf_token %}
+        <select name="schema_type" onchange="this.form.submit()">
+            <option value="tenant" {% if request.session.admin_schema_type != 'original' %}selected{% endif %}>
+                Cape Station Data (Current Tenant)
+            </option>
+            <option value="original" {% if request.session.admin_schema_type == 'original' %}selected{% endif %}>
+                Original Data (Source Database)
+            </option>
+        </select>
+        <noscript>
+            <button type="submit">Switch Schema</button>
+        </noscript>
+    </form>
+    
+    <div style="margin-top: 10px; font-size: 14px; opacity: 0.9;">
+        {% if request.session.admin_schema_type == 'original' %}
+            <strong>Read-Only Mode:</strong> You can view original data but cannot add, edit, or delete records.
+        {% else %}
+            <strong>Full Access:</strong> You can view, add, edit, and delete tenant data.
+        {% endif %}
+    </div>
+</div>
+
+<div class="unified-tools">
+    <h3>
+        <i class="icon-tools" style="margin-right: 8px;"></i>
+        Data Management Tools
+    </h3>
+    
+    <a href="{% url 'unified_admin:data_comparison' %}">
+        <i class="icon-changelink" style="margin-right: 5px;"></i>
+        Compare Data
+    </a>
+    
+    <a href="{% url 'unified_admin:schema_info' %}">
+        <i class="icon-info" style="margin-right: 5px;"></i>
+        Schema Information
+    </a>
+</div>
+
+{{ block.super }}
+
+{% endblock %}
+
+{% block sidebar %}
+<div id="content-related">
+    <div class="module" id="recent-actions-module">
+        <h2>Schema Context</h2>
+        <div style="padding: 10px;">
+            {% if request.session.admin_schema_type == 'original' %}
+                <div style="color: #856404; background: #fff3cd; padding: 8px; border-radius: 4px; border: 1px solid #ffeaa7;">
+                    <strong>Original Data Mode</strong><br>
+                    Viewing source database records. Changes are disabled for data integrity.
+                </div>
+            {% else %}
+                <div style="color: #155724; background: #d4edda; padding: 8px; border-radius: 4px; border: 1px solid #c3e6cb;">
+                    <strong>Tenant Data Mode</strong><br>
+                    Viewing Cape Station tenant records. Full CRUD operations available.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="module">
+        <h2>Quick Actions</h2>
+        <div style="padding: 10px;">
+            <ul style="list-style: none; padding: 0;">
+                <li style="margin-bottom: 8px;">
+                    <a href="{% url 'unified_admin:core_userprofile_changelist' %}" style="text-decoration: none;">
+                        👥 User Profiles
+                    </a>
+                </li>
+                <li style="margin-bottom: 8px;">
+                    <a href="{% url 'unified_admin:core_taskinstance_changelist' %}" style="text-decoration: none;">
+                        📋 Task Instances
+                    </a>
+                </li>
+                <li style="margin-bottom: 8px;">
+                    <a href="{% url 'unified_admin:core_cleaningitem_changelist' %}" style="text-decoration: none;">
+                        🧽 Cleaning Items
+                    </a>
+                </li>
+                <li style="margin-bottom: 8px;">
+                    <a href="{% url 'unified_admin:core_temperaturelog_changelist' %}" style="text-decoration: none;">
+                        🌡️ Temperature Logs
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

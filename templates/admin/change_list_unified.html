@@ -1,0 +1,71 @@
+{% extends "admin/change_list.html" %}
+{% load i18n static admin_urls %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .schema-context-header {
+        padding: 12px 15px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .schema-context-header.original {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+    }
+    
+    .schema-context-header.tenant {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+    }
+    
+    .schema-context-info {
+        font-weight: bold;
+    }
+    
+    .schema-switch-link {
+        color: white;
+        padding: 6px 12px;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 13px;
+    }
+    
+    .schema-switch-link.original {
+        background: #856404;
+    }
+    
+    .schema-switch-link.tenant {
+        background: #155724;
+    }
+    
+    .schema-switch-link:hover {
+        opacity: 0.8;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content_title %}
+<div class="schema-context-header {% if current_schema_type == 'original' %}original{% else %}tenant{% endif %}">
+    <div class="schema-context-info">
+        {% if current_schema_type == 'original' %}
+            📚 Viewing Original Data (Public Schema) - Read Only
+        {% else %}
+            🏢 Viewing {{ schema_display }} - Full Access
+        {% endif %}
+    </div>
+    <div>
+        <a href="{% url 'unified_admin:index' %}" class="schema-switch-link {% if current_schema_type == 'original' %}original{% else %}tenant{% endif %}">
+            Switch Schema
+        </a>
+    </div>
+</div>
+{{ block.super }}
+{% endblock %}
