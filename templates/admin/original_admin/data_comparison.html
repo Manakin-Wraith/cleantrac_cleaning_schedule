@@ -1,0 +1,65 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+{% load admin_extras %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'original_admin:index' %}">{{ site_header|default:_('Django administration') }}</a></h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block content %}
+<div class="module">
+    <h2>{{ title }}</h2>
+    
+    <div class="results">
+        <table id="result_list">
+            <thead>
+                <tr>
+                    <th scope="col">Table</th>
+                    <th scope="col">Public Schema (Original)</th>
+                    <th scope="col">Cape Station Tenant</th>
+                    <th scope="col">Difference</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for table, public_count in public_counts.items %}
+                <tr class="{% cycle 'row1' 'row2' %}">
+                    <th scope="row">{{ table|title|cut:"core_"|cut:"_" }}</th>
+                    <td>{{ public_count }}</td>
+                    <td>{{ tenant_counts|lookup:table }}</td>
+                    <td>
+                        {% if public_count|add:"0" and tenant_counts|lookup:table|add:"0" %}
+                            {% widthratio tenant_counts|lookup:table public_count 100 %}% migrated
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="module">
+        <h3>Migration Status Summary</h3>
+        <p>This comparison shows the data counts between the original database (public schema) and the Cape Station tenant schema.</p>
+        <ul>
+            <li><strong>Public Schema:</strong> Contains the original production data from the Streamlit application</li>
+            <li><strong>Cape Station Tenant:</strong> Contains the migrated data for the primary tenant</li>
+            <li><strong>Percentage:</strong> Shows how much data has been successfully migrated</li>
+        </ul>
+    </div>
+</div>
+
+<div class="module">
+    <h3>Quick Actions</h3>
+    <ul class="actionlist">
+        <li><a href="{% url 'original_admin:schema_info' %}" class="addlink">View Schema Information</a></li>
+        <li><a href="{% url 'original_admin:index' %}" class="changelink">Back to Original Database Admin</a></li>
+        <li><a href="{% url 'admin:index' %}" class="changelink">Switch to Tenant Admin</a></li>
+    </ul>
+</div>
+{% endblock %}

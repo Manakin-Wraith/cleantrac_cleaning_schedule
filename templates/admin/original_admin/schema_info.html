@@ -1,0 +1,83 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'original_admin:index' %}">{{ site_header|default:_('Django administration') }}</a></h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block content %}
+<div class="module">
+    <h2>{{ title }}</h2>
+    
+    <div class="module">
+        <h3>Public Schema Tables (Original Database)</h3>
+        <div class="results">
+            <table id="public_tables">
+                <thead>
+                    <tr>
+                        <th scope="col">Table Name</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Model</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for table_name, table_type in public_tables %}
+                    <tr class="{% cycle 'row1' 'row2' %}">
+                        <th scope="row">{{ table_name }}</th>
+                        <td>{{ table_type }}</td>
+                        <td>{{ table_name|title|cut:"core_"|cut:"_" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="module">
+        <h3>Cape Station Tenant Schema Tables</h3>
+        <div class="results">
+            <table id="tenant_tables">
+                <thead>
+                    <tr>
+                        <th scope="col">Table Name</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Model</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for table_name, table_type in tenant_tables %}
+                    <tr class="{% cycle 'row1' 'row2' %}">
+                        <th scope="row">{{ table_name }}</th>
+                        <td>{{ table_type }}</td>
+                        <td>{{ table_name|title|cut:"core_"|cut:"_" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="module">
+        <h3>Schema Information</h3>
+        <p>This page shows the database tables available in both schemas:</p>
+        <ul>
+            <li><strong>Public Schema:</strong> Contains the original production data that serves as the source of truth</li>
+            <li><strong>Cape Station Tenant Schema:</strong> Contains the isolated tenant data for the Cape Station store</li>
+            <li><strong>Multi-tenant Architecture:</strong> Each tenant has its own isolated schema with the same table structure</li>
+        </ul>
+    </div>
+</div>
+
+<div class="module">
+    <h3>Quick Actions</h3>
+    <ul class="actionlist">
+        <li><a href="{% url 'original_admin:data_comparison' %}" class="addlink">Compare Data Counts</a></li>
+        <li><a href="{% url 'original_admin:index' %}" class="changelink">Back to Original Database Admin</a></li>
+        <li><a href="{% url 'admin:index' %}" class="changelink">Switch to Tenant Admin</a></li>
+    </ul>
+</div>
+{% endblock %}

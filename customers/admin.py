@@ -1,7 +1,12 @@
 from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html
+from django.db import connection
+from django.shortcuts import render
+from django.http import JsonResponse
 from django_tenants.utils import schema_context
-from .models import Store, StoreDomain
-
+from .models import Store, StoreDomain, StoreSignup
+from core.models import UserProfile, TaskInstance, TemperatureLog, Supplier
 
 @admin.register(Store)
 class StoreAdmin(admin.ModelAdmin):
