@@ -141,6 +141,8 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 MIDDLEWARE = [
+    # Django-tenants middleware MUST be first to enable tenant routing
+    "django_tenants.middleware.main.TenantMainMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",  # CORS middleware - place it high, especially before CommonMiddleware
     "django.contrib.sessions.middleware.SessionMiddleware",
