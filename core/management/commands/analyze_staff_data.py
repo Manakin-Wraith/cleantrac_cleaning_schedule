@@ -45,7 +45,7 @@ class Command(BaseCommand):
             cursor.execute('''
                 SELECT u.id, u.username, u.first_name, u.last_name, u.email, 
                        u.is_staff, u.is_active, u.is_superuser, u.date_joined,
-                       up.phone_number, up.department_id, up.role, up.employee_id,
+                       up.phone_number, up.department_id, up.role,
                        d.name as department_name
                 FROM auth_user u
                 LEFT JOIN core_userprofile up ON u.id = up.user_id
@@ -72,7 +72,7 @@ class Command(BaseCommand):
         if missing_users:
             self.stdout.write(f'\n❌ MISSING USERS IN CAPE STATION ({len(missing_users)}):')
             for user in missing_users:
-                dept_name = user[13] or "No Dept"
+                dept_name = user[12] or "No Dept"
                 role = user[11] or "None"
                 self.stdout.write(f'  - {user[1]} ({user[2]} {user[3]}) - {dept_name} - Role: {role} - Staff: {user[5]} - Super: {user[7]}')
         else:
@@ -95,7 +95,6 @@ class Command(BaseCommand):
                 if orig[9] != tenant[9]: mismatches.append(f'phone: "{orig[9]}" -> "{tenant[9]}"')
                 if orig[10] != tenant[10]: mismatches.append(f'dept_id: {orig[10]} -> {tenant[10]}')
                 if orig[11] != tenant[11]: mismatches.append(f'role: "{orig[11]}" -> "{tenant[11]}"')
-                if orig[12] != tenant[12]: mismatches.append(f'employee_id: "{orig[12]}" -> "{tenant[12]}"')
                 
                 if mismatches:
                     data_mismatches.append((username, mismatches))
@@ -143,7 +142,7 @@ class Command(BaseCommand):
             # Show superusers
             cursor.execute('''
                 SELECT u.username, u.first_name, u.last_name, u.email,
-                       up.role, up.employee_id, d.name as department_name
+                       up.role, d.name as department_name
                 FROM auth_user u
                 LEFT JOIN core_userprofile up ON u.id = up.user_id
                 LEFT JOIN core_department d ON up.department_id = d.id
@@ -154,15 +153,14 @@ class Command(BaseCommand):
             superusers = cursor.fetchall()
             self.stdout.write(f'\nSUPERUSERS ({len(superusers)}):')
             for user in superusers:
-                dept = user[6] or 'No Dept'
+                dept = user[5] or 'No Dept'
                 role = user[4] or 'No Role'
-                emp_id = user[5] or 'No ID'
-                self.stdout.write(f'  - {user[0]} ({user[1]} {user[2]}) - {dept} - {role} - EmpID: {emp_id}')
+                self.stdout.write(f'  - {user[0]} ({user[1]} {user[2]}) - {dept} - {role}')
             
             # Show staff users (non-superuser)
             cursor.execute('''
                 SELECT u.username, u.first_name, u.last_name, u.email,
-                       up.role, up.employee_id, d.name as department_name
+                       up.role, d.name as department_name
                 FROM auth_user u
                 LEFT JOIN core_userprofile up ON u.id = up.user_id
                 LEFT JOIN core_department d ON up.department_id = d.id
@@ -174,18 +172,17 @@ class Command(BaseCommand):
             self.stdout.write(f'\nSTAFF USERS ({len(staff_users)}):')
             current_dept = None
             for user in staff_users:
-                dept = user[6] or 'No Dept'
+                dept = user[5] or 'No Dept'
                 if dept != current_dept:
                     self.stdout.write(f'\n  {dept}:')
                     current_dept = dept
                 role = user[4] or 'No Role'
-                emp_id = user[5] or 'No ID'
-                self.stdout.write(f'    - {user[0]} ({user[1]} {user[2]}) - {role} - EmpID: {emp_id}')
+                self.stdout.write(f'    - {user[0]} ({user[1]} {user[2]}) - {role}')
             
             # Show regular users
             cursor.execute('''
                 SELECT u.username, u.first_name, u.last_name, u.email,
-                       up.role, up.employee_id, d.name as department_name
+                       up.role, d.name as department_name
                 FROM auth_user u
                 LEFT JOIN core_userprofile up ON u.id = up.user_id
                 LEFT JOIN core_department d ON up.department_id = d.id
@@ -197,13 +194,12 @@ class Command(BaseCommand):
             self.stdout.write(f'\nREGULAR USERS ({len(regular_users)}):')
             current_dept = None
             for user in regular_users[:10]:  # Show first 10 to avoid too much output
-                dept = user[6] or 'No Dept'
+                dept = user[5] or 'No Dept'
                 if dept != current_dept:
                     self.stdout.write(f'\n  {dept}:')
                     current_dept = dept
                 role = user[4] or 'No Role'
-                emp_id = user[5] or 'No ID'
-                self.stdout.write(f'    - {user[0]} ({user[1]} {user[2]}) - {role} - EmpID: {emp_id}')
+                self.stdout.write(f'    - {user[0]} ({user[1]} {user[2]}) - {role}')
             
             if len(regular_users) > 10:
                 self.stdout.write(f'    ... and {len(regular_users) - 10} more regular users')
