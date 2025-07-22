@@ -40,18 +40,31 @@ class Command(BaseCommand):
     def get_user_data(self, schema_name):
         """Get all user data from specified schema"""
         with connection.cursor() as cursor:
-            cursor.execute(f'SET search_path TO {schema_name}')
-            
-            cursor.execute('''
-                SELECT u.id, u.username, u.first_name, u.last_name, u.email, 
-                       u.is_staff, u.is_active, u.is_superuser, u.date_joined,
-                       up.phone_number, up.department_id, up.role,
-                       d.name as department_name
-                FROM auth_user u
-                LEFT JOIN core_userprofile up ON u.id = up.user_id
-                LEFT JOIN core_department d ON up.department_id = d.id
-                ORDER BY u.id
-            ''')
+            if schema_name == 'public':
+                # For public schema, everything is in public
+                cursor.execute('SET search_path TO public')
+                cursor.execute('''
+                    SELECT u.id, u.username, u.first_name, u.last_name, u.email, 
+                           u.is_staff, u.is_active, u.is_superuser, u.date_joined,
+                           up.phone_number, up.department_id, up.role,
+                           d.name as department_name
+                    FROM auth_user u
+                    LEFT JOIN core_userprofile up ON u.id = up.user_id
+                    LEFT JOIN core_department d ON up.department_id = d.id
+                    ORDER BY u.id
+                ''')
+            else:
+                # For tenant schemas, auth_user is in public, but UserProfile/Department are in tenant schema
+                cursor.execute('''
+                    SELECT u.id, u.username, u.first_name, u.last_name, u.email, 
+                           u.is_staff, u.is_active, u.is_superuser, u.date_joined,
+                           up.phone_number, up.department_id, up.role,
+                           d.name as department_name
+                    FROM public.auth_user u
+                    LEFT JOIN {}.core_userprofile up ON u.id = up.user_id
+                    LEFT JOIN {}.core_department d ON up.department_id = d.id
+                    ORDER BY u.id
+                '''.format(schema_name, schema_name))
             
             return cursor.fetchall()
 
@@ -113,19 +126,31 @@ class Command(BaseCommand):
         self.stdout.write(f'\n=== {title} STAFF BREAKDOWN ===')
         
         with connection.cursor() as cursor:
-            cursor.execute(f'SET search_path TO {schema_name}')
-            
-            cursor.execute('''
-                SELECT d.name, COUNT(u.id) as user_count,
-                       COUNT(CASE WHEN u.is_staff = true THEN 1 END) as staff_count,
-                       COUNT(CASE WHEN u.is_superuser = true THEN 1 END) as super_count
-                FROM auth_user u
-                LEFT JOIN core_userprofile up ON u.id = up.user_id
-                LEFT JOIN core_department d ON up.department_id = d.id
-                WHERE u.is_active = true
-                GROUP BY d.name
-                ORDER BY user_count DESC
-            ''')
+            if schema_name == 'public':
+                cursor.execute('SET search_path TO public')
+                cursor.execute('''
+                    SELECT d.name, COUNT(u.id) as user_count,
+                           COUNT(CASE WHEN u.is_staff = true THEN 1 END) as staff_count,
+                           COUNT(CASE WHEN u.is_superuser = true THEN 1 END) as super_count
+                    FROM auth_user u
+                    LEFT JOIN core_userprofile up ON u.id = up.user_id
+                    LEFT JOIN core_department d ON up.department_id = d.id
+                    WHERE u.is_active = true
+                    GROUP BY d.name
+                    ORDER BY user_count DESC
+                ''')
+            else:
+                cursor.execute('''
+                    SELECT d.name, COUNT(u.id) as user_count,
+                           COUNT(CASE WHEN u.is_staff = true THEN 1 END) as staff_count,
+                           COUNT(CASE WHEN u.is_superuser = true THEN 1 END) as super_count
+                    FROM public.auth_user u
+                    LEFT JOIN {}.core_userprofile up ON u.id = up.user_id
+                    LEFT JOIN {}.core_department d ON up.department_id = d.id
+                    WHERE u.is_active = true
+                    GROUP BY d.name
+                    ORDER BY user_count DESC
+                '''.format(schema_name, schema_name))
             
             dept_breakdown = cursor.fetchall()
             for dept in dept_breakdown:
@@ -137,18 +162,29 @@ class Command(BaseCommand):
         self.stdout.write(f'\n=== {title} DETAILED STAFF INFO ===')
         
         with connection.cursor() as cursor:
-            cursor.execute(f'SET search_path TO {schema_name}')
-            
-            # Show superusers
-            cursor.execute('''
-                SELECT u.username, u.first_name, u.last_name, u.email,
-                       up.role, d.name as department_name
-                FROM auth_user u
-                LEFT JOIN core_userprofile up ON u.id = up.user_id
-                LEFT JOIN core_department d ON up.department_id = d.id
-                WHERE u.is_superuser = true AND u.is_active = true
-                ORDER BY u.username
-            ''')
+            if schema_name == 'public':
+                cursor.execute('SET search_path TO public')
+                # Show superusers
+                cursor.execute('''
+                    SELECT u.username, u.first_name, u.last_name, u.email,
+                           up.role, d.name as department_name
+                    FROM auth_user u
+                    LEFT JOIN core_userprofile up ON u.id = up.user_id
+                    LEFT JOIN core_department d ON up.department_id = d.id
+                    WHERE u.is_superuser = true AND u.is_active = true
+                    ORDER BY u.username
+                ''')
+            else:
+                # Show superusers
+                cursor.execute('''
+                    SELECT u.username, u.first_name, u.last_name, u.email,
+                           up.role, d.name as department_name
+                    FROM public.auth_user u
+                    LEFT JOIN {}.core_userprofile up ON u.id = up.user_id
+                    LEFT JOIN {}.core_department d ON up.department_id = d.id
+                    WHERE u.is_superuser = true AND u.is_active = true
+                    ORDER BY u.username
+                '''.format(schema_name, schema_name))
             
             superusers = cursor.fetchall()
             self.stdout.write(f'\nSUPERUSERS ({len(superusers)}):')
@@ -158,15 +194,26 @@ class Command(BaseCommand):
                 self.stdout.write(f'  - {user[0]} ({user[1]} {user[2]}) - {dept} - {role}')
             
             # Show staff users (non-superuser)
-            cursor.execute('''
-                SELECT u.username, u.first_name, u.last_name, u.email,
-                       up.role, d.name as department_name
-                FROM auth_user u
-                LEFT JOIN core_userprofile up ON u.id = up.user_id
-                LEFT JOIN core_department d ON up.department_id = d.id
-                WHERE u.is_staff = true AND u.is_superuser = false AND u.is_active = true
-                ORDER BY d.name, u.username
-            ''')
+            if schema_name == 'public':
+                cursor.execute('''
+                    SELECT u.username, u.first_name, u.last_name, u.email,
+                           up.role, d.name as department_name
+                    FROM auth_user u
+                    LEFT JOIN core_userprofile up ON u.id = up.user_id
+                    LEFT JOIN core_department d ON up.department_id = d.id
+                    WHERE u.is_staff = true AND u.is_superuser = false AND u.is_active = true
+                    ORDER BY d.name, u.username
+                ''')
+            else:
+                cursor.execute('''
+                    SELECT u.username, u.first_name, u.last_name, u.email,
+                           up.role, d.name as department_name
+                    FROM public.auth_user u
+                    LEFT JOIN {}.core_userprofile up ON u.id = up.user_id
+                    LEFT JOIN {}.core_department d ON up.department_id = d.id
+                    WHERE u.is_staff = true AND u.is_superuser = false AND u.is_active = true
+                    ORDER BY d.name, u.username
+                '''.format(schema_name, schema_name))
             
             staff_users = cursor.fetchall()
             self.stdout.write(f'\nSTAFF USERS ({len(staff_users)}):')
@@ -180,15 +227,26 @@ class Command(BaseCommand):
                 self.stdout.write(f'    - {user[0]} ({user[1]} {user[2]}) - {role}')
             
             # Show regular users
-            cursor.execute('''
-                SELECT u.username, u.first_name, u.last_name, u.email,
-                       up.role, d.name as department_name
-                FROM auth_user u
-                LEFT JOIN core_userprofile up ON u.id = up.user_id
-                LEFT JOIN core_department d ON up.department_id = d.id
-                WHERE u.is_staff = false AND u.is_active = true
-                ORDER BY d.name, u.username
-            ''')
+            if schema_name == 'public':
+                cursor.execute('''
+                    SELECT u.username, u.first_name, u.last_name, u.email,
+                           up.role, d.name as department_name
+                    FROM auth_user u
+                    LEFT JOIN core_userprofile up ON u.id = up.user_id
+                    LEFT JOIN core_department d ON up.department_id = d.id
+                    WHERE u.is_staff = false AND u.is_active = true
+                    ORDER BY d.name, u.username
+                ''')
+            else:
+                cursor.execute('''
+                    SELECT u.username, u.first_name, u.last_name, u.email,
+                           up.role, d.name as department_name
+                    FROM public.auth_user u
+                    LEFT JOIN {}.core_userprofile up ON u.id = up.user_id
+                    LEFT JOIN {}.core_department d ON up.department_id = d.id
+                    WHERE u.is_staff = false AND u.is_active = true
+                    ORDER BY d.name, u.username
+                '''.format(schema_name, schema_name))
             
             regular_users = cursor.fetchall()
             self.stdout.write(f'\nREGULAR USERS ({len(regular_users)}):')
