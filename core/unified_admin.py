@@ -20,6 +20,11 @@ from .models import (
     ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog,
     Supplier
 )
+from .recipe_models import (
+    Recipe, RecipeIngredient, RecipeVersion, ProductionSchedule,
+    ProductionRecord, InventoryItem, InventoryTransaction, WasteRecord,
+    RecipeProductionTask
+)
 
 
 class UnifiedAdminSite(AdminSite):
@@ -225,6 +230,27 @@ class UnifiedDepartmentAdmin(SchemaAwareModelAdmin):
     search_fields = ('name',)
 
 
+class UnifiedRecipeAdmin(SchemaAwareModelAdmin):
+    """Admin for Recipe data with schema switching."""
+    list_display = ('product_code', 'name', 'department', 'yield_quantity', 'yield_unit', 'unit_cost', 'is_active', 'created_at')
+    list_filter = ('department', 'is_active', 'created_at')
+    search_fields = ('product_code', 'name', 'description')
+
+
+class UnifiedRecipeIngredientAdmin(SchemaAwareModelAdmin):
+    """Admin for RecipeIngredient data with schema switching."""
+    list_display = ('recipe', 'ingredient_name', 'quantity', 'unit', 'unit_cost', 'total_cost')
+    list_filter = ('recipe__department', 'unit')
+    search_fields = ('ingredient_name', 'ingredient_code', 'recipe__name')
+
+
+class UnifiedRecipeVersionAdmin(SchemaAwareModelAdmin):
+    """Admin for RecipeVersion data with schema switching."""
+    list_display = ('recipe', 'version_number', 'changed_by', 'changed_at')
+    list_filter = ('recipe__department', 'changed_at')
+    search_fields = ('recipe__name', 'change_notes')
+
+
 # Create the unified admin site instance
 unified_admin_site = UnifiedAdminSite(name='unified_admin')
 
@@ -241,3 +267,14 @@ unified_admin_site.register(AreaUnit)
 unified_admin_site.register(ThermometerVerificationRecord)
 unified_admin_site.register(ThermometerVerificationAssignment)
 unified_admin_site.register(TemperatureCheckAssignment)
+
+# Register Recipe models
+unified_admin_site.register(Recipe, UnifiedRecipeAdmin)
+unified_admin_site.register(RecipeIngredient, UnifiedRecipeIngredientAdmin)
+unified_admin_site.register(RecipeVersion, UnifiedRecipeVersionAdmin)
+unified_admin_site.register(ProductionSchedule)
+unified_admin_site.register(ProductionRecord)
+unified_admin_site.register(InventoryItem)
+unified_admin_site.register(InventoryTransaction)
+unified_admin_site.register(WasteRecord)
+unified_admin_site.register(RecipeProductionTask)

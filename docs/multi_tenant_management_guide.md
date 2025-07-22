@@ -10,13 +10,78 @@ This guide provides comprehensive best practices for managing your CleanTrac mul
 1. **Original Database**: Started with a single database containing all core data
 2. **First Tenant Migration**: Migrated original data to "Cape Station" tenant schema
 3. **Multi-Tenant Setup**: Implemented django-tenants with schema-based isolation
-4. **Current State**: Cape Station is your template tenant with all original data
+4. **Unified Admin Interface**: Implemented schema switcher for seamless data access
+5. **Current State**: Cape Station is your template tenant with all original data
 
 ### Architecture Components
 - **Public Schema**: Contains shared models (Store, StoreDomain, Admin settings)
 - **Tenant Schemas**: Each tenant has isolated core data (UserProfile, TaskInstance, etc.)
 - **Cape Station Schema**: Your first tenant with migrated original data
 - **Domain Routing**: Each tenant accessed via unique subdomain
+- **Unified Admin**: Single interface with schema switching for all data access
+
+## 🖥️ Admin Interface Management
+
+### Available Admin Interfaces
+
+#### 1. Unified Admin Interface (Recommended)
+**URL**: `https://capestation.manager.cleentrac.com/unified-admin/`
+
+**Features**:
+- **Schema Switcher**: Dropdown to toggle between tenant and original data
+- **Single Interface**: No need to navigate between different URLs
+- **Visual Context**: Clear indicators showing which schema is active
+- **Session Memory**: Remembers your schema preference across pages
+- **Permission Management**: Read-only for original data, full CRUD for tenant data
+
+**Schema Options**:
+- **Cape Station Data (Tenant)**: Full access to current tenant data with CRUD operations
+- **Original Data (Public Schema)**: Read-only access to source database for comparison
+
+#### 2. Traditional Admin Interfaces
+**Tenant Admin**: `https://capestation.manager.cleentrac.com/admin/`
+- Direct access to Cape Station tenant data
+- Full CRUD operations on tenant-specific models
+- Core models: UserProfile, TaskInstance, CleaningItem, etc.
+
+**Original Admin**: `https://capestation.manager.cleentrac.com/original-admin/`
+- Read-only access to original database data
+- Data comparison and migration verification
+- Historical data preservation
+
+### Admin Interface Best Practices
+
+#### Data Management
+1. **Use Unified Admin**: Provides the best UX for day-to-day operations
+2. **Schema Context Awareness**: Always verify which schema you're viewing
+3. **Data Comparison**: Use original admin for migration verification
+4. **Bulk Operations**: Perform bulk changes through tenant admin for better performance
+
+#### Security Considerations
+1. **Access Control**: Original data is read-only to prevent accidental changes
+2. **Audit Trail**: All changes in tenant admin are logged
+3. **Schema Isolation**: No cross-tenant data access possible
+4. **Permission Verification**: Always verify user permissions before granting admin access
+
+#### Troubleshooting Admin Issues
+1. **Schema Routing Problems**: Ensure django-tenants middleware is first in MIDDLEWARE list
+2. **Database Backend**: Must use `django_tenants.postgresql_backend` for schema switching
+3. **Model Visibility**: Core models must be in TENANT_APPS, not SHARED_APPS
+4. **Static Files**: Ensure admin theme static files are properly served
+
+### Admin Tools and Features
+
+#### Data Comparison Tool
+**URL**: `https://capestation.manager.cleentrac.com/unified-admin/data-comparison/`
+- Compare record counts between schemas
+- Verify data migration completeness
+- Identify discrepancies between original and tenant data
+
+#### Schema Information Tool
+**URL**: `https://capestation.manager.cleentrac.com/unified-admin/schema-info/`
+- View current schema context
+- List available schemas
+- Database connection information
 
 ## 🎯 Multi-Tenant Best Practices
 
