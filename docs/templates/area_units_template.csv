@@ -1,0 +1,11 @@
+name,department,min_temp,max_temp,monitoring_frequency
+Cold Room 1,BUTCHERY,0,4,daily
+Freezer A,BAKERY,-18,-15,daily
+Hot Display,HMR,60,65,hourly
+Prep Area Fridge,BAKERY,2,6,daily
+Meat Display Case,BUTCHERY,0,4,hourly
+Walk-in Cooler,HMR,2,6,daily
+Dough Retarder,BAKERY,2,8,daily
+Blast Chiller,BUTCHERY,-18,-10,daily
+Hot Food Counter,HMR,60,70,hourly
+Ice Cream Freezer,HMR,-20,-15,daily

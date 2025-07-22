@@ -1,0 +1,25 @@
+product_code,name,description,supplier_code,product_type
+15736,W/CAPE MILL MIX WHT BRD,White bread flour mix for bakery production,1001,ingredient
+28779,YEAST WET,Fresh wet yeast for bread production,1001,ingredient
+29030,SPAR WATER,Filtered water for production,1002,ingredient
+28495,SPAR WHITE BREAD BAG,Packaging for white bread,1004,ingredient
+15737,W/CAPE MILL MIX BRWN BRD,Brown bread flour mix for bakery production,1001,ingredient
+28667,WC MILLING SOFT ROLL MIX,Soft roll flour mix,1001,ingredient
+2520,SMARTBAKER MIX,Multi-purpose baking mix,1001,ingredient
+BF001,BEEF MINCE 80/20,Ground beef 80/20 for butchery,1002,ingredient
+PF001,PORK FAT,Pork fat for sausage making,1002,ingredient
+SP001,SAUSAGE SPICE MIX,Spice blend for sausages,1008,ingredient
+CS001,NATURAL CASINGS,Natural sausage casings,1002,ingredient
+RS001,RAISINS,Dried raisins for baking,1003,ingredient
+SG001,SUGAR,White granulated sugar,1003,ingredient
+SL001,SALT,Table salt for production,1003,ingredient
+WB001,WHITE BREAD,Finished white bread loaf,,recipe_output
+BB001,BROWN BREAD,Finished brown bread loaf,,recipe_output
+RL001,RAISIN LOAF,Finished raisin bread loaf,,recipe_output
+CC001,CHOCOLATE CAKE,Finished chocolate layer cake,,recipe_output
+BS001,BEEF SAUSAGE,Finished beef sausage,,recipe_output
+PB001,PORK BOEREWORS,Finished pork boerewors,,recipe_output
+MB001,MINCE BEEF,Processed ground beef,,recipe_output
+CS001,CHICKEN STEW,Prepared chicken stew portion,,recipe_output
+BS002,BEEF STEW,Prepared beef stew portion,,recipe_output
+SB001,STEAK BURGER,Prepared beef burger patty,,recipe_output

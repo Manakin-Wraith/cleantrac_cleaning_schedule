@@ -1,0 +1,6 @@
+serial_number,model_identifier,department,status,last_calibration
+TH001,Digital Pro 2000,BUTCHERY,active,2024-01-15
+TH002,Infrared Quick,BAKERY,active,2024-01-20
+TH003,Probe Master,HMR,active,2024-01-10
+TH004,Wireless Monitor,BUTCHERY,active,2024-01-25
+TH005,Handheld Digital,BAKERY,active,2024-01-18

@@ -1,0 +1,10 @@
+name,department,frequency,method,equipment,chemical
+Clean prep surfaces,BAKERY,daily,"Wipe down with sanitizer solution, rinse with clean water","Microfiber cloths, spray bottles","Food-safe sanitizer"
+Deep clean ovens,BAKERY,weekly,"Remove racks, scrub interior, clean heating elements","Oven cleaner, brushes, cloths","Heavy-duty oven cleaner"
+Sanitize mixing bowls,BAKERY,daily,"Wash in hot soapy water, sanitize, air dry","Sink, brushes, sanitizer","Dish soap, sanitizer"
+Clean cutting boards,BUTCHERY,daily,"Scrub with hot soapy water, sanitize with bleach solution","Scrub brushes, sanitizer","Dish soap, bleach solution"
+Sanitize knives,BUTCHERY,daily,"Wash thoroughly, sanitize, store properly","Knife sanitizer, storage","Sanitizing solution"
+Clean meat slicer,BUTCHERY,daily,"Disassemble, clean all parts, sanitize, reassemble","Cleaning brushes, cloths","Degreaser, sanitizer"
+Wipe down hot display,HMR,daily,"Clean glass, sanitize surfaces, check temperature","Glass cleaner, cloths","Glass cleaner, sanitizer"
+Clean fryer,HMR,weekly,"Drain oil, scrub interior, clean heating elements","Scrub brushes, degreaser","Heavy-duty degreaser"
+Sanitize serving utensils,HMR,daily,"Wash in hot soapy water, sanitize","Sink, sanitizer","Dish soap, sanitizer"

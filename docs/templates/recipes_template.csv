@@ -1,0 +1,11 @@
+product_code,name,department,description,yield_quantity,yield_unit,unit_cost,is_active
+WB001,WHITE BREAD,BAKERY,Standard white bread loaf,1,loaf,12.50,true
+BB001,BROWN BREAD,BAKERY,Whole wheat bread loaf,1,loaf,14.00,true
+RL001,RAISIN LOAF,BAKERY,Sweet bread with raisins,1,loaf,18.50,true
+CC001,CHOCOLATE CAKE,BAKERY,Rich chocolate layer cake,1,cake,45.00,true
+BS001,BEEF SAUSAGE,BUTCHERY,Traditional beef sausage,1,kg,85.00,true
+PB001,PORK BOEREWORS,BUTCHERY,Spiced pork sausage,1,kg,95.00,true
+MB001,MINCE BEEF,BUTCHERY,Ground beef 80/20,1,kg,120.00,true
+CS001,CHICKEN STEW,HMR,Hearty chicken and vegetable stew,1,portion,25.00,true
+BS002,BEEF STEW,HMR,Traditional beef stew with vegetables,1,portion,32.00,true
+SB001,STEAK BURGER,HMR,Grilled beef burger patty,1,burger,28.00,true

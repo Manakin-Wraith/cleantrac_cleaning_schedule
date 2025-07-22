@@ -1,0 +1,17 @@
+recipe_product_code,ingredient_code,ingredient_name,quantity,unit,unit_cost,total_cost
+WB001,WM001,White Bread Flour Mix,1,kg,15.50,15.50
+WB001,YW001,Fresh Yeast,0.05,kg,45.00,2.25
+WB001,SW001,Water,0.6,liters,0.00,0.00
+WB001,SL001,Salt,0.02,kg,8.00,0.16
+BB001,BM001,Brown Bread Flour Mix,1,kg,18.00,18.00
+BB001,YW001,Fresh Yeast,0.05,kg,45.00,2.25
+BB001,SW001,Water,0.65,liters,0.00,0.00
+BB001,SL001,Salt,0.02,kg,8.00,0.16
+RL001,WM001,White Bread Flour Mix,0.8,kg,15.50,12.40
+RL001,RS001,Raisins,0.2,kg,35.00,7.00
+RL001,YW001,Fresh Yeast,0.05,kg,45.00,2.25
+RL001,SG001,Sugar,0.1,kg,12.00,1.20
+BS001,BF001,Beef Mince 80/20,0.8,kg,85.00,68.00
+BS001,PF001,Pork Fat,0.2,kg,45.00,9.00
+BS001,SP001,Sausage Spice Mix,0.03,kg,120.00,3.60
+BS001,CS001,Natural Casings,1,meter,2.50,2.50

@@ -1,0 +1,11 @@
+username,first_name,last_name,email,phone_number,department,role,is_staff,is_active
+admin,Store,Administrator,admin@yourstore.com,+27123456789,Admin,manager,true,true
+bakery_manager,John,Smith,john.smith@yourstore.com,+27123456790,BAKERY,manager,true,true
+butchery_manager,Jane,Doe,jane.doe@yourstore.com,+27123456791,BUTCHERY,manager,true,true
+hmr_manager,Mike,Johnson,mike.johnson@yourstore.com,+27123456792,HMR,manager,true,true
+baker1,Sarah,Wilson,sarah.wilson@yourstore.com,+27123456793,BAKERY,staff,false,true
+baker2,Tom,Brown,tom.brown@yourstore.com,+27123456794,BAKERY,staff,false,true
+butcher1,David,Davis,david.davis@yourstore.com,+27123456795,BUTCHERY,staff,false,true
+butcher2,Lisa,Miller,lisa.miller@yourstore.com,+27123456796,BUTCHERY,staff,false,true
+hmr_staff1,Anna,Taylor,anna.taylor@yourstore.com,+27123456797,HMR,staff,false,true
+hmr_staff2,Chris,Anderson,chris.anderson@yourstore.com,+27123456798,HMR,staff,false,true
