@@ -2,6 +2,10 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_BASE; // defined in Vercel/ .env files
 
+// Debug: Log the API URL being used
+console.log('🔍 API_URL being used:', API_URL);
+console.log('🔍 All env vars:', import.meta.env);
+
 const apiClient = axios.create({
     baseURL: API_URL,
     headers: {
