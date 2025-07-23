@@ -366,9 +366,9 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                 return Response({'error': 'Invalid recurrence_type. Must be daily, weekly, or monthly.'}, status=status.HTTP_400_BAD_REQUEST)
 
             # Validate cleaning_item
-            cleaning_item_id = request.data.get('cleaning_item_id_write') or request.data.get('cleaning_item_id')
+            cleaning_item_id = request.data.get('cleaning_item_id_write') or request.data.get('cleaning_item_id') or request.data.get('cleaning_item')
             if not cleaning_item_id:
-                return Response({'error': 'cleaning_item_id_write is required for recurring tasks.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'cleaning_item is required for recurring tasks.'}, status=status.HTTP_400_BAD_REQUEST)
             try:
                 cleaning_item = CleaningItem.objects.get(id=cleaning_item_id)
             except CleaningItem.DoesNotExist:
