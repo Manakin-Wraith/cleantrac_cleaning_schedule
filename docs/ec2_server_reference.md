@@ -1,28 +1,90 @@
-# EC2 Deployment – Quick Reference
+# Production Deployment – Quick Reference
 
-> **Instance hostname**: `api.13-60-56-181.nip.io`  
-> **Public IPv4**: `13.60.56.181`
+> **Production URL**: `api.cleentrac.com`  
+> **Architecture**: AWS ECS/Fargate + Application Load Balancer  
+> **Region**: `eu-north-1`  
+> **Load Balancer**: `cleentrac-alb-1566483969.eu-north-1.elb.amazonaws.com`  
+> **IPs**: `13.61.250.221`, `13.49.54.82`
 
 ---
 
-## 1. SSH into the server
+## 🏗️ Production Architecture
+
+**Frontend**: Vercel (cleentrac.com)  
+**Backend**: AWS ECS/Fargate (api.cleentrac.com)  
+**Database**: AWS RDS PostgreSQL  
+**Load Balancer**: AWS Application Load Balancer  
+
+---
+
+## 1. Managing the Production Backend
+
+### ✅ **Recommended: AWS CLI (ECS Management)**
 ```bash
-ssh ubuntu@13.60.56.181           # or ssh ubuntu@api.13-60-56-181.nip.io
+# Check service status
+aws ecs describe-services --cluster spatrac-prod --services spatrac-receiving-service
+
+# Force new deployment (restart with latest code)
+aws ecs update-service --cluster spatrac-prod --service spatrac-receiving-service --force-new-deployment
+
+# List running tasks
+aws ecs list-tasks --cluster spatrac-prod --service-name spatrac-receiving-service
+
+# Check task health
+aws ecs describe-tasks --cluster spatrac-prod --tasks <task-id>
 ```
 
-### If you see `Permission denied (publickey)`
+### 📊 **Monitor Deployment Status**
+```bash
+# Check deployment progress
+aws ecs describe-services --cluster spatrac-prod --services spatrac-receiving-service \
+  --query 'services[0].deployments[*].{Status:status,CreatedAt:createdAt,RunningCount:runningCount}'
+```
 
-1. **Use the correct key pair** (stored locally at `~/.ssh/cleantrac.pem`). First fix its permissions, then connect explicitly with the key:
-   ```bash
-   chmod 400 ~/.ssh/cleantrac.pem          # run once on your machine
-   ssh -i ~/.ssh/cleantrac.pem ubuntu@api.13-60-56-181.nip.io
-   ```
+### 📝 **View Application Logs**
+```bash
+# View recent logs
+aws logs tail /ecs/spatrac-receiving --follow
 
-2. **Ensure the key is loaded in your ssh-agent** (optional):
-   ```bash
-   ssh-add -l                 # list loaded keys
-   ssh-add ~/.ssh/cleantrac.pem
-   ```
+# View logs for specific time range
+aws logs tail /ecs/spatrac-receiving --since 1h
+```
+
+---
+
+## 2. Alternative: ECS Exec (Container SSH)
+
+### **Enable ECS Exec** (if not already enabled)
+```bash
+aws ecs update-service --cluster spatrac-prod --service spatrac-receiving-service --enable-execute-command
+```
+
+### **Connect to Running Container**
+```bash
+# Get task ID first
+TASK_ID=$(aws ecs list-tasks --cluster spatrac-prod --service-name spatrac-receiving-service --query 'taskArns[0]' --output text | cut -d'/' -f3)
+
+# Connect to container
+aws ecs execute-command --cluster spatrac-prod --task $TASK_ID --container spatrac-receiving --interactive --command "/bin/bash"
+```
+
+---
+
+## 3. Development/Staging Server (Legacy)
+
+> **⚠️ Note**: This is the OLD development server, not production!
+
+**Instance hostname**: `api.13-60-56-181.nip.io`  
+**Public IPv4**: `13.60.56.181`
+
+### SSH Access (Development Only)
+```bash
+# Connect to development server
+ssh ubuntu@13.60.56.181
+
+# Or with explicit key
+ssh -i ~/.ssh/cleantrac.pem ubuntu@api.13-60-56-181.nip.io
+```
 
 3. **Add verbosity to debug why authentication fails**:
    ```bash
