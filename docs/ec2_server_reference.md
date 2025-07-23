@@ -8,16 +8,16 @@
 
 ---
 
-## 🏗️ Production Architecture
+## 🏗️ **Architecture Overview**
 
-**Frontend**: Vercel (cleentrac.com)  
-**Backend**: AWS ECS/Fargate (api.cleentrac.com)  
-**Database**: AWS RDS PostgreSQL  
-**Load Balancer**: AWS Application Load Balancer  
+- **Manager Frontend**: EC2 Server (`13.60.56.181`) - Traditional server deployment
+- **Receiving Frontend**: AWS ECS/Fargate (`spatrac-receiving-service`) - Containerized deployment  
+- **Backend API**: `api.cleentrac.com` - Serves both frontends
+- **Database**: AWS RDS PostgreSQL - Multi-tenant with schema separation
 
 ---
 
-## 1. Managing the Production Backend
+## 1. AWS ECS/Fargate Management (Receiving Frontend)
 
 ### ✅ **Recommended: AWS CLI (ECS Management)**
 ```bash
@@ -70,33 +70,91 @@ aws ecs execute-command --cluster spatrac-prod --task $TASK_ID --container spatr
 
 ---
 
-## 3. Development/Staging Server (Legacy)
+## 2. EC2 Server Management (Manager Frontend)
 
-> **⚠️ Note**: This is the OLD development server, not production!
+> **🎯 PRODUCTION**: This EC2 server hosts the Manager Frontend and backend services.
 
-**Instance hostname**: `api.13-60-56-181.nip.io`  
-**Public IPv4**: `13.60.56.181`
+**Instance hostname**: `api.13-60-56-181.nip.io` (legacy)  
+**Public IPv4**: `13.60.56.181`  
+**Purpose**: Manager Frontend (`www.cleentrac.com`, `manager.cleentrac.com`)  
+**Backend API**: Also serves `api.cleentrac.com` endpoints
 
-### SSH Access (Development Only)
+### SSH Access (Production Manager Frontend)
 ```bash
-# Connect to development server
+# Connect to production EC2 server
 ssh ubuntu@13.60.56.181
 
 # Or with explicit key
-ssh -i ~/.ssh/cleantrac.pem ubuntu@api.13-60-56-181.nip.io
+ssh -i ~/.ssh/cleantrac.pem ubuntu@13.60.56.181
 ```
 
-3. **Add verbosity to debug why authentication fails**:
+### **Update Code and Restart Services**
+```bash
+# 1. Navigate to project directory
+cd ~/cleantrac_cleaning_schedule
+
+# 2. Pull latest code
+git pull origin main
+
+# 3. Check current commit
+git log --oneline -1
+
+# 4. Restart backend services (adjust service names as needed)
+sudo systemctl restart cleantrac-backend
+sudo systemctl restart gunicorn
+sudo systemctl restart nginx
+
+# 5. Check service status
+sudo systemctl status cleantrac --no-pager -l
+sudo systemctl status nginx --no-pager -l
+```
+
+### **View Service Logs**
+```bash
+# View backend service logs
+sudo journalctl -u cleantrac -f
+
+# View nginx logs
+sudo journalctl -u nginx -f
+
+# View recent logs
+sudo journalctl -u cleantrac --since "1 hour ago"
+```
+
+### **Troubleshooting**
+```bash
+# Check running services
+sudo systemctl status --no-pager | grep -i clean
+sudo systemctl status --no-pager | grep -i django
+sudo systemctl status --no-pager | grep -i gunicorn
+
+# Check port usage
+sudo netstat -tlnp | grep :8000
+sudo netstat -tlnp | grep :80
+sudo netstat -tlnp | grep :443
+
+# Test API endpoint
+curl -I https://api.cleentrac.com/api/
+```
+
+### **SSH Connection Troubleshooting**
+3. **Add verbosity to debug authentication failures**:
    ```bash
-   ssh -vvv -i ~/.ssh/cleantrac.pem ubuntu@api.13-60-56-181.nip.io
+   ssh -vvv -i ~/.ssh/cleantrac.pem ubuntu@13.60.56.181
    ```
 
-4. **Verify the server side**: the matching public key should exist as one line in `/home/ubuntu/.ssh/authorized_keys`.
+4. **Verify server-side key**: Check `/home/ubuntu/.ssh/authorized_keys`
 
-5. **Confirm you are using the right login user**:
+5. **Confirm correct login user**:
    * Ubuntu images → `ubuntu`
    * Amazon Linux 2 → `ec2-user`
    * Debian → `admin` or `debian`
+
+---
+
+## 3. Development/Legacy Server Reference
+
+> **⚠️ Note**: Legacy development server information for reference only.
 
 The default project directory lives in the Ubuntu home folder.
 

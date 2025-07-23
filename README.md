@@ -1,11 +1,30 @@
-# CleanTrac – Receiving Dashboard & Cleaning Schedule
+# CleanTrac – Multi-Tenant Cleaning Management SaaS
 
-This monorepo contains a Django + React application used internally to manage product receiving, expiry tracking and cleaning schedules.
+This monorepo contains a multi-tenant SaaS platform for cleaning management, featuring separate frontend applications and a unified Django backend API.
 
-* Backend: **Django 5.2** (Python 3.11)
-* Front-end: **React 19** + Vite + MUI
-* Database: External **AWS RDS PostgreSQL** instance ( `traceability_source` )
-* CI / CD: GitHub Actions – automated DB health-check, unit tests and build pipelines
+* **Backend**: Django 5.2 (Python 3.11) with django-tenants for multi-tenancy
+* **Frontend**: React 19 + Vite + Material-UI (multiple deployments)
+* **Database**: AWS RDS PostgreSQL with schema-based tenant separation
+* **Architecture**: Hybrid deployment (EC2 + ECS/Fargate)
+* **CI/CD**: GitHub Actions with automated testing and health checks
+
+---
+
+## 🏗️ **System Architecture**
+
+### **Production Deployment**
+- **Manager Frontend**: EC2 Server (`www.cleentrac.com`, `manager.cleentrac.com`)
+- **Receiving Frontend**: AWS ECS/Fargate (`receiving.cleentrac.com`)
+- **Backend API**: `api.cleentrac.com` (serves both frontends)
+- **Database**: AWS RDS PostgreSQL (multi-tenant with schema separation)
+
+### **Multi-Tenancy**
+- **Schema-based separation** using django-tenants
+- **Tenant domains**: `{tenant}.manager.cleentrac.com`, `{tenant}.receiving.cleentrac.com`
+- **Admin interfaces**: Tenant-specific admin access
+- **Data isolation**: Complete separation between tenant schemas
+
+📖 **[View Complete Architecture Documentation](./ARCHITECTURE.md)**
 
 ---
 
