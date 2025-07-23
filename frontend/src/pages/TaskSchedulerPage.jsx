@@ -341,7 +341,7 @@ export default function TaskSchedulerPage() {
       const { event } = info;
       try {
         const payload = {
-          cleaning_item_id_write: parseInt(event.extendedProps.cleaning_item_id, 10),
+          cleaning_item: parseInt(event.extendedProps.cleaning_item_id, 10),
           due_date: dateToYmd(event.start),
           assigned_to_id:
             event.getResources()?.[0]?.id !== UNASSIGNED_RESOURCE_ID

@@ -148,8 +148,8 @@ const EditTaskAssignmentModal = ({
             start_time: editableStartTime ? `${editableStartTime}:00` : null, 
             end_time: editableEndTime ? `${editableEndTime}:00` : null,
             assigned_to_id: toNullableNumber(editableAssignedToId),
-            // Send cleaning_item_id_write directly to avoid client-side remapping issues
-            cleaning_item_id_write:
+            // Send cleaning_item directly to match Django model
+            cleaning_item:
                 editableCleaningItemId !== ''
                     ? Number(editableCleaningItemId)
                     : task.cleaning_item_id

@@ -96,21 +96,20 @@ export const updateTaskInstance = async (taskId, taskData) => {
             delete payload.assigned_to; // avoid unknown field
         }
 
-        // Normalize cleaning item key → always send cleaning_item_id_write
+        // Normalize cleaning item key → always send cleaning_item (matches Django model)
         if (taskData.hasOwnProperty('cleaning_item_id_write')) {
-            payload.cleaning_item_id_write = taskData.cleaning_item_id_write === '' || taskData.cleaning_item_id_write === undefined
+            payload.cleaning_item = taskData.cleaning_item_id_write === '' || taskData.cleaning_item_id_write === undefined
                 ? null
                 : parseInt(taskData.cleaning_item_id_write, 10);
         } else if (taskData.hasOwnProperty('cleaning_item_id')) {
-            payload.cleaning_item_id_write = taskData.cleaning_item_id === '' || taskData.cleaning_item_id === undefined
+            payload.cleaning_item = taskData.cleaning_item_id === '' || taskData.cleaning_item_id === undefined
                 ? null
                 : parseInt(taskData.cleaning_item_id, 10);
             delete payload.cleaning_item_id;
         } else if (taskData.hasOwnProperty('cleaning_item')) {
             // may be object or ID
             const ciVal = typeof taskData.cleaning_item === 'object' ? taskData.cleaning_item.id : taskData.cleaning_item;
-            payload.cleaning_item_id_write = ciVal === '' || ciVal === undefined ? null : parseInt(ciVal, 10);
-            delete payload.cleaning_item;
+            payload.cleaning_item = ciVal === '' || ciVal === undefined ? null : parseInt(ciVal, 10);
         }
 
         // Remove status if it is unchanged or redundant to satisfy workflow rules

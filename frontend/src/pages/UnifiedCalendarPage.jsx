@@ -490,7 +490,7 @@ const UnifiedCalendarPage = () => {
       // Normalize cleaning item
       const itemVal = taskData.cleaning_item_id_write ?? taskData.cleaning_item_id ?? taskData.cleaning_item;
       if (itemVal !== undefined) {
-        payload.cleaning_item_id_write = itemVal === '' ? null : Number(itemVal);
+        payload.cleaning_item = itemVal === '' ? null : Number(itemVal);
       }
       // Normalize assignee
       const assigneeVal = taskData.assigned_to_id ?? taskData.assigned_to;
