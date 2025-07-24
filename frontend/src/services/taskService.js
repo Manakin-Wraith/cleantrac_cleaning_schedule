@@ -29,7 +29,7 @@ export const getTaskInstances = async (params) => {
 };
 
 /**
- * Creates a new task instance.
+ * Creates a new task instance (single or recurring).
  * 
  * @param {object} taskData - Data for the new task.
  * Example: { cleaning_item_id: 1, assigned_to_id: 2, due_date: '2023-10-28', status: 'pending' }
@@ -37,7 +37,32 @@ export const getTaskInstances = async (params) => {
  */
 export const createTaskInstance = async (taskData) => {
     try {
-        const response = await api.post('/taskinstances/', taskData);
+        // Transform frontend payload to match backend expectations
+        const payload = {
+            // Core required fields that match the TaskInstance model
+            assigned_to: taskData.assigned_to_id || taskData.assigned_to,  // UserProfile ID
+            due_date: taskData.due_date,
+            start_time: taskData.start_time,
+            end_time: taskData.end_time,
+            status: taskData.status || 'pending',
+            cleaning_item: taskData.cleaning_item,  // CleaningItem ID
+            department: taskData.department_id || taskData.department,  // Department ID
+            notes: taskData.notes || '',
+            
+            // Recurring task fields (backend handles RecurringSchedule creation automatically)
+            recurring: taskData.recurring || false,
+            recurrence_type: taskData.recurrence_type || 'daily'
+        };
+
+        // Clean up null/undefined values
+        Object.keys(payload).forEach(key => {
+            if (payload[key] === null || payload[key] === undefined || payload[key] === '') {
+                delete payload[key];
+            }
+        });
+
+        console.log('[createTaskInstance] Payload:', payload);
+        const response = await api.post('/taskinstances/', payload);
         return response.data;
     } catch (error) {
         console.error(
