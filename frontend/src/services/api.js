@@ -10,6 +10,8 @@ const apiClient = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
+        // Add Host header for django-tenants routing to Cape Station tenant
+        'Host': 'capestation.manager.cleentrac.com'
     },
 });
 
