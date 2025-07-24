@@ -37,10 +37,12 @@ export const getTaskInstances = async (params) => {
  */
 export const createTaskInstance = async (taskData) => {
     try {
+        // Debug: Log the incoming taskData to see what we're receiving
+        console.log('[createTaskInstance] Raw taskData:', taskData);
+        
         // Transform frontend payload to match backend expectations
         const payload = {
             // Core required fields that match the TaskInstance model
-            assigned_to: taskData.assigned_to_id || taskData.assigned_to,  // UserProfile ID
             due_date: taskData.due_date,
             start_time: taskData.start_time,
             end_time: taskData.end_time,
@@ -53,10 +55,19 @@ export const createTaskInstance = async (taskData) => {
             recurring: taskData.recurring || false,
             recurrence_type: taskData.recurrence_type || 'daily'
         };
+        
+        // Handle assignment - only add if we have a valid UserProfile ID
+        const assignedToId = taskData.assigned_to_id || taskData.assigned_to;
+        if (assignedToId && assignedToId !== '' && assignedToId !== null && assignedToId !== undefined) {
+            payload.assigned_to = assignedToId;  // UserProfile ID
+            console.log('[createTaskInstance] Assignment added:', assignedToId);
+        } else {
+            console.log('[createTaskInstance] No assignment provided - creating unassigned task');
+        }
 
-        // Clean up null/undefined values
+        // Clean up null/undefined values (but preserve empty strings for optional fields)
         Object.keys(payload).forEach(key => {
-            if (payload[key] === null || payload[key] === undefined || payload[key] === '') {
+            if (payload[key] === null || payload[key] === undefined) {
                 delete payload[key];
             }
         });
