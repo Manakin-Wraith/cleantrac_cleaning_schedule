@@ -100,7 +100,7 @@ git pull origin main
 git log --oneline -1
 
 # 4. Restart backend services (adjust service names as needed)
-sudo systemctl restart cleantrac-backend
+sudo systemctl restart cleantrac
 sudo systemctl restart gunicorn
 sudo systemctl restart nginx
 

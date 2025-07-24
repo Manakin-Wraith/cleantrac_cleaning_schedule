@@ -1,5 +1,35 @@
 # CleanTrac System Architecture
 
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLEANTRAC SYSTEM                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  FRONTENDS:                                                     │
+│  ┌─────────────────────┐    ┌──────────────────────────────┐   │
+│  │   Manager Frontend  │    │    Receiving Frontend        │   │
+│  │   (React App)       │    │    (Streamlit App)           │   │
+│  │ www.cleentrac.com   │    │ capestation.receiving.       │   │
+│  │                     │    │ cleentrac.com                │   │
+│  └─────────┬───────────┘    └──────────────┬───────────────┘   │
+│            │                               │                   │
+│            │ CORS ERROR HERE!              │                   │
+│            │                               │                   │
+│  ┌─────────▼───────────────────────────────▼───────────────┐   │
+│  │                nginx (Reverse Proxy)                    │   │
+│  │          api.cleentrac.com                              │   │
+│  │          api.13-60-56-181.nip.io                        │   │
+│  └─────────────────────┬───────────────────────────────────┘   │
+│                        │                                       │
+│  ┌─────────────────────▼───────────────────────────────────┐   │
+│  │            Django Backend (cleantrac.service)           │   │
+│  │                Port 8000                                │   │
+│  │  - Multi-tenant (django-tenants)                       │   │
+│  │  - Cape Station tenant                                  │   │
+│  │  - Task management, user auth, etc.                    │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
 ## 🏗️ **System Overview**
 
 CleanTrac is a multi-tenant SaaS cleaning management system with separate frontend applications and a unified backend API.

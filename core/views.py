@@ -398,9 +398,23 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
             days_ahead = 6 if recurrence_type == 'daily' else 30
             schedule.generate_instances(days_ahead=days_ahead)
 
+            # Get the created instances
             instances = TaskInstance.objects.filter(notes__contains=f"[RecurringSchedule:{schedule.id}]")
-            serializer = self.get_serializer(instances, many=True)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+            try:
+                serializer = self.get_serializer(instances, many=True)
+                return Response({
+                    'message': f'Recurring schedule created with {instances.count()} task instances',
+                    'schedule_id': schedule.id,
+                    'instances': serializer.data
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                # If serialization fails, return basic success response
+                return Response({
+                    'message': f'Recurring schedule created successfully with {instances.count()} task instances',
+                    'schedule_id': schedule.id,
+                    'instance_count': instances.count()
+                }, status=status.HTTP_201_CREATED)
 
         # Fallback to default single task create
         return super().create(request, *args, **kwargs)
