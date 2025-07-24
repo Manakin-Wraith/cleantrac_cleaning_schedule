@@ -321,10 +321,11 @@ REST_FRAMEWORK = {
 # Optional: Allow credentials (cookies, authorization headers) to be sent with requests
 CORS_ALLOW_CREDENTIALS = True
 
-# Optional: If you need to allow specific headers beyond the defaults
-# CORS_ALLOW_HEADERS = list(default_headers) + [
-#     'my-custom-header',
-# ]
+# Allow custom headers for tenant routing
+from corsheaders.defaults import default_headers
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'x-tenant-domain',  # Custom header for tenant routing
+]
 
 # Optional: If you need to allow specific methods beyond the defaults (GET, POST, HEAD, OPTIONS)
 # CORS_ALLOW_METHODS = list(default_methods) + [
