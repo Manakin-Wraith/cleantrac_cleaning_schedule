@@ -1,6 +1,21 @@
 from django.utils.deprecation import MiddlewareMixin
 from django.conf import settings
 
+class TenantHeaderMiddleware(MiddlewareMixin):
+    """Convert X-Tenant-Domain header to Host header for django-tenants routing.
+    
+    Browsers block setting the Host header directly, so frontend sends X-Tenant-Domain.
+    This middleware converts it to the Host header that django-tenants expects.
+    """
+    
+    def process_request(self, request):
+        # Check if frontend sent X-Tenant-Domain header
+        tenant_domain = request.META.get('HTTP_X_TENANT_DOMAIN')
+        if tenant_domain:
+            # Set the Host header for django-tenants routing
+            request.META['HTTP_HOST'] = tenant_domain
+        return None
+
 class AllowIframeForMedia(MiddlewareMixin):
     """Override X-Frame-Options header for media/documents paths so that
     PDFs and other documents can be embedded in an <iframe> from the same origin.

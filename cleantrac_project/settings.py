@@ -141,6 +141,8 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 MIDDLEWARE = [
+    # Custom middleware to convert X-Tenant-Domain header to Host header (must be before TenantMainMiddleware)
+    "core.middleware.TenantHeaderMiddleware",
     # Django-tenants middleware MUST be first to enable tenant routing
     "django_tenants.middleware.main.TenantMainMiddleware",
     "django.middleware.security.SecurityMiddleware",

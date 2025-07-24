@@ -377,7 +377,8 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
             user_profile = request.user.profile
             department = user_profile.department if user_profile.department else cleaning_item.department
 
-            assigned_to_id = request.data.get('assigned_to_id')
+            # Handle both assigned_to_id and assigned_to field names
+            assigned_to_id = request.data.get('assigned_to_id') or request.data.get('assigned_to')
             assigned_to = None
             if assigned_to_id:
                 try:
