@@ -492,10 +492,16 @@ const UnifiedCalendarPage = () => {
       if (itemVal !== undefined) {
         payload.cleaning_item = itemVal === '' ? null : Number(itemVal);
       }
-      // Normalize assignee
+      // Normalize assignee - only process if not already a valid UserProfile ID
       const assigneeVal = taskData.assigned_to_id ?? taskData.assigned_to;
       if (assigneeVal !== undefined) {
-        payload.assigned_to_id = assigneeVal === '' ? null : Number(assigneeVal);
+        // If it's already a valid number (UserProfile.id from modal), use it directly
+        if (typeof assigneeVal === 'number' && assigneeVal > 0) {
+          payload.assigned_to_id = assigneeVal;
+        } else {
+          // Only convert/normalize if it's a string or other format
+          payload.assigned_to_id = assigneeVal === '' ? null : Number(assigneeVal);
+        }
       }
       let savedArrayForState = [];
       if (existingId) {
