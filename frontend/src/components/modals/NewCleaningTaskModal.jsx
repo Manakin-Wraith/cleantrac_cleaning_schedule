@@ -238,11 +238,18 @@ saved = await updateTaskInstance(task.id, payload);
                 <MenuItem value="">
                   <em>Unassigned</em>
                 </MenuItem>
-                {staffUsers.map((u) => (
-                  <MenuItem key={u.profile?.id || u.id} value={String(u.profile?.id || u.id)}>
-                    {u.first_name} {u.last_name || ''}
-                  </MenuItem>
-                ))}
+                {staffUsers.map((u) => {
+                  // Only show users with valid UserProfile IDs - no fallback to User ID
+                  if (!u.profile?.id) {
+                    console.warn(`Skipping user ${u.username} - no valid UserProfile ID`);
+                    return null;
+                  }
+                  return (
+                    <MenuItem key={u.profile.id} value={String(u.profile.id)}>
+                      {u.first_name} {u.last_name || ''}
+                    </MenuItem>
+                  );
+                }).filter(Boolean)}
               </Select>
             </FormControl>
             {/* Due Date */}
