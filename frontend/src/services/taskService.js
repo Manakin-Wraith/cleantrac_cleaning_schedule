@@ -47,8 +47,8 @@ export const createTaskInstance = async (taskData) => {
             start_time: taskData.start_time,
             end_time: taskData.end_time,
             status: taskData.status || 'pending',
-            cleaning_item: taskData.cleaning_item,  // CleaningItem ID
-            department: taskData.department_id || taskData.department,  // Department ID
+            cleaning_item_id_write: taskData.cleaning_item,  // CleaningItem ID (correct field name)
+            department_id: taskData.department_id || taskData.department,  // Department ID (correct field name)
             notes: taskData.notes || ''
         };
         
@@ -63,7 +63,7 @@ export const createTaskInstance = async (taskData) => {
         // Handle assignment - only add if we have a valid UserProfile ID
         const assignedToId = taskData.assigned_to_id || taskData.assigned_to;
         if (assignedToId && assignedToId !== '' && assignedToId !== null && assignedToId !== undefined) {
-            payload.assigned_to = assignedToId;  // UserProfile ID
+            payload.assigned_to_id = assignedToId;  // UserProfile ID (correct field name)
             console.log('[createTaskInstance] Assignment added:', assignedToId);
         } else {
             console.log('[createTaskInstance] No assignment provided - creating unassigned task');
