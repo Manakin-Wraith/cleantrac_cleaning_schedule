@@ -11,7 +11,29 @@ import api from './api';
 export const getUsers = async (params = {}) => {
     try {
         const response = await api.get('/users/', { params });
-        return response.data;
+        
+        // Filter out users without valid profiles to prevent assignment errors
+        const validUsers = response.data.filter(user => {
+            // Ensure user has a profile with required fields
+            if (!user.profile || !user.profile.id) {
+                console.warn(`User ${user.username} (ID: ${user.id}) has no valid profile - excluding from assignments`);
+                return false;
+            }
+            
+            // Ensure user has a department (required for task assignments)
+            if (!user.profile.department) {
+                console.warn(`User ${user.username} (ID: ${user.id}) has no department - excluding from assignments`);
+                return false;
+            }
+            
+            return true;
+        });
+        
+        if (validUsers.length !== response.data.length) {
+            console.info(`Filtered ${response.data.length - validUsers.length} invalid users from assignment options`);
+        }
+        
+        return validUsers;
     } catch (error) {
         console.error('Error fetching users:', error);
         if (error.response) {
@@ -37,7 +59,29 @@ export const getUsersByDepartment = async (departmentId, params = {}) => {
             ...params,
         });
         const response = await api.get(`/users/?${queryParams}`);
-        return response.data; // Assuming the API returns an array of users
+        
+        // Apply same validation as getUsers to ensure only assignable users are returned
+        const validUsers = response.data.filter(user => {
+            // Ensure user has a profile with required fields
+            if (!user.profile || !user.profile.id) {
+                console.warn(`User ${user.username} (ID: ${user.id}) has no valid profile - excluding from department assignments`);
+                return false;
+            }
+            
+            // Ensure user has a department (should match departmentId but double-check)
+            if (!user.profile.department) {
+                console.warn(`User ${user.username} (ID: ${user.id}) has no department - excluding from department assignments`);
+                return false;
+            }
+            
+            return true;
+        });
+        
+        if (validUsers.length !== response.data.length) {
+            console.info(`Filtered ${response.data.length - validUsers.length} invalid users from department ${departmentId} assignment options`);
+        }
+        
+        return validUsers;
     } catch (error) {
         console.error('Error fetching users by department:', error);
         // You might want to throw the error or return a specific error structure

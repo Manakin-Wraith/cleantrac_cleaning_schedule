@@ -78,6 +78,7 @@ export const createTaskInstance = async (taskData) => {
 
         console.log('[createTaskInstance] Payload:', payload);
         const response = await api.post('/taskinstances/', payload);
+        console.log('[createTaskInstance] Success:', response.data);
         return response.data;
     } catch (error) {
         console.error(
@@ -94,10 +95,27 @@ export const createTaskInstance = async (taskData) => {
             if (typeof errorData === 'string') {
                 errorMessage = errorData;
             } else if (typeof errorData === 'object') {
-                // Concatenate all error messages from DRF (e.g., field errors)
+                // Handle specific user assignment errors with helpful messages
                 const messages = Object.entries(errorData).map(([key, value]) => {
-                    if (Array.isArray(value)) return `${key}: ${value.join(' ')}`;
-                    return `${key}: ${value}`;
+                    let message;
+                    if (Array.isArray(value)) {
+                        message = value.join(' ');
+                    } else {
+                        message = value;
+                    }
+                    
+                    // Provide user-friendly field names
+                    const fieldNames = {
+                        'assigned_to_id': 'Assigned User',
+                        'cleaning_item_id_write': 'Cleaning Item',
+                        'department_id': 'Department',
+                        'due_date': 'Due Date',
+                        'start_time': 'Start Time',
+                        'end_time': 'End Time'
+                    };
+                    
+                    const friendlyFieldName = fieldNames[key] || key;
+                    return `${friendlyFieldName}: ${message}`;
                 });
                 if (messages.length > 0) errorMessage = messages.join('; ');
             }

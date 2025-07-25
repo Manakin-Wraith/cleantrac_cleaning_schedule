@@ -320,6 +320,20 @@ class TaskInstanceSerializer(serializers.ModelSerializer):
         # Call custom validation for start/end times
         data = self.validate_start_end_time(data)
         
+        # Validate assigned_to user exists and provide helpful error message
+        assigned_to = data.get('assigned_to')
+        if assigned_to:
+            # Additional check to ensure the UserProfile is valid and has required relationships
+            if not assigned_to.user:
+                raise serializers.ValidationError({
+                    'assigned_to_id': 'Selected user profile is invalid (no associated user account).'
+                })
+            
+            if not assigned_to.department:
+                raise serializers.ValidationError({
+                    'assigned_to_id': f'User "{assigned_to.user.username}" cannot be assigned tasks (no department assigned).'
+                })
+        
         # Ensure assigned_to user belongs to the task's department if department is set
         # and assigned_to is also set.
         department = data.get('department') or (self.instance and self.instance.department)
@@ -327,9 +341,9 @@ class TaskInstanceSerializer(serializers.ModelSerializer):
 
         if department and assigned_to:
             if assigned_to.department != department:
-                raise serializers.ValidationError(
-                    f"Assigned staff '{assigned_to.user.username}' does not belong to the department '{department.name}'."
-                )
+                raise serializers.ValidationError({
+                    'assigned_to_id': f"User '{assigned_to.user.username}' cannot be assigned to tasks in '{department.name}' department (belongs to '{assigned_to.department.name if assigned_to.department else 'no department'}')."
+                })
         return data
 
     def update(self, instance, validated_data):
