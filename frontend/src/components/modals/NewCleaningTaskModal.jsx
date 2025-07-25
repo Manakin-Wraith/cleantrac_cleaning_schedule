@@ -98,7 +98,8 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId, edit
     if (open && editMode && task) {
       setForm({
         cleaning_item_id: task.cleaning_item_id || (typeof task.cleaning_item === 'object' ? task.cleaning_item.id : task.cleaning_item) || '',
-        assigned_to_id: task.assigned_to || task.assigned_to_id || '',
+        // Always prioritize UserProfile.id fields, never use User.id
+        assigned_to_id: task.assigned_to_id || (task.assigned_to_details?.id) || '',
         due_date: task.due_date ? dayjs(task.due_date) : dayjs(),
         start_time: task.start_time ? dayjs(`1970-01-01T${task.start_time}`) : dayjs().hour(9).minute(0),
         end_time: task.end_time ? dayjs(`1970-01-01T${task.end_time}`) : dayjs().hour(10).minute(0),
