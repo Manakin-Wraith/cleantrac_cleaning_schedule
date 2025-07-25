@@ -49,12 +49,16 @@ export const createTaskInstance = async (taskData) => {
             status: taskData.status || 'pending',
             cleaning_item: taskData.cleaning_item,  // CleaningItem ID
             department: taskData.department_id || taskData.department,  // Department ID
-            notes: taskData.notes || '',
-            
-            // Recurring task fields (backend handles RecurringSchedule creation automatically)
-            recurring: taskData.recurring || false,
-            recurrence_type: taskData.recurrence_type || 'daily'
+            notes: taskData.notes || ''
         };
+        
+        // Only add recurring fields if this is actually a recurring task
+        // This prevents 400 errors when creating single tasks
+        const isRecurring = taskData.recurring === true || taskData.recurring === 'true';
+        if (isRecurring) {
+            payload.recurring = true;
+            payload.recurrence_type = taskData.recurrence_type || 'daily';
+        }
         
         // Handle assignment - only add if we have a valid UserProfile ID
         const assignedToId = taskData.assigned_to_id || taskData.assigned_to;
@@ -271,6 +275,17 @@ export const deleteMultipleTaskInstances = async (taskIds) => {
         const response = await api.post('/taskinstances/bulk_delete/', { ids: taskIds });
         return response.data; // Or response itself if you need status, etc.
     } catch (error) {
+        // Handle 404 errors gracefully - some tasks may already be deleted
+        if (error.response?.status === 404) {
+            console.warn('Some tasks already deleted or not found during bulk delete');
+            return { 
+                success: true, 
+                message: 'Some tasks were already deleted', 
+                partialSuccess: true,
+                details: 'One or more tasks were not found (may have been already deleted)'
+            };
+        }
+        
         console.error(
             "Error deleting multiple task instances:", 
             error.response ? error.response.data : error.message,
@@ -300,7 +315,14 @@ export const deleteTaskInstance = async (taskId) => {
     try {
         await api.delete(`/taskinstances/${taskId}/`);
         // No response data expected for a successful DELETE, but some APIs might return 204 No Content
+        return { success: true, message: 'Task deleted successfully' };
     } catch (error) {
+        // Handle 404 errors gracefully - task already deleted
+        if (error.response?.status === 404) {
+            console.warn(`Task ${taskId} already deleted or not found`);
+            return { success: true, message: 'Task already deleted', wasAlreadyDeleted: true };
+        }
+        
         console.error(`Error deleting task instance ${taskId}:`, error.response?.data || error.message);
         // Re-throw a more specific error or the error data from the response
         const errorMessage = error.response?.data?.detail || 

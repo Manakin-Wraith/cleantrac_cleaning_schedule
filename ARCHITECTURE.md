@@ -87,7 +87,7 @@ cd ~/cleantrac_cleaning_schedule
 git pull origin main
 
 # Restart services (service names TBD)
-sudo systemctl restart cleantrac-backend
+sudo systemctl restart cleantrac
 sudo systemctl restart nginx
 ```
 
