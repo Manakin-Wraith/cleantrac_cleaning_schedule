@@ -333,9 +333,6 @@ class StoreAdmin(admin.ModelAdmin):
             return format_html('<span style="color: red;">Error</span>')
     get_task_count.short_description = 'Tasks'
 
-# Register Store with enhanced admin
-try:
-    scalable_admin.register(Store, StoreAdmin)
-    scalable_admin.register(StoreDomain)
-except admin.sites.AlreadyRegistered:
-    pass
+# Note: Store and StoreDomain models are NOT registered with scalable_admin
+# to prevent sidebar links that cause 500 errors. All tenant management
+# is handled through the custom tenant overview dashboard instead.
