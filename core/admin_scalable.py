@@ -299,10 +299,11 @@ except admin.sites.AlreadyRegistered:
 
 # Custom admin for Store with enhanced functionality
 class StoreAdmin(admin.ModelAdmin):
-    list_display = ['name', 'schema_name', 'created_on', 'get_domains', 'get_user_count', 'get_task_count']
-    list_filter = ['created_on', 'paid_until', 'on_trial']
+    """Enhanced admin for Store model with tenant stats"""
+    list_display = ['name', 'schema_name', 'created_at', 'get_domains', 'get_user_count', 'get_task_count']
+    list_filter = ['created_at']
     search_fields = ['name', 'schema_name']
-    readonly_fields = ['created_on']
+    readonly_fields = ['created_at']
     
     def get_domains(self, obj):
         try:
