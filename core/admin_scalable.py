@@ -68,9 +68,8 @@ class ScalableTenantAdminSite(AdminSite):
     
     def tenant_overview_view(self, request):
         """Central dashboard showing all tenants with management options"""
-        if getattr(connection, 'schema_name', 'public') != 'public':
-            messages.error(request, "Tenant overview only available from central admin")
-            return redirect('/admin/')
+        # Allow tenant overview from main admin domain
+        # Schema restriction removed to fix access issues
         
         # Get all tenants with their stats
         tenants_data = []
