@@ -10,14 +10,36 @@
 {% block nav-global %}{% endblock %}
 
 {% block content %}
-{% if current_schema == 'public' and show_tenant_overview %}
-    <!-- Redirect to tenant overview for public schema -->
-    <script>window.location.href = '{% url "admin:tenant_overview" %}';</script>
-    <div style="text-align: center; padding: 50px;">
-        <h2>🔄 Redirecting to Tenant Overview Dashboard...</h2>
-        <p>If you're not redirected automatically, <a href="{% url 'admin:tenant_overview' %}">click here</a>.</p>
+<!-- Direct Tenant Access Links -->
+<div style="background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #007bff;">
+    <h3 style="color: #007bff; margin-top: 0;">🏢 Tenant Django Admin Access</h3>
+    <p>Click the links below to access each tenant's full Django admin with all core tables:</p>
+    
+    <div style="display: grid; gap: 15px; margin-top: 15px;">
+        <!-- Cape Station Tenant -->
+        <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #ddd;">
+            <h4 style="margin: 0 0 10px 0; color: #333;">🏪 Cape Station</h4>
+            <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;">Access all core tables: UserProfile, TaskInstance, Department, etc.</p>
+            <div style="display: flex; gap: 10px;">
+                <a href="https://capestation.manager.cleentrac.com/admin/" target="_blank" 
+                   style="background: #28a745; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">
+                    🔧 Manager Admin
+                </a>
+                <a href="https://capestation.receiving.cleentrac.com/admin/" target="_blank" 
+                   style="background: #17a2b8; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">
+                    📥 Receiving Admin
+                </a>
+            </div>
+        </div>
+        
+        <!-- Add more tenants as needed -->
+        <div style="background: #fff3cd; padding: 15px; border-radius: 6px; border: 1px solid #ffeaa7;">
+            <p style="margin: 0; font-size: 14px; color: #856404;">
+                💡 <strong>Tip:</strong> Each tenant admin gives you full access to their database schema with all core models.
+            </p>
+        </div>
     </div>
-{% else %}
+</div>
 <div id="content-main">
     {% if app_list %}
         {% for app in app_list %}

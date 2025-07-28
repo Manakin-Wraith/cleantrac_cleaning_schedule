@@ -284,10 +284,74 @@ scalable_admin = ScalableTenantAdminSite(name='scalable_admin')
 from django.contrib.auth.models import User, Group
 from customers.models import Store, StoreDomain
 
-# Register core models
+# Import all core models and their admin classes
+from core.models import (
+    Department, UserProfile, CleaningItem, TaskInstance, CompletionLog,
+    AreaUnit, Thermometer, ThermometerVerificationRecord, 
+    ThermometerVerificationAssignment, TemperatureCheckAssignment, TemperatureLog,
+    Folder, Document, DocumentTemplate, GeneratedDocument, Supplier
+)
+from core.recipe_models import (
+    Recipe, RecipeIngredient, RecipeVersion, ProductionSchedule,
+    ProductionRecord, InventoryItem, InventoryTransaction, WasteRecord,
+    RecipeProductionTask
+)
+from core.receiving_models import ReceivingRecord, Product
+from core.recurrence_models import RecurringSchedule
+
+# Import admin classes from core.admin
+from core.admin import (
+    AreaUnitAdmin, ThermometerAdmin, ThermometerVerificationRecordAdmin,
+    ThermometerVerificationAssignmentAdmin, TemperatureCheckAssignmentAdmin,
+    TemperatureLogAdmin, UserProfileAdmin, UserAdmin, DocumentTemplateAdmin,
+    GeneratedDocumentAdmin, ReceivingRecordAdmin, SupplierAdmin, RecipeAdmin,
+    RecipeIngredientAdmin, RecipeVersionAdmin, ProductionScheduleAdmin,
+    ProductionRecordAdmin, RecipeProductionTaskAdmin, InventoryItemAdmin,
+    InventoryTransactionAdmin, WasteRecordAdmin, RecurringScheduleAdmin
+)
+
+# Register core models with their admin classes
 try:
-    scalable_admin.register(User)
+    # Basic models (simple registration)
+    scalable_admin.register(Department)
+    scalable_admin.register(CleaningItem)
+    scalable_admin.register(TaskInstance)
+    scalable_admin.register(CompletionLog)
+    scalable_admin.register(Product)
+    scalable_admin.register(Folder)
+    scalable_admin.register(Document)
+    
+    # Models with custom admin classes
+    scalable_admin.register(AreaUnit, AreaUnitAdmin)
+    scalable_admin.register(Thermometer, ThermometerAdmin)
+    scalable_admin.register(ThermometerVerificationRecord, ThermometerVerificationRecordAdmin)
+    scalable_admin.register(ThermometerVerificationAssignment, ThermometerVerificationAssignmentAdmin)
+    scalable_admin.register(TemperatureCheckAssignment, TemperatureCheckAssignmentAdmin)
+    scalable_admin.register(TemperatureLog, TemperatureLogAdmin)
+    scalable_admin.register(UserProfile, UserProfileAdmin)
+    scalable_admin.register(DocumentTemplate, DocumentTemplateAdmin)
+    scalable_admin.register(GeneratedDocument, GeneratedDocumentAdmin)
+    scalable_admin.register(ReceivingRecord, ReceivingRecordAdmin)
+    scalable_admin.register(Supplier, SupplierAdmin)
+    
+    # Recipe management models
+    scalable_admin.register(Recipe, RecipeAdmin)
+    scalable_admin.register(RecipeIngredient, RecipeIngredientAdmin)
+    scalable_admin.register(RecipeVersion, RecipeVersionAdmin)
+    scalable_admin.register(ProductionSchedule, ProductionScheduleAdmin)
+    scalable_admin.register(ProductionRecord, ProductionRecordAdmin)
+    scalable_admin.register(RecipeProductionTask, RecipeProductionTaskAdmin)
+    scalable_admin.register(InventoryItem, InventoryItemAdmin)
+    scalable_admin.register(InventoryTransaction, InventoryTransactionAdmin)
+    scalable_admin.register(WasteRecord, WasteRecordAdmin)
+    
+    # Recurring schedule
+    scalable_admin.register(RecurringSchedule, RecurringScheduleAdmin)
+    
+    # User and Group (with custom User admin)
+    scalable_admin.register(User, UserAdmin)
     scalable_admin.register(Group)
+    
 except admin.sites.AlreadyRegistered:
     pass
 
