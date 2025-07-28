@@ -10,6 +10,14 @@
 {% block nav-global %}{% endblock %}
 
 {% block content %}
+{% if current_schema == 'public' and show_tenant_overview %}
+    <!-- Redirect to tenant overview for public schema -->
+    <script>window.location.href = '{% url "admin:tenant_overview" %}';</script>
+    <div style="text-align: center; padding: 50px;">
+        <h2>🔄 Redirecting to Tenant Overview Dashboard...</h2>
+        <p>If you're not redirected automatically, <a href="{% url 'admin:tenant_overview' %}">click here</a>.</p>
+    </div>
+{% else %}
 <div id="content-main">
     {% if app_list %}
         {% for app in app_list %}
@@ -74,4 +82,5 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}

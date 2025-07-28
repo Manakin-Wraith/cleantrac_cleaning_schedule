@@ -33,9 +33,7 @@ urlpatterns = [
     path('django-admin/', admin.site.urls),  # Original Django admin (fallback)
     path('unified-admin/', unified_admin_site.urls),
     path('original-admin/', original_admin_site.urls),
-    path('admin/tenant-dashboard/', tenant_dashboard, name='tenant_dashboard'),
-    path('admin/tenant/<int:tenant_id>/', tenant_detail, name='tenant_detail'),
-    path('admin/tenant/<int:tenant_id>/health/', tenant_health_check, name='tenant_health_check'),
+    # Removed conflicting admin URLs - now handled by scalable_admin
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')), 
     path('api/token-auth/', EnhancedObtainAuthToken.as_view(), name='api_token_auth'),
     path('api/', include('core.urls')), 

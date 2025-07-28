@@ -275,10 +275,16 @@ class ScalableTenantAdminSite(AdminSite):
 # Create the scalable admin site
 scalable_admin = ScalableTenantAdminSite(name='scalable_admin')
 
-# Register models for central management
-scalable_admin.register(Store)
-scalable_admin.register(StoreDomain)
-scalable_admin.register(User)
+# Register specific models we need
+from django.contrib.auth.models import User, Group
+from customers.models import Store, StoreDomain
+
+# Register core models
+try:
+    scalable_admin.register(User)
+    scalable_admin.register(Group)
+except admin.sites.AlreadyRegistered:
+    pass
 
 # Custom admin for Store with enhanced functionality
 class StoreAdmin(admin.ModelAdmin):
@@ -288,28 +294,36 @@ class StoreAdmin(admin.ModelAdmin):
     readonly_fields = ['created_on']
     
     def get_domains(self, obj):
-        domains = obj.domains.all()
-        return format_html('<br>'.join([d.domain for d in domains]))
+        try:
+            domains = obj.domains.all()
+            return format_html('<br>'.join([d.domain for d in domains]))
+        except:
+            return 'Error loading domains'
     get_domains.short_description = 'Domains'
     
     def get_user_count(self, obj):
         try:
             with tenant_context(obj):
+                from django.contrib.auth.models import User
                 count = User.objects.count()
                 return format_html(f'<span style="color: green;">{count}</span>')
-        except:
+        except Exception as e:
             return format_html('<span style="color: red;">Error</span>')
     get_user_count.short_description = 'Users'
     
     def get_task_count(self, obj):
         try:
             with tenant_context(obj):
+                from core.models import TaskInstance
                 count = TaskInstance.objects.count()
                 return format_html(f'<span style="color: blue;">{count}</span>')
-        except:
+        except Exception as e:
             return format_html('<span style="color: red;">Error</span>')
     get_task_count.short_description = 'Tasks'
 
-# Re-register with enhanced admin
-scalable_admin.unregister(Store)
-scalable_admin.register(Store, StoreAdmin)
+# Register Store with enhanced admin
+try:
+    scalable_admin.register(Store, StoreAdmin)
+    scalable_admin.register(StoreDomain)
+except admin.sites.AlreadyRegistered:
+    pass
