@@ -26,6 +26,17 @@ class ScalableTenantAdminSite(AdminSite):
     site_title = "CleanTrac Admin"
     index_title = "Multi-Tenant Management Dashboard"
     
+    def index(self, request, extra_context=None):
+        """Override index to redirect to tenant overview for public schema"""
+        current_schema = getattr(connection, 'schema_name', 'public')
+        
+        if current_schema == 'public':
+            # Redirect to tenant overview for central admin
+            return HttpResponseRedirect(reverse('admin:tenant_overview'))
+        else:
+            # Use default admin index for tenant schemas
+            return super().index(request, extra_context)
+    
     def get_urls(self):
         """Add custom URLs for tenant management"""
         urls = super().get_urls()
@@ -34,7 +45,7 @@ class ScalableTenantAdminSite(AdminSite):
             path('tenant/<int:tenant_id>/dashboard/', self.admin_view(self.tenant_dashboard_view), name='tenant_dashboard'),
             path('tenant/<int:tenant_id>/navigate/', self.admin_view(self.navigate_to_tenant), name='navigate_to_tenant'),
             path('tenant/create/', self.admin_view(self.create_tenant_view), name='create_tenant'),
-            path('tenant/<int:tenant_id>/stats/', self.admin_view(self.tenant_stats_api), name='tenant_stats_api'),
+            path('tenant/<int:tenant_id>/stats/', self.admin_view(self.tenant_stats_api), name='tenant_stats'),
         ]
         return custom_urls + urls
     
