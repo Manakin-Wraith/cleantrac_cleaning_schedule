@@ -25,10 +25,12 @@ from core.auth_views import EnhancedObtainAuthToken
 from customers.views import tenant_dashboard, tenant_detail, tenant_health_check
 from core.original_admin import original_admin_site
 from core.unified_admin import unified_admin_site
+from core.admin_scalable import scalable_admin
 import os
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', scalable_admin.urls),  # Scalable multi-tenant admin for many tenants
+    path('django-admin/', admin.site.urls),  # Original Django admin (fallback)
     path('unified-admin/', unified_admin_site.urls),
     path('original-admin/', original_admin_site.urls),
     path('admin/tenant-dashboard/', tenant_dashboard, name='tenant_dashboard'),
