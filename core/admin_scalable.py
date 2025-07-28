@@ -27,15 +27,10 @@ class ScalableTenantAdminSite(AdminSite):
     index_title = "Multi-Tenant Management Dashboard"
     
     def index(self, request, extra_context=None):
-        """Override index to redirect to tenant overview for public schema"""
-        current_schema = getattr(connection, 'schema_name', 'public')
-        
-        if current_schema == 'public':
-            # Redirect to tenant overview for central admin
-            return HttpResponseRedirect(reverse('admin:tenant_overview'))
-        else:
-            # Use default admin index for tenant schemas
-            return super().index(request, extra_context)
+        """Override index to redirect to tenant overview"""
+        # Always redirect to tenant overview from main admin
+        # This ensures users see the multi-tenant dashboard instead of default admin
+        return HttpResponseRedirect(reverse('admin:tenant_overview'))
     
     def get_urls(self):
         """Add custom URLs for tenant management"""

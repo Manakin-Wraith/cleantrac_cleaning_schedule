@@ -21,6 +21,11 @@
     
     <!-- Tenant Switcher -->
     <div style="display: flex; align-items: center; gap: 10px;">
+        <!-- Always show Tenant Overview button -->
+        <a href="{% url 'admin:tenant_overview' %}" style="background: #28a745; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold;">
+            🏢 Tenant Overview
+        </a>
+        
         {% if show_tenant_dashboard %}
         <a href="{% url 'admin:tenant_dashboard' %}" style="background: #007bff; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px;">
             📊 Tenant Dashboard
