@@ -1,0 +1,195 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ tenant.name }} - Tenant Dashboard{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .tenant-dashboard {
+        padding: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+        margin: 20px 0;
+        color: white;
+    }
+    .tenant-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+    .tenant-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 8px 16px;
+        border-radius: 20px;
+        margin-right: 15px;
+        font-weight: bold;
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+    }
+    .stat-card {
+        background: rgba(255,255,255,0.1);
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+    }
+    .stat-number {
+        font-size: 2.5em;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .stat-label {
+        font-size: 0.9em;
+        opacity: 0.8;
+    }
+    .admin-actions {
+        margin: 30px 0;
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    .admin-btn {
+        background: #28a745;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: all 0.3s;
+        border: none;
+        cursor: pointer;
+    }
+    .admin-btn:hover {
+        background: #218838;
+        transform: translateY(-2px);
+        color: white;
+        text-decoration: none;
+    }
+    .admin-btn.secondary {
+        background: #6c757d;
+    }
+    .admin-btn.secondary:hover {
+        background: #5a6268;
+    }
+    .recent-activity {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        color: #333;
+    }
+    .activity-item {
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    .domain-info {
+        background: rgba(255,255,255,0.1);
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tenant-dashboard">
+    <div class="tenant-header">
+        <div class="tenant-badge">🏢 TENANT</div>
+        <div>
+            <h1>{{ tenant.name }}</h1>
+            <p>{{ tenant.domain }} • Schema: {{ tenant.schema_name }}</p>
+        </div>
+    </div>
+
+    <div class="domain-info">
+        <h3>🌐 Domain Configuration</h3>
+        <p><strong>Primary Domain:</strong> {{ tenant.domain }}</p>
+        <p><strong>Schema:</strong> {{ tenant.schema_name }}</p>
+        <p><strong>Status:</strong> 
+            {% if tenant.is_active %}
+                <span style="color: #28a745;">✅ Active</span>
+            {% else %}
+                <span style="color: #dc3545;">❌ Inactive</span>
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.users|default:"0" }}</div>
+            <div class="stat-label">Users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.tasks|default:"0" }}</div>
+            <div class="stat-label">Tasks</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.departments|default:"0" }}</div>
+            <div class="stat-label">Departments</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.active_items|default:"0" }}</div>
+            <div class="stat-label">Active Items</div>
+        </div>
+    </div>
+
+    <div class="admin-actions">
+        <a href="{% url 'scalable_admin:core_userprofile_changelist' %}" class="admin-btn">
+            👥 Manage Users
+        </a>
+        <a href="{% url 'scalable_admin:core_taskinstance_changelist' %}" class="admin-btn">
+            📋 Manage Tasks
+        </a>
+        <a href="{% url 'scalable_admin:core_department_changelist' %}" class="admin-btn">
+            🏢 Manage Departments
+        </a>
+        <a href="{% url 'scalable_admin:core_cleaningitem_changelist' %}" class="admin-btn">
+            🧹 Manage Items
+        </a>
+        <a href="{% url 'scalable_admin:tenant_overview' %}" class="admin-btn secondary">
+            ← Back to Overview
+        </a>
+    </div>
+</div>
+
+<div class="recent-activity">
+    <h3>📊 Recent Activity</h3>
+    {% if recent_activity %}
+        {% for activity in recent_activity %}
+        <div class="activity-item">
+            <strong>{{ activity.action }}</strong> - {{ activity.timestamp|timesince }} ago
+            <br><small>{{ activity.details }}</small>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>No recent activity recorded.</p>
+    {% endif %}
+</div>
+
+<div class="recent-activity">
+    <h3>🔧 Quick Actions</h3>
+    <div class="admin-actions">
+        <a href="{% url 'scalable_admin:core_userprofile_add' %}" class="admin-btn">
+            ➕ Add User
+        </a>
+        <a href="{% url 'scalable_admin:core_taskinstance_add' %}" class="admin-btn">
+            ➕ Add Task
+        </a>
+        <a href="{% url 'scalable_admin:core_department_add' %}" class="admin-btn">
+            ➕ Add Department
+        </a>
+        <a href="{% url 'scalable_admin:index' %}" class="admin-btn secondary">
+            🏠 Admin Home
+        </a>
+    </div>
+</div>
+
+{% endblock %}

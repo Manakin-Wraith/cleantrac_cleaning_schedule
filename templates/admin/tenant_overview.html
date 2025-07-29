@@ -1,340 +1,106 @@
-{% extends "admin/base_site.html" %}
-{% load static %}
+{% extends "admin/base_coherent.html" %}
 
 {% block title %}Tenant Overview Dashboard{% endblock %}
 
-{% block extrahead %}
-<style>
-    .dashboard-header {
-        background: linear-gradient(135deg, #007bff, #0056b3);
-        color: white;
-        padding: 30px;
-        border-radius: 8px;
-        margin-bottom: 30px;
-        text-align: center;
-    }
-    
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-    
-    .stat-card {
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        text-align: center;
-        border-left: 4px solid #007bff;
-    }
-    
-    .stat-number {
-        font-size: 2em;
-        font-weight: bold;
-        color: #007bff;
-    }
-    
-    .tenants-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-        gap: 20px;
-    }
-    
-    .tenant-card {
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        transition: transform 0.2s;
-    }
-    
-    .tenant-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-    
-    .tenant-header {
-        padding: 15px 20px;
-        background: #f8f9fa;
-        border-bottom: 1px solid #ddd;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .tenant-name {
-        font-size: 1.2em;
-        font-weight: bold;
-        color: #333;
-    }
-    
-    .tenant-status {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.8em;
-        font-weight: bold;
-        text-transform: uppercase;
-    }
-    
-    .status-active {
-        background: #d4edda;
-        color: #155724;
-    }
-    
-    .status-inactive {
-        background: #f8d7da;
-        color: #721c24;
-    }
-    
-    .status-error {
-        background: #f5c6cb;
-        color: #721c24;
-    }
-    
-    .tenant-body {
-        padding: 20px;
-    }
-    
-    .tenant-stats {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        margin-bottom: 15px;
-    }
-    
-    .stat-item {
-        text-align: center;
-        padding: 10px;
-        background: #f8f9fa;
-        border-radius: 4px;
-    }
-    
-    .stat-value {
-        font-size: 1.5em;
-        font-weight: bold;
-        color: #007bff;
-    }
-    
-    .stat-label {
-        font-size: 0.9em;
-        color: #666;
-    }
-    
-    .tenant-domains {
-        margin-bottom: 15px;
-    }
-    
-    .domain-list {
-        list-style: none;
-        padding: 0;
-        margin: 5px 0;
-    }
-    
-    .domain-item {
-        background: #e9ecef;
-        padding: 5px 10px;
-        margin: 2px 0;
-        border-radius: 4px;
-        font-family: monospace;
-        font-size: 0.9em;
-    }
-    
-    .domain-receiving {
-        border-left: 3px solid #28a745;
-    }
-    
-    .domain-manager {
-        border-left: 3px solid #007bff;
-    }
-    
-    .tenant-actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-    
-    .btn {
-        padding: 8px 16px;
-        border: none;
-        border-radius: 4px;
-        text-decoration: none;
-        font-size: 0.9em;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-    
-    .btn-primary {
-        background: #007bff;
-        color: white;
-    }
-    
-    .btn-primary:hover {
-        background: #0056b3;
-        color: white;
-    }
-    
-    .btn-success {
-        background: #28a745;
-        color: white;
-    }
-    
-    .btn-success:hover {
-        background: #1e7e34;
-        color: white;
-    }
-    
-    .btn-info {
-        background: #17a2b8;
-        color: white;
-    }
-    
-    .btn-info:hover {
-        background: #138496;
-        color: white;
-    }
-    
-    .create-tenant-btn {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        background: #28a745;
-        color: white;
-        padding: 15px 20px;
-        border-radius: 50px;
-        text-decoration: none;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        font-weight: bold;
-        transition: transform 0.2s;
-    }
-    
-    .create-tenant-btn:hover {
-        transform: scale(1.05);
-        color: white;
-    }
-    
-    .recent-activity {
-        margin-top: 15px;
-        padding-top: 15px;
-        border-top: 1px solid #eee;
-    }
-    
-    .activity-item {
-        font-size: 0.8em;
-        color: #666;
-        margin-bottom: 5px;
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-<div class="dashboard-header">
+{% block coherent_content %}
+<div class="cleantrac-header">
     <h1>🏢 CleanTrac Tenant Management Dashboard</h1>
-    <p>Central administration for all tenants and stores</p>
+    <div class="subtitle">Central administration for all tenants and stores</div>
 </div>
 
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-number">{{ total_tenants }}</div>
-        <div class="stat-label">Total Tenants</div>
+<div class="cleantrac-grid cleantrac-grid-4">
+    <div class="cleantrac-stat-card">
+        <div class="cleantrac-stat-number">{{ total_tenants }}</div>
+        <div class="cleantrac-stat-label">Total Tenants</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-number">{{ active_tenants }}</div>
-        <div class="stat-label">Active Tenants</div>
+    <div class="cleantrac-stat-card">
+        <div class="cleantrac-stat-number">{{ total_users }}</div>
+        <div class="cleantrac-stat-label">Total Users</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-number">{{ inactive_tenants }}</div>
-        <div class="stat-label">Inactive Tenants</div>
+    <div class="cleantrac-stat-card">
+        <div class="cleantrac-stat-number">{{ total_tasks }}</div>
+        <div class="cleantrac-stat-label">Total Tasks</div>
     </div>
-    <div class="stat-card">
-        <div class="stat-number">{{ error_tenants }}</div>
-        <div class="stat-label">Error Tenants</div>
+    <div class="cleantrac-stat-card">
+        <div class="cleantrac-stat-number">{{ active_tenants }}</div>
+        <div class="cleantrac-stat-label">Active Tenants</div>
     </div>
 </div>
 
-<div class="tenants-grid">
+<div class="cleantrac-grid cleantrac-grid-2">
     {% for tenant_data in tenants_data %}
-    <div class="tenant-card">
-        <div class="tenant-header">
-            <div class="tenant-name">{{ tenant_data.tenant.name }}</div>
-            <div class="tenant-status status-{{ tenant_data.status }}">{{ tenant_data.status }}</div>
-        </div>
+    <div class="cleantrac-card">
+        <h3 style="margin-top: 0; color: var(--cleantrac-primary);">
+            🏢 {{ tenant_data.tenant.name }}
+        </h3>
         
-        <div class="tenant-body">
-            {% if tenant_data.error %}
-                <div style="color: red; padding: 10px; background: #f8d7da; border-radius: 4px;">
-                    <strong>Error:</strong> {{ tenant_data.error }}
-                </div>
+        <div style="margin: 15px 0;">
+            <strong>Schema:</strong> {{ tenant_data.tenant.schema_name }}<br>
+            <strong>Domain:</strong> {{ tenant_data.domain }}<br>
+            <strong>Status:</strong> 
+            {% if tenant_data.tenant.is_active %}
+                <span style="color: var(--cleantrac-success);">✅ Active</span>
             {% else %}
-                <div class="tenant-stats">
-                    <div class="stat-item">
-                        <div class="stat-value">{{ tenant_data.stats.users }}</div>
-                        <div class="stat-label">Users</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">{{ tenant_data.stats.tasks }}</div>
-                        <div class="stat-label">Tasks</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">{{ tenant_data.stats.active_tasks }}</div>
-                        <div class="stat-label">Active</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value">{{ tenant_data.stats.departments }}</div>
-                        <div class="stat-label">Departments</div>
-                    </div>
-                </div>
-                
-                <div class="tenant-domains">
-                    <strong>Domains:</strong>
-                    <ul class="domain-list">
-                        {% if tenant_data.receiving_domain %}
-                        <li class="domain-item domain-receiving">📥 {{ tenant_data.receiving_domain }}</li>
-                        {% endif %}
-                        {% if tenant_data.manager_domain %}
-                        <li class="domain-item domain-manager">👨‍💼 {{ tenant_data.manager_domain }}</li>
-                        {% endif %}
-                    </ul>
-                </div>
-                
-                {% if tenant_data.recent_activity %}
-                <div class="recent-activity">
-                    <strong>Recent Activity:</strong>
-                    {% for activity in tenant_data.recent_activity|slice:":3" %}
-                    <div class="activity-item">
-                        📋 {{ activity.item }} → {{ activity.assigned_to }} ({{ activity.status }})
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
+                <span style="color: var(--cleantrac-danger);">❌ Inactive</span>
             {% endif %}
-            
-            <div class="tenant-actions">
-                <a href="{% url 'admin:tenant_dashboard' tenant_data.tenant.id %}" class="btn btn-primary">
-                    📊 View Details
-                </a>
-                {% if tenant_data.manager_domain or tenant_data.receiving_domain %}
-                <a href="{% url 'admin:navigate_to_tenant' tenant_data.tenant.id %}" class="btn btn-success" target="_blank">
-                    🔧 Django Admin
-                </a>
-                {% endif %}
-                <a href="/admin/customers/store/{{ tenant_data.tenant.id }}/change/" class="btn btn-info">
-                    ⚙️ Settings
-                </a>
+        </div>
+
+        <div class="cleantrac-grid cleantrac-grid-4" style="margin: 15px 0;">
+            <div style="text-align: center;">
+                <div style="font-size: 1.5em; font-weight: bold; color: var(--cleantrac-primary);">
+                    {{ tenant_data.stats.users }}
+                </div>
+                <div style="font-size: 0.8em; color: var(--cleantrac-secondary);">Users</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 1.5em; font-weight: bold; color: var(--cleantrac-success);">
+                    {{ tenant_data.stats.tasks }}
+                </div>
+                <div style="font-size: 0.8em; color: var(--cleantrac-secondary);">Tasks</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 1.5em; font-weight: bold; color: var(--cleantrac-warning);">
+                    {{ tenant_data.stats.departments }}
+                </div>
+                <div style="font-size: 0.8em; color: var(--cleantrac-secondary);">Departments</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 1.5em; font-weight: bold; color: var(--cleantrac-secondary);">
+                    {{ tenant_data.stats.items }}
+                </div>
+                <div style="font-size: 0.8em; color: var(--cleantrac-secondary);">Items</div>
             </div>
         </div>
-    </div>
-    {% empty %}
-    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
-        <h3>No tenants found</h3>
-        <p>Create your first tenant to get started!</p>
+
+        <div style="margin-top: 20px;">
+            <a href="{% url 'scalable_admin:tenant_dashboard' tenant_data.tenant.id %}" 
+               class="cleantrac-btn cleantrac-btn-primary">
+                📊 View Dashboard
+            </a>
+            <a href="{% url 'scalable_admin:customers_store_change' tenant_data.tenant.id %}" 
+               class="cleantrac-btn cleantrac-btn-secondary">
+                ⚙️ Settings
+            </a>
+        </div>
     </div>
     {% endfor %}
 </div>
 
-<a href="{% url 'admin:create_tenant' %}" class="create-tenant-btn">
-    ➕ Add New Tenant
-</a>
+<div class="cleantrac-card">
+    <h3 style="margin-top: 0;">🚀 Quick Actions</h3>
+    <div style="margin-top: 15px;">
+        <a href="{% url 'scalable_admin:customers_store_add' %}" 
+           class="cleantrac-btn cleantrac-btn-success">
+            ➕ Add New Tenant
+        </a>
+        <a href="{% url 'scalable_admin:core_userprofile_changelist' %}" 
+           class="cleantrac-btn cleantrac-btn-primary">
+            👥 Manage Users
+        </a>
+        <a href="{% url 'scalable_admin:core_taskinstance_changelist' %}" 
+           class="cleantrac-btn cleantrac-btn-primary">
+            📋 Manage Tasks
+        </a>
+    </div>
+</div>
 {% endblock %}

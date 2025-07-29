@@ -30,7 +30,7 @@ class ScalableTenantAdminSite(AdminSite):
         """Override index to redirect to tenant overview"""
         # Always redirect to tenant overview from main admin
         # This ensures users see the multi-tenant dashboard instead of default admin
-        return HttpResponseRedirect(reverse('admin:tenant_overview'))
+        return HttpResponseRedirect(reverse('scalable_admin:tenant_overview'))
     
     def get_urls(self):
         """Add custom URLs for tenant management"""
@@ -394,3 +394,12 @@ class StoreAdmin(admin.ModelAdmin):
 # Note: Store and StoreDomain models are NOT registered with scalable_admin
 # to prevent sidebar links that cause 500 errors. All tenant management
 # is handled through the custom tenant overview dashboard instead.
+
+# Register Store and StoreDomain models with scalable_admin
+from customers.models import Store, StoreDomain
+from customers.admin import StoreAdmin, StoreDomainAdmin
+
+# Register Store and StoreDomain with scalable admin
+scalable_admin.register(Store, StoreAdmin)
+scalable_admin.register(StoreDomain, StoreDomainAdmin)
+
