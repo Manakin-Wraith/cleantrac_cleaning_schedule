@@ -8,7 +8,7 @@
 <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0;">
     <div style="display: flex; align-items: center;">
         <h1 id="site-name" style="margin: 0; margin-right: 20px;">
-            <a href="{% url 'admin:index' %}">CleanTrac Admin</a>
+            <a href="{% url 'scalable_admin:index' %}">CleanTrac Admin</a>
         </h1>
         {% if tenant_info %}
         <div style="background-color: {{ tenant_info.color }}; color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 14px;{% if tenant_info.warning %} animation: blink 1s infinite;{% endif %}">
