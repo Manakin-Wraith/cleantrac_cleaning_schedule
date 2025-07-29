@@ -30,7 +30,7 @@ class ScalableTenantAdminSite(AdminSite):
         """Override index to redirect to tenant overview"""
         # Always redirect to tenant overview from main admin
         # This ensures users see the multi-tenant dashboard instead of default admin
-        return HttpResponseRedirect(reverse('admin:tenant_overview'))
+        return HttpResponseRedirect(reverse('scalable_admin:tenant_overview'))
     
     def get_urls(self):
         """Add custom URLs for tenant management"""
