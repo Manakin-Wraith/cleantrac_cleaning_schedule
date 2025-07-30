@@ -1121,7 +1121,7 @@ class TemperatureLogViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
         
-    @action(detail=False, methods=['get'], url_path='by-date/(?P<date>\d{4}-\d{2}-\d{2})')
+    @action(detail=False, methods=['get'], url_path=r'by-date/(?P<date>\d{4}-\d{2}-\d{2})')
     def logs_by_date(self, request, date=None):
         """
         Returns temperature logs for a specific date.
