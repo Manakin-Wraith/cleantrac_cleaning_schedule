@@ -361,11 +361,12 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
         """Override create to support recurring schedules."""
         recurring_flag = request.data.get('recurring') in [True, 'true', 'True', '1', 1]
         recurrence_type = request.data.get('recurrence_type')
-                # Debug: Log request data to identify the issue
-                print(f"[DEBUG] Request data keys: {list(request.data.keys())}")
-                print(f"[DEBUG] Full request data: {dict(request.data)}")
-                if 'id' in request.data:
-                    print(f"[DEBUG] WARNING: Request contains 'id' field: {request.data.get('id')}")
+        
+        # Debug: Log request data to identify the issue
+        print(f"[DEBUG] Request data keys: {list(request.data.keys())}")
+        print(f"[DEBUG] Full request data: {dict(request.data)}")
+        if 'id' in request.data:
+            print(f"[DEBUG] WARNING: Request contains 'id' field: {request.data.get('id')}")
         
         if recurring_flag:
             try:
