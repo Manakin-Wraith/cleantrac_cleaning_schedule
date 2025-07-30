@@ -198,7 +198,23 @@ saved = await updateTaskInstance(task.id, payload);
         enqueueSnackbar('Task scheduled', { variant: 'success' });
       }
 
-      if (onSave) onSave(saved);
+      // Pass the saved data to onSave callback in the correct format
+      // to prevent duplicate API calls in handleCleaningTaskSaved
+      if (onSave) {
+        // For recurring tasks, saved is typically an array or object with count
+        // For single tasks, saved should have an id property
+        // Pass the data in a format that triggers early return in handleCleaningTaskSaved
+        if (Array.isArray(saved)) {
+          // Recurring tasks - pass array directly
+          onSave(saved);
+        } else if (saved && (saved.id || saved.instance_count)) {
+          // Single task with ID or recurring task response - pass as-is
+          onSave(saved);
+        } else {
+          // Fallback - ensure the object has proper structure
+          onSave(saved || { id: Date.now() }); // Temporary ID to trigger early return
+        }
+      }
       onClose();
     } catch (e) {
       enqueueSnackbar(e.message || 'Failed to save task', { variant: 'error' });
