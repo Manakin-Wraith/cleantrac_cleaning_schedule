@@ -375,8 +375,14 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                 except CleaningItem.DoesNotExist:
                     return Response({'error': 'CleaningItem not found.'}, status=status.HTTP_400_BAD_REQUEST)
 
-                user_profile = request.user.profile
-                department = user_profile.department if user_profile.department else cleaning_item.department
+                # Get user profile with error handling
+                user_profile = None
+                try:
+                    user_profile = request.user.profile
+                    department = user_profile.department if user_profile.department else cleaning_item.department
+                except UserProfile.DoesNotExist:
+                    # If user has no profile, use the cleaning item's department
+                    department = cleaning_item.department
 
                 # Handle both assigned_to_id and assigned_to field names
                 assigned_to_id = request.data.get('assigned_to_id') or request.data.get('assigned_to')
