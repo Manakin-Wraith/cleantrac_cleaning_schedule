@@ -453,19 +453,59 @@ const UnifiedCalendarPage = () => {
 
   // Save handler for cleaning task modal
   const handleCleaningTaskSaved = async (taskData, existingId = null) => {
-    // If modal already saved and returned ARR directly (recurring) or single instance
-    if (Array.isArray(taskData) && !existingId) {
-      setCleaningEvents(prev => {
-        const withoutOld = prev.filter(ev => !taskData.some(t => t.id === ev.id));
-        return [...withoutOld, ...taskData];
-      });
-      await fetchAllData();
-      enqueueSnackbar('Recurring tasks scheduled', { variant: 'success' });
-      setTaskAssignmentModalOpen(false);
-      setDrawerOpen(false);
-      return;
+    console.log('[handleCleaningTaskSaved] Called with:', { taskData, existingId });
+    
+    // ROBUST DUPLICATE PREVENTION: If modal already saved and returned data
+    // Check for various response formats from successful task creation
+    if (!existingId) {
+      // Case 1: Array response (recurring tasks)
+      if (Array.isArray(taskData)) {
+        console.log('[handleCleaningTaskSaved] Array response - recurring tasks already created');
+        setCleaningEvents(prev => {
+          const withoutOld = prev.filter(ev => !taskData.some(t => t.id === ev.id));
+          return [...withoutOld, ...taskData];
+        });
+        await fetchAllData();
+        enqueueSnackbar('Recurring tasks scheduled', { variant: 'success' });
+        setTaskAssignmentModalOpen(false);
+        setDrawerOpen(false);
+        return;
+      }
+      
+      // Case 2: Object with ID (single task already created)
+      if (taskData && taskData.id) {
+        console.log('[handleCleaningTaskSaved] Object with ID - single task already created');
+        setCleaningEvents(prev => {
+          const withoutOld = prev.filter(ev => ev.id !== taskData.id);
+          return [...withoutOld, taskData];
+        });
+        await fetchAllData();
+        enqueueSnackbar('Task scheduled', { variant: 'success' });
+        setTaskAssignmentModalOpen(false);
+        setDrawerOpen(false);
+        return;
+      }
+      
+      // Case 3: Object with instance_count (recurring task response)
+      if (taskData && (taskData.instance_count || taskData.instances_created)) {
+        console.log('[handleCleaningTaskSaved] Recurring task response with count - already created');
+        await fetchAllData();
+        enqueueSnackbar(`${taskData.instance_count || taskData.instances_created} recurring tasks scheduled`, { variant: 'success' });
+        setTaskAssignmentModalOpen(false);
+        setDrawerOpen(false);
+        return;
+      }
+      
+      // Case 4: Empty or minimal payload - likely duplicate call, skip it
+      if (!taskData || Object.keys(taskData).length <= 2) {
+        console.log('[handleCleaningTaskSaved] Empty/minimal payload - skipping duplicate call');
+        setTaskAssignmentModalOpen(false);
+        setDrawerOpen(false);
+        return;
+      }
     }
-    // Single instance already created
+    
+    // Single instance already created (legacy check)
     if (taskData && taskData.id && !existingId) {
       setCleaningEvents(prev => {
         const withoutOld = prev.filter(ev => ev.id !== taskData.id);
