@@ -96,13 +96,31 @@ class RecurringSchedule(models.Model):
         Uses proper transaction handling to prevent duplicate key violations.
         """
         logger = logging.getLogger(__name__)
+        
+        # DEBUG: Add detailed logging
+        logger.info(f"[DEBUG] generate_instances called for schedule {self.id}")
+        logger.info(f"[DEBUG] start_date: {self.start_date}")
+        logger.info(f"[DEBUG] end_date: {self.end_date}")
+        logger.info(f"[DEBUG] recurrence_type: {self.recurrence_type}")
+        logger.info(f"[DEBUG] days_ahead: {days_ahead}")
+        logger.info(f"[DEBUG] timezone.localdate(): {timezone.localdate()}")
+        
         target_end = timezone.localdate() + timedelta(days=days_ahead)
+        logger.info(f"[DEBUG] target_end: {target_end}")
+        
         current = self.start_date
+        logger.info(f"[DEBUG] initial current: {current}")
+        
         if current < timezone.localdate():
             current = timezone.localdate()
+            logger.info(f"[DEBUG] adjusted current to today: {current}")
         
         created_count = 0
+        logger.info(f"[DEBUG] Starting while loop. current <= target_end: {current <= target_end}")
+        logger.info(f"[DEBUG] end_date condition: {self.end_date is None or current <= self.end_date}")
+        
         while current <= target_end and (self.end_date is None or current <= self.end_date):
+            logger.info(f"[DEBUG] Processing date: {current}")
             try:
                 with transaction.atomic():
                     # Check if a TaskInstance already exists for this date & schedule
