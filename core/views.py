@@ -361,11 +361,11 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
         """Override create to support recurring schedules."""
         recurring_flag = request.data.get('recurring') in [True, 'true', 'True', '1', 1]
         recurrence_type = request.data.get('recurrence_type')
-        
-        # Debug: Log request data to identify the issue
-        print(f"[DEBUG] Request data keys: {list(request.data.keys())}")
-        if 'id' in request.data:
-            print(f"[DEBUG] WARNING: Request contains 'id' field: {request.data.get('id')}")
+                # Debug: Log request data to identify the issue
+                print(f"[DEBUG] Request data keys: {list(request.data.keys())}")
+                print(f"[DEBUG] Full request data: {dict(request.data)}")
+                if 'id' in request.data:
+                    print(f"[DEBUG] WARNING: Request contains 'id' field: {request.data.get('id')}")
         
         if recurring_flag:
             try:
@@ -450,7 +450,11 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                 return Response({
                     'error': 'Failed to create recurring schedule',
                     'message': str(e),
-                    'debug_info': 'Retry logic exhausted or other critical error'
+                    'debug_info': {
+                        'error_type': type(e).__name__,
+                        'retry_logic_status': 'Failed or not executed',
+                        'suggested_action': 'Check server logs for retry attempts'
+                    }
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # Fallback to default single task create
