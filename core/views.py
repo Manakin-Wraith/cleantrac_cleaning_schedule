@@ -528,6 +528,13 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
         for attempt in range(max_retries):
             try:
                 print(f"[DEBUG] Attempt {attempt + 1}: Creating TaskInstance with data: {task_data}")
+                
+                # CRITICAL DEBUG: Check if 'id' is somehow in task_data
+                if 'id' in task_data:
+                    print(f"[CRITICAL] task_data contains 'id' field: {task_data['id']} - REMOVING IT!")
+                    task_data = {k: v for k, v in task_data.items() if k != 'id'}
+                    print(f"[CRITICAL] Cleaned task_data: {task_data}")
+                
                 task_instance = TaskInstance.objects.create(**task_data)
                 print(f"[DEBUG] Successfully created TaskInstance with ID: {task_instance.id}")
                 return task_instance
