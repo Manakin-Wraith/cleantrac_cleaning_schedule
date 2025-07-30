@@ -50,6 +50,10 @@ class RecurringSchedule(models.Model):
 
     start_date = models.DateField(default=timezone.localdate)
     end_date = models.DateField(null=True, blank=True, help_text="Leave blank for no end date (infinite recurrence)")
+    
+    # Time fields for scheduling
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
 
     recurrence_type = models.CharField(max_length=10, choices=RECURRENCE_CHOICES)
 
@@ -111,6 +115,8 @@ class RecurringSchedule(models.Model):
                     department=self.department,
                     assigned_to=self.assigned_to,
                     due_date=current,
+                    start_time=self.start_time,
+                    end_time=self.end_time,
                     notes=(
                         f"Auto-generated from recurring schedule {self.id}. "
                         f"[RecurringSchedule:{self.id}]"
