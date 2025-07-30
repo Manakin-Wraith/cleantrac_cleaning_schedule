@@ -156,7 +156,7 @@ export default function NewCleaningTaskModal({ open, onClose, departmentId, edit
         // Cleaning Item change
 const origCleaning = (typeof task.cleaning_item === 'object' ? task.cleaning_item?.id : task.cleaning_item_id || task.cleaning_item || null);
 if (toNullableNumber(form.cleaning_item_id) !== toNullableNumber(origCleaning)) {
-  payload.cleaning_item = toNullableNumber(form.cleaning_item_id);
+  payload.cleaning_item_id_write = toNullableNumber(form.cleaning_item_id); // Fixed: use correct field name
 }
 
 if ((task.notes || '') !== (form.notes || '')) {
@@ -182,7 +182,7 @@ if ((task.notes || '') !== (form.notes || '')) {
           recurrence_type: isRecurring ? recurrenceType : undefined,
           recurrence_pattern: undefined,
           status: 'pending',
-          cleaning_item: toNullableNumber(form.cleaning_item_id),
+          cleaning_item_id_write: toNullableNumber(form.cleaning_item_id), // Fixed: use correct field name
           department_id: departmentId,
         };
       }
