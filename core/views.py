@@ -424,7 +424,9 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                     del task_data['id']  # Remove it to prevent collision
                 
                 # Create the first instance with robust retry logic
+                print(f"[DEBUG] About to call _create_task_with_retry with task_data: {task_data}")
                 first_instance = self._create_task_with_retry(task_data)
+                print(f"[DEBUG] _create_task_with_retry completed successfully, got TaskInstance ID: {first_instance.id}")
                 
                 # Create schedule for future instances
                 schedule = RecurringSchedule.objects.create(
@@ -432,6 +434,8 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                     department=department,
                     assigned_to=assigned_to,
                     recurrence_type=recurrence_type,
+                    start_time=start_time,
+                    end_time=end_time,
                     created_by=request.user,
                 )
                 
@@ -441,10 +445,12 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
                 
             except Exception as e:
-                # If anything fails, return error but don't crash
+                # If retry logic fails completely, return detailed error
+                print(f"[DEBUG] Recurring task creation failed completely: {str(e)}")
                 return Response({
                     'error': 'Failed to create recurring schedule',
-                    'message': str(e)
+                    'message': str(e),
+                    'debug_info': 'Retry logic exhausted or other critical error'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # Fallback to default single task create
