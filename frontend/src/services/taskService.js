@@ -47,7 +47,7 @@ export const createTaskInstance = async (taskData) => {
             start_time: taskData.start_time,
             end_time: taskData.end_time,
             status: taskData.status || 'pending',
-            cleaning_item_id_write: taskData.cleaning_item,  // CleaningItem ID (correct field name)
+            cleaning_item_id_write: taskData.cleaning_item_id_write || taskData.cleaning_item_id || taskData.cleaning_item,  // CleaningItem ID (handle multiple field names)
             department_id: taskData.department_id || taskData.department,  // Department ID (correct field name)
             notes: taskData.notes || ''
         };
