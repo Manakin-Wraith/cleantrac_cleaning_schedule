@@ -411,8 +411,17 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                         created_by=request.user,
                     )
                     
-                    # Generate initial instances – daily only one week ahead
-                    days_ahead = 6 if recurrence_type == 'daily' else 30
+                    # Generate initial instances – ensure days_ahead covers the start_date
+                    from django.utils import timezone
+                    days_from_today_to_start = (start_date - timezone.localdate()).days
+                    
+                    if recurrence_type == 'daily':
+                        # For daily: cover at least 7 days from start_date, or 30 days from today, whichever is more
+                        days_ahead = max(days_from_today_to_start + 7, 30)
+                    else:
+                        # For weekly/monthly: cover at least 30 days from start_date, or 60 days from today
+                        days_ahead = max(days_from_today_to_start + 30, 60)
+                    
                     instance_count = schedule.generate_instances(days_ahead=days_ahead)
 
                     # Return simple success response (avoid complex serialization)
