@@ -529,13 +529,19 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
             try:
                 print(f"[DEBUG] Attempt {attempt + 1}: Creating TaskInstance with data: {task_data}")
                 
-                # CRITICAL DEBUG: Check if 'id' is somehow in task_data
-                if 'id' in task_data:
-                    print(f"[CRITICAL] task_data contains 'id' field: {task_data['id']} - REMOVING IT!")
-                    task_data = {k: v for k, v in task_data.items() if k != 'id'}
-                    print(f"[CRITICAL] Cleaned task_data: {task_data}")
+                # DEFINITIVE FIX: Force clean task_data and ensure no ID is set
+                # Remove ANY possible ID field that might be causing the collision
+                clean_task_data = {k: v for k, v in task_data.items() if k not in ['id', 'pk']}
                 
-                task_instance = TaskInstance.objects.create(**task_data)
+                # CRITICAL DEBUG: Check if 'id' is somehow in task_data
+                if 'id' in task_data or 'pk' in task_data:
+                    print(f"[CRITICAL] task_data contains ID field - ORIGINAL: {task_data}")
+                    print(f"[CRITICAL] CLEANED task_data: {clean_task_data}")
+                
+                # Force sequence fix BEFORE creation to ensure correct next ID
+                self._force_sequence_fix()
+                
+                task_instance = TaskInstance.objects.create(**clean_task_data)
                 print(f"[DEBUG] Successfully created TaskInstance with ID: {task_instance.id}")
                 return task_instance
                 
@@ -559,6 +565,31 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                 raise
         
         raise Exception(f"Failed to create TaskInstance after {max_retries} attempts")
+    
+    def _force_sequence_fix(self):
+        """Force sequence fix before EVERY TaskInstance creation to prevent ID collisions"""
+        from django.db import connection
+        
+        try:
+            with connection.cursor() as cursor:
+                # Get current max ID
+                cursor.execute("SELECT COALESCE(MAX(id), 0) FROM core_taskinstance;")
+                max_id = cursor.fetchone()[0]
+                
+                # Get current sequence value
+                cursor.execute("SELECT last_value FROM core_taskinstance_id_seq;")
+                current_seq = cursor.fetchone()[0]
+                
+                # If sequence is behind max_id, fix it
+                if current_seq <= max_id:
+                    next_safe_id = max_id + 1
+                    cursor.execute(f"SELECT setval('core_taskinstance_id_seq', {next_safe_id});")
+                    print(f"[FORCE_FIX] Sequence was {current_seq}, max_id was {max_id}, set to {next_safe_id}")
+                else:
+                    print(f"[FORCE_FIX] Sequence OK: {current_seq} > max_id {max_id}")
+                    
+        except Exception as e:
+            print(f"[FORCE_FIX] Error fixing sequence: {str(e)}")
     
     def _fix_sequence(self):
         """Automatically fix the TaskInstance sequence"""
