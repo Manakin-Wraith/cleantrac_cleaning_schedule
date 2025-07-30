@@ -361,6 +361,12 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
         """Override create to support recurring schedules."""
         recurring_flag = request.data.get('recurring') in [True, 'true', 'True', '1', 1]
         recurrence_type = request.data.get('recurrence_type')
+        
+        # Debug: Log request data to identify the issue
+        print(f"[DEBUG] Request data keys: {list(request.data.keys())}")
+        if 'id' in request.data:
+            print(f"[DEBUG] WARNING: Request contains 'id' field: {request.data.get('id')}")
+        
         if recurring_flag:
             try:
                 if recurrence_type not in ['daily', 'weekly', 'monthly']:
@@ -400,6 +406,7 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                 
                 # Create the first task instance directly (like single task creation)
                 # This ensures we follow the same successful pattern as single tasks
+                # IMPORTANT: Explicitly define task_data to prevent any 'id' field from being passed
                 task_data = {
                     'cleaning_item': cleaning_item,
                     'department': department,
@@ -410,6 +417,11 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                     'status': 'pending',
                     'notes': f'Recurring {recurrence_type} task'
                 }
+                
+                # Debug: Ensure no 'id' field is in task_data
+                if 'id' in task_data:
+                    print(f"[DEBUG] ERROR: task_data contains 'id' field: {task_data['id']}")
+                    del task_data['id']  # Remove it to prevent collision
                 
                 # Create the first instance
                 first_instance = TaskInstance.objects.create(**task_data)
