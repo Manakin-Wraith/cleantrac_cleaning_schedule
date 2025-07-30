@@ -375,14 +375,8 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                 except CleaningItem.DoesNotExist:
                     return Response({'error': 'CleaningItem not found.'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # Get user profile with error handling
-                user_profile = None
-                try:
-                    user_profile = request.user.profile
-                    department = user_profile.department if user_profile.department else cleaning_item.department
-                except UserProfile.DoesNotExist:
-                    # If user has no profile, use the cleaning item's department
-                    department = cleaning_item.department
+                user_profile = request.user.profile
+                department = user_profile.department if user_profile.department else cleaning_item.department
 
                 # Handle both assigned_to_id and assigned_to field names
                 assigned_to_id = request.data.get('assigned_to_id') or request.data.get('assigned_to')
@@ -393,28 +387,7 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                     except UserProfile.DoesNotExist:
                         return Response({'error': 'Assigned_to user profile not found.'}, status=status.HTTP_400_BAD_REQUEST)
 
-                # Extract time fields from request
-                start_time = request.data.get('start_time')
-                end_time = request.data.get('end_time')
-                due_date = request.data.get('due_date')
-                
-                # Create the first task instance directly (like single task creation)
-                # This ensures we follow the same successful pattern as single tasks
-                task_data = {
-                    'cleaning_item': cleaning_item,
-                    'department': department,
-                    'assigned_to': assigned_to,
-                    'due_date': due_date,
-                    'start_time': start_time,
-                    'end_time': end_time,
-                    'status': 'pending',
-                    'notes': f'Recurring {recurrence_type} task'
-                }
-                
-                # Create the first instance
-                first_instance = TaskInstance.objects.create(**task_data)
-                
-                # Create schedule for future instances
+                # Create schedule
                 schedule = RecurringSchedule.objects.create(
                     cleaning_item=cleaning_item,
                     department=department,
@@ -422,11 +395,18 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                     recurrence_type=recurrence_type,
                     created_by=request.user,
                 )
-                
-                # Return response similar to single task creation
-                from .serializers import TaskInstanceSerializer
-                serializer = TaskInstanceSerializer(first_instance)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                # Generate initial instances – daily only one week ahead
+                days_ahead = 6 if recurrence_type == 'daily' else 30
+                schedule.generate_instances(days_ahead=days_ahead)
+
+                # Return simple success response (avoid complex serialization)
+                instance_count = TaskInstance.objects.filter(notes__contains=f"[RecurringSchedule:{schedule.id}]").count()
+                return Response({
+                    'message': f'Recurring schedule created successfully with {instance_count} task instances',
+                    'schedule_id': schedule.id,
+                    'instance_count': instance_count,
+                    'recurrence_type': recurrence_type
+                }, status=status.HTTP_201_CREATED)
                 
             except Exception as e:
                 # If anything fails, return error but don't crash
