@@ -390,12 +390,24 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                         except UserProfile.DoesNotExist:
                             return Response({'error': 'Assigned_to user profile not found.'}, status=status.HTTP_400_BAD_REQUEST)
 
+                    # Get start_date from the request (due_date)
+                    due_date_str = request.data.get('due_date')
+                    if not due_date_str:
+                        return Response({'error': 'due_date is required for recurring tasks.'}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    try:
+                        from datetime import datetime
+                        start_date = datetime.strptime(due_date_str, '%Y-%m-%d').date()
+                    except ValueError:
+                        return Response({'error': 'Invalid due_date format. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
+                    
                     # Create schedule within transaction
                     schedule = RecurringSchedule.objects.create(
                         cleaning_item=cleaning_item,
                         department=department,
                         assigned_to=assigned_to,
                         recurrence_type=recurrence_type,
+                        start_date=start_date,  # Use the due_date from frontend as start_date
                         created_by=request.user,
                     )
                     
