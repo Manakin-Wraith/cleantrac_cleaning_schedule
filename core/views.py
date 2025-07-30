@@ -361,13 +361,6 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
         """Override create to support recurring schedules."""
         recurring_flag = request.data.get('recurring') in [True, 'true', 'True', '1', 1]
         recurrence_type = request.data.get('recurrence_type')
-        
-        # Debug: Log request data to identify the issue
-        print(f"[DEBUG] Request data keys: {list(request.data.keys())}")
-        print(f"[DEBUG] Full request data: {dict(request.data)}")
-        if 'id' in request.data:
-            print(f"[DEBUG] WARNING: Request contains 'id' field: {request.data.get('id')}")
-        
         if recurring_flag:
             try:
                 if recurrence_type not in ['daily', 'weekly', 'monthly']:
@@ -407,7 +400,6 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                 
                 # Create the first task instance directly (like single task creation)
                 # This ensures we follow the same successful pattern as single tasks
-                # IMPORTANT: Explicitly define task_data to prevent any 'id' field from being passed
                 task_data = {
                     'cleaning_item': cleaning_item,
                     'department': department,
@@ -419,15 +411,8 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                     'notes': f'Recurring {recurrence_type} task'
                 }
                 
-                # Debug: Ensure no 'id' field is in task_data
-                if 'id' in task_data:
-                    print(f"[DEBUG] ERROR: task_data contains 'id' field: {task_data['id']}")
-                    del task_data['id']  # Remove it to prevent collision
-                
-                # Create the first instance with robust retry logic
-                print(f"[DEBUG] About to call _create_task_with_retry with task_data: {task_data}")
-                first_instance = self._create_task_with_retry(task_data)
-                print(f"[DEBUG] _create_task_with_retry completed successfully, got TaskInstance ID: {first_instance.id}")
+                # Create the first instance
+                first_instance = TaskInstance.objects.create(**task_data)
                 
                 # Create schedule for future instances
                 schedule = RecurringSchedule.objects.create(
@@ -435,8 +420,6 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                     department=department,
                     assigned_to=assigned_to,
                     recurrence_type=recurrence_type,
-                    start_time=start_time,
-                    end_time=end_time,
                     created_by=request.user,
                 )
                 
@@ -446,16 +429,10 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
                 
             except Exception as e:
-                # If retry logic fails completely, return detailed error
-                print(f"[DEBUG] Recurring task creation failed completely: {str(e)}")
+                # If anything fails, return error but don't crash
                 return Response({
                     'error': 'Failed to create recurring schedule',
-                    'message': str(e),
-                    'debug_info': {
-                        'error_type': type(e).__name__,
-                        'retry_logic_status': 'Failed or not executed',
-                        'suggested_action': 'Check server logs for retry attempts'
-                    }
+                    'message': str(e)
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # Fallback to default single task create
@@ -518,63 +495,6 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
             # Or, ensure 'department' is a required field in the serializer if not auto-set.
             # The serializer currently has 'department_id' as a writable field.
             serializer.save()
-    
-    def _create_task_with_retry(self, task_data, max_retries=3):
-        """Create TaskInstance with retry logic for ID conflicts"""
-        import time
-        import random
-        from django.db import IntegrityError
-        
-        for attempt in range(max_retries):
-            try:
-                print(f"[DEBUG] Attempt {attempt + 1}: Creating TaskInstance with data: {task_data}")
-                
-                # SIMPLE FIX: Ensure no ID field is passed to create
-                clean_task_data = {k: v for k, v in task_data.items() if k not in ['id', 'pk']}
-                
-                task_instance = TaskInstance.objects.create(**clean_task_data)
-                print(f"[DEBUG] Successfully created TaskInstance with ID: {task_instance.id}")
-                return task_instance
-                
-            except IntegrityError as e:
-                if 'duplicate key' in str(e) and attempt < max_retries - 1:
-                    print(f"[DEBUG] ID conflict on attempt {attempt + 1}: {str(e)}")
-                    print(f"[DEBUG] Auto-fixing sequence and retrying...")
-                    
-                    # Auto-fix sequence
-                    self._fix_sequence()
-                    
-                    # Exponential backoff with jitter
-                    delay = (0.1 * (2 ** attempt)) + random.uniform(0, 0.1)
-                    time.sleep(delay)
-                    continue
-                else:
-                    print(f"[DEBUG] Final attempt failed: {str(e)}")
-                    raise
-            except Exception as e:
-                print(f"[DEBUG] Unexpected error: {str(e)}")
-                raise
-        
-        raise Exception(f"Failed to create TaskInstance after {max_retries} attempts")
-    
-    def _fix_sequence(self):
-        """Automatically fix the TaskInstance sequence"""
-        from django.db import connection
-        
-        try:
-            with connection.cursor() as cursor:
-                # Get current max ID
-                cursor.execute("SELECT COALESCE(MAX(id), 0) FROM core_taskinstance;")
-                max_id = cursor.fetchone()[0]
-                
-                # Set sequence to max_id + 1
-                next_id = max_id + 1
-                cursor.execute(f"SELECT setval('core_taskinstance_id_seq', {next_id});")
-                
-                print(f"[DEBUG] Sequence auto-fixed: set to {next_id} (max_id was {max_id})")
-                
-        except Exception as e:
-            print(f"[DEBUG] Failed to fix sequence: {str(e)}")
 
 class CompletionLogViewSet(viewsets.ModelViewSet):
     # queryset = CompletionLog.objects.all() # We'll override get_queryset
@@ -1121,7 +1041,7 @@ class TemperatureLogViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
         
-    @action(detail=False, methods=['get'], url_path=r'by-date/(?P<date>\d{4}-\d{2}-\d{2})')
+    @action(detail=False, methods=['get'], url_path='by-date/(?P<date>\d{4}-\d{2}-\d{2})')
     def logs_by_date(self, request, date=None):
         """
         Returns temperature logs for a specific date.
