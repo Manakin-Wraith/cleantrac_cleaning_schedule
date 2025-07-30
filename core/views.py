@@ -423,22 +423,8 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                     print(f"[DEBUG] ERROR: task_data contains 'id' field: {task_data['id']}")
                     del task_data['id']  # Remove it to prevent collision
                 
-                # Create the first instance with detailed error handling
-                try:
-                    print(f"[DEBUG] About to create TaskInstance with data: {task_data}")
-                    first_instance = TaskInstance.objects.create(**task_data)
-                    print(f"[DEBUG] Successfully created TaskInstance with ID: {first_instance.id}")
-                except Exception as create_error:
-                    print(f"[DEBUG] TaskInstance creation failed: {str(create_error)}")
-                    print(f"[DEBUG] Error type: {type(create_error).__name__}")
-                    return Response({
-                        'error': 'Failed to create task instance',
-                        'message': str(create_error),
-                        'debug_info': {
-                            'task_data_keys': list(task_data.keys()),
-                            'error_type': type(create_error).__name__
-                        }
-                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                # Create the first instance with robust retry logic
+                first_instance = self._create_task_with_retry(task_data)
                 
                 # Create schedule for future instances
                 schedule = RecurringSchedule.objects.create(
@@ -521,6 +507,59 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
             # Or, ensure 'department' is a required field in the serializer if not auto-set.
             # The serializer currently has 'department_id' as a writable field.
             serializer.save()
+    
+    def _create_task_with_retry(self, task_data, max_retries=3):
+        """Create TaskInstance with retry logic for ID conflicts"""
+        import time
+        import random
+        from django.db import IntegrityError
+        
+        for attempt in range(max_retries):
+            try:
+                print(f"[DEBUG] Attempt {attempt + 1}: Creating TaskInstance with data: {task_data}")
+                task_instance = TaskInstance.objects.create(**task_data)
+                print(f"[DEBUG] Successfully created TaskInstance with ID: {task_instance.id}")
+                return task_instance
+                
+            except IntegrityError as e:
+                if 'duplicate key' in str(e) and attempt < max_retries - 1:
+                    print(f"[DEBUG] ID conflict on attempt {attempt + 1}: {str(e)}")
+                    print(f"[DEBUG] Auto-fixing sequence and retrying...")
+                    
+                    # Auto-fix sequence
+                    self._fix_sequence()
+                    
+                    # Exponential backoff with jitter
+                    delay = (0.1 * (2 ** attempt)) + random.uniform(0, 0.1)
+                    time.sleep(delay)
+                    continue
+                else:
+                    print(f"[DEBUG] Final attempt failed: {str(e)}")
+                    raise
+            except Exception as e:
+                print(f"[DEBUG] Unexpected error: {str(e)}")
+                raise
+        
+        raise Exception(f"Failed to create TaskInstance after {max_retries} attempts")
+    
+    def _fix_sequence(self):
+        """Automatically fix the TaskInstance sequence"""
+        from django.db import connection
+        
+        try:
+            with connection.cursor() as cursor:
+                # Get current max ID
+                cursor.execute("SELECT COALESCE(MAX(id), 0) FROM core_taskinstance;")
+                max_id = cursor.fetchone()[0]
+                
+                # Set sequence to max_id + 1
+                next_id = max_id + 1
+                cursor.execute(f"SELECT setval('core_taskinstance_id_seq', {next_id});")
+                
+                print(f"[DEBUG] Sequence auto-fixed: set to {next_id} (max_id was {max_id})")
+                
+        except Exception as e:
+            print(f"[DEBUG] Failed to fix sequence: {str(e)}")
 
 class CompletionLogViewSet(viewsets.ModelViewSet):
     # queryset = CompletionLog.objects.all() # We'll override get_queryset
