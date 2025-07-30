@@ -523,6 +523,23 @@ const UnifiedCalendarPage = () => {
     try {
       let saved;
       const payload = { ...taskData };
+      
+      // ENSURE ALL REQUIRED FIELDS ARE PRESENT
+      // If payload is missing required fields, skip the API call entirely
+      const hasRequiredFields = (
+        (taskData.cleaning_item_id_write || taskData.cleaning_item_id || taskData.cleaning_item) &&
+        (taskData.department_id || taskData.department) &&
+        taskData.due_date
+      );
+      
+      if (!hasRequiredFields) {
+        console.log('[handleCleaningTaskSaved] Missing required fields - skipping API call');
+        console.log('taskData:', taskData);
+        setTaskAssignmentModalOpen(false);
+        setDrawerOpen(false);
+        return;
+      }
+      
       // Ensure cleaning_item_id present
       if (!payload.cleaning_item_id && taskData.cleaning_item?.id) {
         payload.cleaning_item_id = taskData.cleaning_item.id;
