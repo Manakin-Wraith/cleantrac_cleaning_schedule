@@ -423,8 +423,22 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
                     print(f"[DEBUG] ERROR: task_data contains 'id' field: {task_data['id']}")
                     del task_data['id']  # Remove it to prevent collision
                 
-                # Create the first instance
-                first_instance = TaskInstance.objects.create(**task_data)
+                # Create the first instance with detailed error handling
+                try:
+                    print(f"[DEBUG] About to create TaskInstance with data: {task_data}")
+                    first_instance = TaskInstance.objects.create(**task_data)
+                    print(f"[DEBUG] Successfully created TaskInstance with ID: {first_instance.id}")
+                except Exception as create_error:
+                    print(f"[DEBUG] TaskInstance creation failed: {str(create_error)}")
+                    print(f"[DEBUG] Error type: {type(create_error).__name__}")
+                    return Response({
+                        'error': 'Failed to create task instance',
+                        'message': str(create_error),
+                        'debug_info': {
+                            'task_data_keys': list(task_data.keys()),
+                            'error_type': type(create_error).__name__
+                        }
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
                 # Create schedule for future instances
                 schedule = RecurringSchedule.objects.create(
