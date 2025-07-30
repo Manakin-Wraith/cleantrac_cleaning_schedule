@@ -10,8 +10,9 @@ so Django recognises the new table.
 from datetime import timedelta, date
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
+import logging
 
 from .models import CleaningItem, Department, UserProfile, TaskInstance
 
@@ -92,28 +93,53 @@ class RecurringSchedule(models.Model):
 
         Called by a management command or Celery beat task.
         Avoids duplicating tasks that already exist.
+        Uses proper transaction handling to prevent duplicate key violations.
         """
+        logger = logging.getLogger(__name__)
         target_end = timezone.localdate() + timedelta(days=days_ahead)
         current = self.start_date
         if current < timezone.localdate():
             current = timezone.localdate()
+        
+        created_count = 0
         while current <= target_end and (self.end_date is None or current <= self.end_date):
-            # Check if a TaskInstance already exists for this date & schedule
-            exists = TaskInstance.objects.filter(
-                cleaning_item=self.cleaning_item,
-                due_date=current,
-                department=self.department,
-                notes__contains="[RecurringSchedule:%d]" % self.id,
-            ).exists()
-            if not exists:
-                TaskInstance.objects.create(
-                    cleaning_item=self.cleaning_item,
-                    department=self.department,
-                    assigned_to=self.assigned_to,
-                    due_date=current,
-                    notes=(
-                        f"Auto-generated from recurring schedule {self.id}. "
-                        f"[RecurringSchedule:{self.id}]"
-                    ),
-                )
+            try:
+                with transaction.atomic():
+                    # Check if a TaskInstance already exists for this date & schedule
+                    exists = TaskInstance.objects.filter(
+                        cleaning_item=self.cleaning_item,
+                        due_date=current,
+                        department=self.department,
+                        notes__contains="[RecurringSchedule:%d]" % self.id,
+                    ).exists()
+                    
+                    if not exists:
+                        # Use get_or_create to handle race conditions and duplicate prevention
+                        task_instance, created = TaskInstance.objects.get_or_create(
+                            cleaning_item=self.cleaning_item,
+                            due_date=current,
+                            department=self.department,
+                            assigned_to=self.assigned_to,
+                            defaults={
+                                'notes': (
+                                    f"Auto-generated from recurring schedule {self.id}. "
+                                    f"[RecurringSchedule:{self.id}]"
+                                ),
+                                'status': 'pending',  # Explicitly set status
+                            }
+                        )
+                        if created:
+                            created_count += 1
+                            logger.info(f"Created TaskInstance {task_instance.id} for {current}")
+                        else:
+                            logger.debug(f"TaskInstance already exists for {current}")
+                            
+            except Exception as e:
+                logger.error(f"Error creating TaskInstance for {current}: {str(e)}")
+                # Continue with next date instead of failing completely
+                pass
+                
             current = self._next_date(current)
+        
+        logger.info(f"Generated {created_count} task instances for recurring schedule {self.id}")
+        return created_count
