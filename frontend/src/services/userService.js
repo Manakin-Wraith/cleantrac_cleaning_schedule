@@ -15,14 +15,25 @@ export const getUsers = async (params = {}) => {
         // Filter out users without valid profiles to prevent assignment errors
         const validUsers = response.data.filter(user => {
             // Ensure user has a profile with required fields
-            if (!user.profile || !user.profile.id) {
-                console.warn(`User ${user.username} (ID: ${user.id}) has no valid profile - excluding from assignments`);
+            if (!user.profile) {
+                console.warn(`User ${user.username} (ID: ${user.id}) has no profile object - excluding from assignments`);
+                return false;
+            }
+            
+            if (!user.profile.id) {
+                console.warn(`User ${user.username} (ID: ${user.id}) has profile but no profile.id - excluding from assignments`);
                 return false;
             }
             
             // Ensure user has a department (required for task assignments)
             if (!user.profile.department) {
-                console.warn(`User ${user.username} (ID: ${user.id}) has no department - excluding from assignments`);
+                console.warn(`User ${user.username} (ID: ${user.id}) has profile but no department assigned - excluding from assignments`);
+                return false;
+            }
+            
+            // Additional validation for department structure
+            if (!user.profile.department.id || !user.profile.department.name) {
+                console.warn(`User ${user.username} (ID: ${user.id}) has incomplete department data - excluding from assignments`);
                 return false;
             }
             
