@@ -181,7 +181,9 @@ class UserViewSet(viewsets.ModelViewSet):
         department_id = self.request.query_params.get('department_id')
         role = self.request.query_params.get('role') # e.g., 'staff'
 
-        queryset = User.objects.all()
+        # Optimize query to include related profile and department data
+        # This prevents N+1 queries and ensures profile/department data is available
+        queryset = User.objects.select_related('profile', 'profile__department')
 
         if department_id:
             queryset = queryset.filter(profile__department_id=department_id)
@@ -209,26 +211,26 @@ class UserViewSet(viewsets.ModelViewSet):
                              queryset = queryset.filter(profile__department_id=manager_profile.department_id)
                     else: # Staff user making a specific query
                         # Staff can only query for themselves, even with params, unless further rules are added
-                        return User.objects.filter(pk=user.pk) 
+                        return User.objects.select_related('profile', 'profile__department').filter(pk=user.pk) 
                 except UserProfile.DoesNotExist:
                     return User.objects.none()
             return queryset.distinct() # Ensure distinct users if multiple filters are applied
 
         # Fallback to original role-based visibility if no specific query params are used
         if user.is_superuser:
-            return User.objects.all().distinct()
+            return User.objects.select_related('profile', 'profile__department').distinct()
         
         try:
             user_profile = user.profile # Assumes related_name='profile'
             if user_profile.role == 'manager' and user_profile.department:
                 # Managers see users in their department
-                return User.objects.filter(profile__department=user_profile.department).distinct()
+                return User.objects.select_related('profile', 'profile__department').filter(profile__department=user_profile.department).distinct()
             else:
                 # Staff (or managers without a department) see only themselves
-                return User.objects.filter(pk=user.pk).distinct()
+                return User.objects.select_related('profile', 'profile__department').filter(pk=user.pk).distinct()
         except UserProfile.DoesNotExist:
             # If no profile, default to seeing only self
-            return User.objects.filter(pk=user.pk).distinct()
+            return User.objects.select_related('profile', 'profile__department').filter(pk=user.pk).distinct()
 
     def perform_create(self, serializer):
         # The UserWithProfileSerializer.create() method now handles all the necessary logic
