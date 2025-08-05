@@ -26,13 +26,13 @@ export const getUsers = async (params = {}) => {
             }
             
             // Ensure user has a department (required for task assignments)
-            if (!user.profile.department) {
+            if (!user.profile.department_id) {
                 console.warn(`User ${user.username} (ID: ${user.id}) has profile but no department assigned - excluding from assignments`);
                 return false;
             }
             
             // Additional validation for department structure
-            if (!user.profile.department.id || !user.profile.department.name) {
+            if (!user.profile.department_name) {
                 console.warn(`User ${user.username} (ID: ${user.id}) has incomplete department data - excluding from assignments`);
                 return false;
             }
