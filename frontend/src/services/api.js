@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getTenantAuthToken, getTenantHeaders } from '../utils/tenantUtils';
 
 const API_URL = import.meta.env.VITE_API_BASE; // defined in Vercel/ .env files
 
@@ -10,18 +11,30 @@ const apiClient = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
-        // Add custom header for tenant identification (browsers block Host header)
-        'X-Tenant-Domain': 'capestation.manager.cleentrac.com'
+        // Dynamic tenant headers will be added via interceptor
     },
 });
 
-// Interceptor to add the auth token to requests
+// Interceptor to add the auth token and tenant headers to requests
 apiClient.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('authToken');
+        // Add tenant-specific auth token
+        const token = getTenantAuthToken();
         if (token) {
             config.headers['Authorization'] = `Token ${token}`;
         }
+        
+        // Add tenant headers for multi-tenant routing
+        const tenantHeaders = getTenantHeaders();
+        Object.assign(config.headers, tenantHeaders);
+        
+        // Debug logging for tenant requests
+        console.log('🏢 API Request with tenant context:', {
+            url: config.url,
+            tenant: tenantHeaders['x-tenant-domain'],
+            hasToken: !!token
+        });
+        
         return config;
     },
     (error) => {
@@ -34,11 +47,12 @@ apiClient.interceptors.response.use(
     response => response,
     error => {
         if (error.response && error.response.status === 401) {
-            // Token might be expired or invalid
-            localStorage.removeItem('authToken');
+            // Token might be expired or invalid - remove tenant-specific token
+            const { removeTenantAuthToken } = require('../utils/tenantUtils');
+            removeTenantAuthToken();
+            
             // Redirect to login, or dispatch an event to update auth state
-            // For simplicity, we'll just log it here. A robust app would handle this globally.
-            console.error('Unauthorized request. Token might be invalid or expired.');
+            console.error('Unauthorized request. Tenant token might be invalid or expired.');
             // window.location.href = '/login'; // Could force redirect
         }
         return Promise.reject(error);
