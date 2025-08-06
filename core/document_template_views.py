@@ -884,13 +884,13 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
                 parameters=parameters
             )
             
-            # Save the generated file
-            document.generated_file.save(filename, ContentFile(file_content))
+            # Save document record for audit trail (without file)
             document.save()
             
-            # Return document metadata with file URL (not the PDF content directly)
-            serializer = self.get_serializer(document)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # Return PDF file directly for immediate download
+            response = HttpResponse(file_content, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
             
         except DocumentTemplate.DoesNotExist:
             return Response(
