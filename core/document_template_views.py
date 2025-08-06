@@ -888,10 +888,21 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             document.generated_file.save(filename, ContentFile(file_content))
             document.save()
             
-            # Return PDF file directly for immediate download
-            response = HttpResponse(file_content, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            return response
+            # Return document metadata with preview/download URLs
+            serializer = self.get_serializer(document)
+            response_data = serializer.data
+            
+            # Add preview and download URLs to the response
+            preview_url = f"/api/generated-documents/{document.id}/preview/"
+            download_url = f"/api/generated-documents/{document.id}/preview/?download=true"
+            
+            response_data.update({
+                'preview_url': preview_url,
+                'download_url': download_url,
+                'message': 'Document generated successfully. Use preview_url to view or download_url to download.'
+            })
+            
+            return Response(response_data, status=status.HTTP_201_CREATED)
             
         except DocumentTemplate.DoesNotExist:
             return Response(
@@ -925,3 +936,54 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         documents = self.get_queryset().filter(template_id=template_id)
         serializer = self.get_serializer(documents, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'], url_path='preview')
+    def preview_pdf(self, request, pk=None):
+        """
+        Preview or download a generated PDF document.
+        Query parameter 'download=true' forces download, otherwise shows inline preview.
+        """
+        try:
+            document = self.get_object()
+            
+            # Check if the document has a generated file
+            if not document.generated_file:
+                return Response(
+                    {"detail": "No file available for this document"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Read the PDF file content
+            try:
+                with document.generated_file.open('rb') as pdf_file:
+                    file_content = pdf_file.read()
+            except FileNotFoundError:
+                return Response(
+                    {"detail": "PDF file not found on server"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Determine if this should be a download or preview
+            is_download = request.query_params.get('download', '').lower() == 'true'
+            
+            # Create the HTTP response with PDF content
+            response = HttpResponse(file_content, content_type='application/pdf')
+            
+            # Set appropriate headers based on preview vs download
+            filename = f"{document.template.name}_{document.created_at.strftime('%Y%m%d_%H%M%S')}.pdf"
+            if is_download:
+                response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            else:
+                response['Content-Disposition'] = f'inline; filename="{filename}"'
+            
+            # Add security headers
+            response['X-Content-Type-Options'] = 'nosniff'
+            response['X-Frame-Options'] = 'SAMEORIGIN'
+            
+            return response
+            
+        except GeneratedDocument.DoesNotExist:
+            return Response(
+                {"detail": "Document not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
