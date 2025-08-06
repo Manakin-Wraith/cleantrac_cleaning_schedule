@@ -15,6 +15,7 @@ import { styled, useTheme } from '@mui/material/styles';
 
 import { fetchReceivingRecords } from '../../services/receivingService';
 import ReceivingTableGrid from './ReceivingTableGrid';
+import { OptimizedTodaysDeliveriesCard, OptimizedExpiringSoonCard } from '../../components/OptimizedDashboardCards';
 
 dayjs.extend(utc);
 
@@ -183,26 +184,42 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
 
   return (
     <Box sx={{ width: '100%' }}>
-      {/* KPI Grid */}
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={6} md={3}>
-          <KPI
-            title="Today's Deliveries"
-            value={todaysDeliveries}
-            loading={loading}
-            accent={accent}
-          />
+      {/* Optimized KPI Grid */}
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={6} md={4}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+              <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: 2 }} />
+            </Box>
+          ) : (
+            <OptimizedTodaysDeliveriesCard 
+              deliveryMetrics={{
+                todaysDeliveries: todaysDeliveries,
+                totalDeliveries: rows.length
+              }}
+              onViewDetails={() => setTab(0)}
+            />
+          )}
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <KPI
-            title="Expiring Soon (≤7 days)"
-            value={expiringSoon}
-            loading={loading}
-            accent={accent}
-            onClick={()=>setTab(1)}
-          />
+        <Grid item xs={12} sm={6} md={4}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+              <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: 2 }} />
+            </Box>
+          ) : (
+            <OptimizedExpiringSoonCard 
+              expiringMetrics={{
+                expiringSoon: expiringSoon,
+                daysThreshold: 7
+              }}
+              onViewDetails={() => setTab(1)}
+            />
+          )}
         </Grid>
-        {/* Add empty grid items to keep layout pleasant */}
+        {/* Empty grid item for balanced layout */}
+        <Grid item xs={12} sm={12} md={4}>
+          {/* Future: Additional KPI card can go here */}
+        </Grid>
       </Grid>
 
       {/* Tabs */}

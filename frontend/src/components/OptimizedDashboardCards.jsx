@@ -21,6 +21,9 @@ import RestaurantIcon from '@mui/icons-material/Restaurant';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import WarningIcon from '@mui/icons-material/Warning';
 import dashboardOptimization from '../styles/dashboardOptimization';
 
 // Optimized Cleaning At A Glance Card
@@ -589,8 +592,335 @@ export const OptimizedTemperatureCard = ({ tempMetrics = {} }) => {
     );
 };
 
+// Optimized Receiving KPI Components
+
+// Today's Deliveries KPI Card
+export const OptimizedTodaysDeliveriesCard = ({ deliveryMetrics = {}, onViewDetails }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+    
+    // Defensive programming: provide defaults for deliveryMetrics
+    const safeMetrics = {
+        todaysDeliveries: 0,
+        totalDeliveries: 0,
+        ...deliveryMetrics
+    };
+    
+    const getDensityLevel = () => {
+        if (isMobile) return 'mobile';
+        if (isTablet) return 'tablet';
+        if (useMediaQuery(theme.breakpoints.down('lg'))) return 'desktop';
+        return 'large';
+    };
+    
+    const densityLevel = getDensityLevel();
+    const spacing = dashboardOptimization.responsiveSpacing[densityLevel];
+
+    return (
+        <Paper 
+            elevation={0} 
+            sx={{ 
+                ...dashboardOptimization.optimizedCardStyles(theme, densityLevel),
+                p: spacing.cardPadding,
+                '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+                    '& .card-icon': {
+                        transform: 'scale(1.1) rotate(5deg)',
+                    },
+                },
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '4px',
+                    background: 'linear-gradient(90deg, #4CAF50, #66BB6A, #81C784)',
+                    borderRadius: '16px 16px 0 0',
+                },
+            }}
+        >
+            {/* Optimized Header */}
+            <Box sx={{ 
+                ...dashboardOptimization.optimizedHeaderStyles(theme, densityLevel),
+                mb: spacing.headerMargin,
+            }}>
+                <Box>
+                    <Typography 
+                        variant="h6" 
+                        sx={{ 
+                            ...dashboardOptimization.optimizedTypographyStyles('cardTitle', densityLevel),
+                            fontSize: spacing.fontSize.header,
+                        }}
+                    >
+                        📦 Today's Deliveries
+                    </Typography>
+                    <Typography 
+                        variant="caption" 
+                        sx={{ 
+                            ...dashboardOptimization.optimizedTypographyStyles('cardCaption', densityLevel),
+                            fontSize: spacing.fontSize.caption,
+                        }}
+                    >
+                        Received Today
+                    </Typography>
+                </Box>
+                <Box 
+                    className="card-icon" 
+                    sx={{ 
+                        ...dashboardOptimization.optimizedIconStyles(theme, densityLevel).cardIcon,
+                        background: 'rgba(76, 175, 80, 0.1)',
+                        border: '1px solid rgba(76, 175, 80, 0.2)',
+                        minWidth: densityLevel === 'mobile' ? 32 : densityLevel === 'tablet' ? 36 : 40,
+                        height: densityLevel === 'mobile' ? 32 : densityLevel === 'tablet' ? 36 : 40,
+                    }}
+                >
+                    <LocalShippingIcon sx={{ 
+                        color: 'success.main', 
+                        fontSize: spacing.iconSize 
+                    }} />
+                </Box>
+            </Box>
+
+            {/* Main Content */}
+            <Box sx={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                gap: spacing.contentGap,
+                flex: 1,
+            }}>
+                {/* Primary Metric */}
+                <Box sx={{ textAlign: 'center', mb: 2 }}>
+                    <Typography 
+                        variant="h3" 
+                        sx={{ 
+                            fontWeight: 'bold',
+                            color: 'success.main',
+                            fontSize: densityLevel === 'mobile' ? '2rem' : densityLevel === 'tablet' ? '2.25rem' : '2.5rem',
+                        }}
+                    >
+                        {safeMetrics.todaysDeliveries}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: spacing.fontSize.caption }}>
+                        Deliveries Today
+                    </Typography>
+                </Box>
+
+                {/* Status Section */}
+                <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    gap: 1,
+                    mt: 'auto'
+                }}>
+                    <CheckCircleOutlineIcon sx={{ color: 'success.main', fontSize: spacing.iconSize }} />
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: spacing.fontSize.caption }}>
+                        All deliveries processed
+                    </Typography>
+                </Box>
+            </Box>
+
+            {/* Action Button */}
+            <Button
+                variant="contained"
+                size="small"
+                onClick={onViewDetails}
+                sx={{
+                    ...dashboardOptimization.optimizedButtonStyles(theme, densityLevel),
+                    width: '100%',
+                    background: 'linear-gradient(45deg, #4CAF50, #66BB6A)',
+                    color: 'white',
+                    fontWeight: 600,
+                    mt: 'auto',
+                }}
+            >
+                View All Deliveries
+            </Button>
+        </Paper>
+    );
+};
+
+// Expiring Soon KPI Card
+export const OptimizedExpiringSoonCard = ({ expiringMetrics = {}, onViewDetails }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+    
+    // Defensive programming: provide defaults for expiringMetrics
+    const safeMetrics = {
+        expiringSoon: 0,
+        daysThreshold: 7,
+        ...expiringMetrics
+    };
+    
+    const getDensityLevel = () => {
+        if (isMobile) return 'mobile';
+        if (isTablet) return 'tablet';
+        if (useMediaQuery(theme.breakpoints.down('lg'))) return 'desktop';
+        return 'large';
+    };
+    
+    const densityLevel = getDensityLevel();
+    const spacing = dashboardOptimization.responsiveSpacing[densityLevel];
+    const isUrgent = safeMetrics.expiringSoon > 0;
+
+    return (
+        <Paper 
+            elevation={0} 
+            sx={{ 
+                ...dashboardOptimization.optimizedCardStyles(theme, densityLevel),
+                p: spacing.cardPadding,
+                cursor: onViewDetails ? 'pointer' : 'default',
+                '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+                    '& .card-icon': {
+                        transform: 'scale(1.1) rotate(5deg)',
+                    },
+                },
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '4px',
+                    background: isUrgent ? 
+                        'linear-gradient(90deg, #FF9800, #FFB74D, #FFCC02)' :
+                        'linear-gradient(90deg, #4CAF50, #66BB6A, #81C784)',
+                    borderRadius: '16px 16px 0 0',
+                },
+            }}
+            onClick={onViewDetails}
+        >
+            {/* Optimized Header */}
+            <Box sx={{ 
+                ...dashboardOptimization.optimizedHeaderStyles(theme, densityLevel),
+                mb: spacing.headerMargin,
+            }}>
+                <Box>
+                    <Typography 
+                        variant="h6" 
+                        sx={{ 
+                            ...dashboardOptimization.optimizedTypographyStyles('cardTitle', densityLevel),
+                            fontSize: spacing.fontSize.header,
+                        }}
+                    >
+                        ⏰ Expiring Soon
+                    </Typography>
+                    <Typography 
+                        variant="caption" 
+                        sx={{ 
+                            ...dashboardOptimization.optimizedTypographyStyles('cardCaption', densityLevel),
+                            fontSize: spacing.fontSize.caption,
+                        }}
+                    >
+                        ≤{safeMetrics.daysThreshold} days
+                    </Typography>
+                </Box>
+                <Box 
+                    className="card-icon" 
+                    sx={{ 
+                        ...dashboardOptimization.optimizedIconStyles(theme, densityLevel).cardIcon,
+                        background: isUrgent ? 'rgba(255, 152, 0, 0.1)' : 'rgba(76, 175, 80, 0.1)',
+                        border: isUrgent ? '1px solid rgba(255, 152, 0, 0.2)' : '1px solid rgba(76, 175, 80, 0.2)',
+                        minWidth: densityLevel === 'mobile' ? 32 : densityLevel === 'tablet' ? 36 : 40,
+                        height: densityLevel === 'mobile' ? 32 : densityLevel === 'tablet' ? 36 : 40,
+                    }}
+                >
+                    <ScheduleIcon sx={{ 
+                        color: isUrgent ? 'warning.main' : 'success.main', 
+                        fontSize: spacing.iconSize 
+                    }} />
+                </Box>
+            </Box>
+
+            {/* Main Content */}
+            <Box sx={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                gap: spacing.contentGap,
+                flex: 1,
+            }}>
+                {/* Primary Metric */}
+                <Box sx={{ textAlign: 'center', mb: 2 }}>
+                    <Typography 
+                        variant="h3" 
+                        sx={{ 
+                            fontWeight: 'bold',
+                            color: isUrgent ? 'warning.main' : 'success.main',
+                            fontSize: densityLevel === 'mobile' ? '2rem' : densityLevel === 'tablet' ? '2.25rem' : '2.5rem',
+                        }}
+                    >
+                        {safeMetrics.expiringSoon}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: spacing.fontSize.caption }}>
+                        Items Expiring
+                    </Typography>
+                </Box>
+
+                {/* Status Section */}
+                <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    gap: 1,
+                    mt: 'auto'
+                }}>
+                    {isUrgent ? (
+                        <WarningIcon sx={{ color: 'warning.main', fontSize: spacing.iconSize }} />
+                    ) : (
+                        <CheckCircleOutlineIcon sx={{ color: 'success.main', fontSize: spacing.iconSize }} />
+                    )}
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: spacing.fontSize.caption }}>
+                        {isUrgent ? 'Attention needed' : 'All items fresh'}
+                    </Typography>
+                </Box>
+
+                {/* Urgency Chip */}
+                <Chip 
+                    label={isUrgent ? "Review Required" : "All Good"} 
+                    size="small"
+                    sx={{ 
+                        mt: 1,
+                        fontSize: spacing.fontSize.caption,
+                        height: densityLevel === 'mobile' ? 24 : 28,
+                        backgroundColor: isUrgent ? 'warning.light' : 'success.light',
+                        color: isUrgent ? 'warning.contrastText' : 'success.contrastText',
+                    }}
+                />
+            </Box>
+
+            {/* Action Button */}
+            {onViewDetails && (
+                <Button
+                    variant="contained"
+                    size="small"
+                    sx={{
+                        ...dashboardOptimization.optimizedButtonStyles(theme, densityLevel),
+                        width: '100%',
+                        background: isUrgent ? 
+                            'linear-gradient(45deg, #FF9800, #FFB74D)' :
+                            'linear-gradient(45deg, #4CAF50, #66BB6A)',
+                        color: 'white',
+                        fontWeight: 600,
+                        mt: 2,
+                    }}
+                >
+                    {isUrgent ? 'Review Expiring Items' : 'View All Items'}
+                </Button>
+            )}
+        </Paper>
+    );
+};
+
 export default {
     OptimizedCleaningCard,
     OptimizedRecipeCard,
     OptimizedTemperatureCard,
+    OptimizedTodaysDeliveriesCard,
+    OptimizedExpiringSoonCard,
 };
