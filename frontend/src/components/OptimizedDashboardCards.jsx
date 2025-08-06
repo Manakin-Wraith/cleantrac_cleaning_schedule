@@ -412,10 +412,20 @@ export const OptimizedRecipeCard = ({ recipeMetrics, onViewTasks }) => {
 };
 
 // Optimized Temperature Compliance Card
-export const OptimizedTemperatureCard = ({ tempMetrics }) => {
+export const OptimizedTemperatureCard = ({ tempMetrics = {} }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+    
+    // Defensive programming: provide defaults for tempMetrics
+    const safeMetrics = {
+        logged: 0,
+        total: 0,
+        outOfRange: 0,
+        staffName: '',
+        period: 'AM',
+        ...tempMetrics
+    };
     
     const getDensityLevel = () => {
         if (isMobile) return 'mobile';
@@ -448,7 +458,7 @@ export const OptimizedTemperatureCard = ({ tempMetrics }) => {
                     left: 0,
                     right: 0,
                     height: '4px',
-                    background: tempMetrics.outOfRange ? 
+                    background: safeMetrics.outOfRange ? 
                         'linear-gradient(90deg, #f44336, #ff5722, #ff9800)' :
                         'linear-gradient(90deg, #2196F3, #00BCD4, #4CAF50)',
                     borderRadius: '16px 16px 0 0',
@@ -484,14 +494,14 @@ export const OptimizedTemperatureCard = ({ tempMetrics }) => {
                     className="card-icon" 
                     sx={{ 
                         ...dashboardOptimization.optimizedIconStyles(theme, densityLevel).cardIcon,
-                        background: tempMetrics.outOfRange ? 'rgba(244, 67, 54, 0.1)' : 'rgba(33, 150, 243, 0.1)',
-                        border: tempMetrics.outOfRange ? '1px solid rgba(244, 67, 54, 0.2)' : '1px solid rgba(33, 150, 243, 0.2)',
+                        background: safeMetrics.outOfRange ? 'rgba(244, 67, 54, 0.1)' : 'rgba(33, 150, 243, 0.1)',
+                        border: safeMetrics.outOfRange ? '1px solid rgba(244, 67, 54, 0.2)' : '1px solid rgba(33, 150, 243, 0.2)',
                         minWidth: densityLevel === 'mobile' ? 32 : densityLevel === 'tablet' ? 36 : 40,
                         height: densityLevel === 'mobile' ? 32 : densityLevel === 'tablet' ? 36 : 40,
                     }}
                 >
                     <ThermostatIcon sx={{ 
-                        color: tempMetrics.outOfRange ? 'error.main' : 'primary.main', 
+                        color: safeMetrics.outOfRange ? 'error.main' : 'primary.main', 
                         fontSize: spacing.iconSize 
                     }} />
                 </Box>
@@ -526,20 +536,20 @@ export const OptimizedTemperatureCard = ({ tempMetrics }) => {
                             fontSize: densityLevel === 'mobile' ? '1.5rem' : densityLevel === 'tablet' ? '1.75rem' : '2rem',
                         }}
                     >
-                        {tempMetrics.logged} / {tempMetrics.total}
+                        {safeMetrics.logged} / {safeMetrics.total}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ mb: 2, fontSize: spacing.fontSize.caption }}>
                         Temperature Logs
                     </Typography>
                     <LinearProgress 
                         variant="determinate" 
-                        value={(tempMetrics.logged / tempMetrics.total) * 100} 
+                        value={(safeMetrics.logged / safeMetrics.total) * 100} 
                         sx={{ 
                             height: densityLevel === 'mobile' ? 6 : 8, 
                             borderRadius: 4,
                             backgroundColor: 'rgba(0,0,0,0.1)',
                             '& .MuiLinearProgress-bar': {
-                                background: tempMetrics.outOfRange ? 
+                                background: safeMetrics.outOfRange ? 
                                     'linear-gradient(90deg, #f44336, #ff5722)' :
                                     'linear-gradient(90deg, #4CAF50, #66BB6A)',
                             }
@@ -550,27 +560,27 @@ export const OptimizedTemperatureCard = ({ tempMetrics }) => {
                 {/* Status Section */}
                 <Box sx={tempStyles.statusSection}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {tempMetrics.outOfRange ? (
+                        {safeMetrics.outOfRange ? (
                             <ErrorOutlineIcon sx={{ color: 'error.main', fontSize: spacing.iconSize }} />
                         ) : (
                             <CheckCircleOutlineIcon sx={{ color: 'success.main', fontSize: spacing.iconSize }} />
                         )}
                         <Typography variant="body2" fontWeight={600} sx={{ fontSize: spacing.fontSize.caption }}>
-                            Out of range: {tempMetrics.outOfRange}
+                            Out of range: {safeMetrics.outOfRange}
                         </Typography>
                     </Box>
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: spacing.fontSize.caption }}>
-                        Assigned staff: {tempMetrics.assignedStaff}
+                        Assigned staff: {safeMetrics.staffName}
                     </Typography>
                     <Chip 
-                        label={tempMetrics.outOfRange ? "Action Required" : "All Good"} 
+                        label={safeMetrics.outOfRange ? "Action Required" : "All Good"} 
                         size="small"
                         sx={{ 
                             mt: 1,
                             fontSize: spacing.fontSize.caption,
                             height: densityLevel === 'mobile' ? 24 : 28,
-                            backgroundColor: tempMetrics.outOfRange ? 'error.light' : 'success.light',
-                            color: tempMetrics.outOfRange ? 'error.contrastText' : 'success.contrastText',
+                            backgroundColor: safeMetrics.outOfRange ? 'error.light' : 'success.light',
+                            color: safeMetrics.outOfRange ? 'error.contrastText' : 'success.contrastText',
                         }}
                     />
                 </Box>

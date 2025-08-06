@@ -304,7 +304,7 @@ function ManagerDashboardPage() {
                         </Box>
                     ) : (
                         <OptimizedTemperatureCard 
-                            temperatureMetrics={{
+                            tempMetrics={{
                                 logged: tempMetrics.logged,
                                 total: tempMetrics.total,
                                 outOfRange: tempMetrics.outOfRange,
