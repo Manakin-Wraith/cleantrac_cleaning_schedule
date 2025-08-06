@@ -884,7 +884,8 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
                 parameters=parameters
             )
             
-            # Save document record for audit trail (without file)
+            # Save the PDF file to the database record for future access
+            document.generated_file.save(filename, ContentFile(file_content))
             document.save()
             
             # Return PDF file directly for immediate download
