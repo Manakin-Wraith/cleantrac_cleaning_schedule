@@ -332,3 +332,9 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 #     'PUT',
 #     'DELETE',
 # ]
+
+# File Upload Settings
+# Increase upload limits to handle document uploads (50MB limit)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000  # Allow more form fields for bulk uploads
