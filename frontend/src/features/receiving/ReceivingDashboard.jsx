@@ -104,6 +104,7 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState([]);
   const [expiringRows, setExpiringRows] = useState([]);
+  const [showExpiring, setShowExpiring] = useState(false); // Track which view to show
 
 
   const load = useCallback(async () => {
@@ -166,7 +167,8 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
                 totalDeliveries: rows.length
               }}
               onViewDetails={() => {
-                // Scroll to table or provide visual feedback
+                setShowExpiring(false); // Show all deliveries
+                // Scroll to table
                 const tableElement = document.querySelector('[data-testid="receiving-table"]');
                 if (tableElement) {
                   tableElement.scrollIntoView({ behavior: 'smooth' });
@@ -187,12 +189,12 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
                 daysThreshold: 7
               }}
               onViewDetails={() => {
-                // Scroll to table and highlight expiring items
+                setShowExpiring(true); // Show only expiring items
+                // Scroll to table
                 const tableElement = document.querySelector('[data-testid="receiving-table"]');
                 if (tableElement) {
                   tableElement.scrollIntoView({ behavior: 'smooth' });
                 }
-                // Future: Could filter table to show only expiring items
               }}
             />
           )}
@@ -203,10 +205,19 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
         </Grid>
       </Grid>
 
-      {/* Receiving Table - Simplified Single View */}
-      <Box sx={{ mt: 4 }}>
+      {/* Current View Indicator */}
+      <Box sx={{ mt: 3, mb: 2 }}>
+        <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
+          {showExpiring ? `Expiring Soon (${expiringRows.length} items)` : `All Deliveries (${rows.length} items)`}
+        </Typography>
+      </Box>
+
+      {/* Receiving Table - Dynamic View */}
+      <Box sx={{ mt: 2 }}>
         <ReceivingTableGrid 
           pollInterval={pollInterval}
+          staticRows={showExpiring ? expiringRows : null}
+          data-testid="receiving-table"
         />
       </Box>
     </Box>

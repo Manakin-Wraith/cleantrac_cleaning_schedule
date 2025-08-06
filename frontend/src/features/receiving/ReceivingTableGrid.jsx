@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useTheme } from '@mui/material/styles';
 import PropTypes from 'prop-types';
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, TextField, Stack } from '@mui/material';
+import { Box } from '@mui/material';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 dayjs.extend(utc);
@@ -20,7 +20,7 @@ function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000, 
   const [sortModel, setSortModel] = useState([{
     field: 'received_date', sort: 'desc',
   }]);
-  const [search, setSearch] = useState('');
+
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -29,7 +29,6 @@ function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000, 
         page: page + 1, // backend is 1-based
         page_size: pageSize,
         ordering: sortModel.length ? `${sortModel[0].sort === 'desc' ? '-' : ''}${sortModel[0].field}` : undefined,
-        search: search || undefined,
       };
       const resp = await fetchReceivingRecords(params);
       const dataList = Array.isArray(resp) ? resp : resp.results || [];
@@ -42,7 +41,7 @@ function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000, 
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, sortModel, search]);
+  }, [page, pageSize, sortModel]);
 
   // Fetch only when not using static rows
   useEffect(() => {
@@ -63,17 +62,7 @@ function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000, 
     return () => clearInterval(id);
   }, [load, pollInterval, staticRows]);
 
-  const handleSearchChange = (e) => {
-    debouncedSearch(e.target.value);
-  };
 
-  const debouncedSearch = useCallback((val) => {
-    clearTimeout(window.__rcvDebounce);
-    window.__rcvDebounce = setTimeout(() => {
-      setPage(0);
-      setSearch(val);
-    }, 500);
-  }, []);
 
   const columns = [
     { field: 'product_code', headerName: 'Product Code', flex: 1, minWidth: 120 },
@@ -127,15 +116,7 @@ function ReceivingTableGrid({ pageSize = defaultPageSize, pollInterval = 30000, 
 
   return (
     <Box sx={{ height: 600, width: '100%', overflowX: 'auto', pb: 4 }}>
-      <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
-        <TextField
-          size="small"
-          label="Search"
-          placeholder="Product code or name"
-          onChange={handleSearchChange}
-          sx={{ width: 300 }}
-        />
-      </Stack>
+
       <DataGrid
         autoHeight={false}
         sx={{
