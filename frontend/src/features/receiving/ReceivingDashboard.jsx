@@ -101,14 +101,21 @@ KPI.propTypes = {
 export default function ReceivingDashboard({ pollInterval = 30000, accentColor }) {
   const theme = useTheme();
   const accent = accentColor || theme.palette.primary.main;
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true); // Only for first load
+  const [backgroundRefreshing, setBackgroundRefreshing] = useState(false); // For polling updates
   const [rows, setRows] = useState([]);
   const [expiringRows, setExpiringRows] = useState([]);
   const [showExpiring, setShowExpiring] = useState(false); // Track which view to show
 
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (isInitialLoad = false) => {
+    // Use different loading states based on load type
+    if (isInitialLoad) {
+      setInitialLoading(true);
+    } else {
+      setBackgroundRefreshing(true);
+    }
+    
     try {
       // fetch all records for the department (backend already filters)
       const params = { page_size: 1000 };
@@ -124,16 +131,20 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
     } catch (err) {
       console.error('Error loading dashboard data', err);
     } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setInitialLoading(false);
+      } else {
+        setBackgroundRefreshing(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    load();
+    load(true); // Initial load - show skeleton loaders
   }, [load]);
 
   useEffect(() => {
-    const id = setInterval(load, pollInterval);
+    const id = setInterval(() => load(false), pollInterval); // Background refresh - keep cards visible
     return () => clearInterval(id);
   }, [load, pollInterval]);
 
@@ -156,7 +167,7 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
       {/* Optimized KPI Grid */}
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={4}>
-          {loading ? (
+          {initialLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
               <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: 2 }} />
             </Box>
@@ -178,7 +189,7 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
           )}
         </Grid>
         <Grid item xs={12} sm={6} md={4}>
-          {loading ? (
+          {initialLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
               <Skeleton variant="rectangular" width="100%" height={200} sx={{ borderRadius: 2 }} />
             </Box>
@@ -206,10 +217,36 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
       </Grid>
 
       {/* Current View Indicator */}
-      <Box sx={{ mt: 3, mb: 2 }}>
+      <Box sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 600 }}>
           {showExpiring ? `Expiring Soon (${expiringRows.length} items)` : `All Deliveries (${rows.length} items)`}
         </Typography>
+        {backgroundRefreshing && (
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 1,
+            color: 'text.secondary',
+            fontSize: '0.875rem'
+          }}>
+            <Box sx={{
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              border: '2px solid',
+              borderColor: 'primary.main',
+              borderTopColor: 'transparent',
+              animation: 'spin 1s linear infinite',
+              '@keyframes spin': {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' }
+              }
+            }} />
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Refreshing...
+            </Typography>
+          </Box>
+        )}
       </Box>
 
       {/* Receiving Table - Dynamic View */}
