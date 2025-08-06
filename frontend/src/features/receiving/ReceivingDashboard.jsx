@@ -6,8 +6,6 @@ import {
   Box,
   Grid,
   Paper,
-  Tabs,
-  Tab,
   Typography,
   Skeleton,
 } from '@mui/material';
@@ -98,32 +96,7 @@ KPI.propTypes = {
   onClick: PropTypes.func,
 };
 
-function a11yProps(index) {
-  return {
-    id: `rcv-tab-${index}`,
-    'aria-controls': `rcv-tabpanel-${index}`,
-  };
-}
 
-function TabPanel({ children, value, index, ...other }) {
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`rcv-tabpanel-${index}`}
-      aria-labelledby={`rcv-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ pt: 2 }}>{children}</Box>}
-    </div>
-  );
-}
-
-TabPanel.propTypes = {
-  children: PropTypes.node,
-  value: PropTypes.number.isRequired,
-  index: PropTypes.number.isRequired,
-};
 
 export default function ReceivingDashboard({ pollInterval = 30000, accentColor }) {
   const theme = useTheme();
@@ -131,7 +104,7 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState([]);
   const [expiringRows, setExpiringRows] = useState([]);
-  const [tab, setTab] = useState(0);
+
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -175,12 +148,7 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
     return expiry && expiry.isBefore(today.add(7, 'day'));
   }).length;
 
-  const tabSx = {
-    color: theme.palette.common.black,
-    '&.Mui-selected': {
-      color: theme.palette.common.white,
-    },
-  };
+
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -197,7 +165,13 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
                 todaysDeliveries: todaysDeliveries,
                 totalDeliveries: rows.length
               }}
-              onViewDetails={() => setTab(0)}
+              onViewDetails={() => {
+                // Scroll to table or provide visual feedback
+                const tableElement = document.querySelector('[data-testid="receiving-table"]');
+                if (tableElement) {
+                  tableElement.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
             />
           )}
         </Grid>
@@ -212,7 +186,14 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
                 expiringSoon: expiringSoon,
                 daysThreshold: 7
               }}
-              onViewDetails={() => setTab(1)}
+              onViewDetails={() => {
+                // Scroll to table and highlight expiring items
+                const tableElement = document.querySelector('[data-testid="receiving-table"]');
+                if (tableElement) {
+                  tableElement.scrollIntoView({ behavior: 'smooth' });
+                }
+                // Future: Could filter table to show only expiring items
+              }}
             />
           )}
         </Grid>
@@ -222,24 +203,12 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
         </Grid>
       </Grid>
 
-      {/* Tabs */}
-      <Tabs
-        value={tab}
-        onChange={(_, v) => setTab(v)}
-        sx={{ mt: 3 }}
-        textColor="inherit"
-        indicatorColor="primary"
-      >
-        <Tab label={`All Deliveries (${rows.length})`} sx={tabSx} {...a11yProps(0)} />
-        <Tab label={`Expiring Soon (${expiringRows.length})`} sx={tabSx} {...a11yProps(1)} />
-      </Tabs>
-
-      <TabPanel value={tab} index={0}>
-        <ReceivingTableGrid pollInterval={pollInterval} />
-      </TabPanel>
-      <TabPanel value={tab} index={1}>
-        <ReceivingTableGrid staticRows={expiringRows} />
-      </TabPanel>
+      {/* Receiving Table - Simplified Single View */}
+      <Box sx={{ mt: 4 }}>
+        <ReceivingTableGrid 
+          pollInterval={pollInterval}
+        />
+      </Box>
     </Box>
   );
 }
