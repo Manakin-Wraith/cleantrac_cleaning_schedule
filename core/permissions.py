@@ -129,6 +129,52 @@ class IsSuperUserWriteOrManagerRead(BasePermission):
         return request.user.is_superuser
 
 
+class IsManagerForWriteOrAuthenticatedReadOnlyForFolders(BasePermission):
+    """
+    Allows read access to any authenticated user.
+    Allows write access to managers (for their department) and superusers.
+    Specifically designed for folder management where managers should be able to create folders.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        if request.method in SAFE_METHODS:  # GET, HEAD, OPTIONS
+            return True  # All authenticated users can read
+        
+        # For write methods (POST, PUT, PATCH, DELETE), check if user is a manager or superuser
+        if request.user.is_superuser:
+            return True
+            
+        try:
+            return request.user.profile.role == UserProfile.ROLE_MANAGER
+        except AttributeError:
+            return False
+
+    def has_object_permission(self, request, view, obj):
+        """
+        Object-level permission to only allow managers of the object's department to edit it.
+        """
+        if not request.user or not request.user.is_authenticated:
+            return False
+        
+        if request.method in SAFE_METHODS:
+            return True  # All authenticated users can read
+        
+        # Superusers can modify any folder
+        if request.user.is_superuser:
+            return True
+        
+        # Managers can only modify folders in their department
+        try:
+            if request.user.profile.role == UserProfile.ROLE_MANAGER:
+                return obj.department == request.user.profile.department
+        except AttributeError:
+            pass
+        
+        return False
+
+
 class UserAndProfileManagementPermissions(BasePermission):
     """
     Custom permissions for User and UserProfile viewsets.

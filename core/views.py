@@ -43,7 +43,8 @@ from .permissions import (
     CanLogCompletionAndManagerModify, IsSuperUserForWriteOrAuthenticatedReadOnly,
     UserAndProfileManagementPermissions, CanUpdateTaskStatus,
     IsSuperUserWriteOrManagerRead, IsThermometerVerificationStaff,
-    CanManageThermometerAssignments, CanManageTemperatureCheckAssignments, CanLogTemperatures, CanManageTaskInstance
+    CanManageThermometerAssignments, CanManageTemperatureCheckAssignments, CanLogTemperatures, CanManageTaskInstance,
+    IsManagerForWriteOrAuthenticatedReadOnlyForFolders
 )
 from .sms_utils import send_sms # New import
 from django.contrib.auth.password_validation import validate_password # For password strength
@@ -53,7 +54,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError # Fo
 
 class FolderViewSet(viewsets.ModelViewSet):
     serializer_class = FolderSerializer
-    permission_classes = [IsSuperUserWriteOrManagerRead]
+    permission_classes = [IsManagerForWriteOrAuthenticatedReadOnlyForFolders]
 
     def get_queryset(self):
         user = self.request.user
