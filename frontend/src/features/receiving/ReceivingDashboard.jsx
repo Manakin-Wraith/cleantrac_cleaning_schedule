@@ -106,6 +106,30 @@ function a11yProps(index) {
 }
 
 function TabPanel({ children, value, index, ...other }) {
+  const theme = useTheme();
+  
+  // Optimized TabPanel styling
+  const tabPanelSx = {
+    pt: 3,
+    pb: 2,
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: '0 8px 8px 8px',
+    border: `1px solid ${theme.palette.divider}`,
+    borderTop: 'none',
+    minHeight: 400,
+    position: 'relative',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: -1,
+      left: 0,
+      right: 0,
+      height: 1,
+      backgroundColor: theme.palette.background.paper,
+      zIndex: 1,
+    },
+  };
+
   return (
     <div
       role="tabpanel"
@@ -114,7 +138,11 @@ function TabPanel({ children, value, index, ...other }) {
       aria-labelledby={`rcv-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ pt: 2 }}>{children}</Box>}
+      {value === index && (
+        <Box sx={tabPanelSx}>
+          {children}
+        </Box>
+      )}
     </div>
   );
 }
@@ -175,10 +203,59 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
     return expiry && expiry.isBefore(today.add(7, 'day'));
   }).length;
 
-  const tabSx = {
-    color: theme.palette.common.black,
+  // Optimized tab styling for better readability and modern design
+  const optimizedTabSx = {
+    fontWeight: 500,
+    fontSize: '0.875rem',
+    textTransform: 'none',
+    minHeight: 48,
+    padding: '12px 24px',
+    color: theme.palette.text.secondary,
+    backgroundColor: 'transparent',
+    border: '1px solid transparent',
+    borderRadius: '8px 8px 0 0',
+    marginRight: 1,
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    '&:hover': {
+      color: theme.palette.primary.main,
+      backgroundColor: theme.palette.action.hover,
+      transform: 'translateY(-1px)',
+    },
     '&.Mui-selected': {
-      color: theme.palette.common.white,
+      color: theme.palette.primary.main,
+      backgroundColor: theme.palette.background.paper,
+      border: `1px solid ${theme.palette.divider}`,
+      borderBottom: `1px solid ${theme.palette.background.paper}`,
+      fontWeight: 600,
+      position: 'relative',
+      zIndex: 1,
+      '&::after': {
+        content: '""',
+        position: 'absolute',
+        bottom: -1,
+        left: 0,
+        right: 0,
+        height: 2,
+        backgroundColor: theme.palette.primary.main,
+        borderRadius: '2px 2px 0 0',
+      },
+    },
+    '&.Mui-focusVisible': {
+      outline: `2px solid ${theme.palette.primary.main}`,
+      outlineOffset: 2,
+    },
+  };
+
+  // Enhanced Tabs container styling
+  const optimizedTabsContainerSx = {
+    mt: 4,
+    mb: 2,
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    '& .MuiTabs-indicator': {
+      display: 'none', // We're using custom indicator
+    },
+    '& .MuiTabs-flexContainer': {
+      gap: 0.5,
     },
   };
 
@@ -222,16 +299,25 @@ export default function ReceivingDashboard({ pollInterval = 30000, accentColor }
         </Grid>
       </Grid>
 
-      {/* Tabs */}
+      {/* Optimized Tabs */}
       <Tabs
         value={tab}
         onChange={(_, v) => setTab(v)}
-        sx={{ mt: 3 }}
+        sx={optimizedTabsContainerSx}
         textColor="inherit"
         indicatorColor="primary"
+        variant="standard"
       >
-        <Tab label={`All Deliveries (${rows.length})`} sx={tabSx} {...a11yProps(0)} />
-        <Tab label={`Expiring Soon (${expiringRows.length})`} sx={tabSx} {...a11yProps(1)} />
+        <Tab 
+          label={`All Deliveries (${rows.length})`} 
+          sx={optimizedTabSx} 
+          {...a11yProps(0)} 
+        />
+        <Tab 
+          label={`Expiring Soon (${expiringRows.length})`} 
+          sx={optimizedTabSx} 
+          {...a11yProps(1)} 
+        />
       </Tabs>
 
       <TabPanel value={tab} index={0}>
