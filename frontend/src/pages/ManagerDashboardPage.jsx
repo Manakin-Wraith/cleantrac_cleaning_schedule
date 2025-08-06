@@ -40,6 +40,8 @@ import { getTemperatureLoggingManagerSummary, getCurrentTemperatureCheckAssignme
 import dayjs from 'dayjs';
 import { getProductionSchedules } from '../services/productionScheduleService';
 import { getTaskInstances } from '../services/taskService';
+// Import the new optimized dashboard components
+import { OptimizedCleaningCard, OptimizedRecipeCard, OptimizedTemperatureCard } from '../components/OptimizedDashboardCards';
 // Future: import { getProductionSchedules } from '../services/productionService';
 
 const doneStatus = (s) => ['completed','done'].includes((s||'').toLowerCase());
@@ -256,109 +258,62 @@ function ManagerDashboardPage() {
                 </Box>
             </Box>
 
-            {/* Main Content Grid: Tasks, Team, Alerts */}
+            {/* Main Content Grid: Tasks, Team, Alerts - Using Optimized Components */}
             <Grid container spacing={4} justifyContent="center" sx={{ mt: 16, mb: 6 }}>
-                {/* Tasks At A Glance Card */}
+                {/* Optimized Cleaning At A Glance Card */}
                 <Grid item xs={12} md={4}>
-                    <Paper elevation={1} sx={{ p: 2.5, borderRadius: '12px', height: '100%' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 500 }}>Cleaning At A Glance</Typography>
-                            <CleaningServicesIcon sx={{ color: 'primary.main', fontSize: '20px' }} />
+                    {loadingMetrics ? (
+                        <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:200 }}>
+                            <CircularProgress size={24}/>
                         </Box>
-                        {loadingMetrics ? (
-                                <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:120 }}>
-                                    <CircularProgress size={24}/>
-                                </Box>
-                            ) : (
-                                <Grid container spacing={1.5} sx={{ mb: 2 }}>
-                            {[ { label: 'Complete', count: metrics.completedToday, color: 'success.light', textColor: 'success.darker' },
-                               { label: 'Active', count: metrics.active, color: 'warning.light', textColor: 'warning.darker' },
-                               { label: 'Overdue', count: metrics.overdue, color: 'error.light', textColor: 'error.darker' },
-                            ] .map(task => (
-                                <Grid item xs={4} key={task.label}>
-                                    <Paper elevation={0} sx={{ bgcolor: task.color, p: 2, textAlign: 'center', borderRadius: '8px' }}>
-                                        <Typography variant="h5" sx={{ fontWeight: 'bold', color: task.textColor }}>{task.count}</Typography>
-                                        <Typography variant="caption" sx={{ color: task.textColor }}>{task.label}</Typography>
-                                    </Paper>
-                                </Grid>
-                            ))}
-                        </Grid>
-                        )}
-                        <Box sx={{ textAlign: 'right' }}>
-                            <Button size="small" color="primary" onClick={() => navigate('/manager-schedule')} sx={{ textTransform: 'none' }}>
-                                View All Tasks →
-                            </Button>
-                        </Box>
-                    </Paper>
+                    ) : (
+                        <OptimizedCleaningCard 
+                            cleaningMetrics={{
+                                completed: metrics.completedToday,
+                                pending: metrics.active,
+                                overdue: metrics.overdue
+                            }}
+                            onViewTasks={() => navigate('/manager-schedule')}
+                        />
+                    )}
                 </Grid>
 
-                {/* Recipe Production At A Glance Card */}
+                {/* Optimized Recipe Production At A Glance Card */}
                 <Grid item xs={12} md={4}>
-                    <Paper elevation={1} sx={{ p: 2.5, borderRadius: '12px', height: '100%' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 500 }}>Recipe Production At A Glance</Typography>
-                            <RestaurantIcon sx={{ color: 'primary.main', fontSize: '20px' }} />
+                    {loadingRecipeMetrics ? (
+                        <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:200 }}>
+                            <CircularProgress size={24}/>
                         </Box>
-                        {loadingRecipeMetrics ? (
-                            <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:120 }}>
-                                <CircularProgress size={24}/>
-                            </Box>
-                        ) : (
-                        <Grid container spacing={1.5} sx={{ mb: 2 }}>
-                            {[ { label:'Complete', count: recipeMetrics.completedToday, color:'success.light', textColor:'success.darker' },
-                               { label:'Active', count: recipeMetrics.active, color:'warning.light', textColor:'warning.darker' },
-                               { label:'Overdue', count: recipeMetrics.overdue, color:'error.light', textColor:'error.darker' },
-                            ].map(item=> (
-                                <Grid item xs={4} key={item.label}>
-                                    <Paper elevation={0} sx={{ bgcolor:item.color, p:2, textAlign:'center', borderRadius:'8px' }}>
-                                        <Typography variant="h5" sx={{ fontWeight:'bold', color:item.textColor }}>{item.count}</Typography>
-                                        <Typography variant="caption" sx={{ color:item.textColor }}>{item.label}</Typography>
-                                    </Paper>
-                                </Grid>
-                            ))}
-                        </Grid>
-                        )}
-                        <Box sx={{ textAlign:'right' }}>
-                            <Button size="small" color="primary" onClick={() => navigate('/manager-schedule')} sx={{ textTransform:'none' }}>
-                                View All Recipes →
-                            </Button>
-                        </Box>
-                    </Paper>
+                    ) : (
+                        <OptimizedRecipeCard 
+                            recipeMetrics={{
+                                completed: recipeMetrics.completedToday,
+                                pending: recipeMetrics.active,
+                                overdue: recipeMetrics.overdue
+                            }}
+                            onViewRecipes={() => navigate('/manager-schedule')}
+                        />
+                    )}
                 </Grid>
 
-                {/* Temperature Compliance Card */}
+                {/* Optimized Temperature Compliance Card */}
                 <Grid item xs={12} md={4}>
-                    <Paper elevation={1} sx={{ p: 2.5, borderRadius: '12px', height: '100%' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 500 }}>Temperature Compliance</Typography>
-                            <ThermostatIcon sx={{ color: tempMetrics.outOfRange? 'error.main':'info.main', fontSize: '20px' }} />
+                    {loadingTempMetrics ? (
+                        <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:200 }}>
+                            <CircularProgress size={24} />
                         </Box>
-                        {loadingTempMetrics ? (
-                            <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:120 }}>
-                                <CircularProgress size={24} />
-                            </Box>
-                        ) : (
-                            <Box sx={{ mb:2 }}>
-                                <Typography variant="caption" color="text.secondary" sx={{ mb:0.5 }}>
-                                    {dayjs().format('ddd, DD MMM YYYY • HH:mm')}
-                                </Typography>
-                                <Typography variant="h4" sx={{ fontWeight:'bold', color:'success.main', mb:1 }}>
-                                    {tempMetrics.logged} / {tempMetrics.total} {tempMetrics.period}
-                                </Typography>
-                                <LinearProgress variant="determinate" value={tempMetrics.total ? (tempMetrics.logged/tempMetrics.total)*100 : 0} sx={{ height:8, borderRadius:4, mb:1 }} />
-                                <Typography
-                                    variant="subtitle2"
-                                    color={tempMetrics.outOfRange ? 'error.main' : 'text.secondary'}
-                                    sx={{ mb:0.5, cursor: tempMetrics.outOfRange ? 'pointer' : 'default', textDecoration: tempMetrics.outOfRange ? 'underline' : 'none' }}
-                                    onClick={() => tempMetrics.outOfRange && setOutDialogOpen(true)}
-                                >
-                                    Out of range: {tempMetrics.outOfRange}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">Assigned: {tempMetrics.staffName}</Typography>
-                            </Box>
-                        )}
-
-                    </Paper>
+                    ) : (
+                        <OptimizedTemperatureCard 
+                            temperatureMetrics={{
+                                logged: tempMetrics.logged,
+                                total: tempMetrics.total,
+                                outOfRange: tempMetrics.outOfRange,
+                                staffName: tempMetrics.staffName,
+                                period: tempMetrics.period
+                            }}
+                            onViewDetails={() => setOutDialogOpen(true)}
+                        />
+                    )}
                 </Grid>
             </Grid>
 

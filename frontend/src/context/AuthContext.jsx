@@ -1,48 +1,29 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser as apiLoginUser, getCurrentUser as apiGetCurrentUser, logoutUser as apiLogoutUser } from '../services/authService';
-import { getTenantAuthToken, getCurrentTenantDomain } from '../utils/tenantUtils';
 import axios from 'axios';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
-    const [token, setToken] = useState(getTenantAuthToken());
+    const [token, setToken] = useState(localStorage.getItem('authToken'));
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
         const initializeAuth = async () => {
             setIsLoading(true);
-            const currentToken = getTenantAuthToken();
-            const tenantDomain = getCurrentTenantDomain();
-            
-            console.log('🚀 AuthContext: Initializing tenant-aware auth:', {
-                tenant: tenantDomain,
-                hasToken: !!currentToken
-            });
-            
+            const currentToken = localStorage.getItem('authToken');
             if (currentToken) {
                 axios.defaults.headers.common['Authorization'] = `Token ${currentToken}`;
                 try {
                     const userData = await apiGetCurrentUser();
                     setCurrentUser(userData);
                     setToken(currentToken);
-                    
-                    console.log('✅ AuthContext: User authenticated for tenant:', {
-                        tenant: tenantDomain,
-                        username: userData.username
-                    });
                 } catch (error) {
-                    console.error('❌ AuthContext: Failed to fetch current user during init:', {
-                        error: error.response?.data || error.message,
-                        tenant: tenantDomain
-                    });
-                    
-                    // Use tenant-aware token removal
-                    const { removeTenantAuthToken } = await import('../utils/tenantUtils');
-                    removeTenantAuthToken();
+                    console.error('AuthContext: Failed to fetch current user during init', error);
+                    localStorage.removeItem('authToken');
                     delete axios.defaults.headers.common['Authorization'];
                     setCurrentUser(null);
                     setToken(null);
@@ -51,10 +32,6 @@ export const AuthProvider = ({ children }) => {
                 delete axios.defaults.headers.common['Authorization'];
                 setCurrentUser(null);
                 setToken(null);
-                
-                console.log('ℹ️ AuthContext: No tenant token found:', {
-                    tenant: tenantDomain
-                });
             }
             setIsLoading(false);
         };

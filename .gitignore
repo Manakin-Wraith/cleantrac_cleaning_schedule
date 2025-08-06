@@ -144,3 +144,4 @@ Thumbs.db
 
 # PyCharm
 .idea/
+.vercel
