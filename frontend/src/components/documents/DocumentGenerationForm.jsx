@@ -133,9 +133,28 @@ const DocumentGenerationForm = ({ template, onCancel, onSuccess }) => {
       setError('');
       
       // Create the document generation request
+      // Ensure we have a valid department_id - try multiple sources
+      const departmentId = user?.profile?.department_id || 
+                          user?.profile?.department?.id || 
+                          template.department_id || 
+                          template.department?.id;
+      
+      if (!departmentId) {
+        setError('Unable to determine department. Please ensure you are assigned to a department.');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('🔍 Document generation request:', {
+        template_id: template.id,
+        department_id: departmentId,
+        parameters: parameters,
+        user_profile: user?.profile
+      });
+      
       const response = await axios.post(`${API_URL}/generated-documents/`, {
         template_id: template.id,
-        department_id: user?.profile?.department_id || template.department_id,
+        department_id: departmentId,
         parameters: parameters
       }, {
         headers: getAuthHeader()
@@ -150,7 +169,44 @@ const DocumentGenerationForm = ({ template, onCancel, onSuccess }) => {
       }
     } catch (err) {
       console.error('Error generating document:', err);
-      setError(err.response?.data?.detail || 'Failed to generate document. Please try again.');
+      
+      // Enhanced error handling for debugging
+      let errorMessage = 'Failed to generate document. Please try again.';
+      
+      if (err.response) {
+        // Server responded with error status
+        console.log('🚨 Server error response:', {
+          status: err.response.status,
+          data: err.response.data,
+          headers: err.response.headers
+        });
+        
+        if (err.response.status === 400) {
+          errorMessage = err.response.data?.detail || 
+                        err.response.data?.message || 
+                        'Bad request - please check your input data.';
+        } else if (err.response.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (err.response.status === 403) {
+          errorMessage = 'You do not have permission to generate this document.';
+        } else if (err.response.status === 404) {
+          errorMessage = 'Template not found.';
+        } else {
+          errorMessage = err.response.data?.detail || 
+                        err.response.data?.message || 
+                        `Server error (${err.response.status})`;
+        }
+      } else if (err.request) {
+        // Network error
+        console.log('🌐 Network error:', err.request);
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else {
+        // Other error
+        console.log('❌ Other error:', err.message);
+        errorMessage = err.message || 'An unexpected error occurred.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
