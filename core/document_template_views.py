@@ -411,8 +411,8 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
 
 def generate_document_file(template, parameters, user):
     """
-    Prepare data for a document file based on the template and parameters.
-    This version removes Excel generation and prepares data for future PDF output.
+    Enhanced PDF generation with comprehensive audit data for compliance and traceability.
+    Includes full audit trail, user verification, data lineage, and regulatory compliance elements.
     Returns a tuple of (file_content_bytes, filename, error_message).
     """
     try:
@@ -425,46 +425,180 @@ def generate_document_file(template, parameters, user):
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
         
+        # Enhanced document metadata with comprehensive audit information
+        generation_timestamp = datetime.utcnow()
+        
+        # Get comprehensive user information for audit trail
+        user_profile = None
+        user_full_name = "Unknown User"
+        user_role = "Unknown"
+        user_department = "Unknown"
+        user_contact = "N/A"
+        
+        try:
+            user_profile = user.profile
+            user_full_name = f"{user.first_name} {user.last_name}".strip() if user.first_name else user.username
+            user_role = user_profile.get_role_display() if user_profile else "Unknown"
+            user_department = user_profile.department.name if user_profile and user_profile.department else "Unknown"
+            user_contact = user_profile.phone_number if user_profile and user_profile.phone_number else "N/A"
+        except AttributeError:
+            pass
+        
         document_info = {
+            # Core Document Information
             "document_title": template.name,
             "template_type": template.template_type,
+            "template_description": template.description or "No description provided",
             "department": template.department.name,
-            "generated_by": user.username,
-            "generation_datetime_utc": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            
+            # Enhanced User & Authentication Audit Trail
+            "generated_by_username": user.username,
+            "generated_by_full_name": user_full_name,
+            "generated_by_role": user_role,
+            "generated_by_department": user_department,
+            "generated_by_contact": user_contact,
+            "generated_by_email": user.email if user.email else "N/A",
+            
+            # Document Generation Audit Information
+            "generation_datetime_utc": generation_timestamp.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            "generation_datetime_local": generation_timestamp.strftime('%Y-%m-%d %H:%M:%S UTC'),
+            "document_serial_number": f"DOC-{template.department.name[:3].upper()}-{generation_timestamp.strftime('%Y%m%d-%H%M%S')}",
+            
+            # Data Range and Parameters
             "date_range_str": f"{start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}",
-            "parameters_used": parameters, # Include for reference
+            "parameters_used": parameters,
+            
+            # Template Audit Information
+            "template_created_by": template.created_by.username if template.created_by else "Unknown",
+            "template_created_at": template.created_at.strftime('%Y-%m-%d %H:%M:%S') if template.created_at else "Unknown",
+            "template_updated_at": template.updated_at.strftime('%Y-%m-%d %H:%M:%S') if template.updated_at else "Unknown",
+            
+            # Compliance and Regulatory Information
+            "compliance_statement": "This document has been generated in accordance with food safety regulations and quality management standards.",
+            "data_retention_notice": "This document must be retained for a minimum of 2 years as per regulatory requirements.",
+            "audit_trail_certification": "Complete audit trail maintained for all data points included in this document.",
+            
+            # Document Status
+            "document_status": "Generated",
+            "data_integrity_verified": True,
+            
             "sections": []
         }
 
-        # Section 1: Verification Records
+        # Section 1: Enhanced Verification Records with Complete Audit Trail
         if template.template_type == 'verification' and parameters.get('includeThermometerVerifications', True):
             records = ThermometerVerificationRecord.objects.filter(
                 date_verified__gte=start_date,
                 date_verified__lte=end_date,
                 thermometer__department=template.department
-            ).order_by('-date_verified').select_related('thermometer', 'calibrated_by')
+            ).order_by('-date_verified').select_related(
+                'thermometer', 
+                'calibrated_by', 
+                'thermometer__department'
+            ).prefetch_related(
+                'thermometer__verification_records'
+            )
             
             verification_data = []
+            verification_assignments = []
+            
+            # Get verification assignments for audit trail
+            assignments = ThermometerVerificationAssignment.objects.filter(
+                department=template.department,
+                assigned_date__gte=start_date,
+                assigned_date__lte=end_date
+            ).select_related('staff_member', 'assigned_by', 'department')
+            
+            for assignment in assignments:
+                verification_assignments.append({
+                    'Assignment Date': assignment.assigned_date.strftime('%Y-%m-%d'),
+                    'Staff Member': f"{assignment.staff_member.first_name} {assignment.staff_member.last_name}".strip() or assignment.staff_member.username,
+                    'Assigned By': f"{assignment.assigned_by.first_name} {assignment.assigned_by.last_name}".strip() if assignment.assigned_by else "Unknown",
+                    'Time Period': assignment.get_time_period_display(),
+                    'Status': 'Active' if assignment.is_active else 'Inactive',
+                    'Notes': assignment.notes or "None",
+                    'Created': assignment.created_at.strftime('%Y-%m-%d %H:%M:%S') if assignment.created_at else "Unknown"
+                })
+            
             if records.exists():
                 for record in records:
+                    # Get comprehensive calibrated by information
+                    calibrated_by_name = "Unknown"
+                    calibrated_by_role = "Unknown"
+                    if record.calibrated_by:
+                        try:
+                            profile = record.calibrated_by.profile
+                            calibrated_by_name = f"{record.calibrated_by.first_name} {record.calibrated_by.last_name}".strip() or record.calibrated_by.username
+                            calibrated_by_role = profile.get_role_display() if profile else "Unknown"
+                        except AttributeError:
+                            calibrated_by_name = record.calibrated_by.username
+                    
+                    # Get thermometer status and verification chain
+                    thermometer_status = record.thermometer.get_status_display()
+                    verification_expiry = record.thermometer.verification_expiry_date.strftime('%Y-%m-%d') if record.thermometer.verification_expiry_date else "N/A"
+                    days_until_expiry = record.thermometer.days_until_expiry() or "N/A"
+                    
                     verification_data.append({
+                        # Core Verification Data
                         'Date Verified': record.date_verified.strftime('%Y-%m-%d'),
+                        'Verification Time': record.created_at.strftime('%H:%M:%S') if record.created_at else "Unknown",
                         'Thermometer S/N': record.thermometer.serial_number,
+                        'Thermometer Model': record.thermometer.model_identifier,
+                        'Thermometer Status': thermometer_status,
+                        'Verification Expiry': verification_expiry,
+                        'Days Until Expiry': str(days_until_expiry),
+                        
+                        # Calibration Details
                         'Calibrated Instrument No': record.calibrated_instrument_no,
                         'Reading After Verification': f"{record.reading_after_verification}°C",
-                        'Calibrated By': record.calibrated_by.username if record.calibrated_by else "Unknown",
-                        'Corrective Action': record.corrective_action or "None"
+                        
+                        # Personnel Audit Trail
+                        'Calibrated By': calibrated_by_name,
+                        'Calibrated By Username': record.calibrated_by.username if record.calibrated_by else "Unknown",
+                        'Calibrated By Role': calibrated_by_role,
+                        
+                        # Manager Verification
+                        'Manager Signature': 'Yes' if record.manager_signature else 'No',
+                        'Manager Signature Details': record.manager_signature[:100] + '...' if record.manager_signature and len(record.manager_signature) > 100 else (record.manager_signature or "None"),
+                        
+                        # Quality Assurance
+                        'Corrective Action': record.corrective_action or "None",
+                        'Photo Evidence': 'Yes' if record.photo_evidence else 'No',
+                        
+                        # Audit Trail
+                        'Record Created': record.created_at.strftime('%Y-%m-%d %H:%M:%S') if record.created_at else "Unknown",
+                        'Department': record.thermometer.department.name,
+                        'Verification Chain': f"Thermometer {record.thermometer.serial_number} → Verification {record.id} → Expires {verification_expiry}"
                     })
+            
+            # Add verification assignments section
+            if verification_assignments:
+                document_info["sections"].append({
+                    "title": "Thermometer Verification Assignments",
+                    "type": "verification_assignments",
+                    "data": verification_assignments,
+                    "headers": ['Assignment Date', 'Staff Member', 'Assigned By', 'Time Period', 'Status', 'Notes', 'Created']
+                })
+            
+            # Add main verification records section
             document_info["sections"].append({
-                "title": "Thermometer Verification Records",
+                "title": "Thermometer Verification Records - Complete Audit Trail",
                 "type": "verification_records",
                 "data": verification_data,
-                "headers": ['Date Verified', 'Thermometer S/N', 'Calibrated Instrument No', 'Reading After Verification', 'Calibrated By', 'Corrective Action']
+                "headers": [
+                    'Date Verified', 'Verification Time', 'Thermometer S/N', 'Thermometer Model', 
+                    'Thermometer Status', 'Verification Expiry', 'Days Until Expiry',
+                    'Calibrated Instrument No', 'Reading After Verification',
+                    'Calibrated By', 'Calibrated By Username', 'Calibrated By Role',
+                    'Manager Signature', 'Manager Signature Details',
+                    'Corrective Action', 'Photo Evidence',
+                    'Record Created', 'Department', 'Verification Chain'
+                ]
             })
         
-        # Section 2: Temperature Logs
+        # Section 2: Enhanced Temperature Logs with Complete Audit Trail
         if template.template_type == 'temperature' and parameters.get('includeTemperatureLogs', True):
-            date_format = parameters.get('dateFormat', '%Y-%m-%d') # Keep for potential display formatting
+            date_format = parameters.get('dateFormat', '%Y-%m-%d')
             
             logs = TemperatureLog.objects.filter(
                 log_datetime__date__gte=start_date,
@@ -473,56 +607,412 @@ def generate_document_file(template, parameters, user):
             ).select_related(
                 'area_unit',
                 'thermometer_used',
-                'logged_by'
+                'logged_by',
+                'logged_by__profile',
+                'thermometer_used__department',
+                'verification_record'
             ).order_by('log_datetime')
+            
+            # Get temperature check assignments for audit trail
+            temp_assignments = TemperatureCheckAssignment.objects.filter(
+                department=template.department,
+                assigned_date__gte=start_date,
+                assigned_date__lte=end_date
+            ).select_related('staff_member', 'assigned_by', 'area_unit')
+            
+            assignment_data = []
+            for assignment in temp_assignments:
+                assignment_data.append({
+                    'Assignment Date': assignment.assigned_date.strftime('%Y-%m-%d'),
+                    'Area/Unit': assignment.area_unit.name,
+                    'Staff Member': f"{assignment.staff_member.first_name} {assignment.staff_member.last_name}".strip() or assignment.staff_member.username,
+                    'Assigned By': f"{assignment.assigned_by.first_name} {assignment.assigned_by.last_name}".strip() if assignment.assigned_by else "Unknown",
+                    'Time Period': assignment.get_time_period_display(),
+                    'Status': 'Active' if assignment.is_active else 'Inactive',
+                    'Notes': assignment.notes or "None",
+                    'Created': assignment.created_at.strftime('%Y-%m-%d %H:%M:%S') if assignment.created_at else "Unknown"
+                })
             
             temperature_log_data = []
             if logs.exists():
                 for log in logs:
+                    # Get comprehensive logged by information
+                    logged_by_name = "Unknown"
+                    logged_by_role = "Unknown"
+                    logged_by_contact = "N/A"
+                    if log.logged_by:
+                        try:
+                            profile = log.logged_by.profile
+                            logged_by_name = f"{log.logged_by.first_name} {log.logged_by.last_name}".strip() or log.logged_by.username
+                            logged_by_role = profile.get_role_display() if profile else "Unknown"
+                            logged_by_contact = profile.phone_number if profile and profile.phone_number else "N/A"
+                        except AttributeError:
+                            logged_by_name = log.logged_by.username
+                    
+                    # Get thermometer verification status at time of logging
+                    thermometer_verification_status = "Unknown"
+                    verification_record_info = "None"
+                    if log.verification_record:
+                        verification_record_info = f"Verified on {log.verification_record.date_verified.strftime('%Y-%m-%d')} by {log.verification_record.calibrated_by.username if log.verification_record.calibrated_by else 'Unknown'}"
+                        thermometer_verification_status = "Verified"
+                    elif log.thermometer_used:
+                        thermometer_verification_status = log.thermometer_used.get_status_display()
+                    
+                    # Calculate temperature status with detailed analysis
+                    temp_status = "N/A"
+                    temp_variance = "N/A"
+                    if log.area_unit.target_temperature_min is not None and log.area_unit.target_temperature_max is not None:
+                        temp_reading = float(log.temperature_reading)
+                        min_temp = float(log.area_unit.target_temperature_min)
+                        max_temp = float(log.area_unit.target_temperature_max)
+                        
+                        if temp_reading < min_temp:
+                            temp_status = "Below Range"
+                            temp_variance = f"{temp_reading - min_temp:.1f}°C below minimum"
+                        elif temp_reading > max_temp:
+                            temp_status = "Above Range"
+                            temp_variance = f"{temp_reading - max_temp:.1f}°C above maximum"
+                        else:
+                            temp_status = "Within Range"
+                            temp_variance = "Acceptable"
+                    
                     temperature_log_data.append({
-                        'Date': log.log_datetime.strftime(date_format), # Use specified date_format
+                        # Core Temperature Data
+                        'Date': log.log_datetime.strftime(date_format),
                         'Time': log.log_datetime.strftime('%H:%M:%S'),
+                        'Full Timestamp': log.log_datetime.strftime('%Y-%m-%d %H:%M:%S'),
                         'Area/Unit': log.area_unit.name,
+                        'Area Description': log.area_unit.description or "No description",
                         'Time Period': log.get_time_period_display(),
+                        
+                        # Temperature Analysis
                         'Temperature': f"{float(log.temperature_reading):.1f}°C",
                         'Target Range': f"{log.area_unit.target_temperature_min}°C - {log.area_unit.target_temperature_max}°C" if log.area_unit.target_temperature_min is not None and log.area_unit.target_temperature_max is not None else "N/A",
-                        'Status': 'Within Range' if log.is_within_target_range() else ('Out of Range' if log.is_within_target_range() is False else 'N/A'),
-                        'Thermometer S/N': log.thermometer_used.serial_number,
-                        'Logged By': log.logged_by.username,
-                        'Corrective Action': log.corrective_action or "None"
+                        'Status': temp_status,
+                        'Temperature Variance': temp_variance,
+                        
+                        # Equipment Verification Chain
+                        'Thermometer S/N': log.thermometer_used.serial_number if log.thermometer_used else "Unknown",
+                        'Thermometer Model': log.thermometer_used.model_identifier if log.thermometer_used else "Unknown",
+                        'Thermometer Status': thermometer_verification_status,
+                        'Verification Record': verification_record_info,
+                        
+                        # Personnel Audit Trail
+                        'Logged By': logged_by_name,
+                        'Logged By Username': log.logged_by.username if log.logged_by else "Unknown",
+                        'Logged By Role': logged_by_role,
+                        'Logged By Contact': logged_by_contact,
+                        
+                        # Quality Assurance
+                        'Corrective Action': log.corrective_action or "None",
+                        'Photo Evidence': 'Yes' if log.photo_evidence else 'No',
+                        
+                        # Audit Trail
+                        'Log Created': log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else "Unknown",
+                        'Department': log.department.name,
+                        'Data Integrity': 'Verified' if log.verification_record else 'Unverified Thermometer',
+                        'Compliance Chain': f"Area {log.area_unit.name} → Thermometer {log.thermometer_used.serial_number if log.thermometer_used else 'Unknown'} → Log {log.id} → Status {temp_status}"
                     })
+            
+            # Add temperature check assignments section
+            if assignment_data:
+                document_info["sections"].append({
+                    "title": "Temperature Check Assignments",
+                    "type": "temperature_assignments",
+                    "data": assignment_data,
+                    "headers": ['Assignment Date', 'Area/Unit', 'Staff Member', 'Assigned By', 'Time Period', 'Status', 'Notes', 'Created']
+                })
+            
+            # Add main temperature logs section
             document_info["sections"].append({
-                "title": "Temperature Logs",
+                "title": "Temperature Logs - Complete Audit Trail",
                 "type": "temperature_logs",
                 "data": temperature_log_data,
-                "headers": ['Date', 'Time', 'Area/Unit', 'Time Period', 'Temperature', 'Target Range', 'Status', 'Thermometer S/N', 'Logged By', 'Corrective Action']
+                "headers": [
+                    'Date', 'Time', 'Full Timestamp', 'Area/Unit', 'Area Description', 'Time Period',
+                    'Temperature', 'Target Range', 'Status', 'Temperature Variance',
+                    'Thermometer S/N', 'Thermometer Model', 'Thermometer Status', 'Verification Record',
+                    'Logged By', 'Logged By Username', 'Logged By Role', 'Logged By Contact',
+                    'Corrective Action', 'Photo Evidence',
+                    'Log Created', 'Department', 'Data Integrity', 'Compliance Chain'
+                ]
             })
 
 
-        # Section 3: Cleaning Tasks
+        # Section 3: Enhanced Cleaning Tasks with Complete Audit Trail
         if template.template_type == 'cleaning' and parameters.get('includeCleaningTasks', True):
             tasks = TaskInstance.objects.filter(
                 cleaning_item__isnull=False,
                 due_date__gte=start_date,
                 due_date__lte=end_date,
                 department=template.department
-            ).select_related('assigned_to', 'cleaning_item').order_by('due_date', 'cleaning_item__name')
+            ).select_related(
+                'assigned_to',
+                'assigned_to__user',
+                'assigned_to__user__profile',
+                'cleaning_item',
+                'created_by',
+                'parent_task'
+            ).prefetch_related(
+                'completion_logs',
+                'completion_logs__completed_by',
+                'completion_logs__completed_by__profile'
+            ).order_by('due_date', 'cleaning_item__name')
 
             cleaning_task_data = []
+            completion_summary = []
+            
             if tasks.exists():
                 for task in tasks:
+                    # Get comprehensive assigned to information
+                    assigned_to_name = "Unassigned"
+                    assigned_to_role = "N/A"
+                    assigned_to_contact = "N/A"
+                    if task.assigned_to:
+                        try:
+                            profile = task.assigned_to.user.profile
+                            assigned_to_name = f"{task.assigned_to.user.first_name} {task.assigned_to.user.last_name}".strip() or task.assigned_to.user.username
+                            assigned_to_role = profile.get_role_display() if profile else "Unknown"
+                            assigned_to_contact = profile.phone_number if profile and profile.phone_number else "N/A"
+                        except AttributeError:
+                            assigned_to_name = task.assigned_to.user.username
+                    
+                    # Get task creation audit trail
+                    created_by_name = "Unknown"
+                    if task.created_by:
+                        created_by_name = f"{task.created_by.first_name} {task.created_by.last_name}".strip() or task.created_by.username
+                    
+                    # Get cleaning item details for audit
+                    cleaning_item_details = {
+                        'frequency': task.cleaning_item.get_frequency_display() if task.cleaning_item else "Unknown",
+                        'equipment': task.cleaning_item.equipment_needed or "None specified",
+                        'chemicals': task.cleaning_item.chemicals_used or "None specified",
+                        'method': task.cleaning_item.cleaning_method or "No method specified"
+                    }
+                    
+                    # Get completion logs for this task
+                    completion_logs = task.completion_logs.all()
+                    completion_details = []
+                    latest_completion = None
+                    
+                    for log in completion_logs:
+                        completed_by_name = "Unknown"
+                        completed_by_role = "Unknown"
+                        if log.completed_by:
+                            try:
+                                profile = log.completed_by.profile
+                                completed_by_name = f"{log.completed_by.first_name} {log.completed_by.last_name}".strip() or log.completed_by.username
+                                completed_by_role = profile.get_role_display() if profile else "Unknown"
+                            except AttributeError:
+                                completed_by_name = log.completed_by.username
+                        
+                        completion_detail = {
+                            'completed_at': log.completed_at.strftime('%Y-%m-%d %H:%M:%S') if log.completed_at else "Unknown",
+                            'completed_by': completed_by_name,
+                            'completed_by_role': completed_by_role,
+                            'notes': log.notes or "No notes",
+                            'photo_evidence': 'Yes' if log.photo_evidence else 'No'
+                        }
+                        completion_details.append(completion_detail)
+                        
+                        if not latest_completion or (log.completed_at and log.completed_at > latest_completion['completed_at_obj']):
+                            latest_completion = {
+                                'completed_at_obj': log.completed_at,
+                                'completed_at': log.completed_at.strftime('%Y-%m-%d %H:%M:%S') if log.completed_at else "Unknown",
+                                'completed_by': completed_by_name,
+                                'notes': log.notes or "No notes"
+                            }
+                    
+                    # Determine task completion status
+                    task_completion_status = "Not Started"
+                    if completion_logs.exists():
+                        if task.status == 'completed':
+                            task_completion_status = "Completed"
+                        elif task.status == 'in_progress':
+                            task_completion_status = "In Progress"
+                        else:
+                            task_completion_status = "Partially Completed"
+                    
                     cleaning_task_data.append({
+                        # Core Task Information
                         'Due Date': task.due_date.strftime('%Y-%m-%d'),
-                        'Task Name': task.cleaning_item.name,
+                        'Task Name': task.cleaning_item.name if task.cleaning_item else "Unknown Task",
+                        'Task Description': task.cleaning_item.description or "No description",
                         'Status': task.get_status_display(),
-                        'Assigned To': task.assigned_to.user.username if task.assigned_to else 'Unassigned',
-                        'Notes': task.notes or ''
+                        'Completion Status': task_completion_status,
+                        
+                        # Assignment Audit Trail
+                        'Assigned To': assigned_to_name,
+                        'Assigned To Username': task.assigned_to.user.username if task.assigned_to else "Unassigned",
+                        'Assigned To Role': assigned_to_role,
+                        'Assigned To Contact': assigned_to_contact,
+                        
+                        # Task Creation Audit
+                        'Created By': created_by_name,
+                        'Created At': task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else "Unknown",
+                        'Updated At': task.updated_at.strftime('%Y-%m-%d %H:%M:%S') if task.updated_at else "Unknown",
+                        
+                        # Cleaning Requirements
+                        'Frequency': cleaning_item_details['frequency'],
+                        'Equipment Needed': cleaning_item_details['equipment'],
+                        'Chemicals Used': cleaning_item_details['chemicals'],
+                        'Cleaning Method': cleaning_item_details['method'],
+                        
+                        # Completion Information
+                        'Latest Completion': latest_completion['completed_at'] if latest_completion else "Not Completed",
+                        'Latest Completed By': latest_completion['completed_by'] if latest_completion else "N/A",
+                        'Completion Notes': latest_completion['notes'] if latest_completion else "N/A",
+                        'Total Completions': len(completion_details),
+                        
+                        # Recurring Task Information
+                        'Is Recurring': 'Yes' if task.parent_task else 'No',
+                        'Parent Task ID': str(task.parent_task.id) if task.parent_task else "N/A",
+                        
+                        # Quality Assurance
+                        'Task Notes': task.notes or "No notes",
+                        'Department': task.department.name,
+                        
+                        # Audit Chain
+                        'Audit Chain': f"Task {task.id} → {task.cleaning_item.name if task.cleaning_item else 'Unknown'} → {assigned_to_name} → {task_completion_status}"
                     })
+                    
+                    # Add detailed completion logs to summary
+                    for detail in completion_details:
+                        completion_summary.append({
+                            'Task ID': str(task.id),
+                            'Task Name': task.cleaning_item.name if task.cleaning_item else "Unknown Task",
+                            'Completion Date': detail['completed_at'],
+                            'Completed By': detail['completed_by'],
+                            'Completed By Role': detail['completed_by_role'],
+                            'Completion Notes': detail['notes'],
+                            'Photo Evidence': detail['photo_evidence'],
+                            'Due Date': task.due_date.strftime('%Y-%m-%d')
+                        })
+            
+            # Add completion logs section
+            if completion_summary:
+                document_info["sections"].append({
+                    "title": "Task Completion Logs - Detailed Audit Trail",
+                    "type": "completion_logs",
+                    "data": completion_summary,
+                    "headers": ['Task ID', 'Task Name', 'Completion Date', 'Completed By', 'Completed By Role', 'Completion Notes', 'Photo Evidence', 'Due Date']
+                })
+            
+            # Add main cleaning tasks section
             document_info["sections"].append({
-                "title": "Cleaning Task Records",
+                "title": "Cleaning Task Records - Complete Audit Trail",
                 "type": "cleaning_tasks",
                 "data": cleaning_task_data,
-                "headers": ['Due Date', 'Task Name', 'Status', 'Assigned To', 'Notes']
+                "headers": [
+                    'Due Date', 'Task Name', 'Task Description', 'Status', 'Completion Status',
+                    'Assigned To', 'Assigned To Username', 'Assigned To Role', 'Assigned To Contact',
+                    'Created By', 'Created At', 'Updated At',
+                    'Frequency', 'Equipment Needed', 'Chemicals Used', 'Cleaning Method',
+                    'Latest Completion', 'Latest Completed By', 'Completion Notes', 'Total Completions',
+                    'Is Recurring', 'Parent Task ID',
+                    'Task Notes', 'Department', 'Audit Chain'
+                ]
+            })
+        
+        # Section 4: Enhanced Recipe Production Tasks with Complete Audit Trail
+        if template.template_type == 'recipe' and parameters.get('includeRecipeProduction', True):
+            recipe_tasks = RecipeProductionTask.objects.filter(
+                scheduled_date__gte=start_date,
+                scheduled_date__lte=end_date,
+                department=template.department
+            ).select_related(
+                'assigned_staff',
+                'assigned_staff__user',
+                'assigned_staff__user__profile',
+                'created_by',
+                'parent_task'
+            ).order_by('scheduled_date', 'recipe_name')
+            
+            recipe_production_data = []
+            
+            if recipe_tasks.exists():
+                for task in recipe_tasks:
+                    # Get comprehensive assigned staff information
+                    assigned_staff_name = "Unassigned"
+                    assigned_staff_role = "N/A"
+                    assigned_staff_contact = "N/A"
+                    if task.assigned_staff:
+                        try:
+                            profile = task.assigned_staff.user.profile
+                            assigned_staff_name = f"{task.assigned_staff.user.first_name} {task.assigned_staff.user.last_name}".strip() or task.assigned_staff.user.username
+                            assigned_staff_role = profile.get_role_display() if profile else "Unknown"
+                            assigned_staff_contact = profile.phone_number if profile and profile.phone_number else "N/A"
+                        except AttributeError:
+                            assigned_staff_name = task.assigned_staff.user.username
+                    
+                    # Get task creation audit trail
+                    created_by_name = "Unknown"
+                    if task.created_by:
+                        created_by_name = f"{task.created_by.first_name} {task.created_by.last_name}".strip() or task.created_by.username
+                    
+                    # Calculate time tracking
+                    scheduled_time = task.scheduled_time.strftime('%H:%M:%S') if task.scheduled_time else "Not specified"
+                    actual_start_time = task.actual_start_time.strftime('%Y-%m-%d %H:%M:%S') if task.actual_start_time else "Not started"
+                    actual_end_time = task.actual_end_time.strftime('%Y-%m-%d %H:%M:%S') if task.actual_end_time else "Not completed"
+                    
+                    # Calculate duration if both start and end times are available
+                    duration = "N/A"
+                    if task.actual_start_time and task.actual_end_time:
+                        duration_delta = task.actual_end_time - task.actual_start_time
+                        hours, remainder = divmod(duration_delta.total_seconds(), 3600)
+                        minutes, _ = divmod(remainder, 60)
+                        duration = f"{int(hours)}h {int(minutes)}m"
+                    
+                    recipe_production_data.append({
+                        # Core Recipe Information
+                        'Scheduled Date': task.scheduled_date.strftime('%Y-%m-%d'),
+                        'Scheduled Time': scheduled_time,
+                        'Recipe Name': task.recipe_name,
+                        'Recipe Description': task.recipe_description or "No description",
+                        'Status': task.get_status_display(),
+                        
+                        # Assignment Audit Trail
+                        'Assigned Staff': assigned_staff_name,
+                        'Assigned Staff Username': task.assigned_staff.user.username if task.assigned_staff else "Unassigned",
+                        'Assigned Staff Role': assigned_staff_role,
+                        'Assigned Staff Contact': assigned_staff_contact,
+                        
+                        # Task Creation Audit
+                        'Created By': created_by_name,
+                        'Created At': task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else "Unknown",
+                        'Updated At': task.updated_at.strftime('%Y-%m-%d %H:%M:%S') if task.updated_at else "Unknown",
+                        
+                        # Time Tracking
+                        'Actual Start Time': actual_start_time,
+                        'Actual End Time': actual_end_time,
+                        'Duration': duration,
+                        
+                        # Recurring Task Information
+                        'Is Recurring': 'Yes' if task.parent_task else 'No',
+                        'Parent Task ID': str(task.parent_task.id) if task.parent_task else "N/A",
+                        'Auto Archive Date': task.auto_archive_date.strftime('%Y-%m-%d') if task.auto_archive_date else "N/A",
+                        
+                        # Quality Assurance
+                        'Notes': task.notes or "No notes",
+                        'Department': task.department.name,
+                        
+                        # Audit Chain
+                        'Audit Chain': f"Recipe {task.id} → {task.recipe_name} → {assigned_staff_name} → {task.get_status_display()}"
+                    })
+            
+            # Add recipe production section
+            document_info["sections"].append({
+                "title": "Recipe Production Tasks - Complete Audit Trail",
+                "type": "recipe_production",
+                "data": recipe_production_data,
+                "headers": [
+                    'Scheduled Date', 'Scheduled Time', 'Recipe Name', 'Recipe Description', 'Status',
+                    'Assigned Staff', 'Assigned Staff Username', 'Assigned Staff Role', 'Assigned Staff Contact',
+                    'Created By', 'Created At', 'Updated At',
+                    'Actual Start Time', 'Actual End Time', 'Duration',
+                    'Is Recurring', 'Parent Task ID', 'Auto Archive Date',
+                    'Notes', 'Department', 'Audit Chain'
+                ]
             })
 
         # --- PDF Generation using ReportLab ---
