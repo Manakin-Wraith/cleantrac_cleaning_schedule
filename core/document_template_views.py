@@ -748,11 +748,10 @@ def generate_document_file(template, parameters, user):
                 department=template.department
             ).select_related(
                 'assigned_to',
-                'assigned_to__user',
+                'assigned_to__user', 
                 'assigned_to__user__profile',
                 'cleaning_item',
-                'created_by',
-                'parent_task'
+                'department'
             ).prefetch_related(
                 'completion_logs',
                 'completion_logs__completed_by',
@@ -924,8 +923,7 @@ def generate_document_file(template, parameters, user):
                 'assigned_staff',
                 'assigned_staff__user',
                 'assigned_staff__user__profile',
-                'created_by',
-                'parent_task'
+                'department'
             ).order_by('scheduled_date', 'recipe_name')
             
             recipe_production_data = []
