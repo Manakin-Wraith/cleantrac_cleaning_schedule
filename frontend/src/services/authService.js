@@ -106,8 +106,13 @@ export const confirmPasswordReset = async (username, token, newPassword) => {
 // Function to get the auth header for API requests
 export const getAuthHeader = () => {
     const token = localStorage.getItem('authToken');
+    const headers = {
+        'X-Tenant-Domain': 'api.cleentrac.com'
+    };
+    
     if (token) {
-        return { 'Authorization': `Token ${token}` };
+        headers['Authorization'] = `Token ${token}`;
     }
-    return {};
+    
+    return headers;
 };

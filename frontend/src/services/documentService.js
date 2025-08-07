@@ -129,3 +129,79 @@ export const deleteGeneratedDocument = async (documentId) => {
   });
   return response.data;
 };
+
+/**
+ * Get preview URL for a generated document
+ * @param {number} documentId - Document ID
+ * @returns {string} - Preview URL
+ */
+export const getDocumentPreviewUrl = (documentId) => {
+  return `${API_URL}/generated-documents/${documentId}/preview/`;
+};
+
+/**
+ * Get download URL for a generated document
+ * @param {number} documentId - Document ID
+ * @returns {string} - Download URL
+ */
+export const getDocumentDownloadUrl = (documentId) => {
+  return `${API_URL}/generated-documents/${documentId}/preview/?download=true`;
+};
+
+/**
+ * Open document preview in new tab
+ * @param {number} documentId - Document ID
+ * @param {string} authToken - Authentication token
+ */
+export const openDocumentPreview = (documentId, authToken) => {
+  const url = getDocumentPreviewUrl(documentId);
+  // Open in new tab with auth headers (browser will handle the PDF display)
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  
+  // For preview, we'll use a form to send headers properly
+  const form = document.createElement('form');
+  form.method = 'GET';
+  form.action = url;
+  form.target = '_blank';
+  
+  // Add hidden inputs for headers (this is a workaround for browser limitations)
+  const authInput = document.createElement('input');
+  authInput.type = 'hidden';
+  authInput.name = 'auth';
+  authInput.value = authToken;
+  form.appendChild(authInput);
+  
+  document.body.appendChild(form);
+  form.submit();
+  document.body.removeChild(form);
+};
+
+/**
+ * Download document file
+ * @param {number} documentId - Document ID
+ * @param {string} filename - Filename for download
+ */
+export const downloadDocument = async (documentId, filename = 'document.pdf') => {
+  try {
+    const response = await axios.get(getDocumentDownloadUrl(documentId), {
+      headers: getAuthHeader(),
+      responseType: 'blob'
+    });
+    
+    // Create blob link to download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error downloading document:', error);
+    throw error;
+  }
+};

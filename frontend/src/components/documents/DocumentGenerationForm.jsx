@@ -18,6 +18,7 @@ import axios from 'axios';
 import { API_URL } from '../../config';
 import { getAuthHeader, getCurrentUser } from '../../services/authService';
 import DocumentPreview from './DocumentPreview';
+import DocumentGenerationSuccess from './DocumentGenerationSuccess';
 
 const DocumentGenerationForm = ({ template, onCancel, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -38,6 +39,8 @@ const DocumentGenerationForm = ({ template, onCancel, onSuccess }) => {
   const [user, setUser] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
   const [parameters, setParameters] = useState(null);
+  const [generatedDocument, setGeneratedDocument] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     fetchCurrentUser();
@@ -138,7 +141,13 @@ const DocumentGenerationForm = ({ template, onCancel, onSuccess }) => {
         headers: getAuthHeader()
       });
       
-      onSuccess();
+      // Handle JSON response with document metadata
+      if (response.data) {
+        setGeneratedDocument(response.data);
+        setShowSuccess(true);
+      } else {
+        onSuccess();
+      }
     } catch (err) {
       console.error('Error generating document:', err);
       setError(err.response?.data?.detail || 'Failed to generate document. Please try again.');
@@ -151,11 +160,35 @@ const DocumentGenerationForm = ({ template, onCancel, onSuccess }) => {
     setActiveStep(0);
   };
 
+  const handleGenerateAnother = () => {
+    setShowSuccess(false);
+    setGeneratedDocument(null);
+    setActiveStep(0);
+    setParameters(null);
+    setError('');
+  };
+
+  const handleCloseSuccess = () => {
+    setShowSuccess(false);
+    onSuccess();
+  };
+
   if (!template) {
     return (
       <Alert severity="error">
         No template selected. Please select a template to generate a document.
       </Alert>
+    );
+  }
+
+  // Show success component when document is generated
+  if (showSuccess && generatedDocument) {
+    return (
+      <DocumentGenerationSuccess
+        generatedDocument={generatedDocument}
+        onGenerateAnother={handleGenerateAnother}
+        onClose={handleCloseSuccess}
+      />
     );
   }
 
