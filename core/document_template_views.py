@@ -652,8 +652,8 @@ def generate_document_file(template, parameters, user):
                     # Get thermometer verification status at time of logging
                     thermometer_verification_status = "Unknown"
                     verification_record_info = "None"
-                    if log.verification_record:
-                        verification_record_info = f"Verified on {log.verification_record.date_verified.strftime('%Y-%m-%d')} by {log.verification_record.calibrated_by.username if log.verification_record.calibrated_by else 'Unknown'}"
+                    if log.verification_record_at_time_of_log:
+                        verification_record_info = f"Verified on {log.verification_record_at_time_of_log.date_verified.strftime('%Y-%m-%d')} by {log.verification_record_at_time_of_log.calibrated_by.username if log.verification_record_at_time_of_log.calibrated_by else 'Unknown'}"
                         thermometer_verification_status = "Verified"
                     elif log.thermometer_used:
                         thermometer_verification_status = log.thermometer_used.get_status_display()
@@ -710,7 +710,7 @@ def generate_document_file(template, parameters, user):
                         # Audit Trail
                         'Log Created': log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else "Unknown",
                         'Department': log.department.name,
-                        'Data Integrity': 'Verified' if log.verification_record else 'Unverified Thermometer',
+                        'Data Integrity': 'Verified' if log.verification_record_at_time_of_log else 'Unverified Thermometer',
                         'Compliance Chain': f"Area {log.area_unit.name} → Thermometer {log.thermometer_used.serial_number if log.thermometer_used else 'Unknown'} → Log {log.id} → Status {temp_status}"
                     })
             
