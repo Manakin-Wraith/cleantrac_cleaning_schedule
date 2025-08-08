@@ -705,7 +705,7 @@ def generate_document_file(template, parameters, user):
                         
                         # Quality Assurance
                         'Corrective Action': log.corrective_action or "None",
-                        'Photo Evidence': 'Yes' if log.photo_evidence else 'No',
+                        'Photo Evidence': 'Yes' if log.photo else 'No',
                         
                         # Audit Trail
                         'Log Created': log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else "Unknown",
