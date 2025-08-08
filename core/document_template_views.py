@@ -618,7 +618,7 @@ def generate_document_file(template, parameters, user):
                 department=template.department,
                 assigned_date__gte=start_date,
                 assigned_date__lte=end_date
-            ).select_related('staff_member', 'assigned_by', 'area_unit')
+            ).select_related('staff_member', 'assigned_by', 'department')
             
             assignment_data = []
             for assignment in temp_assignments:
