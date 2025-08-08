@@ -610,7 +610,7 @@ def generate_document_file(template, parameters, user):
                 'logged_by',
                 'logged_by__profile',
                 'thermometer_used__department',
-                'verification_record'
+                'verification_record_at_time_of_log'
             ).order_by('log_datetime')
             
             # Get temperature check assignments for audit trail
