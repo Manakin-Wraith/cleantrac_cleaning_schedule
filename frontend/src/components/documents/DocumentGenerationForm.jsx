@@ -145,6 +145,20 @@ const DocumentGenerationForm = ({ template, onCancel, onSuccess }) => {
         return;
       }
       
+      // FRONTEND VALIDATION: Verify template exists and is valid before API call
+      if (!template || !template.id) {
+        setError('Invalid template selected. Please refresh the page and try again.');
+        setLoading(false);
+        return;
+      }
+
+      // Additional validation: Check if template ID is reasonable (not obviously invalid)
+      if (template.id < 1 || !Number.isInteger(template.id)) {
+        setError('Invalid template ID detected. Please contact support.');
+        setLoading(false);
+        return;
+      }
+
       console.log('🔍 Document generation request:', {
         template_id: template.id,
         department_id: departmentId,

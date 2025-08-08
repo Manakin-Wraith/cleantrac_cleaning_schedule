@@ -43,7 +43,27 @@ const DocumentTemplateList = ({ onGenerateDocument, onEditTemplate }) => {
       }
       
       const response = await axios.get(url, { headers: getAuthHeader() });
-      setTemplates(response.data);
+      
+      // FRONTEND VALIDATION: Filter out any invalid templates before setting state
+      const validTemplates = response.data.filter(template => {
+        // Ensure template has valid ID and required fields
+        return template && 
+               template.id && 
+               Number.isInteger(template.id) && 
+               template.id > 0 &&
+               template.name &&
+               template.department_name;
+      });
+      
+      // Log any filtered templates for debugging
+      if (response.data.length !== validTemplates.length) {
+        const invalidTemplates = response.data.filter(template => 
+          !validTemplates.find(valid => valid.id === template.id)
+        );
+        console.warn('🚨 Filtered out invalid templates:', invalidTemplates);
+      }
+      
+      setTemplates(validTemplates);
     } catch (err) {
       console.error('Error fetching document templates:', err);
       setError('Failed to load document templates. Please try again.');
