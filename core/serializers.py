@@ -248,6 +248,16 @@ class TaskInstanceSerializer(serializers.ModelSerializer):
         # write_only=True # Keep for read if needed
     )
     department_name = serializers.CharField(source='department.name', read_only=True)
+    
+    # Audit trail fields following hybrid naming convention
+    created_by_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='created_by',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True, allow_null=True)
 
     class Meta:
         model = TaskInstance
@@ -259,6 +269,7 @@ class TaskInstanceSerializer(serializers.ModelSerializer):
             'assigned_to_id', 'assigned_to_details', 
             'due_date', 'start_time', 'end_time', # Added start_time and end_time
             'status', 'notes', 'recurrence_type',
+            'created_by_id', 'created_by_username', # Audit trail fields
             'created_at', 'updated_at'
         ]
         # Remove read_only_fields for department if it's directly settable via department_id

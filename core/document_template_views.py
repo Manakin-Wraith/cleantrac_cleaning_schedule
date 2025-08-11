@@ -777,9 +777,8 @@ def generate_document_file(template, parameters, user):
                             assigned_to_name = task.assigned_to.user.username
                     
                     # Get task creation audit trail
-                    created_by_name = "Unknown"
-                    if task.created_by:
-                        created_by_name = f"{task.created_by.first_name} {task.created_by.last_name}".strip() or task.created_by.username
+                    created_by_name = "System Generated"
+                    created_at_info = task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else "Unknown"
                     
                     # Get cleaning item details for audit
                     cleaning_item_details = {

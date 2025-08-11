@@ -448,6 +448,10 @@ class TaskInstanceViewSet(viewsets.ModelViewSet):
         # Fallback to default single task create
         return super().create(request, *args, **kwargs)
 
+    def perform_create(self, serializer):
+        """Set created_by to current user when creating a task instance."""
+        serializer.save(created_by=self.request.user)
+
     def get_queryset(self):
         user = self.request.user
         base_qs = TaskInstance.objects.all()

@@ -78,6 +78,7 @@ class TaskInstance(models.Model):
     end_time = models.TimeField(null=True, blank=True)   # For specific end time on the due_date
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_task_instances')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
