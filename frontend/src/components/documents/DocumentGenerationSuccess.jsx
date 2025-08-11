@@ -31,34 +31,15 @@ const DocumentGenerationSuccess = ({
   const [error, setError] = useState('');
 
   const handlePreview = () => {
-    // Open preview in new tab with authentication
+    // Open preview in new tab with authentication headers
     const token = localStorage.getItem('authToken');
     const previewUrl = `${getDocumentPreviewUrl(generatedDocument.id)}`;
     
-    // Create a temporary form to send auth headers
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = previewUrl;
-    form.target = '_blank';
-    form.style.display = 'none';
+    // Create URL with auth token as query parameter for GET request
+    const urlWithAuth = `${previewUrl}?token=${encodeURIComponent(token)}`;
     
-    // Add auth token as hidden input
-    const tokenInput = document.createElement('input');
-    tokenInput.type = 'hidden';
-    tokenInput.name = 'token';
-    tokenInput.value = token;
-    form.appendChild(tokenInput);
-    
-    // Add tenant domain
-    const tenantInput = document.createElement('input');
-    tenantInput.type = 'hidden';
-    tenantInput.name = 'tenant';
-    tenantInput.value = 'api.cleentrac.com';
-    form.appendChild(tenantInput);
-    
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
+    // Open in new tab - backend expects GET request, not POST
+    window.open(urlWithAuth, '_blank');
   };
 
   const handleDownload = async () => {
