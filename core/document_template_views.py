@@ -863,8 +863,8 @@ def generate_document_file(template, parameters, user):
                         'Total Completions': len(completion_details),
                         
                         # Recurring Task Information
-                        'Is Recurring': 'Yes' if task.parent_task else 'No',
-                        'Parent Task ID': str(task.parent_task.id) if task.parent_task else "N/A",
+                        'Is Recurring': 'No',  # TaskInstance has no parent_task field
+                        'Parent Task ID': "N/A",  # TaskInstance has no parent_task field
                         
                         # Quality Assurance
                         'Task Notes': task.notes or "No notes",
@@ -989,8 +989,8 @@ def generate_document_file(template, parameters, user):
                         'Duration': duration,
                         
                         # Recurring Task Information
-                        'Is Recurring': 'Yes' if task.parent_task else 'No',
-                        'Parent Task ID': str(task.parent_task.id) if task.parent_task else "N/A",
+                        'Is Recurring': 'No',  # TaskInstance has no parent_task field
+                        'Parent Task ID': "N/A",  # TaskInstance has no parent_task field
                         'Auto Archive Date': task.auto_archive_date.strftime('%Y-%m-%d') if task.auto_archive_date else "N/A",
                         
                         # Quality Assurance
