@@ -624,7 +624,7 @@ def generate_document_file(template, parameters, user):
             for assignment in temp_assignments:
                 assignment_data.append({
                     'Assignment Date': assignment.assigned_date.strftime('%Y-%m-%d'),
-                    'Area/Unit': assignment.area_unit.name,
+                    'Area/Unit': "All Areas",  # TemperatureCheckAssignment has no area_unit field
                     'Staff Member': f"{assignment.staff_member.first_name} {assignment.staff_member.last_name}".strip() or assignment.staff_member.username,
                     'Assigned By': f"{assignment.assigned_by.first_name} {assignment.assigned_by.last_name}".strip() if assignment.assigned_by else "Unknown",
                     'Time Period': assignment.get_time_period_display(),
