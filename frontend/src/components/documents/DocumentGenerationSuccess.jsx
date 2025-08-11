@@ -14,13 +14,12 @@ import {
   CircularProgress
 } from '@mui/material';
 import {
-  Preview as PreviewIcon,
   Download as DownloadIcon,
   CheckCircle as CheckCircleIcon,
   Refresh as RefreshIcon,
   Description as DescriptionIcon
 } from '@mui/icons-material';
-import { downloadDocument, getDocumentPreviewUrl } from '../../services/documentService';
+import { downloadDocument } from '../../services/documentService';
 
 const DocumentGenerationSuccess = ({ 
   generatedDocument, 
@@ -30,17 +29,7 @@ const DocumentGenerationSuccess = ({
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
 
-  const handlePreview = () => {
-    // Open preview in new tab with authentication headers
-    const token = localStorage.getItem('authToken');
-    const previewUrl = `${getDocumentPreviewUrl(generatedDocument.id)}`;
-    
-    // Create URL with auth token as query parameter for GET request
-    const urlWithAuth = `${previewUrl}?token=${encodeURIComponent(token)}`;
-    
-    // Open in new tab - backend expects GET request, not POST
-    window.open(urlWithAuth, '_blank');
-  };
+
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -134,25 +123,15 @@ const DocumentGenerationSuccess = ({
           )}
         </CardContent>
 
-        <CardActions sx={{ justifyContent: 'space-between', p: 2 }}>
-          <Box>
-            <Button
-              variant="outlined"
-              startIcon={<PreviewIcon />}
-              onClick={handlePreview}
-              sx={{ mr: 1 }}
-            >
-              Preview PDF
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={downloading ? <CircularProgress size={16} /> : <DownloadIcon />}
-              onClick={handleDownload}
-              disabled={downloading}
-            >
-              {downloading ? 'Downloading...' : 'Download PDF'}
-            </Button>
-          </Box>
+        <CardActions sx={{ justifyContent: 'flex-start', p: 2 }}>
+          <Button
+            variant="contained"
+            startIcon={downloading ? <CircularProgress size={16} /> : <DownloadIcon />}
+            onClick={handleDownload}
+            disabled={downloading}
+          >
+            {downloading ? 'Downloading...' : 'Download PDF'}
+          </Button>
         </CardActions>
       </Card>
 

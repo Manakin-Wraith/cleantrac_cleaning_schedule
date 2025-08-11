@@ -21,7 +21,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, cm
 from reportlab.lib import colors
 
-from .models import DocumentTemplate, GeneratedDocument, TaskInstance, ThermometerVerificationRecord, TemperatureLog, TemperatureCheckAssignment, ProductionTask
+from .models import DocumentTemplate, GeneratedDocument, TaskInstance, ThermometerVerificationRecord, TemperatureLog, TemperatureCheckAssignment
 from .document_template_serializers import DocumentTemplateSerializer, GeneratedDocumentSerializer
 from .permissions import IsManagerForWriteOrAuthenticatedReadOnly
 
@@ -914,7 +914,7 @@ def generate_document_file(template, parameters, user):
         
         # Section 4: Enhanced Recipe Production Tasks with Complete Audit Trail
         if template.template_type == 'recipe' and parameters.get('includeRecipeProduction', True):
-            recipe_tasks = ProductionTask.objects.filter(
+            recipe_tasks = RecipeProductionTask.objects.filter(
                 scheduled_date__gte=start_date,
                 scheduled_date__lte=end_date,
                 department=template.department
@@ -1429,21 +1429,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         """
         Preview or download a generated PDF document.
         Query parameter 'download=true' forces download, otherwise shows inline preview.
-        Supports token-based authentication via 'token' query parameter.
         """
-        # Handle token-based authentication for direct URL access
-        token = request.query_params.get('token')
-        if token and not request.user.is_authenticated:
-            try:
-                from rest_framework.authtoken.models import Token
-                token_obj = Token.objects.get(key=token)
-                request.user = token_obj.user
-            except Token.DoesNotExist:
-                return Response(
-                    {"detail": "Invalid authentication token"},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-        
         try:
             document = self.get_object()
             
