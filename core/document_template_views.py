@@ -783,9 +783,9 @@ def generate_document_file(template, parameters, user):
                     # Get cleaning item details for audit
                     cleaning_item_details = {
                         'frequency': task.cleaning_item.get_frequency_display() if task.cleaning_item else "Unknown",
-                        'equipment': task.cleaning_item.equipment_needed or "None specified",
-                        'chemicals': task.cleaning_item.chemicals_used or "None specified",
-                        'method': task.cleaning_item.cleaning_method or "No method specified"
+                        'equipment': task.cleaning_item.equipment or "None specified",
+                        'chemicals': task.cleaning_item.chemical or "None specified",
+                        'method': task.cleaning_item.method or "No method specified"
                     }
                     
                     # Get completion logs for this task
