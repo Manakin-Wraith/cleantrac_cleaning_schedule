@@ -835,7 +835,7 @@ def generate_document_file(template, parameters, user):
                         # Core Task Information
                         'Due Date': task.due_date.strftime('%Y-%m-%d'),
                         'Task Name': task.cleaning_item.name if task.cleaning_item else "Unknown Task",
-                        'Task Description': task.cleaning_item.description or "No description",
+                        'Task Description': task.cleaning_item.method or "No description",
                         'Status': task.get_status_display(),
                         'Completion Status': task_completion_status,
                         
