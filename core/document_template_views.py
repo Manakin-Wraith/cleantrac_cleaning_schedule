@@ -21,7 +21,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, cm
 from reportlab.lib import colors
 
-from .models import DocumentTemplate, GeneratedDocument, TaskInstance, ThermometerVerificationRecord, TemperatureLog, TemperatureCheckAssignment
+from .models import DocumentTemplate, GeneratedDocument, TaskInstance, ThermometerVerificationRecord, TemperatureLog, TemperatureCheckAssignment, ThermometerVerificationAssignment
 from .document_template_serializers import DocumentTemplateSerializer, GeneratedDocumentSerializer
 from .permissions import IsManagerForWriteOrAuthenticatedReadOnly
 
