@@ -634,7 +634,7 @@ class RecipeProductionTaskViewSet(viewsets.ModelViewSet):
                     recurrence_type=parent_task.recurrence_type,
                     notes=f"Auto-generated child of task {parent_task.id}",
                     assigned_staff=parent_task.assigned_staff,
-                    created_by=parent_task.created_by,
+                    created_by=getattr(parent_task, 'created_by', None),
                     parent_task=parent_task,
                     task_type=getattr(parent_task, 'task_type', 'prep'),
                     duration_minutes=getattr(parent_task, 'duration_minutes', None),

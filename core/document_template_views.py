@@ -944,8 +944,12 @@ def generate_document_file(template, parameters, user):
                     
                     # Get task creation audit trail
                     created_by_name = "Unknown"
-                    if task.created_by:
-                        created_by_name = f"{task.created_by.first_name} {task.created_by.last_name}".strip() or task.created_by.username
+                    try:
+                        if hasattr(task, 'created_by') and task.created_by:
+                            created_by_name = f"{task.created_by.first_name} {task.created_by.last_name}".strip() or task.created_by.username
+                    except AttributeError:
+                        # TaskInstance model doesn't have created_by field
+                        created_by_name = "System Generated"
                     
                     # Calculate time tracking
                     scheduled_time = task.scheduled_time.strftime('%H:%M:%S') if task.scheduled_time else "Not specified"
