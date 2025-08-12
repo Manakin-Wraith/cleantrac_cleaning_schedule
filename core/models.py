@@ -346,6 +346,7 @@ class DocumentTemplate(models.Model):
         ('temperature', 'Temperature Log'),
         ('cleaning', 'Cleaning Schedule'),
         ('verification', 'Thermometer Verification'),
+        ('recipe', 'Recipe Traceability'),
         ('general', 'General Purpose'),
     ]
     
