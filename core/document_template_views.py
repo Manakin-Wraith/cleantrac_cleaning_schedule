@@ -936,12 +936,13 @@ def generate_document_file(template, parameters, user):
                     assigned_staff_contact = "N/A"
                     if task.assigned_staff:
                         try:
-                            profile = task.assigned_staff.user.profile
-                            assigned_staff_name = f"{task.assigned_staff.user.first_name} {task.assigned_staff.user.last_name}".strip() or task.assigned_staff.user.username
+                            # task.assigned_staff is a User object directly, not through .user
+                            profile = task.assigned_staff.profile
+                            assigned_staff_name = f"{task.assigned_staff.first_name} {task.assigned_staff.last_name}".strip() or task.assigned_staff.username
                             assigned_staff_role = profile.get_role_display() if profile else "Unknown"
                             assigned_staff_contact = profile.phone_number if profile and profile.phone_number else "N/A"
                         except AttributeError:
-                            assigned_staff_name = task.assigned_staff.user.username
+                            assigned_staff_name = task.assigned_staff.username
                     
                     # Get task creation audit trail
                     created_by_name = "Unknown"
@@ -952,30 +953,31 @@ def generate_document_file(template, parameters, user):
                         # TaskInstance model doesn't have created_by field
                         created_by_name = "System Generated"
                     
-                    # Calculate time tracking
-                    scheduled_time = task.scheduled_time.strftime('%H:%M:%S') if task.scheduled_time else "Not specified"
-                    actual_start_time = task.actual_start_time.strftime('%Y-%m-%d %H:%M:%S') if task.actual_start_time else "Not started"
-                    actual_end_time = task.actual_end_time.strftime('%Y-%m-%d %H:%M:%S') if task.actual_end_time else "Not completed"
+                    # Calculate time tracking - fix field references
+                    scheduled_time = task.scheduled_start_time.strftime('%H:%M:%S') if task.scheduled_start_time else "Not specified"
+                    # RecipeProductionTask doesn't have actual_start_time/actual_end_time fields
+                    actual_start_time = "Not available"
+                    actual_end_time = "Not available"
                     
-                    # Calculate duration if both start and end times are available
+                    # Calculate duration using scheduled times if available
                     duration = "N/A"
-                    if task.actual_start_time and task.actual_end_time:
-                        duration_delta = task.actual_end_time - task.actual_start_time
+                    if task.scheduled_start_time and task.scheduled_end_time:
+                        duration_delta = task.scheduled_end_time - task.scheduled_start_time
                         hours, remainder = divmod(duration_delta.total_seconds(), 3600)
                         minutes, _ = divmod(remainder, 60)
-                        duration = f"{int(hours)}h {int(minutes)}m"
+                        duration = f"{int(hours)}h {int(minutes)}m (scheduled)"
                     
                     recipe_production_data.append({
-                        # Core Recipe Information
-                        'Scheduled Date': task.scheduled_date.strftime('%Y-%m-%d'),
+                        # Core Recipe Information - fix field references
+                        'Scheduled Date': task.scheduled_start_time.strftime('%Y-%m-%d'),
                         'Scheduled Time': scheduled_time,
-                        'Recipe Name': task.recipe_name,
-                        'Recipe Description': task.recipe_description or "No description",
+                        'Recipe Name': task.recipe.name,
+                        'Recipe Description': task.recipe.description or task.description or "No description",
                         'Status': task.get_status_display(),
                         
-                        # Assignment Audit Trail
+                        # Assignment Audit Trail - fix field references
                         'Assigned Staff': assigned_staff_name,
-                        'Assigned Staff Username': task.assigned_staff.user.username if task.assigned_staff else "Unassigned",
+                        'Assigned Staff Username': task.assigned_staff.username if task.assigned_staff else "Unassigned",
                         'Assigned Staff Role': assigned_staff_role,
                         'Assigned Staff Contact': assigned_staff_contact,
                         
@@ -989,10 +991,10 @@ def generate_document_file(template, parameters, user):
                         'Actual End Time': actual_end_time,
                         'Duration': duration,
                         
-                        # Recurring Task Information
-                        'Is Recurring': 'No',  # TaskInstance has no parent_task field
-                        'Parent Task ID': "N/A",  # TaskInstance has no parent_task field
-                        'Auto Archive Date': task.auto_archive_date.strftime('%Y-%m-%d') if task.auto_archive_date else "N/A",
+                        # Recurring Task Information - fix field references
+                        'Is Recurring': 'Yes' if task.is_recurring else 'No',
+                        'Parent Task ID': str(task.parent_task.id) if task.parent_task else "N/A",
+                        'Auto Archive Date': "N/A",  # RecipeProductionTask doesn't have auto_archive_date field
                         
                         # Quality Assurance
                         'Notes': task.notes or "No notes",
