@@ -915,98 +915,116 @@ def generate_document_file(template, parameters, user):
         
         # Section 4: Enhanced Recipe Production Tasks with Complete Audit Trail
         if template.template_type == 'recipe' and parameters.get('includeRecipeProduction', True):
-            recipe_tasks = RecipeProductionTask.objects.filter(
-                scheduled_date__gte=start_date,
-                scheduled_date__lte=end_date,
-                department=template.department
-            ).select_related(
-                'assigned_staff',
-                'assigned_staff__user',
-                'assigned_staff__user__profile',
-                'department'
-            ).order_by('scheduled_date', 'recipe_name')
+            try:
+                logger.info(f"Starting recipe document generation for template {template.id}")
+                recipe_tasks = RecipeProductionTask.objects.filter(
+                    scheduled_start_time__date__gte=start_date,
+                    scheduled_start_time__date__lte=end_date,
+                    department=template.department
+                ).select_related(
+                    'assigned_staff',
+                    'assigned_staff__profile',
+                    'recipe',
+                    'department'
+                ).order_by('scheduled_start_time', 'recipe__name')
+                logger.info(f"Found {recipe_tasks.count()} recipe tasks for date range {start_date} to {end_date}")
+            except Exception as e:
+                logger.error(f"Error querying RecipeProductionTask: {str(e)}")
+                raise
             
             recipe_production_data = []
             
             if recipe_tasks.exists():
                 for task in recipe_tasks:
-                    # Get comprehensive assigned staff information
-                    assigned_staff_name = "Unassigned"
-                    assigned_staff_role = "N/A"
-                    assigned_staff_contact = "N/A"
-                    if task.assigned_staff:
-                        try:
-                            # task.assigned_staff is a User object directly, not through .user
-                            profile = task.assigned_staff.profile
-                            assigned_staff_name = f"{task.assigned_staff.first_name} {task.assigned_staff.last_name}".strip() or task.assigned_staff.username
-                            assigned_staff_role = profile.get_role_display() if profile else "Unknown"
-                            assigned_staff_contact = profile.phone_number if profile and profile.phone_number else "N/A"
-                        except AttributeError:
-                            assigned_staff_name = task.assigned_staff.username
-                    
-                    # Get task creation audit trail
-                    created_by_name = "Unknown"
                     try:
-                        if hasattr(task, 'created_by') and task.created_by:
-                            created_by_name = f"{task.created_by.first_name} {task.created_by.last_name}".strip() or task.created_by.username
-                    except AttributeError:
-                        # TaskInstance model doesn't have created_by field
-                        created_by_name = "System Generated"
-                    
-                    # Calculate time tracking - fix field references
-                    scheduled_time = task.scheduled_start_time.strftime('%H:%M:%S') if task.scheduled_start_time else "Not specified"
-                    # RecipeProductionTask doesn't have actual_start_time/actual_end_time fields
-                    actual_start_time = "Not available"
-                    actual_end_time = "Not available"
-                    
-                    # Calculate duration using scheduled times if available
-                    duration = "N/A"
-                    if task.scheduled_start_time and task.scheduled_end_time:
-                        duration_delta = task.scheduled_end_time - task.scheduled_start_time
-                        hours, remainder = divmod(duration_delta.total_seconds(), 3600)
-                        minutes, _ = divmod(remainder, 60)
-                        duration = f"{int(hours)}h {int(minutes)}m (scheduled)"
-                    
-                    recipe_production_data.append({
-                        # Core Recipe Information - fix field references
-                        'Scheduled Date': task.scheduled_start_time.strftime('%Y-%m-%d'),
-                        'Scheduled Time': scheduled_time,
-                        'Recipe Name': task.recipe.name,
-                        'Recipe Description': task.recipe.description or task.description or "No description",
-                        'Status': task.get_status_display(),
+                        logger.info(f"Processing recipe task {task.id} for recipe {task.recipe.name}")
+                        # Get comprehensive assigned staff information
+                        assigned_staff_name = "Unassigned"
+                        assigned_staff_role = "N/A"
+                        assigned_staff_contact = "N/A"
+                        if task.assigned_staff:
+                            try:
+                                # task.assigned_staff is a User object directly, not through .user
+                                profile = task.assigned_staff.profile
+                                assigned_staff_name = f"{task.assigned_staff.first_name} {task.assigned_staff.last_name}".strip() or task.assigned_staff.username
+                                assigned_staff_role = profile.get_role_display() if profile else "Unknown"
+                                assigned_staff_contact = profile.phone_number if profile and profile.phone_number else "N/A"
+                            except AttributeError:
+                                assigned_staff_name = task.assigned_staff.username
                         
-                        # Assignment Audit Trail - fix field references
-                        'Assigned Staff': assigned_staff_name,
-                        'Assigned Staff Username': task.assigned_staff.username if task.assigned_staff else "Unassigned",
-                        'Assigned Staff Role': assigned_staff_role,
-                        'Assigned Staff Contact': assigned_staff_contact,
+                        # Get task creation audit trail
+                        created_by_name = "Unknown"
+                        try:
+                            if hasattr(task, 'created_by') and task.created_by:
+                                created_by_name = f"{task.created_by.first_name} {task.created_by.last_name}".strip() or task.created_by.username
+                        except AttributeError:
+                            # TaskInstance model doesn't have created_by field
+                            created_by_name = "System Generated"
                         
-                        # Task Creation Audit
-                        'Created By': created_by_name,
-                        'Created At': task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else "Unknown",
-                        'Updated At': task.updated_at.strftime('%Y-%m-%d %H:%M:%S') if task.updated_at else "Unknown",
+                        # Calculate time tracking - fix field references
+                        scheduled_time = task.scheduled_start_time.strftime('%H:%M:%S') if task.scheduled_start_time else "Not specified"
+                        # RecipeProductionTask doesn't have actual_start_time/actual_end_time fields
+                        actual_start_time = "Not available"
+                        actual_end_time = "Not available"
                         
-                        # Time Tracking
-                        'Actual Start Time': actual_start_time,
-                        'Actual End Time': actual_end_time,
-                        'Duration': duration,
+                        # Calculate duration using scheduled times if available
+                        duration = "N/A"
+                        if task.scheduled_start_time and task.scheduled_end_time:
+                            duration_delta = task.scheduled_end_time - task.scheduled_start_time
+                            hours, remainder = divmod(duration_delta.total_seconds(), 3600)
+                            minutes, _ = divmod(remainder, 60)
+                            duration = f"{int(hours)}h {int(minutes)}m (scheduled)"
                         
-                        # Recurring Task Information - fix field references
-                        'Is Recurring': 'Yes' if task.is_recurring else 'No',
-                        'Parent Task ID': str(task.parent_task.id) if task.parent_task else "N/A",
-                        'Auto Archive Date': "N/A",  # RecipeProductionTask doesn't have auto_archive_date field
-                        
-                        # Quality Assurance
-                        'Notes': task.notes or "No notes",
-                        'Department': task.department.name,
-                        
-                        # Audit Chain
-                        'Audit Chain': f"Recipe {task.id} → {task.recipe_name} → {assigned_staff_name} → {task.get_status_display()}"
-                    })
+                        recipe_production_data.append({
+                            # Core Recipe Information - fix field references
+                            'Scheduled Date': task.scheduled_start_time.strftime('%Y-%m-%d'),
+                            'Scheduled Time': scheduled_time,
+                            'Recipe Name': task.recipe.name,
+                            'Recipe Description': task.recipe.description or task.description or "No description",
+                            'Status': task.get_status_display(),
+                            
+                            # Assignment Audit Trail - fix field references
+                            'Assigned Staff': assigned_staff_name,
+                            'Assigned Staff Username': task.assigned_staff.username if task.assigned_staff else "Unassigned",
+                            'Assigned Staff Role': assigned_staff_role,
+                            'Assigned Staff Contact': assigned_staff_contact,
+                            
+                            # Task Creation Audit
+                            'Created By': created_by_name,
+                            'Created At': task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else "Unknown",
+                            'Updated At': task.updated_at.strftime('%Y-%m-%d %H:%M:%S') if task.updated_at else "Unknown",
+                            
+                            # Time Tracking
+                            'Actual Start Time': actual_start_time,
+                            'Actual End Time': actual_end_time,
+                            'Duration': duration,
+                            
+                            # Recurring Task Information - fix field references
+                            'Is Recurring': 'Yes' if task.is_recurring else 'No',
+                            'Parent Task ID': str(task.parent_task.id) if task.parent_task else "N/A",
+                            'Auto Archive Date': "N/A",  # RecipeProductionTask doesn't have auto_archive_date field
+                            
+                            # Quality Assurance
+                            'Notes': task.notes or "No notes",
+                            'Department': task.department.name,
+                            
+                            # Audit Chain - fix field reference
+                            'Audit Chain': f"Recipe {task.id} → {task.recipe.name} → {assigned_staff_name} → {task.get_status_display()}"
+                        })
+                    except Exception as e:
+                        logger.error(f"Error processing recipe task {task.id}: {str(e)}")
+                        # Add a fallback entry to avoid breaking the entire document
+                        recipe_production_data.append({
+                            'Recipe Name': f"Error processing task {task.id}",
+                            'Status': 'Error',
+                            'Notes': f"Processing error: {str(e)}"
+                        })
+                        continue
             
-            # Add recipe production section
-            document_info["sections"].append({
-                "title": "Recipe Production Tasks - Complete Audit Trail",
+            # Add recipe production section with error handling
+            try:
+                document_info["sections"].append({
+                    "title": "Recipe Production Tasks - Complete Audit Trail",
                 "type": "recipe_production",
                 "data": recipe_production_data,
                 "headers": [
@@ -1017,7 +1035,17 @@ def generate_document_file(template, parameters, user):
                     'Is Recurring', 'Parent Task ID', 'Auto Archive Date',
                     'Notes', 'Department', 'Audit Chain'
                 ]
-            })
+                })
+                logger.info(f"Successfully added recipe production section with {len(recipe_production_data)} tasks")
+            except Exception as e:
+                logger.error(f"Error adding recipe production section: {str(e)}")
+                # Add a fallback section to avoid breaking the entire document
+                document_info["sections"].append({
+                    "title": "Recipe Production Tasks - Error",
+                    "type": "error",
+                    "data": [{"Error": f"Failed to process recipe production data: {str(e)}"}],
+                    "headers": ["Error"]
+                })
 
         # --- PDF Generation using ReportLab ---
         buffer = io.BytesIO()
