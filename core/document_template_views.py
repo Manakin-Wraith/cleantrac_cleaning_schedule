@@ -12,6 +12,10 @@ import json
 import traceback
 import pandas as pd
 import os
+import logging
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
 
 # ReportLab Imports
 from reportlab.lib.pagesizes import letter, A4
