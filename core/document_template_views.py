@@ -1133,14 +1133,16 @@ def generate_document_file(template, parameters, user):
                 logger.info("Adding recipe ingredients and supplier traceability section")
                 recipe_ingredients_data = []
                 
-                # Get unique recipes from the tasks to avoid duplicates
-                unique_recipes = set()
-                for task in recipe_tasks:
-                    unique_recipes.add(task.recipe.id)
+                # Get all recipes for this department that have ingredients (independent of production tasks)
+                recipes_with_ingredients = Recipe.objects.filter(
+                    department=template.department,
+                    ingredients__isnull=False
+                ).select_related('department').distinct()
                 
-                for recipe_id in unique_recipes:
+                logger.info(f"Found {recipes_with_ingredients.count()} recipes with ingredients for department {template.department.name}")
+                
+                for recipe in recipes_with_ingredients:
                     try:
-                        recipe = Recipe.objects.select_related('department').get(id=recipe_id)
                         
                         # Get all ingredients for this recipe with supplier information
                         ingredients = recipe.ingredients.select_related('supplier', 'product').all()
@@ -1194,10 +1196,10 @@ def generate_document_file(template, parameters, user):
                             })
                     
                     except Exception as e:
-                        logger.error(f"Error processing recipe {recipe_id} ingredients: {str(e)}")
+                        logger.error(f"Error processing recipe {recipe.id} ingredients: {str(e)}")
                         # Add error entry to maintain document structure
                         recipe_ingredients_data.append({
-                            'Recipe Name': f"Error processing recipe {recipe_id}",
+                            'Recipe Name': f"Error processing recipe {recipe.id}",
                             'Recipe Product Code': "ERROR",
                             'Recipe Description': f"Error: {str(e)}",
                             'Department': "N/A",
@@ -1212,7 +1214,7 @@ def generate_document_file(template, parameters, user):
                             'Supplier Name': "Error",
                             'Supplier Contact': "N/A",
                             'Country of Origin': "N/A",
-                            'Traceability Chain': f"Error processing recipe {recipe_id}"
+                            'Traceability Chain': f"Error processing recipe {recipe.id}"
                         })
                 
                 # Add ingredients section to document
