@@ -10,20 +10,23 @@ from .serializers import UserSerializer, DepartmentSerializer
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
-    """Serializer for recipe ingredients"""
+    """Serializer for recipe ingredients with supplier traceability"""
     recipe_id = serializers.PrimaryKeyRelatedField(
         queryset=Recipe.objects.all(),
         source='recipe',
         write_only=True
     )
+    supplier_name = serializers.CharField(source='supplier.supplier_name', read_only=True)
+    supplier_code = serializers.CharField(source='supplier.supplier_code', read_only=True)
     
     class Meta:
         model = RecipeIngredient
         fields = [
-            'id', 'recipe_id', 'product', 'ingredient_code', 'ingredient_name',
-            'pack_size', 'quantity', 'unit', 'unit_cost', 'total_cost'
+            'id', 'recipe_id', 'product', 'supplier', 'supplier_name', 'supplier_code',
+            'ingredient_code', 'ingredient_name', 'pack_size', 'quantity', 'unit', 
+            'unit_cost', 'total_cost'
         ]
-        read_only_fields = ['total_cost']
+        read_only_fields = ['total_cost', 'supplier_name', 'supplier_code']
 
 
 class RecipeVersionSerializer(serializers.ModelSerializer):

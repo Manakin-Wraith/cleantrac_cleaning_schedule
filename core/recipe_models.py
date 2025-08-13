@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from core.receiving_models import Product
-from .models import Department, UserProfile
+from .models import Department, UserProfile, Supplier
 
 class Recipe(models.Model):
     """
@@ -49,10 +49,7 @@ class RecipeIngredient(models.Model):
     """
     Represents an ingredient used in a recipe with its quantity and cost. Each
     ingredient can optionally link to a canonical `Product` so we can map it to
-    received stock.
-    """
-    """
-    Represents an ingredient used in a recipe with its quantity and cost.
+    received stock, and has a direct supplier relationship for traceability.
     """
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='ingredients')
     # Optional link to the canonical Product table (receiving_models.Product)
@@ -63,6 +60,15 @@ class RecipeIngredient(models.Model):
         null=True,
         blank=True,
         help_text="Link to the product used for inventory tracking",
+    )
+    # Direct supplier relationship for traceability
+    supplier = models.ForeignKey(
+        Supplier,
+        on_delete=models.PROTECT,
+        related_name="recipe_ingredients",
+        null=True,
+        blank=True,
+        help_text="Direct supplier for this ingredient for traceability purposes",
     )
     ingredient_code = models.CharField(max_length=50)
     ingredient_name = models.CharField(max_length=200)

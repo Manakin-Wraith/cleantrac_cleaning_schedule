@@ -23,7 +23,15 @@ admin.site.register(Department)
 admin.site.register(CleaningItem)
 admin.site.register(TaskInstance)
 admin.site.register(CompletionLog)
-admin.site.register(Product)
+# Product Admin Registration
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ('product_code', 'name', 'supplier_code', 'created_at', 'updated_at')
+    list_filter = ('supplier_code', 'created_at')
+    search_fields = ('product_code', 'name', 'description', 'supplier_code')
+    date_hierarchy = 'created_at'
+    readonly_fields = ('created_at', 'updated_at')
+
+admin.site.register(Product, ProductAdmin)
 
 # Thermometer Verification System Admin Registration
 
@@ -231,9 +239,11 @@ class RecipeAdmin(admin.ModelAdmin):
 admin.site.register(Recipe, RecipeAdmin)
 
 class RecipeIngredientAdmin(admin.ModelAdmin):
-    list_display = ('recipe', 'ingredient_code', 'ingredient_name', 'quantity', 'unit', 'unit_cost', 'total_cost')
-    list_filter = ('recipe__department',)
-    search_fields = ('recipe__name', 'ingredient_code', 'ingredient_name')
+    list_display = ('recipe', 'ingredient_code', 'ingredient_name', 'supplier', 'quantity', 'unit', 'unit_cost', 'total_cost')
+    list_filter = ('recipe__department', 'supplier')
+    search_fields = ('recipe__name', 'ingredient_code', 'ingredient_name', 'supplier__supplier_name')
+    autocomplete_fields = ('supplier', 'product')
+    raw_id_fields = ('recipe',)
 
 admin.site.register(RecipeIngredient, RecipeIngredientAdmin)
 

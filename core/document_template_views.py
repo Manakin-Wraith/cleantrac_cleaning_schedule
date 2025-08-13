@@ -448,15 +448,39 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                     except AttributeError:
                         assigned_staff_name = task.assigned_staff.username
                 
+                # Get recipe ingredients with supplier info for preview
+                ingredients_preview = []
+                try:
+                    ingredients = task.recipe.ingredients.select_related('supplier', 'product').all()[:5]  # Limit to 5 for preview
+                    for ingredient in ingredients:
+                        supplier_info = "No Supplier"
+                        if ingredient.supplier:
+                            supplier_info = f"{ingredient.supplier.supplier_name} ({ingredient.supplier.supplier_code})"
+                        elif ingredient.product and ingredient.product.supplier_code:
+                            supplier_info = f"Supplier Code: {ingredient.product.supplier_code}"
+                        
+                        ingredients_preview.append({
+                            'name': ingredient.ingredient_name,
+                            'code': ingredient.ingredient_code,
+                            'quantity': f"{ingredient.quantity} {ingredient.unit}",
+                            'supplier': supplier_info
+                        })
+                except Exception as e:
+                    logger.warning(f"Error getting ingredients for recipe {task.recipe.id}: {str(e)}")
+                
                 formatted_task = {
                     'scheduled_date': task.scheduled_start_time.strftime('%Y-%m-%d'),
                     'scheduled_time': task.scheduled_start_time.strftime('%H:%M'),
                     'recipe_name': task.recipe.name,
+                    'recipe_product_code': task.recipe.product_code,
+                    'recipe_description': task.recipe.description or "No description",
                     'status': task.get_status_display(),
                     'assigned_staff': assigned_staff_name,
                     'department': task.department.name,
                     'task_type': task.get_task_type_display(),
-                    'duration': f"{task.duration_minutes} min" if task.duration_minutes else "N/A"
+                    'duration': f"{task.duration_minutes} min" if task.duration_minutes else "N/A",
+                    'ingredients_preview': ingredients_preview,
+                    'ingredient_count': task.recipe.ingredients.count()
                 }
                 
                 formatted_tasks.append(formatted_task)
@@ -1101,6 +1125,120 @@ def generate_document_file(template, parameters, user):
                     "title": "Recipe Production Tasks - Error",
                     "type": "error",
                     "data": [{"Error": f"Failed to process recipe production data: {str(e)}"}],
+                    "headers": ["Error"]
+                })
+
+            # Section 5: Recipe Ingredients and Supplier Traceability
+            try:
+                logger.info("Adding recipe ingredients and supplier traceability section")
+                recipe_ingredients_data = []
+                
+                # Get unique recipes from the tasks to avoid duplicates
+                unique_recipes = set()
+                for task in recipe_tasks:
+                    unique_recipes.add(task.recipe.id)
+                
+                for recipe_id in unique_recipes:
+                    try:
+                        from .recipe_models import Recipe
+                        recipe = Recipe.objects.select_related('department').get(id=recipe_id)
+                        
+                        # Get all ingredients for this recipe with supplier information
+                        ingredients = recipe.ingredients.select_related('supplier', 'product').all()
+                        
+                        for ingredient in ingredients:
+                            # Get supplier information
+                            supplier_name = "No Supplier Assigned"
+                            supplier_code = "N/A"
+                            supplier_contact = "N/A"
+                            supplier_country = "N/A"
+                            
+                            if ingredient.supplier:
+                                supplier_name = ingredient.supplier.supplier_name
+                                supplier_code = ingredient.supplier.supplier_code
+                                supplier_contact = ingredient.supplier.contact_info or "N/A"
+                                supplier_country = ingredient.supplier.country_of_origin or "N/A"
+                            elif ingredient.product and ingredient.product.supplier_code:
+                                # Fallback: try to get supplier via product
+                                try:
+                                    from .models import Supplier
+                                    supplier = Supplier.objects.get(supplier_code=ingredient.product.supplier_code)
+                                    supplier_name = supplier.supplier_name
+                                    supplier_code = supplier.supplier_code
+                                    supplier_contact = supplier.contact_info or "N/A"
+                                    supplier_country = supplier.country_of_origin or "N/A"
+                                except Supplier.DoesNotExist:
+                                    supplier_code = ingredient.product.supplier_code
+                                    supplier_name = "Supplier Not Found"
+                            
+                            # Get product information
+                            product_code = ingredient.ingredient_code
+                            if ingredient.product:
+                                product_code = ingredient.product.product_code
+                            
+                            recipe_ingredients_data.append({
+                                'Recipe Name': recipe.name,
+                                'Recipe Product Code': recipe.product_code,
+                                'Recipe Description': recipe.description or "No description",
+                                'Department': recipe.department.name,
+                                'Ingredient Code': ingredient.ingredient_code,
+                                'Ingredient Name': ingredient.ingredient_name,
+                                'Product Code': product_code,
+                                'Pack Size': ingredient.pack_size or "N/A",
+                                'Quantity Required': f"{ingredient.quantity} {ingredient.unit}",
+                                'Unit Cost': f"R{ingredient.unit_cost:.2f}" if ingredient.unit_cost else "N/A",
+                                'Total Cost': f"R{ingredient.total_cost:.2f}" if ingredient.total_cost else "N/A",
+                                'Supplier Code': supplier_code,
+                                'Supplier Name': supplier_name,
+                                'Supplier Contact': supplier_contact,
+                                'Country of Origin': supplier_country,
+                                'Traceability Chain': f"Recipe {recipe.product_code} → Ingredient {ingredient.ingredient_code} → Supplier {supplier_code}"
+                            })
+                    
+                    except Exception as e:
+                        logger.error(f"Error processing recipe {recipe_id} ingredients: {str(e)}")
+                        # Add error entry to maintain document structure
+                        recipe_ingredients_data.append({
+                            'Recipe Name': f"Error processing recipe {recipe_id}",
+                            'Recipe Product Code': "ERROR",
+                            'Recipe Description': f"Error: {str(e)}",
+                            'Department': "N/A",
+                            'Ingredient Code': "ERROR",
+                            'Ingredient Name': "Error processing ingredient data",
+                            'Product Code': "ERROR",
+                            'Pack Size': "N/A",
+                            'Quantity Required': "N/A",
+                            'Unit Cost': "N/A",
+                            'Total Cost': "N/A",
+                            'Supplier Code': "ERROR",
+                            'Supplier Name': "Error",
+                            'Supplier Contact': "N/A",
+                            'Country of Origin': "N/A",
+                            'Traceability Chain': f"Error processing recipe {recipe_id}"
+                        })
+                
+                # Add ingredients section to document
+                document_info["sections"].append({
+                    "title": "Recipe Ingredients & Supplier Traceability",
+                    "type": "recipe_ingredients",
+                    "data": recipe_ingredients_data,
+                    "headers": [
+                        'Recipe Name', 'Recipe Product Code', 'Recipe Description', 'Department',
+                        'Ingredient Code', 'Ingredient Name', 'Product Code', 'Pack Size',
+                        'Quantity Required', 'Unit Cost', 'Total Cost',
+                        'Supplier Code', 'Supplier Name', 'Supplier Contact', 'Country of Origin',
+                        'Traceability Chain'
+                    ]
+                })
+                logger.info(f"Successfully added recipe ingredients section with {len(recipe_ingredients_data)} ingredients")
+                
+            except Exception as e:
+                logger.error(f"Error adding recipe ingredients section: {str(e)}")
+                # Add fallback section
+                document_info["sections"].append({
+                    "title": "Recipe Ingredients & Supplier Traceability - Error",
+                    "type": "error",
+                    "data": [{"Error": f"Failed to process recipe ingredients data: {str(e)}"}],
                     "headers": ["Error"]
                 })
 
