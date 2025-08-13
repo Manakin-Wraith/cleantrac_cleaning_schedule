@@ -242,8 +242,7 @@ class RecipeIngredientAdmin(admin.ModelAdmin):
     list_display = ('recipe', 'ingredient_code', 'ingredient_name', 'supplier', 'quantity', 'unit', 'unit_cost', 'total_cost')
     list_filter = ('recipe__department', 'supplier')
     search_fields = ('recipe__name', 'ingredient_code', 'ingredient_name', 'supplier__supplier_name')
-    autocomplete_fields = ('supplier', 'product')
-    raw_id_fields = ('recipe',)
+    raw_id_fields = ('recipe', 'supplier', 'product')
 
 admin.site.register(RecipeIngredient, RecipeIngredientAdmin)
 
