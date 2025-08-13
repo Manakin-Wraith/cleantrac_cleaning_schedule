@@ -337,6 +337,11 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             logs, summary = self._get_sample_temperature_logs(template, parameters)
             preview_data['temperature_logs'] = logs
             preview_data['temperature_summary'] = summary
+            
+        elif template.template_type == 'recipe':
+            # Get sample recipe production tasks
+            tasks = self._get_sample_recipe_production_tasks(template, parameters)
+            preview_data['recipe_production_tasks'] = tasks
         
         return preview_data
     
@@ -411,6 +416,54 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             return formatted_tasks
         except Exception as e:
             print(f"Error getting sample cleaning tasks: {str(e)}")
+            return []
+    
+    def _get_sample_recipe_production_tasks(self, template, parameters):
+        """
+        Get sample recipe production tasks for preview.
+        """
+        try:
+            start_date = datetime.strptime(parameters.get('startDate'), '%Y-%m-%d').date()
+            end_date = datetime.strptime(parameters.get('endDate'), '%Y-%m-%d').date()
+            
+            # Get recipe production tasks for the specified date range and department
+            tasks = RecipeProductionTask.objects.filter(
+                scheduled_start_time__date__gte=start_date,
+                scheduled_start_time__date__lte=end_date,
+                department=template.department
+            ).select_related(
+                'assigned_staff',
+                'recipe',
+                'department'
+            ).order_by('-scheduled_start_time')[:10]  # Limit to 10 tasks for preview
+            
+            # Format tasks for preview
+            formatted_tasks = []
+            for task in tasks:
+                # Get assigned staff name safely
+                assigned_staff_name = "Unassigned"
+                if task.assigned_staff:
+                    try:
+                        assigned_staff_name = f"{task.assigned_staff.first_name} {task.assigned_staff.last_name}".strip() or task.assigned_staff.username
+                    except AttributeError:
+                        assigned_staff_name = task.assigned_staff.username
+                
+                formatted_task = {
+                    'scheduled_date': task.scheduled_start_time.strftime('%Y-%m-%d'),
+                    'scheduled_time': task.scheduled_start_time.strftime('%H:%M'),
+                    'recipe_name': task.recipe.name,
+                    'status': task.get_status_display(),
+                    'assigned_staff': assigned_staff_name,
+                    'department': task.department.name,
+                    'task_type': task.get_task_type_display(),
+                    'duration': f"{task.duration_minutes} min" if task.duration_minutes else "N/A"
+                }
+                
+                formatted_tasks.append(formatted_task)
+            
+            return formatted_tasks
+        except Exception as e:
+            logger.error(f"Error getting sample recipe production tasks: {str(e)}")
             return []
 
 
