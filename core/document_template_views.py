@@ -25,8 +25,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, cm
 from reportlab.lib import colors
 
-from .models import DocumentTemplate, GeneratedDocument, TaskInstance, ThermometerVerificationRecord, TemperatureLog, TemperatureCheckAssignment, ThermometerVerificationAssignment
-from .recipe_models import RecipeProductionTask
+from .models import DocumentTemplate, GeneratedDocument, TaskInstance, ThermometerVerificationRecord, TemperatureLog, TemperatureCheckAssignment, ThermometerVerificationAssignment, Supplier
+from .recipe_models import RecipeProductionTask, Recipe
 from .document_template_serializers import DocumentTemplateSerializer, GeneratedDocumentSerializer
 from .permissions import IsManagerForWriteOrAuthenticatedReadOnly
 
@@ -1140,7 +1140,6 @@ def generate_document_file(template, parameters, user):
                 
                 for recipe_id in unique_recipes:
                     try:
-                        from .recipe_models import Recipe
                         recipe = Recipe.objects.select_related('department').get(id=recipe_id)
                         
                         # Get all ingredients for this recipe with supplier information
@@ -1161,7 +1160,6 @@ def generate_document_file(template, parameters, user):
                             elif ingredient.product and ingredient.product.supplier_code:
                                 # Fallback: try to get supplier via product
                                 try:
-                                    from .models import Supplier
                                     supplier = Supplier.objects.get(supplier_code=ingredient.product.supplier_code)
                                     supplier_name = supplier.supplier_name
                                     supplier_code = supplier.supplier_code
